@@ -149,7 +149,15 @@ def build_hourly_vis_cloud(consensus_hour, pressure_history):
     vis_m = estimate_visibility(R, RH, T, Td, U, P, pressure_trend_3h,
                                 baseline_dry_vis_m=baseline_dry_vis)
 
-    vis_code = "9999" if vis_m >= 9999 else f"{int(vis_m):04d}"
+    # Apply standard aviation visibility rounding
+    if vis_m >= 9999:
+        vis_code = "9999"
+    elif vis_m >= 5000:
+        vis_code = f"{int((vis_m // 1000) * 1000):04d}"
+    elif vis_m >= 800:
+        vis_code = f"{int((vis_m // 100) * 100):04d}"
+    else:
+        vis_code = f"{int((vis_m // 50) * 50):04d}"
 
     lcl_ft = estimate_lcl_ft_pressure(T, Td, P)
     cloud_group = estimate_cloud_group_with_pressure(

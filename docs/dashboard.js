@@ -10,7 +10,7 @@ async function loadDashboard() {
         ]);
         
         const intelData = await intelRes.json();
-        let currentIssuance = "default";
+        let currentIssuance = "2300";
         let intel = intelData[currentIssuance] || intelData;
         const weights = await weightsRes.json();
         const perf = await perfRes.json();
@@ -121,6 +121,7 @@ async function loadDashboard() {
                 <td>${Number(d['Wind Dir.'] || 0).toFixed(0)}°</td>
                 <td style="color: #10b981">${Number(d.Wind).toFixed(1)}</td>
                 <td style="color: #0ea5e9">${Number(d.Rain).toFixed(1)}</td>
+                <td>${Number(d['Prob Precip 1.0mm'] || 0).toFixed(1)}%</td>
                 <td>${d.Condition || '-'}</td>
             `;
             tbody.appendChild(tr);

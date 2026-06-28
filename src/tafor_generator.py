@@ -98,7 +98,8 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
             "spd": hour_data["spd"],
             "gust": hour_data["gust"],
             "prob_precip_10": hour_data["prob_precip_10"],
-            "dir_num": row["Wind Dir."],
+            "dir_num": float(row["Wind Dir."]) if pd.notna(row.get("Wind Dir.")) else 0.0,
+            "dir": f"{int(round(float(row['Wind Dir.']) / 10.0) * 10):03d}" if pd.notna(row.get("Wind Dir.")) and round(float(row["Wind Dir."]) / 10.0) * 10 < 360 else ("360" if pd.notna(row.get("Wind Dir.")) else "000"),
             "rain": hour_data["rain"],
             "temp_c": hour_data["temp_c"],
             "dewpoint_c": hour_data["dewpoint_c"],
@@ -157,7 +158,7 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
     trends, warnings = _build_change_groups(
         consensus_truth=consensus_truth,
         valid_start=valid_start,
-        start_hour=0, # Relative to the sliced array
+        start_hour=valid_start.hour,
         meteo_data_local=meteo_data_local,
         corrected_rain_data=qm_rain_local,
         rain_timing_offset=0, 
@@ -166,8 +167,17 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
     
     # Define Base Group
     first_row = consensus_truth[0]
+    
+    # Round Wind Direction to nearest 10
+    d_val = first_row.get('Wind Dir.')
+    if pd.notna(d_val):
+        d_rounded = int(round(float(d_val) / 10.0) * 10)
+        d_str = f"{d_rounded:03d}" if d_rounded < 360 else "360"
+    else:
+        d_str = "000"
+        
     best_guess = {
-        'dir': f"{int(first_row['Wind Dir.']):03d}" if pd.notna(first_row['Wind Dir.']) else "000",
+        'dir': d_str,
         'spd': f"{int(first_row['spd']):02d}" if pd.notna(first_row.get('spd')) else "00",
         'gust': f"{int(first_row['gust']):02d}" if pd.notna(first_row.get('gust')) else "00",
         'vis': first_row['vis'],
