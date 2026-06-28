@@ -273,3 +273,42 @@ function setupClimatology(clim, valid_start_str) {
         chart.render();
     }
 }
+
+function setupIndividualModels(modelsData, timeLabels) {
+    const modelSelect = document.getElementById('model-select');
+    const tbody = document.querySelector('#model-table tbody');
+    if(!modelSelect || !tbody) return;
+    
+    function renderModel(modelName) {
+        tbody.innerHTML = '';
+        if(!timeLabels) return;
+        
+        timeLabels.forEach(dt => {
+            const temp = modelsData['Temperature']?.[modelName]?.[dt];
+            const dew = modelsData['Dewpoint']?.[modelName]?.[dt];
+            const windDir = modelsData['Wind Dir.']?.[modelName]?.[dt];
+            const windSpd = modelsData['Wind Speed']?.[modelName]?.[dt];
+            const rain = modelsData['Rainfall']?.[modelName]?.[dt];
+            
+            if(temp !== undefined) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${dt.substring(11, 16)}</td>
+                    <td style="color: #ef4444">${Number(temp).toFixed(1)}</td>
+                    <td style="color: #3b82f6">${Number(dew).toFixed(1)}</td>
+                    <td>${windDir !== undefined ? Number(windDir).toFixed(0) + '°' : '-'}</td>
+                    <td style="color: #10b981">${windSpd !== undefined ? Number(windSpd).toFixed(1) : '-'}</td>
+                    <td style="color: #0ea5e9">${rain !== undefined ? Number(rain).toFixed(1) : '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        });
+    }
+    
+    modelSelect.addEventListener('change', (e) => {
+        renderModel(e.target.value);
+    });
+    
+    // Render first model initially
+    renderModel(modelSelect.value);
+}
