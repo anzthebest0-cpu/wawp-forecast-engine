@@ -1,10 +1,11 @@
 async function loadDashboard() {
     try {
-        const [intelRes, weightsRes, perfRes, guidanceRes] = await Promise.all([
+        const [intelRes, weightsRes, perfRes, guidanceRes, climRes] = await Promise.all([
             fetch('data/tafor_intel.json'),
             fetch('data/latest_weights.json'),
             fetch('data/latest_performance.json'),
-            fetch('data/taf_guidance.json')
+            fetch('data/taf_guidance.json'),
+            fetch('data/climatology.json')
         ]);
         
         const intel = await intelRes.json();
@@ -167,7 +168,7 @@ function setupRegionalCharts() {
 }
 
 function setupClimatology(clim, valid_start_str) {
-    if(!clim.seasonal) return;
+    if(!clim || !clim.seasonal) return;
     
     const date = new Date(valid_start_str.replace(' ', 'T') + 'Z');
     const m = date.getUTCMonth() + 1;

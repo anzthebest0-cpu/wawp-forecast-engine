@@ -1,6 +1,8 @@
 name: WAWP Meteologix Engine
 
 on:
+  push:
+    branches: [ "main" ]
   schedule:
     - cron: '30 0 * * *'  # 00:30 UTC -> 08:30 WITA
     - cron: '30 6 * * *'  # 06:30 UTC -> 14:30 WITA
