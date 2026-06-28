@@ -84,7 +84,9 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
             "spd": row["Wind"] if pd.notna(row.get("Wind")) else 0.0,
             "gust": row["Wind Gust"] if "Wind Gust" in row and pd.notna(row.get("Wind Gust")) else 0.0,
             "prob_precip_10": row["Prob Precip 1.0mm"] if "Prob Precip 1.0mm" in row and pd.notna(row.get("Prob Precip 1.0mm")) else 0.0,
-            "Condition": row["Condition"] if pd.notna(row.get("Condition")) else "Clear"
+            "Condition": row["Condition"] if pd.notna(row.get("Condition")) else "Clear",
+            "low_clouds": row["Low Clouds"] if "Low Clouds" in row and pd.notna(row.get("Low Clouds")) else 0.0,
+            "mid_clouds": row["Mid Clouds"] if "Mid Clouds" in row and pd.notna(row.get("Mid Clouds")) else 0.0
         }
         
         pressure_history.append(hour_data["pressure_hpa"])

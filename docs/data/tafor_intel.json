@@ -9,7 +9,7 @@
       "gust": "10",
       "vis": "9999",
       "wx": "",
-      "cloud": "BKN017",
+      "cloud": "FEW017",
       "trends": [],
       "badge": "MME 2300Z Shift",
       "metrics": {
@@ -17,7 +17,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 292300Z\nTAF WAWP 292300Z 2900/3000 10005KT 9999 BKN017=",
+    "taf_text": "FTID40 WAWP 292300Z\nTAF WAWP 292300Z 2900/3000 10005KT 9999 FEW017=",
     "warnings": []
   },
   "0500": {
@@ -28,9 +28,9 @@
       "dir": "170",
       "spd": "05",
       "gust": "10",
-      "vis": "7000",
+      "vis": "7900",
       "wx": "",
-      "cloud": "BKN035",
+      "cloud": "SCT035",
       "trends": [],
       "badge": "MME 0500Z Shift",
       "metrics": {
@@ -38,7 +38,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 280500Z\nTAF WAWP 280500Z 2906/3006 17005KT 7000 BKN035=",
+    "taf_text": "FTID40 WAWP 280500Z\nTAF WAWP 280500Z 2906/3006 18005KT 7900 SCT035=",
     "warnings": []
   },
   "1100": {
@@ -49,9 +49,9 @@
       "dir": "110",
       "spd": "07",
       "gust": "10",
-      "vis": "4300",
+      "vis": "4350",
       "wx": "",
-      "cloud": "BKN018",
+      "cloud": "FEW018",
       "trends": [],
       "badge": "MME 1100Z Shift",
       "metrics": {
@@ -59,7 +59,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 271100Z\nTAF WAWP 271100Z 2812/2912 11007KT 4300 BKN018=",
+    "taf_text": "FTID40 WAWP 271100Z\nTAF WAWP 271100Z 2812/2912 11007KT 4350 FEW018=",
     "warnings": []
   },
   "1700": {
@@ -70,9 +70,9 @@
       "dir": "100",
       "spd": "05",
       "gust": "08",
-      "vis": "3100",
+      "vis": "9999",
       "wx": "",
-      "cloud": "BKN014",
+      "cloud": "FEW014",
       "trends": [],
       "badge": "MME 1700Z Shift",
       "metrics": {
@@ -80,7 +80,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 291700Z\nTAF WAWP 291700Z 2818/2918 10005KT 3100 BKN014=",
+    "taf_text": "FTID40 WAWP 291700Z\nTAF WAWP 291700Z 2818/2918 10005KT 9999 FEW014=",
     "warnings": []
   },
   "default": {
@@ -91,9 +91,9 @@
       "dir": "060",
       "spd": "00",
       "gust": "03",
-      "vis": "8000",
+      "vis": "8900",
       "wx": "",
-      "cloud": "BKN032",
+      "cloud": "FEW032",
       "trends": [
         {
           "type": "BECMG",
@@ -113,7 +113,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 280600Z\nTAF WAWP 280600Z 2807/2907 00000KT 8000 BKN032\nBECMG 2816/2817 9999 NSW=",
+    "taf_text": "FTID40 WAWP 280600Z\nTAF WAWP 280600Z 2807/2907 00000KT 8900 FEW032\nBECMG 2816/2817 9999 NSW=",
     "warnings": []
   }
 }

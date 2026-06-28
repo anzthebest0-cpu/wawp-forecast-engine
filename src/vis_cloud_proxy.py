@@ -36,26 +36,26 @@ def estimate_visibility(rain_mmh, rh_pct, temp_c, dewpoint_c,
         return int(max(100.0, min(vis, 9999.0)))
 
     # No-rain branch
-    if rh_pct >= 95.0 and dd <= 1.5:
+    if rh_pct >= 96.0 and dd <= 1.0:
+        # Mist / Fog conditions
         x = 100.0 - rh_pct
         vis = 120.0 * x + 0.5 * x**2
-        vis = max(50.0, min(vis, 1000.0))
+        vis = max(50.0, min(vis, 3000.0))
         vis *= pressure_factor
-        return int(max(50.0, min(vis, 1000.0)))
+        return int(max(50.0, min(vis, 5000.0)))
 
-    if rh_pct >= 80.0 and dd <= 4.0:
-        x = 100.0 - rh_pct
-        vis = 150.0 * x + 0.3 * x**2
-        vis = max(1000.0, min(vis, 5000.0))
+    if rh_pct >= 90.0 and dd <= 3.0:
+        # Hazy morning conditions
+        vis = 6000.0
         vis *= pressure_factor
-        return int(max(1000.0, min(vis, 5000.0)))
+        return int(max(3000.0, min(vis, 8000.0)))
 
-    # Dry/haze regime
+    # Dry/haze regime (Normal tropics)
     vis = float(baseline_dry_vis_m)
     if wind_kt > 10.0:
         vis *= 1.2
     elif wind_kt < 3.0:
-        vis *= 0.85
+        vis *= 0.90
     vis *= pressure_factor
     if pressure_hpa > 1025 and pressure_trend_hpa_3h > 0:
         vis *= 0.9
@@ -77,7 +77,7 @@ def estimate_lcl_ft_pressure(temp_c, dewpoint_c, pressure_hpa):
 def estimate_cloud_group_with_pressure(rh_pct, temp_c, dewpoint_c,
                                        rain_mmh, vis_m, pressure_hpa,
                                        pressure_trend_hpa_3h,
-                                       lcl_ft=None):
+                                       lcl_ft=None, consensus_hour=None):
     dd = temp_c - dewpoint_c
 
     if vis_m < 1000.0 and rh_pct >= 95.0 and dd <= 1.5:
@@ -90,43 +90,46 @@ def estimate_cloud_group_with_pressure(rh_pct, temp_c, dewpoint_c,
     base_hundreds = int(round(lcl_ft / 100.0))
     base_str = f"{base_hundreds:03d}"
 
-    # Base amount from RH and rain
-    if rain_mmh > 0.1:
-        if rh_pct >= 90.0:
+    # Base amount from actual consensus percentages if available
+    low_pct = consensus_hour.get('low_clouds', 0.0) if consensus_hour else 0.0
+    mid_pct = consensus_hour.get('mid_clouds', 0.0) if consensus_hour else 0.0
+    
+    # Decide which cloud layer is dominant for the ceiling
+    target_pct = low_pct if low_pct > 15.0 else max(low_pct, mid_pct)
+    
+    if target_pct > 0:
+        if target_pct >= 88.0:
             amount = "OVC"
-        elif rh_pct >= 80.0:
+        elif target_pct >= 51.0:
             amount = "BKN"
-        else:
+        elif target_pct >= 26.0:
             amount = "SCT"
-    else:
-        if rh_pct >= 90.0:
-            amount = "OVC"
-        elif rh_pct >= 80.0:
-            amount = "BKN"
-        elif rh_pct >= 70.0:
-            amount = "SCT"
-        elif rh_pct >= 50.0:
+        elif target_pct >= 5.0:
             amount = "FEW"
         else:
-            return "NSC"
+            amount = "NSC"
+            if rain_mmh > 0.1: amount = "FEW" # force cloud if raining
+    else:
+        # Fallback to RH if no percentage data
+        if rain_mmh > 0.1:
+            if rh_pct >= 90.0: amount = "OVC"
+            elif rh_pct >= 80.0: amount = "BKN"
+            else: amount = "SCT"
+        else:
+            if rh_pct >= 95.0: amount = "BKN"
+            elif rh_pct >= 85.0: amount = "SCT"
+            elif rh_pct >= 70.0: amount = "FEW"
+            else: amount = "NSC"
 
     # Pressure-trend adjustments
     if pressure_trend_hpa_3h < -2.0:
-        if amount == "FEW":
-            amount = "SCT"
-        elif amount == "SCT":
-            amount = "BKN"
-        elif amount == "BKN":
-            amount = "OVC"
-    elif pressure_trend_hpa_3h > 2.0:
-        if amount == "OVC":
-            amount = "BKN"
-        elif amount == "BKN":
-            amount = "SCT"
+        if amount == "FEW": amount = "SCT"
+        elif amount == "SCT": amount = "BKN"
+        elif amount == "BKN": amount = "OVC"
 
-    if pressure_hpa > 1025 and rain_mmh <= 0.1 and amount == "OVC":
-        amount = "BKN"
-
+    if amount == "NSC":
+        return "NSC"
+        
     return f"{amount}{base_str}"
 
 
@@ -152,14 +155,11 @@ def build_hourly_vis_cloud(consensus_hour, pressure_history):
     # Apply standard aviation visibility rounding
     if vis_m >= 9999:
         vis_code = "9999"
-    elif vis_m >= 5000:
-        vis_code = f"{int((vis_m // 1000) * 1000):04d}"
-    elif vis_m >= 800:
+    elif vis_m > 5000:
         vis_code = f"{int((vis_m // 100) * 100):04d}"
     else:
         vis_code = f"{int((vis_m // 50) * 50):04d}"
 
-    lcl_ft = estimate_lcl_ft_pressure(T, Td, P)
     cloud_group = estimate_cloud_group_with_pressure(
         rh_pct=RH,
         temp_c=T,
@@ -168,7 +168,7 @@ def build_hourly_vis_cloud(consensus_hour, pressure_history):
         vis_m=vis_m,
         pressure_hpa=P,
         pressure_trend_hpa_3h=pressure_trend_3h,
-        lcl_ft=lcl_ft
+        consensus_hour=consensus_hour
     )
-    
+
     return vis_code, cloud_group
