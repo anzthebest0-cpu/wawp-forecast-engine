@@ -466,33 +466,10 @@ function initTitanCharts(data) {
     { name: 'Temp (°C)',  data: data.tempData  || [] },
     { name: 'Dewpt (°C)', data: data.dewData   || [] },
   ];
-  // Add weather conditions as annotations to the Temp chart
-  const tempAnnotations = { xaxis: [] };
-  if (data.condData) {
-      data.condData.forEach(pt => {
-          if (pt[1] && pt[1] !== 'Normal') {
-              let icon = '🌧️';
-              if (pt[1] === 'Heavy Rain') icon = '⛈️';
-              else if (pt[1] === 'Light Rain') icon = '🌦️';
-              
-              tempAnnotations.xaxis.push({
-                  x: pt[0],
-                  borderColor: 'transparent',
-                  label: {
-                      text: icon,
-                      borderColor: 'transparent',
-                      orientation: 'horizontal',
-                      style: { fontSize: '18px', background: 'transparent' },
-                      offsetY: -10
-                  }
-              });
-          }
-      });
-  }
 
   const chartTemp = new ApexCharts(
     document.querySelector('#chart-temp'),
-    { ...CHART_TEMP_OPTIONS, series: tempSeries, annotations: tempAnnotations }
+    { ...CHART_TEMP_OPTIONS, series: tempSeries }
   );
   chartTemp.render();
 

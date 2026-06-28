@@ -192,6 +192,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
         title: { text: title, style: { fontSize: '12px', fontWeight: 'bold', fontFamily: TITAN_COLORS.font } },
         stroke: { curve: 'smooth', width: 1.5 },
         dataLabels: { enabled: false },
+        tooltip: { enabled: false },
         markers: { size: 0 },
         xaxis: { type: 'datetime', labels: { style: { colors: TITAN_COLORS.text } } },
         yaxis: { title: { text: yAxisLabel }, labels: { style: { colors: TITAN_COLORS.text } } },
