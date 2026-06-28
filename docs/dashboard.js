@@ -11,7 +11,7 @@ async function loadDashboard() {
         const weights = await weightsRes.json();
         const perf = await perfRes.json();
         const guidance = await guidanceRes.json();
-        const clim_data = climRes && typeof climRes.json === 'function' ? await climRes.json() : null;
+        const clim_data = (climRes && climRes.ok && typeof climRes.json === 'function') ? await climRes.json().catch(()=>null) : null;
 
         // 1. Update Header
         document.getElementById('update-time').innerText = intel.valid_start + " UTC";
