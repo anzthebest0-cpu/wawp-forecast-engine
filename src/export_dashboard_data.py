@@ -226,7 +226,50 @@ def export_all(db: ForecastDB, output_dir: str):
             
     consensus = consensus.reset_index()
     consensus = consensus.rename(columns={"Wind Speed": "Wind", "Rainfall": "Rain"})
-    consensus["Condition"] = "Normal" # Mock condition
+    
+    # Dynamically Determine Condition
+    def get_condition(rain):
+        if pd.isna(rain) or rain < 0.1:
+            return "Normal"
+        elif rain >= 10.0:
+            return "Heavy Rain"
+        elif rain >= 1.0:
+            return "Rain"
+        else:
+            return "Light Rain"
+    consensus["Condition"] = consensus["Rain"].apply(get_condition)
+    
+    # Calculate Visibility
+    from src.vis_cloud_proxy import estimate_visibility
+    import math
+    
+    def calc_visibility(row):
+        T = row.get("Temperature", 30.0)
+        Td = row.get("Dewpoint", 24.0)
+        P = row.get("Pressure", 1010.0)
+        R = row.get("Rain", 0.0)
+        U = row.get("Wind", 0.0)
+        
+        # Calculate RH using Magnus formula approximation
+        if pd.isna(T) or pd.isna(Td):
+            rh_pct = 80.0
+        else:
+            e_td = math.exp((17.625 * Td) / (243.04 + Td))
+            e_t = math.exp((17.625 * T) / (243.04 + T))
+            rh_pct = min(100.0, max(0.0, 100.0 * (e_td / e_t))) if e_t > 0 else 80.0
+            
+        return estimate_visibility(
+            rain_mmh=R if not pd.isna(R) else 0.0,
+            rh_pct=rh_pct,
+            temp_c=T if not pd.isna(T) else 30.0,
+            dewpoint_c=Td if not pd.isna(Td) else 24.0,
+            wind_kt=U if not pd.isna(U) else 0.0,
+            pressure_hpa=P if not pd.isna(P) else 1010.0,
+            pressure_trend_hpa_3h=0.0,
+            baseline_dry_vis_m=9999
+        )
+        
+    consensus["Visibility"] = consensus.apply(calc_visibility, axis=1)
     
     # Generate TAF Intel
     qm_rain_data = {m: qm_mapper.transform_series(pd.DataFrame(model_data["Rainfall"])[m], model=m).to_dict() for m in model_data["Rainfall"].keys()} if "Rainfall" in model_data else {}

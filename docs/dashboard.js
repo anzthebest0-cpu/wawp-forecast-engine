@@ -104,7 +104,10 @@ async function loadDashboard() {
             dewData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Dewpoint]),
             windData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Wind]),
             gustData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Gust || 0]),
-            rainData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Rain])
+            rainData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Rain]),
+            visData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Visibility || 9999]),
+            pressData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Pressure || 1010]),
+            condData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Condition || 'Normal'])
         };
         
         // Initialize charts using the new TITAN_BASE design system
@@ -121,7 +124,8 @@ async function loadDashboard() {
                 <td>${Number(d['Wind Dir.'] || 0).toFixed(0)}°</td>
                 <td style="color: #10b981">${Number(d.Wind).toFixed(1)}</td>
                 <td style="color: #0ea5e9">${Number(d.Rain).toFixed(1)}</td>
-                <td>${Number(d['Prob Precip 1.0mm'] || 0).toFixed(1)}%</td>
+                <td>${Number(d['Prob Precip 1.0mm'] || 0) > 0 ? Number(d['Prob Precip 1.0mm']).toFixed(1) + '%' : '-'}</td>
+                <td>${Number(d['Prob Precip 10.0mm'] || 0) > 0 ? Number(d['Prob Precip 10.0mm']).toFixed(1) + '%' : '-'}</td>
                 <td>${d.Condition || '-'}</td>
             `;
             tbody.appendChild(tr);
@@ -292,6 +296,7 @@ function setupIndividualModels(modelsData, timeLabels) {
             const gust = modelsData['Wind Gust']?.[modelName]?.[dt];
             const rain = modelsData['Rainfall']?.[modelName]?.[dt];
             const probRain = modelsData['Prob Precip 1.0mm']?.[modelName]?.[dt];
+            const probRain10 = modelsData['Prob Precip 10.0mm']?.[modelName]?.[dt];
             
             if(temp !== undefined) {
                 const tr = document.createElement('tr');
@@ -303,7 +308,8 @@ function setupIndividualModels(modelsData, timeLabels) {
                     <td style="color: #10b981">${windSpd !== undefined ? Number(windSpd).toFixed(1) : '-'}</td>
                     <td style="color: #f59e0b">${gust !== undefined ? Number(gust).toFixed(1) : '-'}</td>
                     <td style="color: #6366f1">${rain !== undefined ? Number(rain).toFixed(1) : '-'}</td>
-                    <td style="color: #8b5cf6">${probRain !== undefined ? Number(probRain).toFixed(0) + '%' : '-'}</td>
+                    <td>${probRain !== undefined && probRain > 0 ? Number(probRain).toFixed(1) + '%' : '-'}</td>
+                    <td>${probRain10 !== undefined && probRain10 > 0 ? Number(probRain10).toFixed(1) + '%' : '-'}</td>
                 `;
                 tbody.appendChild(tr);
             }

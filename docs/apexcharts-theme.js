@@ -9,18 +9,19 @@
 
 // ── SHARED PALETTE ──────────────────────────────────────────
 const TITAN_COLORS = {
-  cyan:    '#00d4ff',
-  cyanDim: '#00a3c4',
-  amber:   '#f5a623',
-  crimson: '#ff3b5c',
-  green:   '#00e676',
-  tempRed: '#ff6b6b',
-  dewBlue: '#74b9ff',
-  bg:      '#0a0e1a',
-  surface: '#0f1525',
-  border:  'rgba(255,255,255,0.06)',
-  text:    '#8a9ab8',
-  font:    'JetBrains Mono, monospace',
+  bg:       'transparent',
+  text:     '#475569',    // text-secondary
+  grid:     'rgba(0,0,0,0.08)',
+  
+  cyan:     '#0ea5e9',
+  cyanDim:  '#38bdf8',
+  amber:    '#f5a623',
+  crimson:  '#ff3b5c',
+  green:    '#00e676',
+  tempRed:  '#ef4444',
+  dewBlue:  '#3b82f6',
+  
+  font:     "'Inter', sans-serif"
 };
 
 // ── BASE THEME (shared by all charts) ───────────────────────
@@ -39,10 +40,10 @@ const TITAN_BASE = {
     },
   },
 
-  theme: { mode: 'dark' },
+  theme: { mode: 'light' },
 
   grid: {
-    borderColor:  'rgba(255,255,255,0.05)',
+    borderColor:  TITAN_COLORS.grid,
     strokeDashArray: 4,
     xaxis: { lines: { show: false } },  // Remove vertical gridlines
     yaxis: { lines: { show: true  } },  // Keep soft horizontal rules only
@@ -184,7 +185,7 @@ const CHART_TEMP_OPTIONS = {
   annotations: {
     yaxis: [{
       y:           0,
-      borderColor: 'rgba(255,255,255,0.08)',
+      borderColor: TITAN_COLORS.grid,
       borderWidth: 1,
       strokeDashArray: 2,
     }],
@@ -345,6 +346,45 @@ const CHART_RAIN_OPTIONS = {
   colors: [TITAN_COLORS.cyan],
 };
 
+// ── CHART 4: ATMOSPHERE ──────────────────────────────────────
+const CHART_ATMOS_OPTIONS = {
+  ...TITAN_BASE,
+  chart: {
+    ...TITAN_BASE.chart,
+    type: 'line',
+  },
+  colors: ['#8b5cf6', '#10b981'],
+  stroke: {
+    curve: 'smooth',
+    width: [2, 2],
+    dashArray: [0, 4]
+  },
+  yaxis: [
+    {
+      labels: {
+        style: { colors: "#8b5cf6", fontSize: '10px', fontFamily: TITAN_COLORS.font },
+        formatter: (v) => v ? `${Math.round(v)}m` : ''
+      },
+      tickAmount: 4
+    },
+    {
+      opposite: true,
+      labels: {
+        style: { colors: "#10b981", fontSize: '10px', fontFamily: TITAN_COLORS.font },
+        formatter: (v) => v ? `${v.toFixed(1)}hPa` : ''
+      },
+      tickAmount: 4
+    }
+  ],
+  tooltip: {
+    theme: 'dark',
+    y: [
+      { formatter: (v) => `${Math.round(v)} m` },
+      { formatter: (v) => `${v.toFixed(1)} hPa` }
+    ]
+  }
+};
+
 // ── CHART INIT HELPER ────────────────────────────────────────
 /**
  * Initialize all three meteogram charts.
@@ -385,5 +425,39 @@ function initTitanCharts(data) {
   );
   chartRain.render();
 
-  return { chartTemp, chartWind, chartRain };
+  // Atmos
+  const atmosSeries = [
+    { name: 'Visibility (m)', data: data.visData || [] },
+    { name: 'Pressure (hPa)', data: data.pressData || [] },
+  ];
+  
+  // Add weather conditions as annotations to the Atmos chart
+  const annotations = { points: [] };
+  if (data.condData) {
+      data.condData.forEach(pt => {
+          if (pt[1] && pt[1] !== 'Normal') {
+              let icon = '🌧️';
+              if (pt[1] === 'Heavy Rain') icon = '⛈️';
+              else if (pt[1] === 'Light Rain') icon = '🌦️';
+              
+              annotations.points.push({
+                  x: pt[0],
+                  y: 9999, // Place near top of visibility
+                  marker: { size: 0 },
+                  label: {
+                      text: icon,
+                      style: { fontSize: '16px', background: 'transparent' }
+                  }
+              });
+          }
+      });
+  }
+
+  const chartAtmos = new ApexCharts(
+    document.querySelector('#chart-atmos'),
+    { ...CHART_ATMOS_OPTIONS, series: atmosSeries, annotations: annotations }
+  );
+  chartAtmos.render();
+
+  return { chartTemp, chartWind, chartRain, chartAtmos };
 }

@@ -10,20 +10,20 @@
 /* ── DESIGN TOKENS ────────────────────────────────────────── */
 :root {
 
-  /* — Color: Base — */
-  --col-void:        #060912;   /* deepest background */
-  --col-base:        #0a0e1a;   /* page bg */
-  --col-surface-1:   #0f1525;   /* panel bg */
-  --col-surface-2:   #141b30;   /* card bg */
-  --col-surface-3:   #1a2240;   /* elevated card / hover */
-  --col-border:      rgba(255,255,255,0.06);
-  --col-border-2:    rgba(255,255,255,0.12);
+  /* — Color: Base (Light Mode) — */
+  --col-void:        #f1f5f9;   /* deepest background */
+  --col-base:        #f8fafc;   /* page bg */
+  --col-surface-1:   #ffffff;   /* panel bg */
+  --col-surface-2:   #ffffff;   /* card bg */
+  --col-surface-3:   #f1f5f9;   /* elevated card / hover */
+  --col-border:      rgba(0,0,0,0.08);
+  --col-border-2:    rgba(0,0,0,0.15);
 
   /* — Color: Accent Palette — */
-  --cyan:            #00d4ff;   /* primary accent — NEXRAD radar / EFIS MFD */
-  --cyan-dim:        #00a3c4;
-  --cyan-glow:       rgba(0, 212, 255, 0.18);
-  --cyan-glow-hard:  rgba(0, 212, 255, 0.35);
+  --cyan:            #0ea5e9;   /* primary accent */
+  --cyan-dim:        #38bdf8;
+  --cyan-glow:       rgba(14, 165, 233, 0.18);
+  --cyan-glow-hard:  rgba(14, 165, 233, 0.35);
 
   --amber:           #f5a623;   /* WARNING only */
   --amber-dim:       #c07d0f;
@@ -37,9 +37,9 @@
   --green-dim:       #00b259;
   --green-glow:      rgba(0, 230, 118, 0.15);
 
-  --text-primary:    #e8edf5;
-  --text-secondary:  #8a9ab8;
-  --text-muted:      #4a5878;
+  --text-primary:    #1e293b;
+  --text-secondary:  #475569;
+  --text-muted:      #94a3b8;
   --text-accent:     var(--cyan);
 
   /* — Typography — */
@@ -83,9 +83,9 @@
   --t-slow:   0.38s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* — Glow Shadows — */
-  --glow-cyan:   0 0 16px rgba(0,212,255,0.25), 0 0 40px rgba(0,212,255,0.08);
-  --glow-amber:  0 0 16px rgba(245,166,35,0.30), 0 0 40px rgba(245,166,35,0.10);
-  --glow-crit:   0 0 16px rgba(255,59,92,0.30),  0 0 40px rgba(255,59,92,0.10);
+  --glow-cyan:   0 4px 12px rgba(14, 165, 233, 0.2);
+  --glow-amber:  0 4px 12px rgba(245, 166, 35, 0.2);
+  --glow-crit:   0 4px 12px rgba(255, 59, 92, 0.2);
 }
 
 /* ── RESET ────────────────────────────────────────────────── */
@@ -128,7 +128,7 @@ body {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg,
-    rgba(0, 212, 255, 0.04) 0%,
+    rgba(14, 165, 233, 0.08) 0%,
     transparent 40%);
   pointer-events: none;
 }
@@ -357,22 +357,21 @@ body {
 /* ── BASE PANEL ───────────────────────────────────────────── */
 .panel {
   background: var(--col-surface-1);
-  border: 1px solid var(--col-border);
-  border-radius: var(--r-lg);
-  padding: var(--sp-5) var(--sp-6);
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: var(--r-xl);
+  padding: var(--sp-6);
   position: relative;
-  overflow: hidden;
-  transition: border-color var(--t-base), box-shadow var(--t-base);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.05);
 }
 
-/* Inner highlight for glassmorphism depth */
-.panel::before {
+/* Glass shine effect */
+.panel::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: linear-gradient(135deg,
-    rgba(255,255,255,0.035) 0%,
+    rgba(255,255,255,0.6) 0%,
     transparent 60%);
   pointer-events: none;
 }
@@ -627,7 +626,7 @@ thead th {
 
 tbody td {
   padding: var(--sp-3) var(--sp-4);
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.04);
   color: var(--text-primary);
   font-weight: 400;
   white-space: nowrap;
