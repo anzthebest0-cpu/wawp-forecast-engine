@@ -371,7 +371,13 @@ def _build_change_groups(
     MAX_BRIDGE_GAP = 2
 
     def _build_rain_signal() -> list[bool]:
-        base    = [r["rain"] >= _RC.CONSENSUS_THR for r in consensus_truth]
+        # Use rain >= CONSENSUS_THR OR prob_precip_10 >= 40.0
+        base = []
+        for r in consensus_truth:
+            has_rain = r.get("rain", 0) >= _RC.CONSENSUS_THR
+            has_prob = r.get("prob_precip_10", 0) >= 40.0
+            base.append(has_rain or has_prob)
+            
         bridged = base[:]
         i = 0
         while i < N:

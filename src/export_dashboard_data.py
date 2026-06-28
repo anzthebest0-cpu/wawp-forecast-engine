@@ -103,6 +103,37 @@ def export_all(db: ForecastDB, output_dir: str):
             global_weights[param] = {m: 1.0/len(MODELS) for m in MODELS}
             global_metrics[param] = {}
             
+    # --- RESTORE LEGACY INTELLIGENCE ---
+    # Since DB is new, we fallback to the trained weights and diurnal biases from New_CODE
+    legacy_guidance_path = r"D:\UJI_PERFORMA_MODEL\New_CODE\taf_guidance.json"
+    legacy_params = {}
+    if os.path.exists(legacy_guidance_path):
+        try:
+            with open(legacy_guidance_path, 'r', encoding='utf-8') as f:
+                lg = json.load(f)
+                legacy_params = lg.get('parameters', {})
+                
+            # Override global_weights if DB is sparse
+            param_legacy_map = {
+                "Temperature": "temperature",
+                "Dewpoint": "dewpoint",
+                "Pressure": "pressure",
+                "Rainfall": "rainfall",
+                "Wind Speed": "wind_speed",
+                "Wind Dir.": "wind_direction"
+            }
+            
+            for param, legacy_key in param_legacy_map.items():
+                if legacy_key in legacy_params and "optimal_weights" in legacy_params[legacy_key]:
+                    lw = legacy_params[legacy_key]["optimal_weights"]
+                    # If CRPS failed (weights are equal 1/7), override them!
+                    if all(abs(global_weights[param][m] - 1.0/len(MODELS)) < 0.01 for m in MODELS):
+                        new_w = {m: lw.get(m, 1.0/len(MODELS)) for m in MODELS}
+                        tot = sum(new_w.values())
+                        global_weights[param] = {m: v/tot for m,v in new_w.items()}
+        except Exception as e:
+            log.warning(f"Failed to load legacy guidance: {e}")
+            
     # 2. Extract Forecast Data & Generate Consensus
     # Wait, guidance_generator expects model_data in memory. 
     # run_pipeline currently passes nothing to export_all! We need to fetch the latest forecast.
@@ -168,6 +199,25 @@ def export_all(db: ForecastDB, output_dir: str):
         if param == "Rainfall":
             for m in p_df.columns:
                 p_df[m] = qm_mapper.transform_series(p_df[m], model=m)
+                
+        # Apply Diurnal Bias from legacy guidance
+        legacy_key = param_legacy_map.get(param) if 'param_legacy_map' in locals() else None
+        if legacy_key and legacy_key in legacy_params:
+            diurnal_bias = legacy_params[legacy_key].get("diurnal_bias", {})
+            if diurnal_bias:
+                for m in p_df.columns:
+                    m_bias = diurnal_bias.get(m, {})
+                    if m_bias:
+                        def apply_bias(row):
+                            if pd.isna(row): return row
+                            hr = str(row.name.hour)
+                            offset = float(m_bias.get(hr, 0.0))
+                            if param in ["Rainfall", "Wind Speed"]:
+                                return max(0.0, row - offset)
+                            elif param == "Wind Dir.":
+                                return (row - offset) % 360.0
+                            return row - offset
+                        p_df[m] = p_df[m].to_frame().apply(lambda x: apply_bias(x), axis=1)
                 
         if param == "Wind Dir.":
             consensus[param] = p_df.apply(lambda row: circular_weighted_mean(row.dropna().values, [weights[m] for m in row.dropna().index]) if not row.dropna().empty else np.nan, axis=1)
