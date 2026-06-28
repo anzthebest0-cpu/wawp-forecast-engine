@@ -130,7 +130,7 @@ def export_all(db: ForecastDB, output_dir: str):
     """
     df_fcst = pd.read_sql_query(query_fcst, db.conn)
     
-    model_data = {param: {} for param in ["Temperature", "Dewpoint", "Pressure", "Rainfall", "Wind Speed", "Wind Dir.", "Wind Gust"]}
+    model_data = {param: {} for param in ["Temperature", "Dewpoint", "Pressure", "Rainfall", "Wind Speed", "Wind Dir.", "Wind Gust", "Prob Precip 0.1mm", "Prob Precip 1.0mm", "Prob Precip 10.0mm"]}
     
     param_map = {
         "Temperature": "temperature",
@@ -139,7 +139,10 @@ def export_all(db: ForecastDB, output_dir: str):
         "Rainfall": "rain",
         "Wind Speed": "wind_speed",
         "Wind Dir.": "wind_dir",
-        "Wind Gust": "wind_gust"
+        "Wind Gust": "wind_gust",
+        "Prob Precip 0.1mm": "prob_precip_01",
+        "Prob Precip 1.0mm": "prob_precip_10",
+        "Prob Precip 10.0mm": "prob_precip_100"
     }
     
     for m in MODELS:

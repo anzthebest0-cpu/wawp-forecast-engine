@@ -288,7 +288,9 @@ function setupIndividualModels(modelsData, timeLabels) {
             const dew = modelsData['Dewpoint']?.[modelName]?.[dt];
             const windDir = modelsData['Wind Dir.']?.[modelName]?.[dt];
             const windSpd = modelsData['Wind Speed']?.[modelName]?.[dt];
+            const gust = modelsData['Wind Gust']?.[modelName]?.[dt];
             const rain = modelsData['Rainfall']?.[modelName]?.[dt];
+            const probRain = modelsData['Prob Precip 1.0mm']?.[modelName]?.[dt];
             
             if(temp !== undefined) {
                 const tr = document.createElement('tr');
@@ -298,7 +300,9 @@ function setupIndividualModels(modelsData, timeLabels) {
                     <td style="color: #3b82f6">${Number(dew).toFixed(1)}</td>
                     <td>${windDir !== undefined ? Number(windDir).toFixed(0) + '°' : '-'}</td>
                     <td style="color: #10b981">${windSpd !== undefined ? Number(windSpd).toFixed(1) : '-'}</td>
-                    <td style="color: #0ea5e9">${rain !== undefined ? Number(rain).toFixed(1) : '-'}</td>
+                    <td style="color: #f59e0b">${gust !== undefined ? Number(gust).toFixed(1) : '-'}</td>
+                    <td style="color: #6366f1">${rain !== undefined ? Number(rain).toFixed(1) : '-'}</td>
+                    <td style="color: #8b5cf6">${probRain !== undefined ? Number(probRain).toFixed(0) + '%' : '-'}</td>
                 `;
                 tbody.appendChild(tr);
             }

@@ -699,7 +699,7 @@ def _build_change_groups(
                                 "time_h_start": _ths,
                                 "time_h_end":   _the,
                                 "wx": wx_str, "vis": vis_code, "cloud": cloud_group,
-                                "dir": "", "spd": "",
+                                "dir": "", "spd": "", "gust": "",
                                 "_prio": prio, "_rain": total_rain,
                             })
                         # TEMPO does not change prevailing state
@@ -734,7 +734,7 @@ def _build_change_groups(
                                     "time_h_start": _ths,
                                     "time_h_end":   _the,
                                     "wx": wx_str, "vis": vis_code, "cloud": cloud_group,
-                                    "dir": "", "spd": "",
+                                    "dir": "", "spd": "", "gust": "",
                                     "_prio": 6, "_rain": total_rain,
                                 })
                         # PROB40 TEMPO does not change prevailing state
@@ -752,7 +752,7 @@ def _build_change_groups(
                                 "time_h_start": _ths,
                                 "time_h_end":   _the,
                                 "wx": wx_str, "vis": vis_code, "cloud": cloud_group,
-                                "dir": "", "spd": "",
+                                "dir": "", "spd": "", "gust": "",
                                 "_prio": 6, "_rain": total_rain,
                             })
                     # PROB TEMPO does not change prevailing state
@@ -770,7 +770,7 @@ def _build_change_groups(
                                 "time_h_start": _ths,
                                 "time_h_end":   _the,
                                 "wx": wx_str, "vis": vis_code, "cloud": cloud_group,
-                                "dir": "", "spd": "",
+                                "dir": "", "spd": "", "gust": "",
                                 "_prio": 5, "_rain": total_rain,
                             })
                     # PROB TEMPO does not change prevailing state
@@ -806,7 +806,7 @@ def _build_change_groups(
                         "time_h_start": (start_hour + ts) % 24,
                         "time_h_end": (start_hour + te) % 24,
                         "wx": "NSW", "vis": "9999", "cloud": "SCT018",
-                        "dir": "", "spd": "",
+                        "dir": "", "spd": "", "gust": "",
                         "_prio": 8, "_rain": 0.0,
                     })
                     prev_rain = False
@@ -838,7 +838,7 @@ def _build_change_groups(
                         "time_h_start": (start_hour + start) % 24,
                         "time_h_end":   (start_hour + t_end) % 24,
                         "wx": "NSW", "vis": "9999", "cloud": "SCT018",
-                        "dir": "", "spd": "",
+                        "dir": "", "spd": "", "gust": "",
                         "_prio": 5, "_rain": 0.0,
                     })
                     # TEMPO does not change prevailing state
@@ -892,6 +892,7 @@ def _build_change_groups(
 
         new_dir = curr["dir"]
         new_spd = str(curr["spd"]).zfill(2)
+        new_gst = str(int(curr.get("gust", 0))).zfill(2)
 
         if fraction >= 0.5:
             # Permanent wind change -> BECMG
@@ -912,7 +913,7 @@ def _build_change_groups(
                 "time_h_start": (start_hour + ts) % 24,
                 "time_h_end":   (start_hour + te) % 24,
                 "wx": "", "vis": "", "cloud": "",
-                "dir": new_dir, "spd": new_spd,
+                "dir": new_dir, "spd": new_spd, "gust": new_gst,
                 "_prio": 9, "_rain": 0.0,
             })
             prev_spd     = curr["spd"]
@@ -945,7 +946,7 @@ def _build_change_groups(
                         "time_h_start": (start_hour + ts) % 24,
                         "time_h_end":   (start_hour + te) % 24,
                         "wx": "", "vis": "", "cloud": "",
-                        "dir": new_dir, "spd": new_spd,
+                        "dir": new_dir, "spd": new_spd, "gust": new_gst,
                         "_prio": 8, "_rain": 0.0,
                     })
                     prev_spd     = curr["spd"]
@@ -961,7 +962,7 @@ def _build_change_groups(
                 "time_h_start": (start_hour + i) % 24,
                 "time_h_end":   (start_hour + t_end) % 24,
                 "wx": "", "vis": "", "cloud": "",
-                "dir": new_dir, "spd": new_spd,
+                "dir": new_dir, "spd": new_spd, "gust": new_gst,
                 "_prio": 4, "_rain": 0.0,
             })
             i = end_h + 1
@@ -990,6 +991,7 @@ def _build_change_groups(
             if g.get("cloud"): last["cloud"] = g["cloud"]
             if g.get("dir"):   last["dir"]   = g["dir"]
             if g.get("spd"):   last["spd"]   = g["spd"]
+            if g.get("gust"):  last["gust"]  = g["gust"]
             last["_prio"]       = max(last["_prio"],  g["_prio"])
             last["_rain"]       = max(last["_rain"],  g["_rain"])
             last["time_str"]    = make_time_str(_hs(last), new_end)

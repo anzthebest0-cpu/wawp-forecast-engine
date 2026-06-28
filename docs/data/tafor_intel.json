@@ -6,6 +6,7 @@
     "base_group": {
       "dir": "094",
       "spd": "06",
+      "gust": "10",
       "vis": "3120",
       "wx": "",
       "cloud": "BKN012",
@@ -26,6 +27,7 @@
     "base_group": {
       "dir": "088",
       "spd": "04",
+      "gust": "07",
       "vis": "3120",
       "wx": "",
       "cloud": "BKN010",
@@ -46,6 +48,7 @@
     "base_group": {
       "dir": "134",
       "spd": "04",
+      "gust": "10",
       "vis": "7999",
       "wx": "",
       "cloud": "BKN036",
@@ -66,6 +69,7 @@
     "base_group": {
       "dir": "081",
       "spd": "06",
+      "gust": "11",
       "vis": "9999",
       "wx": "",
       "cloud": "BKN022",
@@ -86,6 +90,7 @@
     "base_group": {
       "dir": "095",
       "spd": "02",
+      "gust": "07",
       "vis": "8499",
       "wx": "",
       "cloud": "BKN031",

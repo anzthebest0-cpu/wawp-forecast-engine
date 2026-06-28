@@ -13,7 +13,16 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
                   f"{v_end.day:02d}{v_end.hour:02d}")
     d = str(bg.get('dir', '000')).upper()
     s = str(bg.get('spd', '00')).zfill(2)
-    wind = '00000KT' if s == '00' else f"{'VRB' if d=='VRB' else d.zfill(3)}{s}KT"
+    g = str(bg.get('gust', '00')).zfill(2)
+    
+    if s == '00':
+        wind = '00000KT'
+    else:
+        wind_dir = 'VRB' if d == 'VRB' else d.zfill(3)
+        if int(g) >= int(s) + 10:
+            wind = f"{wind_dir}{s}G{g}KT"
+        else:
+            wind = f"{wind_dir}{s}KT"
     vis   = bg.get('vis',   '9999') or '9999'
     wx    = (bg.get('wx',   '') or '').upper()
     cloud = (bg.get('cloud','SCT018') or 'SCT018').upper()
@@ -29,12 +38,19 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
         ts   = (t.get('time_str','')or '').upper()
         tdir = (t.get('dir','')     or '').upper()
         tspd = str(t.get('spd','')  or '')
+        tgst = str(t.get('gust','') or '')
         tvis = (t.get('vis','')     or '')
         twx  = (t.get('wx','')      or '').upper()
         tcld = [c.upper() for c in (t.get('clouds',[]) or []) if c]
         
-        wp   = (f"{'VRB' if tdir=='VRB' else tdir.zfill(3)}{tspd.zfill(2)}KT"
-                if tdir and tspd else '')
+        if not tdir or not tspd:
+            wp = ''
+        else:
+            t_wind_dir = 'VRB' if tdir == 'VRB' else tdir.zfill(3)
+            if tgst and int(tgst) >= int(tspd) + 10:
+                wp = f"{t_wind_dir}{tspd.zfill(2)}G{tgst.zfill(2)}KT"
+            else:
+                wp = f"{t_wind_dir}{tspd.zfill(2)}KT"
         
         line = f'{gt} {ts}'.strip()
         extras = [x for x in [wp, tvis, twx] + tcld if x]
@@ -66,6 +82,8 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
             "relative_humidity_pct": row["Humidity"] if pd.notna(row.get("Humidity")) else 80.0,
             "rain": row["Rain"] if pd.notna(row.get("Rain")) else 0.0,
             "spd": row["Wind"] if pd.notna(row.get("Wind")) else 0.0,
+            "gust": row["Wind Gust"] if "Wind Gust" in row and pd.notna(row.get("Wind Gust")) else 0.0,
+            "prob_precip_10": row["Prob Precip 1.0mm"] if "Prob Precip 1.0mm" in row and pd.notna(row.get("Prob Precip 1.0mm")) else 0.0,
             "Condition": row["Condition"] if pd.notna(row.get("Condition")) else "Clear"
         }
         
@@ -78,6 +96,8 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
             "Wind Dir.": row["Wind Dir."],
             "Condition": hour_data["Condition"],
             "spd": hour_data["spd"],
+            "gust": hour_data["gust"],
+            "prob_precip_10": hour_data["prob_precip_10"],
             "dir_num": row["Wind Dir."],
             "rain": hour_data["rain"],
             "temp_c": hour_data["temp_c"],
@@ -148,7 +168,8 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
     first_row = consensus_truth[0]
     best_guess = {
         'dir': f"{int(first_row['Wind Dir.']):03d}" if pd.notna(first_row['Wind Dir.']) else "000",
-        'spd': f"{int(first_row['Wind']):02d}" if pd.notna(first_row['Wind']) else "00",
+        'spd': f"{int(first_row['spd']):02d}" if pd.notna(first_row.get('spd')) else "00",
+        'gust': f"{int(first_row['gust']):02d}" if pd.notna(first_row.get('gust')) else "00",
         'vis': first_row['vis'],
         'wx': '',
         'cloud': first_row['cloud'],

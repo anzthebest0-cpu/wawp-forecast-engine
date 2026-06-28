@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at": "2026-06-28 09:41:24",
+    "generated_at": "2026-06-28 09:39:24",
     "version": "v200",
     "location": "Bandara_Sangia_Ni_Bandera"
   },
@@ -14,6 +14,9 @@
       "Wind": 2.866666666666667,
       "Wind Dir.": 95.74698572828305,
       "Wind Gust": 7.733333333333333,
+      "Prob Precip 0.1mm": 67.1,
+      "Prob Precip 1.0mm": 40.5,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -25,6 +28,9 @@
       "Wind": 5.2,
       "Wind Dir.": 79.13596462971499,
       "Wind Gust": 9.533333333333333,
+      "Prob Precip 0.1mm": 61.3,
+      "Prob Precip 1.0mm": 39.3,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -36,6 +42,9 @@
       "Wind": 6.050000000000001,
       "Wind Dir.": 98.59011576561694,
       "Wind Gust": 10.649999999999999,
+      "Prob Precip 0.1mm": 55.5,
+      "Prob Precip 1.0mm": 38.1,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -47,6 +56,9 @@
       "Wind": 6.0600000000000005,
       "Wind Dir.": 81.4569829157383,
       "Wind Gust": 11.020000000000001,
+      "Prob Precip 0.1mm": 39.5,
+      "Prob Precip 1.0mm": 24.560000000000006,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -58,6 +70,9 @@
       "Wind": 5.960000000000001,
       "Wind Dir.": 87.63028239844746,
       "Wind Gust": 10.8,
+      "Prob Precip 0.1mm": 25.660000000000004,
+      "Prob Precip 1.0mm": 12.3,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -69,6 +84,9 @@
       "Wind": 6.5428571428571445,
       "Wind Dir.": 100.60683376744049,
       "Wind Gust": 11.02857142857143,
+      "Prob Precip 0.1mm": 11.657142857142857,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -80,6 +98,9 @@
       "Wind": 7.02,
       "Wind Dir.": 97.39090081776521,
       "Wind Gust": 12.100000000000001,
+      "Prob Precip 0.1mm": 7.920000000000002,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -91,6 +112,9 @@
       "Wind": 6.46,
       "Wind Dir.": 98.21254761968414,
       "Wind Gust": 11.580000000000002,
+      "Prob Precip 0.1mm": 3.940000000000001,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -102,6 +126,9 @@
       "Wind": 6.32857142857143,
       "Wind Dir.": 99.32824250896367,
       "Wind Gust": 10.857142857142856,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -113,6 +140,9 @@
       "Wind": 6.160000000000001,
       "Wind Dir.": 94.81412080180513,
       "Wind Gust": 10.46,
+      "Prob Precip 0.1mm": 0.12000000000000002,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -124,6 +154,9 @@
       "Wind": 5.84,
       "Wind Dir.": 95.20310621830473,
       "Wind Gust": 10.16,
+      "Prob Precip 0.1mm": 0.30000000000000004,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -135,6 +168,9 @@
       "Wind": 5.642857142857144,
       "Wind Dir.": 96.74179682862177,
       "Wind Gust": 9.414285714285716,
+      "Prob Precip 0.1mm": 0.4000000000000001,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -146,6 +182,9 @@
       "Wind": 5.000000000000001,
       "Wind Dir.": 88.03123314380844,
       "Wind Gust": 8.96,
+      "Prob Precip 0.1mm": 0.6000000000000001,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -157,6 +196,9 @@
       "Wind": 4.880000000000001,
       "Wind Dir.": 80.192620382404,
       "Wind Gust": 8.32,
+      "Prob Precip 0.1mm": 0.7800000000000001,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -168,6 +210,9 @@
       "Wind": 5.085714285714287,
       "Wind Dir.": 84.46553518752569,
       "Wind Gust": 8.414285714285715,
+      "Prob Precip 0.1mm": 0.9142857142857145,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -179,6 +224,9 @@
       "Wind": 4.44,
       "Wind Dir.": 88.40050546099339,
       "Wind Gust": 7.68,
+      "Prob Precip 0.1mm": 0.6000000000000001,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -190,6 +238,9 @@
       "Wind": 4.440000000000001,
       "Wind Dir.": 106.17152423817389,
       "Wind Gust": 8.08,
+      "Prob Precip 0.1mm": 0.30000000000000004,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -199,8 +250,11 @@
       "Pressure": 1012.3428571428573,
       "Rain": 0.0,
       "Wind": 5.7857142857142865,
-      "Wind Dir.": 102.77755693643789,
+      "Wind Dir.": 102.7775569364379,
       "Wind Gust": 10.414285714285713,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -212,6 +266,9 @@
       "Wind": 6.279999999999999,
       "Wind Dir.": 102.78789732705147,
       "Wind Gust": 11.98,
+      "Prob Precip 0.1mm": 12.48,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -221,8 +278,11 @@
       "Pressure": 1011.9200000000001,
       "Rain": 0.0,
       "Wind": 5.620000000000001,
-      "Wind Dir.": 98.75739016747018,
+      "Wind Dir.": 98.75739016747019,
       "Wind Gust": 11.66,
+      "Prob Precip 0.1mm": 24.98,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -234,6 +294,9 @@
       "Wind": 4.1000000000000005,
       "Wind Dir.": 107.27001618304159,
       "Wind Gust": 9.885714285714288,
+      "Prob Precip 0.1mm": 37.51428571428572,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -245,6 +308,9 @@
       "Wind": 4.420000000000001,
       "Wind Dir.": 134.76415587151345,
       "Wind Gust": 10.780000000000001,
+      "Prob Precip 0.1mm": 41.82000000000001,
+      "Prob Precip 1.0mm": 10.260000000000002,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -256,6 +322,9 @@
       "Wind": 5.400000000000001,
       "Wind Dir.": 138.49273478729654,
       "Wind Gust": 10.5,
+      "Prob Precip 0.1mm": 46.14,
+      "Prob Precip 1.0mm": 20.58,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -267,6 +336,9 @@
       "Wind": 5.942857142857144,
       "Wind Dir.": 199.37057927079974,
       "Wind Gust": 9.871428571428572,
+      "Prob Precip 0.1mm": 50.328571428571436,
+      "Prob Precip 1.0mm": 30.657142857142862,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -278,6 +350,9 @@
       "Wind": 5.2,
       "Wind Dir.": 148.45799884316045,
       "Wind Gust": 9.620000000000001,
+      "Prob Precip 0.1mm": 58.300000000000004,
+      "Prob Precip 1.0mm": 28.200000000000003,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -289,6 +364,9 @@
       "Wind": 3.1400000000000006,
       "Wind Dir.": 92.74178115800353,
       "Wind Gust": 8.120000000000001,
+      "Prob Precip 0.1mm": 66.08000000000001,
+      "Prob Precip 1.0mm": 25.560000000000002,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -300,6 +378,9 @@
       "Wind": 3.871428571428572,
       "Wind Dir.": 73.90092177080153,
       "Wind Gust": 8.414285714285715,
+      "Prob Precip 0.1mm": 73.80000000000001,
+      "Prob Precip 1.0mm": 22.771428571428576,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -311,6 +392,9 @@
       "Wind": 5.6000000000000005,
       "Wind Dir.": 76.14290684394993,
       "Wind Gust": 9.620000000000001,
+      "Prob Precip 0.1mm": 62.84000000000001,
+      "Prob Precip 1.0mm": 15.340000000000002,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -322,6 +406,9 @@
       "Wind": 5.720000000000001,
       "Wind Dir.": 86.11618174202842,
       "Wind Gust": 9.700000000000001,
+      "Prob Precip 0.1mm": 51.900000000000006,
+      "Prob Precip 1.0mm": 7.62,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -333,6 +420,9 @@
       "Wind": 5.7857142857142865,
       "Wind Dir.": 99.94599637275614,
       "Wind Gust": 9.871428571428574,
+      "Prob Precip 0.1mm": 40.814285714285724,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -344,6 +434,9 @@
       "Wind": 6.900000000000001,
       "Wind Dir.": 96.7873509360853,
       "Wind Gust": 11.540000000000003,
+      "Prob Precip 0.1mm": 29.400000000000006,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -355,6 +448,9 @@
       "Wind": 6.48,
       "Wind Dir.": 94.39576189238265,
       "Wind Gust": 11.020000000000001,
+      "Prob Precip 0.1mm": 18.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -366,6 +462,9 @@
       "Wind": 6.32857142857143,
       "Wind Dir.": 91.85915356083136,
       "Wind Gust": 10.014285714285714,
+      "Prob Precip 0.1mm": 6.500000000000001,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -377,6 +476,9 @@
       "Wind": 5.960000000000001,
       "Wind Dir.": 96.41750720644066,
       "Wind Gust": 9.94,
+      "Prob Precip 0.1mm": 5.04,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -388,6 +490,9 @@
       "Wind": 6.0600000000000005,
       "Wind Dir.": 98.42953471095718,
       "Wind Gust": 10.159999999999998,
+      "Prob Precip 0.1mm": 3.4800000000000004,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -399,6 +504,9 @@
       "Wind": 6.400000000000002,
       "Wind Dir.": 99.88422027977123,
       "Wind Gust": 10.257142857142858,
+      "Prob Precip 0.1mm": 1.885714285714286,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -410,6 +518,9 @@
       "Wind": 5.94,
       "Wind Dir.": 97.87180770877026,
       "Wind Gust": 10.06,
+      "Prob Precip 0.1mm": 1.28,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -421,6 +532,9 @@
       "Wind": 5.740000000000001,
       "Wind Dir.": 94.02484778729452,
       "Wind Gust": 9.7,
+      "Prob Precip 0.1mm": 0.64,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -432,6 +546,9 @@
       "Wind": 5.800000000000002,
       "Wind Dir.": 94.44810713921355,
       "Wind Gust": 9.185714285714287,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -443,6 +560,9 @@
       "Wind": 5.520000000000001,
       "Wind Dir.": 93.02057961699487,
       "Wind Gust": 8.86,
+      "Prob Precip 0.1mm": 0.4800000000000001,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -454,6 +574,9 @@
       "Wind": 5.180000000000001,
       "Wind Dir.": 93.22780937578861,
       "Wind Gust": 8.740000000000002,
+      "Prob Precip 0.1mm": 0.9600000000000002,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -465,6 +588,9 @@
       "Wind": 5.714285714285715,
       "Wind Dir.": 97.73840335624992,
       "Wind Gust": 10.8,
+      "Prob Precip 0.1mm": 1.4571428571428573,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -476,6 +602,9 @@
       "Wind": 6.920000000000001,
       "Wind Dir.": 95.58894560448647,
       "Wind Gust": 12.740000000000002,
+      "Prob Precip 0.1mm": 4.760000000000001,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -487,6 +616,9 @@
       "Wind": 6.92,
       "Wind Dir.": 95.17090752106654,
       "Wind Gust": 12.640000000000002,
+      "Prob Precip 0.1mm": 8.120000000000003,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -498,6 +630,9 @@
       "Wind": 5.257142857142858,
       "Wind Dir.": 101.86026240792194,
       "Wind Gust": 10.328571428571431,
+      "Prob Precip 0.1mm": 11.485714285714286,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -509,6 +644,9 @@
       "Wind": 4.960000000000001,
       "Wind Dir.": 113.56218487053852,
       "Wind Gust": 11.440000000000001,
+      "Prob Precip 0.1mm": 23.42,
+      "Prob Precip 1.0mm": 2.9,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -520,6 +658,9 @@
       "Wind": 4.1,
       "Wind Dir.": 138.92805742091076,
       "Wind Gust": 10.56,
+      "Prob Precip 0.1mm": 35.4,
+      "Prob Precip 1.0mm": 5.7,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -531,6 +672,9 @@
       "Wind": 4.2285714285714295,
       "Wind Dir.": 172.40931408640782,
       "Wind Gust": 8.857142857142858,
+      "Prob Precip 0.1mm": 47.228571428571435,
+      "Prob Precip 1.0mm": 8.514285714285716,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -542,6 +686,9 @@
       "Wind": 3.775,
       "Wind Dir.": 136.72703893713486,
       "Wind Gust": 7.699999999999999,
+      "Prob Precip 0.1mm": 47.95,
+      "Prob Precip 1.0mm": 12.350000000000001,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -553,6 +700,9 @@
       "Wind": 2.1750000000000003,
       "Wind Dir.": 205.55029270043124,
       "Wind Gust": 6.4750000000000005,
+      "Prob Precip 0.1mm": 49.099999999999994,
+      "Prob Precip 1.0mm": 16.5,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -564,6 +714,9 @@
       "Wind": 2.642857142857143,
       "Wind Dir.": 254.19041976177402,
       "Wind Gust": 7.014285714285715,
+      "Prob Precip 0.1mm": 50.41428571428572,
+      "Prob Precip 1.0mm": 21.228571428571428,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -575,6 +728,9 @@
       "Wind": 2.975,
       "Wind Dir.": 44.20847034622288,
       "Wind Gust": 6.500000000000001,
+      "Prob Precip 0.1mm": 43.349999999999994,
+      "Prob Precip 1.0mm": 13.700000000000001,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -586,6 +742,9 @@
       "Wind": 4.875000000000001,
       "Wind Dir.": 58.748472333820494,
       "Wind Gust": 7.824999999999999,
+      "Prob Precip 0.1mm": 36.4,
+      "Prob Precip 1.0mm": 6.8500000000000005,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -597,6 +756,9 @@
       "Wind": 4.871428571428572,
       "Wind Dir.": 86.24552583593477,
       "Wind Gust": 8.471428571428572,
+      "Prob Precip 0.1mm": 30.27142857142858,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -608,6 +770,9 @@
       "Wind": 6.2250000000000005,
       "Wind Dir.": 91.00114411557276,
       "Wind Gust": 9.725,
+      "Prob Precip 0.1mm": 19.65,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -619,6 +784,9 @@
       "Wind": 5.8,
       "Wind Dir.": 94.50026688582477,
       "Wind Gust": 9.475,
+      "Prob Precip 0.1mm": 9.8,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -630,6 +798,9 @@
       "Wind": 5.228571428571429,
       "Wind Dir.": 91.47998682564814,
       "Wind Gust": 8.500000000000002,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -639,8 +810,11 @@
       "Pressure": 1011.4999999999999,
       "Rain": 0.0,
       "Wind": 5.425000000000001,
-      "Wind Dir.": 103.74762704395243,
+      "Wind Dir.": 103.74762704395242,
       "Wind Gust": 8.775,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -652,6 +826,9 @@
       "Wind": 5.675,
       "Wind Dir.": 108.23174342767523,
       "Wind Gust": 8.774999999999999,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -663,6 +840,9 @@
       "Wind": 5.642857142857144,
       "Wind Dir.": 101.70740695866988,
       "Wind Gust": 8.32857142857143,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -674,6 +854,9 @@
       "Wind": 6.075,
       "Wind Dir.": 108.51933456179302,
       "Wind Gust": 9.049999999999999,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -685,6 +868,9 @@
       "Wind": 5.95,
       "Wind Dir.": 105.51743256474496,
       "Wind Gust": 8.8,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -696,6 +882,9 @@
       "Wind": 5.557142857142858,
       "Wind Dir.": 97.31771033111167,
       "Wind Gust": 8.171428571428573,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -707,6 +896,9 @@
       "Wind": 5.525,
       "Wind Dir.": 100.96337722801515,
       "Wind Gust": 8.375,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -718,6 +910,9 @@
       "Wind": 5.0,
       "Wind Dir.": 97.98388510354759,
       "Wind Gust": 8.225000000000001,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -729,6 +924,9 @@
       "Wind": 5.171428571428573,
       "Wind Dir.": 92.9965858774816,
       "Wind Gust": 8.928571428571429,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -740,6 +938,9 @@
       "Wind": 5.275,
       "Wind Dir.": 91.44440072265118,
       "Wind Gust": 9.875,
+      "Prob Precip 0.1mm": 0.25,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -751,6 +952,9 @@
       "Wind": 4.325,
       "Wind Dir.": 79.24178060151456,
       "Wind Gust": 9.325,
+      "Prob Precip 0.1mm": 0.5,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -762,6 +966,9 @@
       "Wind": 3.3000000000000007,
       "Wind Dir.": 86.62391693989414,
       "Wind Gust": 9.02857142857143,
+      "Prob Precip 0.1mm": 0.8142857142857144,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -773,6 +980,9 @@
       "Wind": 3.8999999999999995,
       "Wind Dir.": 215.10343387396688,
       "Wind Gust": 9.025,
+      "Prob Precip 0.1mm": 14.0,
+      "Prob Precip 1.0mm": 2.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -784,6 +994,9 @@
       "Wind": 4.300000000000001,
       "Wind Dir.": 199.86786322224273,
       "Wind Gust": 8.649999999999999,
+      "Prob Precip 0.1mm": 27.249999999999996,
+      "Prob Precip 1.0mm": 4.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -795,6 +1008,9 @@
       "Wind": 6.014285714285716,
       "Wind Dir.": 215.9318778215237,
       "Wind Gust": 10.185714285714287,
+      "Prob Precip 0.1mm": 40.84285714285715,
+      "Prob Precip 1.0mm": 6.32857142857143,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -806,6 +1022,9 @@
       "Wind": 9.366666666666667,
       "Wind Dir.": 243.98986819398806,
       "Wind Gust": 11.9,
+      "Prob Precip 0.1mm": 46.93333333333334,
+      "Prob Precip 1.0mm": 13.633333333333335,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -817,6 +1036,9 @@
       "Wind": 7.8999999999999995,
       "Wind Dir.": 247.32654175963046,
       "Wind Gust": 10.799999999999999,
+      "Prob Precip 0.1mm": 52.666666666666664,
+      "Prob Precip 1.0mm": 20.366666666666667,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -828,6 +1050,9 @@
       "Wind": 4.871428571428572,
       "Wind Dir.": 247.31179469242466,
       "Wind Gust": 9.385714285714288,
+      "Prob Precip 0.1mm": 56.94285714285716,
+      "Prob Precip 1.0mm": 26.085714285714293,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -839,6 +1064,9 @@
       "Wind": 4.133333333333334,
       "Wind Dir.": 247.89129923217155,
       "Wind Gust": 7.733333333333333,
+      "Prob Precip 0.1mm": 52.36666666666666,
+      "Prob Precip 1.0mm": 18.03333333333333,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -850,6 +1078,9 @@
       "Wind": 3.966666666666667,
       "Wind Dir.": 276.2496502497487,
       "Wind Gust": 6.833333333333333,
+      "Prob Precip 0.1mm": 46.26666666666667,
+      "Prob Precip 1.0mm": 9.033333333333333,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -861,6 +1092,9 @@
       "Wind": 3.6142857142857148,
       "Wind Dir.": 83.32244246365018,
       "Wind Gust": 6.242857142857144,
+      "Prob Precip 0.1mm": 38.67142857142858,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -872,6 +1106,9 @@
       "Wind": 6.25,
       "Wind Dir.": 65.5,
       "Wind Gust": 8.95,
+      "Prob Precip 0.1mm": 32.1,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -881,8 +1118,11 @@
       "Pressure": 1011.6500000000001,
       "Rain": 0.0,
       "Wind": 5.949999999999999,
-      "Wind Dir.": 88.49999999999999,
+      "Wind Dir.": 88.5,
       "Wind Gust": 9.200000000000001,
+      "Prob Precip 0.1mm": 18.4,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -894,6 +1134,9 @@
       "Wind": 5.000000000000001,
       "Wind Dir.": 94.99103888477667,
       "Wind Gust": 7.871428571428573,
+      "Prob Precip 0.1mm": 7.285714285714287,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -905,6 +1148,9 @@
       "Wind": 7.849999999999999,
       "Wind Dir.": 102.50000000000001,
       "Wind Gust": 12.15,
+      "Prob Precip 0.1mm": 4.8,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -916,6 +1162,9 @@
       "Wind": 7.800000000000001,
       "Wind Dir.": 106.0,
       "Wind Gust": 11.350000000000001,
+      "Prob Precip 0.1mm": 4.8,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -927,6 +1176,9 @@
       "Wind": 5.457142857142858,
       "Wind Dir.": 100.86901770896289,
       "Wind Gust": 8.414285714285716,
+      "Prob Precip 0.1mm": 4.242857142857143,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -938,6 +1190,9 @@
       "Wind": 7.6,
       "Wind Dir.": 97.0,
       "Wind Gust": 9.7,
+      "Prob Precip 0.1mm": 3.2,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -949,6 +1204,9 @@
       "Wind": 7.0,
       "Wind Dir.": 88.0,
       "Wind Gust": 9.2,
+      "Prob Precip 0.1mm": 1.6,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -960,6 +1218,9 @@
       "Wind": 4.928571428571429,
       "Wind Dir.": 94.16431819959743,
       "Wind Gust": 7.72857142857143,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -971,6 +1232,9 @@
       "Wind": 5.9,
       "Wind Dir.": 80.0,
       "Wind Gust": 7.0,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -982,6 +1246,9 @@
       "Wind": 5.9,
       "Wind Dir.": 83.0,
       "Wind Gust": 7.0,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -993,6 +1260,9 @@
       "Wind": 4.942857142857143,
       "Wind Dir.": 90.59882597374576,
       "Wind Gust": 9.171428571428573,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1004,6 +1274,9 @@
       "Wind": 2.7,
       "Wind Dir.": 77.0,
       "Wind Gust": 4.9,
+      "Prob Precip 0.1mm": 9.2,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1015,6 +1288,9 @@
       "Wind": 1.1,
       "Wind Dir.": 343.0,
       "Wind Gust": 3.8,
+      "Prob Precip 0.1mm": 18.4,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1026,6 +1302,9 @@
       "Wind": 4.400000000000001,
       "Wind Dir.": 94.21143425072465,
       "Wind Gust": 9.62857142857143,
+      "Prob Precip 0.1mm": 22.028571428571432,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1037,6 +1316,9 @@
       "Wind": 7.6,
       "Wind Dir.": 270.0,
       "Wind Gust": 4.9,
+      "Prob Precip 0.1mm": 36.6,
+      "Prob Precip 1.0mm": 12.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1048,6 +1330,9 @@
       "Wind": 10.3,
       "Wind Dir.": 250.0,
       "Wind Gust": 5.9,
+      "Prob Precip 0.1mm": 45.7,
+      "Prob Precip 1.0mm": 23.9,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1059,6 +1344,9 @@
       "Wind": 5.857142857142858,
       "Wind Dir.": 220.97469378602412,
       "Wind Gust": 10.271428571428572,
+      "Prob Precip 0.1mm": 50.41428571428573,
+      "Prob Precip 1.0mm": 31.142857142857146,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1070,6 +1358,9 @@
       "Wind": 10.8,
       "Wind Dir.": 212.0,
       "Wind Gust": 9.2,
+      "Prob Precip 0.1mm": 60.4,
+      "Prob Precip 1.0mm": 36.7,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1079,8 +1370,11 @@
       "Pressure": 1009.0,
       "Rain": 0.0,
       "Wind": 9.2,
-      "Wind Dir.": 211.0,
+      "Wind Dir.": 210.99999999999997,
       "Wind Gust": 8.1,
+      "Prob Precip 0.1mm": 66.2,
+      "Prob Precip 1.0mm": 37.5,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1092,6 +1386,9 @@
       "Wind": 4.485714285714287,
       "Wind Dir.": 210.43430241905486,
       "Wind Gust": 9.942857142857145,
+      "Prob Precip 0.1mm": 67.41428571428573,
+      "Prob Precip 1.0mm": 36.28571428571429,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1103,6 +1400,9 @@
       "Wind": 4.3,
       "Wind Dir.": 208.99999999999997,
       "Wind Gust": 3.8,
+      "Prob Precip 0.1mm": 62.6,
+      "Prob Precip 1.0mm": 25.5,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1114,6 +1414,9 @@
       "Wind": 1.1,
       "Wind Dir.": 113.0,
       "Wind Gust": 2.7,
+      "Prob Precip 0.1mm": 53.2,
+      "Prob Precip 1.0mm": 12.8,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1125,6 +1428,9 @@
       "Wind": 4.000000000000001,
       "Wind Dir.": 87.02717152523688,
       "Wind Gust": 6.714285714285717,
+      "Prob Precip 0.1mm": 37.714285714285715,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1136,6 +1442,9 @@
       "Wind": 7.0,
       "Wind Dir.": 76.0,
       "Wind Gust": 9.2,
+      "Prob Precip 0.1mm": 29.199999999999996,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1147,6 +1456,9 @@
       "Wind": 7.0,
       "Wind Dir.": 98.0,
       "Wind Gust": 9.2,
+      "Prob Precip 0.1mm": 14.599999999999998,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1158,6 +1470,9 @@
       "Wind": 5.171428571428572,
       "Wind Dir.": 95.94419502755032,
       "Wind Gust": 8.171428571428573,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1169,6 +1484,9 @@
       "Wind": 8.1,
       "Wind Dir.": 95.0,
       "Wind Gust": 10.8,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1180,6 +1498,9 @@
       "Wind": 8.1,
       "Wind Dir.": 97.0,
       "Wind Gust": 11.3,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1191,6 +1512,9 @@
       "Wind": 5.328571428571429,
       "Wind Dir.": 99.09755410109308,
       "Wind Gust": 8.171428571428573,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1202,6 +1526,9 @@
       "Wind": 7.0,
       "Wind Dir.": 92.0,
       "Wind Gust": 9.7,
+      "Prob Precip 0.1mm": 1.2,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1213,6 +1540,9 @@
       "Wind": 6.5,
       "Wind Dir.": 90.0,
       "Wind Gust": 8.1,
+      "Prob Precip 0.1mm": 2.3,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1224,6 +1554,9 @@
       "Wind": 4.614285714285716,
       "Wind Dir.": 96.40397105838262,
       "Wind Gust": 7.314285714285716,
+      "Prob Precip 0.1mm": 2.771428571428572,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1235,6 +1568,9 @@
       "Wind": 5.4,
       "Wind Dir.": 93.0,
       "Wind Gust": 6.5,
+      "Prob Precip 0.1mm": 3.5,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1246,6 +1582,9 @@
       "Wind": 4.9,
       "Wind Dir.": 89.0,
       "Wind Gust": 5.9,
+      "Prob Precip 0.1mm": 3.5,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1257,6 +1596,9 @@
       "Wind": 4.071428571428572,
       "Wind Dir.": 93.14663018207409,
       "Wind Gust": 7.414285714285716,
+      "Prob Precip 0.1mm": 2.771428571428572,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1268,6 +1610,9 @@
       "Wind": 2.3000000000000007,
       "Wind Dir.": 167.2443393198987,
       "Wind Gust": 7.700000000000001,
+      "Prob Precip 0.1mm": 3.6142857142857148,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1279,6 +1624,9 @@
       "Wind": 4.628571428571429,
       "Wind Dir.": 227.48999226686226,
       "Wind Gust": 9.72857142857143,
+      "Prob Precip 0.1mm": 34.28571428571429,
+      "Prob Precip 1.0mm": 8.457142857142859,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1290,6 +1638,9 @@
       "Wind": 3.033333333333334,
       "Wind Dir.": 183.4924318204455,
       "Wind Gust": 8.8,
+      "Prob Precip 0.1mm": 84.33333333333334,
+      "Prob Precip 1.0mm": 41.06666666666667,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1301,6 +1652,9 @@
       "Wind": 4.583333333333334,
       "Wind Dir.": 86.219376947047,
       "Wind Gust": 8.200000000000001,
+      "Prob Precip 0.1mm": 54.56666666666667,
+      "Prob Precip 1.0mm": 18.000000000000004,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1312,6 +1666,9 @@
       "Wind": 5.566666666666667,
       "Wind Dir.": 88.99109160433704,
       "Wind Gust": 9.35,
+      "Prob Precip 0.1mm": 7.366666666666667,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1323,6 +1680,9 @@
       "Wind": 5.400000000000001,
       "Wind Dir.": 97.69776212985641,
       "Wind Gust": 8.533333333333333,
+      "Prob Precip 0.1mm": 11.100000000000001,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1332,8 +1692,11 @@
       "Pressure": 1012.2,
       "Rain": 0.005,
       "Wind": 4.6833333333333345,
-      "Wind Dir.": 94.19275997813388,
+      "Wind Dir.": 94.19275997813389,
       "Wind Gust": 8.016666666666667,
+      "Prob Precip 0.1mm": 30.166666666666664,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1345,6 +1708,9 @@
       "Wind": 4.066666666666667,
       "Wind Dir.": 97.00550883892066,
       "Wind Gust": 8.816666666666668,
+      "Prob Precip 0.1mm": 25.200000000000003,
+      "Prob Precip 1.0mm": 15.200000000000003,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1356,6 +1722,9 @@
       "Wind": 2.7,
       "Wind Dir.": 141.7131180083096,
       "Wind Gust": 9.575,
+      "Prob Precip 0.1mm": 28.55,
+      "Prob Precip 1.0mm": 7.249999999999999,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1367,6 +1736,9 @@
       "Wind": 6.033333333333334,
       "Wind Dir.": 226.39544791581304,
       "Wind Gust": 8.100000000000001,
+      "Prob Precip 0.1mm": 78.06666666666668,
+      "Prob Precip 1.0mm": 17.1,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1376,8 +1748,11 @@
       "Pressure": 1009.8,
       "Rain": 0.1325,
       "Wind": 2.4250000000000003,
-      "Wind Dir.": 147.47403752817777,
+      "Wind Dir.": 147.4740375281778,
       "Wind Gust": 7.825,
+      "Prob Precip 0.1mm": 57.99999999999999,
+      "Prob Precip 1.0mm": 38.800000000000004,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1389,6 +1764,9 @@
       "Wind": 4.416666666666667,
       "Wind Dir.": 77.95508379347645,
       "Wind Gust": 8.55,
+      "Prob Precip 0.1mm": 40.233333333333334,
+      "Prob Precip 1.0mm": 2.166666666666667,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1400,6 +1778,9 @@
       "Wind": 4.725,
       "Wind Dir.": 95.6503673817282,
       "Wind Gust": 10.525,
+      "Prob Precip 0.1mm": 8.700000000000001,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1411,6 +1792,9 @@
       "Wind": 4.966666666666668,
       "Wind Dir.": 102.58936767951471,
       "Wind Gust": 8.283333333333335,
+      "Prob Precip 0.1mm": 1.2000000000000002,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1422,6 +1806,9 @@
       "Wind": 4.575,
       "Wind Dir.": 95.33227894316346,
       "Wind Gust": 9.725,
+      "Prob Precip 0.1mm": 30.05,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1433,6 +1820,9 @@
       "Wind": 5.316666666666667,
       "Wind Dir.": 95.60185422918768,
       "Wind Gust": 10.333333333333334,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1444,6 +1834,9 @@
       "Wind": 4.300000000000001,
       "Wind Dir.": 117.04789962186129,
       "Wind Gust": 12.95,
+      "Prob Precip 0.1mm": 5.7,
+      "Prob Precip 1.0mm": 4.2,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1453,8 +1846,11 @@
       "Pressure": 1010.1400000000002,
       "Rain": 0.006,
       "Wind": 2.8000000000000003,
-      "Wind Dir.": 130.01867346444513,
+      "Wind Dir.": 130.0186734644451,
       "Wind Gust": 8.64,
+      "Prob Precip 0.1mm": 25.720000000000002,
+      "Prob Precip 1.0mm": 4.48,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1466,6 +1862,9 @@
       "Wind": 3.525,
       "Wind Dir.": 80.75916297294414,
       "Wind Gust": 9.875,
+      "Prob Precip 0.1mm": 5.499999999999999,
+      "Prob Precip 1.0mm": 4.5,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1477,6 +1876,9 @@
       "Wind": 5.94,
       "Wind Dir.": 88.99839726076641,
       "Wind Gust": 13.400000000000002,
+      "Prob Precip 0.1mm": 14.6,
+      "Prob Precip 1.0mm": 4.800000000000001,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1488,6 +1890,9 @@
       "Wind": 6.5,
       "Wind Dir.": 91.00244214605814,
       "Wind Gust": 15.125,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1499,6 +1904,9 @@
       "Wind": 6.0600000000000005,
       "Wind Dir.": 93.50378915240262,
       "Wind Gust": 11.76,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1510,6 +1918,9 @@
       "Wind": 5.275,
       "Wind Dir.": 92.66667042747103,
       "Wind Gust": 10.0,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1521,6 +1932,9 @@
       "Wind": 5.1000000000000005,
       "Wind Dir.": 92.67313460802858,
       "Wind Gust": 12.100000000000001,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1532,6 +1946,9 @@
       "Wind": 4.425,
       "Wind Dir.": 120.57905261501021,
       "Wind Gust": 11.35,
+      "Prob Precip 0.1mm": 3.15,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1543,6 +1960,9 @@
       "Wind": 4.340000000000001,
       "Wind Dir.": 93.60756093593389,
       "Wind Gust": 11.46,
+      "Prob Precip 0.1mm": 4.2,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1554,6 +1974,9 @@
       "Wind": 6.075,
       "Wind Dir.": 89.85081591083365,
       "Wind Gust": 12.575,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1565,6 +1988,9 @@
       "Wind": 6.0600000000000005,
       "Wind Dir.": 97.75004285940216,
       "Wind Gust": 13.160000000000002,
+      "Prob Precip 0.1mm": 8.320000000000002,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1576,6 +2002,9 @@
       "Wind": 5.675000000000001,
       "Wind Dir.": 91.3330925501716,
       "Wind Gust": 12.274999999999999,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1587,6 +2016,9 @@
       "Wind": 6.160000000000001,
       "Wind Dir.": 94.249270352084,
       "Wind Gust": 11.56,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1598,6 +2030,9 @@
       "Wind": 5.125,
       "Wind Dir.": 89.33363440402731,
       "Wind Gust": 9.975,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1609,6 +2044,9 @@
       "Wind": 4.5600000000000005,
       "Wind Dir.": 102.38068494661115,
       "Wind Gust": 11.440000000000001,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1620,6 +2058,9 @@
       "Wind": 2.825,
       "Wind Dir.": 116.11786474170404,
       "Wind Gust": 9.575,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1629,8 +2070,11 @@
       "Pressure": 1009.7400000000001,
       "Rain": 0.0,
       "Wind": 5.6000000000000005,
-      "Wind Dir.": 224.35635749129332,
+      "Wind Dir.": 224.35635749129335,
       "Wind Gust": 10.14,
+      "Prob Precip 0.1mm": 4.880000000000001,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1642,6 +2086,9 @@
       "Wind": 2.5500000000000003,
       "Wind Dir.": 123.0000682736722,
       "Wind Gust": 8.375,
+      "Prob Precip 0.1mm": 0.4,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1653,6 +2100,9 @@
       "Wind": 4.96,
       "Wind Dir.": 88.49923642046548,
       "Wind Gust": 13.060000000000002,
+      "Prob Precip 0.1mm": 4.24,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1664,6 +2114,9 @@
       "Wind": 7.566666666666667,
       "Wind Dir.": 95.99081884038881,
       "Wind Gust": 12.399999999999999,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1675,6 +2128,9 @@
       "Wind": 6.6000000000000005,
       "Wind Dir.": 95.25150382349716,
       "Wind Gust": 10.95,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1686,6 +2142,9 @@
       "Wind": 6.633333333333333,
       "Wind Dir.": 92.33332957252898,
       "Wind Gust": 9.899999999999999,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1697,6 +2156,9 @@
       "Wind": 5.3999999999999995,
       "Wind Dir.": 87.66544858796595,
       "Wind Gust": 10.95,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1708,6 +2170,9 @@
       "Wind": 11.6,
       "Wind Dir.": 230.5,
       "Wind Gust": 11.85,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1719,6 +2184,9 @@
       "Wind": 6.2,
       "Wind Dir.": 71.49999999999999,
       "Wind Gust": 14.299999999999999,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1728,8 +2196,11 @@
       "Pressure": 1011.9999999999999,
       "Rain": 0.0,
       "Wind": 5.7,
-      "Wind Dir.": 96.00000000000001,
+      "Wind Dir.": 96.0,
       "Wind Gust": 8.9,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1741,6 +2212,9 @@
       "Wind": 5.3999999999999995,
       "Wind Dir.": 137.5,
       "Wind Gust": 10.799999999999999,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1752,6 +2226,9 @@
       "Wind": 7.0,
       "Wind Dir.": 179.5,
       "Wind Gust": 11.350000000000001,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1763,6 +2240,9 @@
       "Wind": 5.949999999999999,
       "Wind Dir.": 109.00000000000001,
       "Wind Gust": 16.2,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1774,6 +2254,9 @@
       "Wind": 6.2,
       "Wind Dir.": 99.5,
       "Wind Gust": 9.75,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1785,6 +2268,9 @@
       "Wind": 4.300000000000001,
       "Wind Dir.": 102.5,
       "Wind Gust": 7.299999999999999,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1796,6 +2282,9 @@
       "Wind": 12.65,
       "Wind Dir.": 233.0,
       "Wind Gust": 13.5,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1807,6 +2296,9 @@
       "Wind": 5.15,
       "Wind Dir.": 33.5,
       "Wind Gust": 11.099999999999998,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1818,6 +2310,9 @@
       "Wind": 7.55,
       "Wind Dir.": 103.5,
       "Wind Gust": 11.049999999999999,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1829,6 +2324,9 @@
       "Wind": 5.3999999999999995,
       "Wind Dir.": 88.5,
       "Wind Gust": 9.450000000000001,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1840,6 +2338,9 @@
       "Wind": 7.299999999999999,
       "Wind Dir.": 260.0,
       "Wind Gust": 8.399999999999999,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1851,6 +2352,9 @@
       "Wind": 8.649999999999999,
       "Wind Dir.": 84.5,
       "Wind Gust": 12.65,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1862,6 +2366,9 @@
       "Wind": 8.100000000000001,
       "Wind Dir.": 82.0,
       "Wind Gust": 14.05,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1873,6 +2380,9 @@
       "Wind": 5.4,
       "Wind Dir.": 95.5,
       "Wind Gust": 8.649999999999999,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1884,6 +2394,9 @@
       "Wind": 8.9,
       "Wind Dir.": 247.5,
       "Wind Gust": 9.700000000000001,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1895,6 +2408,9 @@
       "Wind": 7.55,
       "Wind Dir.": 91.50000000000001,
       "Wind Gust": 15.399999999999999,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1906,6 +2422,9 @@
       "Wind": 6.199999999999999,
       "Wind Dir.": 90.5,
       "Wind Gust": 11.6,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1917,6 +2436,9 @@
       "Wind": 6.2,
       "Wind Dir.": 87.5,
       "Wind Gust": 10.0,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1928,6 +2450,9 @@
       "Wind": 4.3,
       "Wind Dir.": 122.0,
       "Wind Gust": 8.1,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1939,6 +2464,9 @@
       "Wind": 9.7,
       "Wind Dir.": 89.0,
       "Wind Gust": 13.5,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1950,6 +2478,9 @@
       "Wind": 8.6,
       "Wind Dir.": 101.0,
       "Wind Gust": 11.9,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     },
     {
@@ -1961,6 +2492,9 @@
       "Wind": 8.1,
       "Wind Dir.": 91.0,
       "Wind Gust": 11.9,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
     }
   ]
