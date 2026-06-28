@@ -45,15 +45,16 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
     raw    = header + '\n' + body + '='
     return '\n'.join(' '.join(l.split()).rstrip() for l in raw.splitlines())
 
-def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: dict, model_weights: dict) -> dict:
+def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: dict, model_weights: dict, target_issuance: str = None) -> dict:
     """
     Core TAF generator. Takes the consensus DataFrame and raw/QM model data 
     and returns a structured intel dictionary with the final TAF text.
+    If target_issuance is provided (e.g. "0500"), shifts the 24h valid window.
     """
     if consensus_df.empty:
         return {}
         
-    consensus_truth = []
+    full_truth = []
     pressure_history = []
     
     for _, row in consensus_df.iterrows():
@@ -71,7 +72,7 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
         pressure_history.append(hour_data["pressure_hpa"])
         vis_code, cloud_group = build_hourly_vis_cloud(hour_data, pressure_history)
         
-        consensus_truth.append({
+        full_truth.append({
             "Rain": hour_data["rain"],
             "Wind": hour_data["spd"],
             "Wind Dir.": row["Wind Dir."],
@@ -83,34 +84,63 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
             "dewpoint_c": hour_data["dewpoint_c"],
             "pressure_hpa": hour_data["pressure_hpa"],
             "vis": vis_code,
-            "cloud": cloud_group
+            "cloud": cloud_group,
+            "Datetime": row["Datetime"]
         })
         
-    valid_start = pd.to_datetime(consensus_df.iloc[0]["Datetime"])
+    # Map issuance_utc -> valid hour
+    val_map = {"2300": 0, "0500": 6, "1100": 12, "1700": 18}
     
-    # We assume generation time is closely tied to valid_start for simplicity
-    iss_utc_obj = valid_start - timedelta(hours=1)
-    iss_utc = f"{iss_utc_obj.hour:02d}00"
-    iss_day = iss_utc_obj.day
+    start_idx = 0
+    if target_issuance and target_issuance in val_map:
+        target_hr = val_map[target_issuance]
+        # Find first hour matching target_hr
+        for i, row in enumerate(full_truth):
+            dt = pd.to_datetime(row["Datetime"])
+            if dt.hour == target_hr:
+                start_idx = i
+                break
+                
+    # Slice arrays to exactly 24 hours
+    consensus_truth = full_truth[start_idx:start_idx+24]
+    if not consensus_truth:
+        return {}
+        
+    valid_start = pd.to_datetime(consensus_truth[0]["Datetime"])
+    
+    if target_issuance:
+        iss_utc = target_issuance
+        iss_utc_obj = valid_start - timedelta(hours=1)
+        iss_day = iss_utc_obj.day
+    else:
+        iss_utc_obj = valid_start - timedelta(hours=1)
+        iss_utc = f"{iss_utc_obj.hour:02d}00"
+        iss_day = iss_utc_obj.day
     
     # Map model_data into meteo_data_local: {model: {param: series}}
-    # In guidance_generator, model_data is {param: {model: series}}
-    # taf_core expects {model: {param: series}}
     from src.advanced_ensemble_weighter import MODELS
     
     meteo_data_local = {m: {} for m in MODELS}
     for param, models_dict in model_data.items():
         for m, series in models_dict.items():
-            meteo_data_local[m][param] = series
+            # Slice series to match the window
+            meteo_data_local[m][param] = series.iloc[start_idx:start_idx+24].reset_index(drop=True) if len(series) > start_idx else series
+            
+    # Also slice qm_rain_data
+    qm_rain_local = {}
+    for m, d_dict in qm_rain_data.items():
+        # qm_rain_data is a dict of index -> value. Re-index starting from 0
+        sliced_values = [d_dict[i] for i in sorted(d_dict.keys())][start_idx:start_idx+24]
+        qm_rain_local[m] = {i: v for i, v in enumerate(sliced_values)}
             
     # Generate change groups
     trends, warnings = _build_change_groups(
         consensus_truth=consensus_truth,
         valid_start=valid_start,
-        start_hour=0,
+        start_hour=0, # Relative to the sliced array
         meteo_data_local=meteo_data_local,
-        corrected_rain_data=qm_rain_data,
-        rain_timing_offset=0, # Assuming no timing shift for now
+        corrected_rain_data=qm_rain_local,
+        rain_timing_offset=0, 
         model_weights=model_weights
     )
     
@@ -123,14 +153,13 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
         'wx': '',
         'cloud': first_row['cloud'],
         'trends': trends,
-        'badge': 'MME Consensus',
+        'badge': f'MME {iss_utc}Z Shift',
         'metrics': {'leader_rmse': 'N/A', 'leader_strat': 'N/A'}
     }
     
     # Build actual TAF text
     taf_text = _build_taf_text(best_guess, valid_start, iss_day, iss_utc)
     
-    # Return structured Intel object
     return {
         "valid_start": valid_start.strftime("%Y-%m-%d %H:%M:%S"),
         "issued_utc": iss_utc,

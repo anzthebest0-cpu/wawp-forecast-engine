@@ -1,53 +1,75 @@
 async function loadDashboard() {
     try {
-        const [intelRes, weightsRes, perfRes, guidanceRes, climRes] = await Promise.all([
+        const [intelRes, weightsRes, perfRes, guidanceRes, climRes, modelsRes] = await Promise.all([
             fetch('data/tafor_intel.json'),
             fetch('data/latest_weights.json'),
             fetch('data/latest_performance.json'),
             fetch('data/taf_guidance.json'),
-            fetch('data/climatology.json')
+            fetch('data/climatology.json'),
+            fetch('data/individual_models.json')
         ]);
         
-        const intel = await intelRes.json();
+        const intelData = await intelRes.json();
+        let currentIssuance = "default";
+        let intel = intelData[currentIssuance] || intelData;
         const weights = await weightsRes.json();
         const perf = await perfRes.json();
         const guidance = await guidanceRes.json();
         const clim_data = (climRes && climRes.ok && typeof climRes.json === 'function') ? await climRes.json().catch(()=>null) : null;
+        const modelsData = (modelsRes && modelsRes.ok && typeof modelsRes.json === 'function') ? await modelsRes.json().catch(()=>null) : null;
 
         // 1. Update Header
         document.getElementById('update-time').innerText = intel.valid_start + " UTC";
         
-        // 2. Intelligence Tab (TAF & Base Group)
-        document.getElementById('taf-text-display').innerText = intel.taf_text;
+        function renderIntel(intelObj) {
+            document.getElementById('taf-text-display').innerText = intelObj.taf_text || "TAF Unavailable";
+            
+            const bg = intelObj.base_group;
+            if(!bg) return;
+            const bgHtml = `
+                <div class="param-card">
+                    <div class="param-label">Wind Direction</div>
+                    <div class="param-value">${bg.dir}°</div>
+                </div>
+                <div class="param-card">
+                    <div class="param-label">Wind Speed</div>
+                    <div class="param-value">${bg.spd} kt</div>
+                </div>
+                <div class="param-card">
+                    <div class="param-label">Visibility</div>
+                    <div class="param-value">${bg.vis} m</div>
+                </div>
+                <div class="param-card">
+                    <div class="param-label">Weather</div>
+                    <div class="param-value">${bg.wx || '-'}</div>
+                </div>
+                <div class="param-card">
+                    <div class="param-label">Cloud</div>
+                    <div class="param-value">${bg.cloud || '-'}</div>
+                </div>
+            `;
+            document.getElementById('bg-params').innerHTML = bgHtml;
+            const badge = document.getElementById('consensus-badge');
+            if(badge) badge.innerText = bg.badge || "MME Consensus";
+            
+            const warnings = intelObj.warnings;
+            if(warnings && warnings.length > 0) {
+                document.getElementById('taf-warnings').innerHTML = warnings.map(w => `<div style="color:var(--amber); margin-top:10px;">⚠️ ${w}</div>`).join('');
+            } else {
+                document.getElementById('taf-warnings').innerHTML = '';
+            }
+        }
         
-        const bg = intel.base_group;
-        const bgHtml = `
-            <div class="param-card">
-                <div class="param-label">Wind Direction</div>
-                <div class="param-value">A</div>
-            </div>
-            <div class="param-card">
-                <div class="param-label">Wind Speed</div>
-                <div class="param-value"> kt</div>
-            </div>
-            <div class="param-card">
-                <div class="param-label">Visibility</div>
-                <div class="param-value"> m</div>
-            </div>
-            <div class="param-card">
-                <div class="param-label">Weather</div>
-                <div class="param-value"></div>
-            </div>
-            <div class="param-card">
-                <div class="param-label">Cloud</div>
-                <div class="param-value"></div>
-            </div>
-        `;
-        document.getElementById('bg-params').innerHTML = bgHtml;
+        renderIntel(intel);
         
-        const warnings = intel.warnings;
-        if(warnings && warnings.length > 0) {
-            document.getElementById('taf-warnings').innerHTML = warnings.map(w => `<div style="color:var(--amber); margin-top:10px;">A </div>`).join('');
+        const tafSelect = document.getElementById('taf-issuance-select');
+        if(tafSelect) {
+            tafSelect.addEventListener('change', (e) => {
+                currentIssuance = e.target.value;
+                if(intelData[currentIssuance]) {
+                    renderIntel(intelData[currentIssuance]);
+                }
+            });
         }
 
         
@@ -103,6 +125,11 @@ async function loadDashboard() {
             `;
             tbody.appendChild(tr);
         });
+        
+        // 5.5 Individual Models
+        if (modelsData && data) {
+            setupIndividualModels(modelsData, data.map(d=>d.Datetime));
+        }
         
         // 6. Regional & Climatology
         setupRegionalCharts();
@@ -171,6 +198,35 @@ function setupRegionalCharts() {
     let yyr = yesterday.getUTCFullYear();
     let cbStr = `${yda}${ymo}${yyr}`;
     document.getElementById('cb-img').src = `https://web-aviation.bmkg.go.id/prakcb/${cbStr}/CB_FORECAST_ANIMATION_${cbStr}.gif`;
+    
+    // Upper Air Charts
+    const uaDate = document.getElementById('ua-date');
+    const uaSelect = document.getElementById('ua-chart-select');
+    const uaImg = document.getElementById('ua-img');
+    const uaUrl = document.getElementById('ua-url');
+    
+    if(uaDate && uaSelect && uaImg) {
+        let uaDt = new Date(now);
+        let uaYr = uaDt.getUTCFullYear();
+        let uaMo = String(uaDt.getUTCMonth()+1).padStart(2, '0');
+        let uaDa = String(uaDt.getUTCDate()).padStart(2, '0');
+        uaDate.value = `${uaYr}-${uaMo}-${uaDa}`;
+        
+        function updateUaImage() {
+            const dateStr = uaDate.value; // YYYY-MM-DD
+            if(!dateStr) return;
+            const [y, m, d] = dateStr.split('-');
+            const ddmmyyyy = `${d}${m}${y}`;
+            const file = uaSelect.value;
+            const finalUrl = `https://web-aviation.bmkg.go.id/rason/${ddmmyyyy}/${file}`;
+            uaImg.src = finalUrl;
+            if(uaUrl) uaUrl.innerText = finalUrl;
+        }
+        
+        uaDate.addEventListener('change', updateUaImage);
+        uaSelect.addEventListener('change', updateUaImage);
+        updateUaImage();
+    }
 }
 
 function setupClimatology(clim, valid_start_str) {

@@ -107,7 +107,7 @@ def export_all(db: ForecastDB, output_dir: str):
     # Wait, guidance_generator expects model_data in memory. 
     # run_pipeline currently passes nothing to export_all! We need to fetch the latest forecast.
     
-    query_latest = "SELECT MAX(forecast_time) FROM meteologix_forecasts"
+    query_latest = "SELECT MAX(scraped_at) FROM meteologix_forecasts"
     latest_time_df = pd.read_sql_query(query_latest, db.conn)
     latest_time = latest_time_df.iloc[0, 0]
     
@@ -115,10 +115,20 @@ def export_all(db: ForecastDB, output_dir: str):
         log.warning("No forecasts found in DB.")
         return
         
-    log.info(f"Generating TAF guidance for forecast cycle: {latest_time}")
+    log.info(f"Generating TAF guidance for latest scrape: {latest_time}")
     
-    query_fcst = "SELECT * FROM meteologix_forecasts WHERE forecast_time >= ?"
-    df_fcst = pd.read_sql_query(query_fcst, db.conn, params=(latest_time,))
+    # Get the latest scrape for EACH model to handle partial failures
+    query_fcst = """
+        SELECT m.*
+        FROM meteologix_forecasts m
+        INNER JOIN (
+            SELECT model, MAX(scraped_at) as max_scraped
+            FROM meteologix_forecasts
+            GROUP BY model
+        ) latest
+        ON m.model = latest.model AND m.scraped_at = latest.max_scraped
+    """
+    df_fcst = pd.read_sql_query(query_fcst, db.conn)
     
     model_data = {param: {} for param in ["Temperature", "Dewpoint", "Pressure", "Rainfall", "Wind Speed", "Wind Dir.", "Wind Gust"]}
     
@@ -168,12 +178,42 @@ def export_all(db: ForecastDB, output_dir: str):
     # Generate TAF Intel
     qm_rain_data = {m: qm_mapper.transform_series(pd.DataFrame(model_data["Rainfall"])[m], model=m).to_dict() for m in model_data["Rainfall"].keys()} if "Rainfall" in model_data else {}
     
-    taf_intel = generate_tafor(consensus, model_data, qm_rain_data, global_weights)
+    taf_intel = {}
+    for iss in ["2300", "0500", "1100", "1700"]:
+        taf_intel[iss] = generate_tafor(consensus, model_data, qm_rain_data, global_weights, target_issuance=iss)
+    
+    taf_intel["default"] = generate_tafor(consensus, model_data, qm_rain_data, global_weights)
     
     # Output Payloads
     out_path = os.path.join(output_dir, "tafor_intel.json")
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(taf_intel, f, indent=2, default=str)
+        
+    # Output taf_guidance.json (Consensus data)
+    guidance_data = consensus.copy()
+    guidance_data['Datetime'] = guidance_data['Datetime'].dt.strftime('%Y-%m-%d %H:%M:%S')
+    guidance_payload = {
+        "metadata": {
+            "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+            "version": "v200",
+            "location": "Bandara_Sangia_Ni_Bandera"
+        },
+        "data": guidance_data.to_dict(orient="records")
+    }
+    with open(os.path.join(output_dir, "taf_guidance.json"), 'w', encoding='utf-8') as f:
+        json.dump(guidance_payload, f, indent=2, default=str)
+        
+    # Output individual_models.json
+    model_data_str = {}
+    for prm, m_dict in model_data.items():
+        model_data_str[prm] = {}
+        for m_name, series in m_dict.items():
+            s = series.copy()
+            s.index = s.index.strftime('%Y-%m-%d %H:%M:%S')
+            model_data_str[prm][m_name] = s.to_dict()
+            
+    with open(os.path.join(output_dir, "individual_models.json"), 'w', encoding='utf-8') as f:
+        json.dump(model_data_str, f, indent=2, default=str)
         
     weights_path = os.path.join(output_dir, "latest_weights.json")
     with open(weights_path, 'w', encoding='utf-8') as f:
