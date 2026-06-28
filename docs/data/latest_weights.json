@@ -1,6 +1,10 @@
 {
   "metadata": {
+<<<<<<< Updated upstream
     "updated_at": "2026-06-28 09:38:26"
+=======
+    "updated_at": "2026-06-28 17:12:45"
+>>>>>>> Stashed changes
   },
   "weights": {
     "Temperature": {

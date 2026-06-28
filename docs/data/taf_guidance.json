@@ -1,6 +1,10 @@
 {
   "metadata": {
+<<<<<<< Updated upstream
     "generated_at": "2026-06-28 17:05:44",
+=======
+    "generated_at": "2026-06-28 17:12:46",
+>>>>>>> Stashed changes
     "version": "v200",
     "location": "Bandara_Sangia_Ni_Bandera"
   },
@@ -147,6 +151,7 @@
     },
     {
       "Datetime": "2026-06-29 01:00:00",
+<<<<<<< Updated upstream
       "Temperature": 24.500000000000004,
       "Dewpoint": 21.820000000000004,
       "Pressure": 1011.1000000000003,
@@ -155,6 +160,16 @@
       "Wind Dir.": 95.87848548951183,
       "Wind Gust": 10.16,
       "Prob Precip 0.1mm": 0.30000000000000004,
+=======
+      "Temperature": 25.0,
+      "Dewpoint": 22.349999999999998,
+      "Pressure": 1011.15,
+      "Rain": 0.0,
+      "Wind": 5.15,
+      "Wind Dir.": 95.5,
+      "Wind Gust": 9.200000000000001,
+      "Prob Precip 0.1mm": 0.25,
+>>>>>>> Stashed changes
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
       "Condition": "Normal"
