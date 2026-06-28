@@ -1,0 +1,14 @@
+{
+  "metadata": {
+    "period": "Last 60 Days"
+  },
+  "metrics": {
+    "Temperature": {},
+    "Dewpoint": {},
+    "Pressure": {},
+    "Rainfall": {},
+    "Wind Speed": {},
+    "Wind Dir.": {},
+    "Wind Gust": {}
+  }
+}
