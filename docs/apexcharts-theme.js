@@ -313,7 +313,8 @@ const CHART_WIND_DIR_OPTIONS = {
       const arrows = ['↓', '↙', '←', '↖', '↑', '↗', '→', '↘', '↓'];
       return arrows[Math.round(((v % 360 + 360) % 360) / 45)];
     },
-    style: { fontSize: '16px', colors: ['#8b5cf6'], fontFamily: 'Arial' },
+    style: { fontSize: '18px', colors: ['#8b5cf6'], fontFamily: 'Arial' },
+    background: { enabled: false },
     offsetY: 2
   },
   yaxis: {
@@ -430,11 +431,11 @@ const CHART_CLOUD_HEATMAP_OPTIONS = {
       useFillColorAsStroke: false,
       colorScale: {
         ranges: [
-          { from: 0, to: 10, color: '#f8fafc', name: 'Clear (0-10%)' },
-          { from: 11, to: 40, color: '#bae6fd', name: 'Few (11-40%)' },
-          { from: 41, to: 70, color: '#38bdf8', name: 'SCT (41-70%)' },
-          { from: 71, to: 90, color: '#0284c7', name: 'BKN (71-90%)' },
-          { from: 91, to: 100, color: '#1e1b4b', name: 'OVC (91-100%)' }
+          { from: -10, to: 10, color: '#f8fafc', name: 'Clear (0-10%)' },
+          { from: 10.001, to: 40, color: '#bae6fd', name: 'Few (11-40%)' },
+          { from: 40.001, to: 70, color: '#38bdf8', name: 'SCT (41-70%)' },
+          { from: 70.001, to: 90, color: '#0284c7', name: 'BKN (71-90%)' },
+          { from: 90.001, to: 200, color: '#1e1b4b', name: 'OVC (91-100%)' }
         ]
       }
     }
