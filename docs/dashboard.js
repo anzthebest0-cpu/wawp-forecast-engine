@@ -104,6 +104,12 @@ async function loadDashboard() {
             tbody.appendChild(tr);
         });
         
+        // 6. Regional & Climatology
+        setupRegionalCharts();
+        if (clim_data && intel) {
+            setupClimatology(clim_data, intel.valid_start);
+        }
+        
     } catch (e) {
         console.error(e);
         document.getElementById('update-time').innerText = "Load failed";
