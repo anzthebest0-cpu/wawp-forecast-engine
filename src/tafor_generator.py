@@ -109,8 +109,13 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
             "Datetime": row["Datetime"]
         })
         
-    # Map issuance_utc -> valid hour
-    val_map = {"2300": 0, "0500": 6, "1100": 12, "1700": 18}
+    # Map issuance_utc -> valid hour in LST (WITA = UTC+8)
+    # TAF starts 1 hour after issuance.
+    # 2300Z -> starts 0000Z = 0800 LST
+    # 0500Z -> starts 0600Z = 1400 LST
+    # 1100Z -> starts 1200Z = 2000 LST
+    # 1700Z -> starts 1800Z = 0200 LST
+    val_map = {"2300": 8, "0500": 14, "1100": 20, "1700": 2}
     
     start_idx = 0
     if target_issuance and target_issuance in val_map:
@@ -131,10 +136,10 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
     
     if target_issuance:
         iss_utc = target_issuance
-        iss_utc_obj = valid_start - timedelta(hours=1)
-        iss_day = iss_utc_obj.day
+        iss_utc_obj = pd.to_datetime(target_issuance, format="%H%M").replace(year=valid_start.year, month=valid_start.month, day=valid_start.day)
+        iss_day = valid_start.day if int(iss_utc[:2]) > valid_start.hour else (valid_start - timedelta(days=1)).day
     else:
-        iss_utc_obj = valid_start - timedelta(hours=1)
+        iss_utc_obj = (valid_start - timedelta(hours=8)) - timedelta(hours=1)
         iss_utc = f"{iss_utc_obj.hour:02d}00"
         iss_day = iss_utc_obj.day
     
@@ -189,7 +194,9 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
     }
     
     # Build actual TAF text
-    taf_text = _build_taf_text(best_guess, valid_start, iss_day, iss_utc)
+    # Convert valid_start (LST) back to UTC for the TAF string
+    valid_start_utc = valid_start - timedelta(hours=8)
+    taf_text = _build_taf_text(best_guess, valid_start_utc, iss_day, iss_utc)
     
     return {
         "valid_start": valid_start.strftime("%Y-%m-%d %H:%M:%S"),

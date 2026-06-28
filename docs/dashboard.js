@@ -171,46 +171,36 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupSpreadCharts(modelsData, timeLabels) {
-    const createBoxPlotSeries = (param) => {
-        const dataPts = [];
-        for (const t of timeLabels) {
-            const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
-            let vals = [];
-            for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
-                if(modelVals[t] !== null && modelVals[t] !== undefined) {
-                    vals.push(parseFloat(modelVals[t]));
-                }
+    // Reusable function to create spread series
+    const createSeries = (param) => {
+        const series = [];
+        for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
+            // align with timeLabels
+            const dataPts = [];
+            for (const t of timeLabels) {
+                const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
+                dataPts.push([ts, modelVals[t] || null]);
             }
-            if (vals.length > 0) {
-                vals.sort((a,b) => a-b);
-                const min = vals[0];
-                const max = vals[vals.length-1];
-                const q1 = vals[Math.floor(vals.length * 0.25)];
-                const median = vals[Math.floor(vals.length * 0.5)];
-                const q3 = vals[Math.floor(vals.length * 0.75)];
-                dataPts.push({ x: ts, y: [min, q1, median, q3, max] });
-            }
+            series.push({ name: model, data: dataPts });
         }
-        return [{ name: 'Spread', type: 'boxPlot', data: dataPts }];
+        return series;
     };
 
-    const boxOptions = (title, yAxisLabel) => ({
+    const spreadOptions = (title, yAxisLabel, isBar=false) => ({
         ...TITAN_BASE,
-        chart: { ...TITAN_BASE.chart, type: 'boxPlot', height: 250 },
+        chart: { ...TITAN_BASE.chart, type: isBar ? 'bar' : 'line', height: 250 },
         title: { text: title, style: { fontSize: '12px', fontWeight: 'bold', fontFamily: TITAN_COLORS.font } },
-        plotOptions: {
-            boxPlot: {
-                colors: { upper: '#38bdf8', lower: '#0284c7' }
-            }
-        },
+        stroke: { curve: 'smooth', width: 1.5 },
+        dataLabels: { enabled: false },
+        markers: { size: 0 },
         xaxis: { type: 'datetime', labels: { style: { colors: TITAN_COLORS.text } } },
         yaxis: { title: { text: yAxisLabel }, labels: { style: { colors: TITAN_COLORS.text } } },
-        tooltip: { theme: 'light' }
+        legend: { position: 'right' }
     });
 
-    new ApexCharts(document.querySelector('#spread-temp'), { ...boxOptions('Temperature Spread', '°C'), series: createBoxPlotSeries('Temperature') }).render();
-    new ApexCharts(document.querySelector('#spread-wind'), { ...boxOptions('Wind Speed Spread', 'kt'), series: createBoxPlotSeries('Wind Speed') }).render();
-    new ApexCharts(document.querySelector('#spread-rain'), { ...boxOptions('Rainfall Spread', 'mm'), series: createBoxPlotSeries('Rainfall') }).render();
+    new ApexCharts(document.querySelector('#spread-temp'), { ...spreadOptions('Temperature Spread', '°C'), series: createSeries('Temperature') }).render();
+    new ApexCharts(document.querySelector('#spread-wind'), { ...spreadOptions('Wind Speed Spread', 'kt'), series: createSeries('Wind Speed') }).render();
+    new ApexCharts(document.querySelector('#spread-rain'), { ...spreadOptions('Rainfall Spread', 'mm', true), series: createSeries('Rainfall') }).render();
 }
 
 function setupRegionalCharts() {

@@ -1,15 +1,15 @@
 {
   "2300": {
-    "valid_start": "2026-06-29 00:00:00",
+    "valid_start": "2026-06-29 08:00:00",
     "issued_utc": "2300",
-    "issued_day": 28,
+    "issued_day": 29,
     "base_group": {
       "dir": "100",
       "spd": "05",
-      "gust": "09",
-      "vis": "3100",
+      "gust": "10",
+      "vis": "9999",
       "wx": "",
-      "cloud": "BKN012",
+      "cloud": "BKN017",
       "trends": [],
       "badge": "MME 2300Z Shift",
       "metrics": {
@@ -17,20 +17,20 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 282300Z\nTAF WAWP 282300Z 2900/3000 10005KT 3100 BKN012=",
+    "taf_text": "FTID40 WAWP 292300Z\nTAF WAWP 292300Z 2900/3000 10005KT 9999 BKN017=",
     "warnings": []
   },
   "0500": {
-    "valid_start": "2026-06-29 06:00:00",
+    "valid_start": "2026-06-29 14:00:00",
     "issued_utc": "0500",
-    "issued_day": 29,
+    "issued_day": 28,
     "base_group": {
-      "dir": "090",
-      "spd": "04",
-      "gust": "07",
-      "vis": "3100",
+      "dir": "180",
+      "spd": "05",
+      "gust": "10",
+      "vis": "7000",
       "wx": "",
-      "cloud": "BKN009",
+      "cloud": "BKN035",
       "trends": [],
       "badge": "MME 0500Z Shift",
       "metrics": {
@@ -38,20 +38,20 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 290500Z\nTAF WAWP 290500Z 2906/3006 09004KT 3100 BKN009=",
+    "taf_text": "FTID40 WAWP 280500Z\nTAF WAWP 280500Z 2906/3006 18005KT 7000 BKN035=",
     "warnings": []
   },
   "1100": {
-    "valid_start": "2026-06-29 12:00:00",
+    "valid_start": "2026-06-28 20:00:00",
     "issued_utc": "1100",
-    "issued_day": 29,
+    "issued_day": 27,
     "base_group": {
-      "dir": "140",
-      "spd": "04",
+      "dir": "110",
+      "spd": "07",
       "gust": "10",
-      "vis": "7000",
+      "vis": "4300",
       "wx": "",
-      "cloud": "BKN036",
+      "cloud": "BKN018",
       "trends": [],
       "badge": "MME 1100Z Shift",
       "metrics": {
@@ -59,20 +59,20 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 291100Z\nTAF WAWP 291100Z 2912/3012 14004KT 7000 BKN036=",
+    "taf_text": "FTID40 WAWP 271100Z\nTAF WAWP 271100Z 2812/2912 11007KT 4300 BKN018=",
     "warnings": []
   },
   "1700": {
-    "valid_start": "2026-06-28 18:00:00",
+    "valid_start": "2026-06-29 02:00:00",
     "issued_utc": "1700",
-    "issued_day": 28,
+    "issued_day": 29,
     "base_group": {
-      "dir": "090",
+      "dir": "100",
       "spd": "05",
-      "gust": "09",
-      "vis": "9999",
+      "gust": "08",
+      "vis": "3100",
       "wx": "",
-      "cloud": "BKN021",
+      "cloud": "BKN014",
       "trends": [],
       "badge": "MME 1700Z Shift",
       "metrics": {
@@ -80,12 +80,12 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 281700Z\nTAF WAWP 281700Z 2818/2918 09005KT 9999 BKN021=",
+    "taf_text": "FTID40 WAWP 291700Z\nTAF WAWP 291700Z 2818/2918 10005KT 3100 BKN014=",
     "warnings": []
   },
   "default": {
     "valid_start": "2026-06-28 15:00:00",
-    "issued_utc": "1400",
+    "issued_utc": "0600",
     "issued_day": 28,
     "base_group": {
       "dir": "060",
@@ -107,13 +107,13 @@
           "spd": ""
         }
       ],
-      "badge": "MME 1400Z Shift",
+      "badge": "MME 0600Z Shift",
       "metrics": {
         "leader_rmse": "N/A",
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 281400Z\nTAF WAWP 281400Z 2815/2915 00000KT 8000 BKN032\nBECMG 2816/2817 9999 NSW=",
+    "taf_text": "FTID40 WAWP 280600Z\nTAF WAWP 280600Z 2807/2907 00000KT 8000 BKN032\nBECMG 2816/2817 9999 NSW=",
     "warnings": []
   }
 }

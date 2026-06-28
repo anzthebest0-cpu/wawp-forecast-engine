@@ -291,8 +291,8 @@ const CHART_WIND_DIR_OPTIONS = {
   chart: {
     ...TITAN_BASE.chart,
     id:     'titan-wind-dir',
-    type:   'scatter',
-    height: 100,
+    type:   'bar',
+    height: 150,
     group:  'meteogram',
   },
   title: {
@@ -301,33 +301,28 @@ const CHART_WIND_DIR_OPTIONS = {
     style: { fontSize: '10px', fontWeight: '600', fontFamily: TITAN_COLORS.font, color: 'rgba(138,154,184,0.7)', letterSpacing: '0.1em' },
     offsetY: 4,
   },
-  series: [],
+  series: [{ name: 'Dir (°)', data: [] }],
   colors: ['#8b5cf6'],
-  markers: { size: 0 },
-  dataLabels: {
-    enabled: true,
-    formatter: function(val, opts) {
-      const dp = opts.w.config.series[opts.seriesIndex].data[opts.dataPointIndex];
-      const v = parseFloat(dp.meta);
-      if (isNaN(v)) return '';
-      const arrows = ['↓', '↙', '←', '↖', '↑', '↗', '→', '↘', '↓'];
-      return arrows[Math.round(((v % 360 + 360) % 360) / 45)];
-    },
-    style: { fontSize: '18px', colors: ['#8b5cf6'], fontFamily: 'Arial' },
-    background: { enabled: false },
-    offsetY: 2
+  dataLabels: { enabled: false },
+  plotOptions: {
+    bar: {
+      columnWidth: '80%',
+      borderRadius: 2
+    }
   },
   yaxis: {
-    show: false,
-    min: 0, max: 2
+    min: 0,
+    max: 360,
+    tickAmount: 4,
+    labels: {
+      style: { colors: '#8b5cf6', fontSize: '10px', fontFamily: TITAN_COLORS.font },
+      formatter: (v) => v !== undefined ? `${v.toFixed(0)}°` : '',
+    }
   },
   tooltip: {
     theme: 'light',
     y: {
-      formatter: function(val, { series, seriesIndex, dataPointIndex, w }) {
-        const dp = w.config.series[seriesIndex].data[dataPointIndex];
-        return dp ? `${parseFloat(dp.meta).toFixed(0)} °` : '';
-      }
+      formatter: function(v) { return v !== undefined ? `${v.toFixed(0)} °` : ''; }
     }
   }
 };
@@ -512,9 +507,9 @@ function initTitanCharts(data) {
   );
   chartWind.render();
 
-  // Wind Dir (Flat Line Scatter with Arrow DataLabels)
+  // Wind Dir (Histogram)
   const windDirSeries = [
-    { name: 'Dir (°)', type: 'scatter', data: (data.windDirData || []).map(d => ({ x: d[0], y: 1, meta: d[1] })) },
+    { name: 'Dir (°)', type: 'bar', data: data.windDirData || [] },
   ];
   const chartWindDir = new ApexCharts(
     document.querySelector('#chart-wind-dir'),
