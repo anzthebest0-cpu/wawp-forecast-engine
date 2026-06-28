@@ -155,10 +155,139 @@ class ForecastDB:
     def get_verification_pairs(self, param: str, start_date: str, end_date: str) -> pd.DataFrame:
         """
         Join forecasts with observations for weighter training.
-        This will be fully implemented when observation ingestion is integrated.
         """
-        # Placeholder for phase 8/future observation joining logic
-        pass
+        # param map:
+        # Temperature -> temperature, Dewpoint -> dewpoint, 
+        # Wind Speed -> wind_speed, Wind Dir. -> wind_dir, Rain -> rain_1h / rain
+        
+        # We need to map standard param names to DB columns
+        param_map_f = {
+            "Temperature": "temperature",
+            "Dewpoint": "dewpoint",
+            "Humidity": "humidity",
+            "Pressure": "pressure",
+            "Wind Speed": "wind_speed",
+            "Wind Gust": "wind_gust",
+            "Wind Dir.": "wind_dir",
+            "Rainfall": "rain"
+        }
+        
+        param_map_o = {
+            "Temperature": "temperature",
+            "Dewpoint": "dewpoint",
+            "Humidity": "humidity",
+            "Pressure": "pressure",
+            "Wind Speed": "wind_speed",
+            "Wind Gust": "wind_gust_max",
+            "Wind Dir.": "wind_dir",
+            "Rainfall": "rain_1h"
+        }
+        
+        f_col = param_map_f.get(param)
+        o_col = param_map_o.get(param)
+        
+        if not f_col or not o_col:
+            return pd.DataFrame()
+            
+        # We pivot the models so that we have ECMWF, GFS, etc. as columns
+        query = f"""
+            SELECT 
+                f.forecast_time as Datetime,
+                MAX(CASE WHEN f.model = 'ECMWF' THEN f.{f_col} END) as ECMWF,
+                MAX(CASE WHEN f.model = 'GFS' THEN f.{f_col} END) as GFS,
+                MAX(CASE WHEN f.model = 'ICON' THEN f.{f_col} END) as ICON,
+                MAX(CASE WHEN f.model = 'METEOBLUE' THEN f.{f_col} END) as METEOBLUE,
+                MAX(CASE WHEN f.model = 'ACCESS-G3' THEN f.{f_col} END) as [ACCESS-G3],
+                MAX(CASE WHEN f.model = 'UKMO' THEN f.{f_col} END) as UKMO,
+                MAX(CASE WHEN f.model = 'GEM' THEN f.{f_col} END) as GEM,
+                o.{o_col} as [OBS_{param.replace(' ', '_')}]
+            FROM meteologix_forecasts f
+            INNER JOIN awos_observations o 
+                ON f.location = o.location 
+                AND f.forecast_time = o.obs_time
+            WHERE f.forecast_time >= ? AND f.forecast_time <= ?
+            GROUP BY f.forecast_time, o.{o_col}
+        """
+        return pd.read_sql_query(query, self.conn, params=(start_date, end_date))
+
+    def ingest_awos_files(self, directory: str) -> int:
+        """
+        Scans a directory for AWOS .dat files, parses them, and inserts into awos_observations.
+        Returns the number of new rows inserted.
+        """
+        import os
+        import glob
+        
+        search = os.path.join(directory, "**", "*.dat")
+        files = glob.glob(search, recursive=True)
+        if not files:
+            return 0
+            
+        cursor = self.conn.cursor()
+        sql = """
+            INSERT OR IGNORE INTO awos_observations (
+                location, obs_time, temperature, dewpoint, humidity, 
+                wind_dir, wind_speed, wind_gust_max, rain_1h
+            ) VALUES (
+                :location, :obs_time, :temperature, :dewpoint, :humidity,
+                :wind_dir, :wind_speed, :wind_gust_max, :rain_1h
+            )
+        """
+        
+        total_inserted = 0
+        location = "Bandara_Sangia_Ni_Bandera"
+        
+        for f in files:
+            try:
+                # Cols: 1=Date, 2=Hour, 5=Temp, 6=Dewp, 7=RH, 8=WD, 9=WS, 11=Gust, 12=Rain
+                df = pd.read_csv(
+                    f, sep=r"\s+", skiprows=4, header=None,
+                    usecols=[1, 2, 5, 6, 7, 8, 9, 11, 12], 
+                    names=["Date", "Hour", "Temp", "Dewp", "RH", "WD", "WS", "Gust", "Rain"]
+                )
+                
+                # Convert date strings to datetime (UTC)
+                df["UTC"] = pd.to_datetime(
+                    df["Date"].astype(str) + df["Hour"].astype(str).str.zfill(2),
+                    format="%Y%m%d%H",
+                    errors="coerce"
+                )
+                df = df.dropna(subset=["UTC"])
+                
+                # Convert to numeric, scale where necessary
+                # Temp, Dewp, Rain are in 0.1 units (e.g. 243 = 24.3C)
+                rows_to_insert = []
+                for _, row in df.iterrows():
+                    def clean_val(val, scale=1.0):
+                        try:
+                            # Handling '////' or '/////' which become NaN when coerced
+                            v = float(val)
+                            if pd.isna(v): return None
+                            return v * scale
+                        except (ValueError, TypeError):
+                            return None
+                            
+                    obs_time = row["UTC"].strftime('%Y-%m-%d %H:%M:%S')
+                    
+                    rows_to_insert.append({
+                        "location": location,
+                        "obs_time": obs_time,
+                        "temperature": clean_val(row["Temp"], 0.1),
+                        "dewpoint": clean_val(row["Dewp"], 0.1),
+                        "humidity": clean_val(row["RH"], 1.0),
+                        "wind_dir": clean_val(row["WD"], 1.0),
+                        "wind_speed": clean_val(row["WS"], 1.0),
+                        "wind_gust_max": clean_val(row["Gust"], 1.0),
+                        "rain_1h": clean_val(row["Rain"], 0.1)
+                    })
+                    
+                cursor.executemany(sql, rows_to_insert)
+                total_inserted += cursor.rowcount
+            except Exception as e:
+                print(f"Error parsing AWOS file {f}: {e}")
+                
+        self.conn.commit()
+        return total_inserted
 
     def close(self):
         self.conn.close()
