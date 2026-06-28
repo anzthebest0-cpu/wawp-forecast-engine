@@ -254,7 +254,7 @@ def export_all(db: ForecastDB, output_dir: str):
         "data": guidance_data.to_dict(orient="records")
     }
     with open(os.path.join(output_dir, "taf_guidance.json"), 'w', encoding='utf-8') as f:
-        json.dump(guidance_payload, f, indent=2, default=str)
+        json.dump(guidance_payload, f, indent=2, default=str, allow_nan=False)
         
     # Output individual_models.json
     model_data_str = {}
@@ -263,10 +263,13 @@ def export_all(db: ForecastDB, output_dir: str):
         for m_name, series in m_dict.items():
             s = series.copy()
             s.index = s.index.strftime('%Y-%m-%d %H:%M:%S')
-            model_data_str[prm][m_name] = s.to_dict()
+            s_dict = s.to_dict()
+            # Safely cast NaNs to None for valid JSON serialization
+            s_dict = {k: (None if pd.isna(v) else v) for k, v in s_dict.items()}
+            model_data_str[prm][m_name] = s_dict
             
     with open(os.path.join(output_dir, "individual_models.json"), 'w', encoding='utf-8') as f:
-        json.dump(model_data_str, f, indent=2, default=str)
+        json.dump(model_data_str, f, indent=2, default=str, allow_nan=False)
         
     weights_path = os.path.join(output_dir, "latest_weights.json")
     with open(weights_path, 'w', encoding='utf-8') as f:
