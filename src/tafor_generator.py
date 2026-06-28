@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timedelta
 import pandas as pd
 from src.taf_core import _build_change_groups
+from src.vis_cloud_proxy import build_hourly_vis_cloud
 
 def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
     issued_hh  = iss_utc[:2]
@@ -53,15 +54,36 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
         return {}
         
     consensus_truth = []
+    pressure_history = []
+    
     for _, row in consensus_df.iterrows():
+        # Build base dictionary for proxy
+        hour_data = {
+            "temp_c": row["Temperature"] if pd.notna(row.get("Temperature")) else 28.0,
+            "dewpoint_c": row["Dewpoint"] if pd.notna(row.get("Dewpoint")) else 24.0,
+            "pressure_hpa": row["Pressure"] if pd.notna(row.get("Pressure")) else 1013.25,
+            "relative_humidity_pct": row["Humidity"] if pd.notna(row.get("Humidity")) else 80.0,
+            "rain": row["Rain"] if pd.notna(row.get("Rain")) else 0.0,
+            "spd": row["Wind"] if pd.notna(row.get("Wind")) else 0.0,
+            "Condition": row["Condition"] if pd.notna(row.get("Condition")) else "Clear"
+        }
+        
+        pressure_history.append(hour_data["pressure_hpa"])
+        vis_code, cloud_group = build_hourly_vis_cloud(hour_data, pressure_history)
+        
         consensus_truth.append({
-            "Rain": row["Rain"],
-            "Wind": row["Wind"],
+            "Rain": hour_data["rain"],
+            "Wind": hour_data["spd"],
             "Wind Dir.": row["Wind Dir."],
-            "Condition": row["Condition"],
-            "spd": row["Wind"],
+            "Condition": hour_data["Condition"],
+            "spd": hour_data["spd"],
             "dir_num": row["Wind Dir."],
-            "rain": row["Rain"]
+            "rain": hour_data["rain"],
+            "temp_c": hour_data["temp_c"],
+            "dewpoint_c": hour_data["dewpoint_c"],
+            "pressure_hpa": hour_data["pressure_hpa"],
+            "vis": vis_code,
+            "cloud": cloud_group
         })
         
     valid_start = pd.to_datetime(consensus_df.iloc[0]["Datetime"])
@@ -97,9 +119,9 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
     best_guess = {
         'dir': f"{int(first_row['Wind Dir.']):03d}" if pd.notna(first_row['Wind Dir.']) else "000",
         'spd': f"{int(first_row['Wind']):02d}" if pd.notna(first_row['Wind']) else "00",
-        'vis': '9999',
+        'vis': first_row['vis'],
         'wx': '',
-        'cloud': 'SCT018',
+        'cloud': first_row['cloud'],
         'trends': trends,
         'badge': 'MME Consensus',
         'metrics': {'leader_rmse': 'N/A', 'leader_strat': 'N/A'}

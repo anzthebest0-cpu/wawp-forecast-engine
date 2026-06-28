@@ -116,6 +116,20 @@ def _build_change_groups(
     model_weights: dict | None = None,
     config=None,
 ) -> tuple[list[dict], list[str]]:
+    def _get_worst_vis_cloud(ts, te):
+        worst_v = 9999
+        v_code = '9999'
+        c_code = 'SCT018'
+        for i in range(ts, min(te+1, len(consensus_truth))):
+            ct = consensus_truth[i]
+            if 'vis' in ct and 'cloud' in ct:
+                val = 9999 if ct['vis'] == '9999' else int(ct['vis'])
+                if val < worst_v:
+                    worst_v = val
+                    v_code = ct['vis']
+                    c_code = ct['cloud']
+        return v_code, c_code
+
     # [v5.5.1] rain_timing_offset: integer hours to shift BECMG/TEMPO start
     # labels.  Applied ONLY to time_h_start in output dicts - NOT to the ts/te
     # index variables that drive rain-signal detection.  This ensures the
@@ -521,6 +535,7 @@ def _build_change_groups(
             peak_rain = max(consensus_truth[h]["rain_raw"] for h in range(start, end+1))
             wx_str = "+RA" if peak_rain >= _RC.HEAVY_RAIN_THR else "RA"
             agr = avg_agreement(start, end)
+            vis_code, cloud_group = _get_worst_vis_cloud(start, end)
 
             # [FIX] If the block is long enough to be permanent, but model agreement 
             # is too low to issue a confident BECMG (< PROB40_CUT), DO NOT completely suppress it. 
@@ -589,7 +604,7 @@ def _build_change_groups(
                                 "time_str":     _tstr,
                                 "time_h_start": _ths,
                                 "time_h_end":   _the,
-                                "wx": wx_str, "vis": "4000", "cloud": "BKN019",
+                                "wx": wx_str, "vis": vis_code, "cloud": cloud_group,
                                 "dir": "", "spd": "",
                                 "_prio": prio, "_rain": total_rain,
                             })
@@ -683,7 +698,7 @@ def _build_change_groups(
                                 "time_str":     _tstr,
                                 "time_h_start": _ths,
                                 "time_h_end":   _the,
-                                "wx": wx_str, "vis": "4000", "cloud": "BKN019",
+                                "wx": wx_str, "vis": vis_code, "cloud": cloud_group,
                                 "dir": "", "spd": "",
                                 "_prio": prio, "_rain": total_rain,
                             })
@@ -718,7 +733,7 @@ def _build_change_groups(
                                     "time_str":     _tstr,
                                     "time_h_start": _ths,
                                     "time_h_end":   _the,
-                                    "wx": wx_str, "vis": "4000", "cloud": "BKN019",
+                                    "wx": wx_str, "vis": vis_code, "cloud": cloud_group,
                                     "dir": "", "spd": "",
                                     "_prio": 6, "_rain": total_rain,
                                 })
@@ -736,7 +751,7 @@ def _build_change_groups(
                                 "time_str":     _tstr,
                                 "time_h_start": _ths,
                                 "time_h_end":   _the,
-                                "wx": wx_str, "vis": "4000", "cloud": "BKN019",
+                                "wx": wx_str, "vis": vis_code, "cloud": cloud_group,
                                 "dir": "", "spd": "",
                                 "_prio": 6, "_rain": total_rain,
                             })
@@ -754,7 +769,7 @@ def _build_change_groups(
                                 "time_str":     _tstr,
                                 "time_h_start": _ths,
                                 "time_h_end":   _the,
-                                "wx": wx_str, "vis": "4000", "cloud": "BKN019",
+                                "wx": wx_str, "vis": vis_code, "cloud": cloud_group,
                                 "dir": "", "spd": "",
                                 "_prio": 5, "_rain": total_rain,
                             })
