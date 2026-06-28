@@ -161,7 +161,7 @@ def export_all(db: ForecastDB, output_dir: str):
     """
     df_fcst = pd.read_sql_query(query_fcst, db.conn)
     
-    model_data = {param: {} for param in ["Temperature", "Dewpoint", "Pressure", "Rainfall", "Wind Speed", "Wind Dir.", "Wind Gust", "Prob Precip 0.1mm", "Prob Precip 1.0mm", "Prob Precip 10.0mm"]}
+    model_data = {param: {} for param in ["Temperature", "Dewpoint", "Pressure", "Rainfall", "Wind Speed", "Wind Dir.", "Wind Gust", "Prob Precip 0.1mm", "Prob Precip 1.0mm", "Prob Precip 10.0mm", "Sunshine", "Low Clouds", "Mid Clouds", "High Clouds", "Condition"]}
     
     param_map = {
         "Temperature": "temperature",
@@ -173,7 +173,12 @@ def export_all(db: ForecastDB, output_dir: str):
         "Wind Gust": "wind_gust",
         "Prob Precip 0.1mm": "prob_precip_01",
         "Prob Precip 1.0mm": "prob_precip_10",
-        "Prob Precip 10.0mm": "prob_precip_100"
+        "Prob Precip 10.0mm": "prob_precip_100",
+        "Sunshine": "sunshine",
+        "Low Clouds": "low_clouds",
+        "Mid Clouds": "mid_clouds",
+        "High Clouds": "high_clouds",
+        "Condition": "condition"
     }
     
     for m in MODELS:
@@ -192,6 +197,9 @@ def export_all(db: ForecastDB, output_dir: str):
     consensus.index.name = "Datetime"
     
     for param in model_data.keys():
+        if param == "Condition":
+            continue
+            
         weights = global_weights.get(param, {m: 1.0/len(MODELS) for m in MODELS})
         p_df = pd.DataFrame(model_data[param])
         
@@ -239,37 +247,7 @@ def export_all(db: ForecastDB, output_dir: str):
             return "Light Rain"
     consensus["Condition"] = consensus["Rain"].apply(get_condition)
     
-    # Calculate Visibility
-    from src.vis_cloud_proxy import estimate_visibility
-    import math
-    
-    def calc_visibility(row):
-        T = row.get("Temperature", 30.0)
-        Td = row.get("Dewpoint", 24.0)
-        P = row.get("Pressure", 1010.0)
-        R = row.get("Rain", 0.0)
-        U = row.get("Wind", 0.0)
-        
-        # Calculate RH using Magnus formula approximation
-        if pd.isna(T) or pd.isna(Td):
-            rh_pct = 80.0
-        else:
-            e_td = math.exp((17.625 * Td) / (243.04 + Td))
-            e_t = math.exp((17.625 * T) / (243.04 + T))
-            rh_pct = min(100.0, max(0.0, 100.0 * (e_td / e_t))) if e_t > 0 else 80.0
-            
-        return estimate_visibility(
-            rain_mmh=R if not pd.isna(R) else 0.0,
-            rh_pct=rh_pct,
-            temp_c=T if not pd.isna(T) else 30.0,
-            dewpoint_c=Td if not pd.isna(Td) else 24.0,
-            wind_kt=U if not pd.isna(U) else 0.0,
-            pressure_hpa=P if not pd.isna(P) else 1010.0,
-            pressure_trend_hpa_3h=0.0,
-            baseline_dry_vis_m=9999
-        )
-        
-    consensus["Visibility"] = consensus.apply(calc_visibility, axis=1)
+
     
     # Generate TAF Intel
     qm_rain_data = {m: qm_mapper.transform_series(pd.DataFrame(model_data["Rainfall"])[m], model=m).to_dict() for m in model_data["Rainfall"].keys()} if "Rainfall" in model_data else {}

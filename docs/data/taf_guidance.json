@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at": "2026-06-28 18:11:20",
+    "generated_at": "2026-06-28 18:38:35",
     "version": "v200",
     "location": "Bandara_Sangia_Ni_Bandera"
   },
@@ -17,8 +17,11 @@
       "Prob Precip 0.1mm": 67.1,
       "Prob Precip 1.0mm": 40.5,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 8499
+      "Sunshine": 46.0,
+      "Low Clouds": 24.0,
+      "Mid Clouds": 28.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-28 16:00:00",
@@ -32,8 +35,11 @@
       "Prob Precip 0.1mm": 61.3,
       "Prob Precip 1.0mm": 39.3,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Light Rain",
-      "Visibility": 3237
+      "Sunshine": 40.0,
+      "Low Clouds": 28.999999999999996,
+      "Mid Clouds": 34.0,
+      "High Clouds": 0.0,
+      "Condition": "Light Rain"
     },
     {
       "Datetime": "2026-06-28 17:00:00",
@@ -47,8 +53,11 @@
       "Prob Precip 0.1mm": 55.5,
       "Prob Precip 1.0mm": 38.1,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Light Rain",
-      "Visibility": 9999
+      "Sunshine": 21.5,
+      "Low Clouds": 9.0,
+      "Mid Clouds": 10.0,
+      "High Clouds": 0.0,
+      "Condition": "Light Rain"
     },
     {
       "Datetime": "2026-06-28 18:00:00",
@@ -62,8 +71,11 @@
       "Prob Precip 0.1mm": 38.9,
       "Prob Precip 1.0mm": 24.349999999999998,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 20.0,
+      "Low Clouds": 10.5,
+      "Mid Clouds": 6.5,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-28 19:00:00",
@@ -77,8 +89,11 @@
       "Prob Precip 0.1mm": 25.0,
       "Prob Precip 1.0mm": 12.2,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 11.5,
+      "Mid Clouds": 13.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-28 20:00:00",
@@ -92,8 +107,11 @@
       "Prob Precip 0.1mm": 12.333333333333332,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 4.666666666666667,
+      "Mid Clouds": 7.666666666666667,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-28 21:00:00",
@@ -107,8 +125,11 @@
       "Prob Precip 0.1mm": 7.45,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 3023
+      "Sunshine": 0.0,
+      "Low Clouds": 5.0,
+      "Mid Clouds": 8.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-28 22:00:00",
@@ -122,8 +143,11 @@
       "Prob Precip 0.1mm": 3.7,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2830
+      "Sunshine": 0.0,
+      "Low Clouds": 7.5,
+      "Mid Clouds": 5.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-28 23:00:00",
@@ -137,8 +161,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 3052
+      "Sunshine": 0.0,
+      "Low Clouds": 5.666666666666667,
+      "Mid Clouds": 3.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 00:00:00",
@@ -152,8 +179,11 @@
       "Prob Precip 0.1mm": 0.1,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2477
+      "Sunshine": 0.0,
+      "Low Clouds": 9.0,
+      "Mid Clouds": 8.5,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 01:00:00",
@@ -167,8 +197,11 @@
       "Prob Precip 0.1mm": 0.25,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2277
+      "Sunshine": 0.0,
+      "Low Clouds": 7.5,
+      "Mid Clouds": 17.5,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 02:00:00",
@@ -182,8 +215,11 @@
       "Prob Precip 0.1mm": 0.23333333333333336,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2446
+      "Sunshine": 0.0,
+      "Low Clouds": 15.714285714285719,
+      "Mid Clouds": 8.000000000000002,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 03:00:00",
@@ -197,8 +233,11 @@
       "Prob Precip 0.1mm": 0.2,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2247
+      "Sunshine": 0.0,
+      "Low Clouds": 15.200000000000003,
+      "Mid Clouds": 10.800000000000002,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 04:00:00",
@@ -212,8 +251,11 @@
       "Prob Precip 0.1mm": 0.26000000000000006,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2084
+      "Sunshine": 0.0,
+      "Low Clouds": 13.600000000000003,
+      "Mid Clouds": 10.8,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 05:00:00",
@@ -227,8 +269,11 @@
       "Prob Precip 0.1mm": 0.45714285714285724,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2281
+      "Sunshine": 0.0,
+      "Low Clouds": 11.857142857142858,
+      "Mid Clouds": 7.714285714285715,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 06:00:00",
@@ -242,8 +287,11 @@
       "Prob Precip 0.1mm": 0.2,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2054
+      "Sunshine": 0.0,
+      "Low Clouds": 15.600000000000001,
+      "Mid Clouds": 11.200000000000001,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 07:00:00",
@@ -257,8 +305,11 @@
       "Prob Precip 0.1mm": 0.1,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2410
+      "Sunshine": 24.8,
+      "Low Clouds": 10.8,
+      "Mid Clouds": 12.600000000000001,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 08:00:00",
@@ -272,8 +323,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 23.42857142857143,
+      "Low Clouds": 11.285714285714286,
+      "Mid Clouds": 9.571428571428571,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 09:00:00",
@@ -287,8 +341,11 @@
       "Prob Precip 0.1mm": 10.42,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 27.200000000000006,
+      "Low Clouds": 13.0,
+      "Mid Clouds": 13.400000000000002,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 10:00:00",
@@ -302,8 +359,11 @@
       "Prob Precip 0.1mm": 20.78,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 26.800000000000008,
+      "Low Clouds": 17.8,
+      "Mid Clouds": 11.799999999999999,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 11:00:00",
@@ -317,8 +377,11 @@
       "Prob Precip 0.1mm": 31.371428571428577,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 25.571428571428577,
+      "Low Clouds": 11.571428571428573,
+      "Mid Clouds": 9.42857142857143,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 12:00:00",
@@ -332,8 +395,11 @@
       "Prob Precip 0.1mm": 33.8,
       "Prob Precip 1.0mm": 7.58,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 25.200000000000003,
+      "Low Clouds": 30.200000000000003,
+      "Mid Clouds": 16.8,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 13:00:00",
@@ -347,8 +413,11 @@
       "Prob Precip 0.1mm": 36.38000000000001,
       "Prob Precip 1.0mm": 15.18,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 21.6,
+      "Low Clouds": 53.20000000000001,
+      "Mid Clouds": 16.200000000000003,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 14:00:00",
@@ -362,8 +431,11 @@
       "Prob Precip 0.1mm": 39.92857142857144,
       "Prob Precip 1.0mm": 23.457142857142856,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 18.000000000000004,
+      "Low Clouds": 40.142857142857146,
+      "Mid Clouds": 13.142857142857144,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 15:00:00",
@@ -377,8 +449,11 @@
       "Prob Precip 0.1mm": 48.14000000000001,
       "Prob Precip 1.0mm": 20.66,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 16.2,
+      "Low Clouds": 59.40000000000001,
+      "Mid Clouds": 17.6,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 16:00:00",
@@ -392,8 +467,11 @@
       "Prob Precip 0.1mm": 57.30000000000001,
       "Prob Precip 1.0mm": 18.62,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 16.200000000000003,
+      "Low Clouds": 54.80000000000001,
+      "Mid Clouds": 16.2,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 17:00:00",
@@ -407,8 +485,11 @@
       "Prob Precip 0.1mm": 67.00000000000001,
       "Prob Precip 1.0mm": 17.28571428571429,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 13.000000000000004,
+      "Low Clouds": 35.00000000000001,
+      "Mid Clouds": 17.85714285714286,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 18:00:00",
@@ -422,8 +503,11 @@
       "Prob Precip 0.1mm": 56.960000000000015,
       "Prob Precip 1.0mm": 11.060000000000002,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 8.4,
+      "Low Clouds": 51.00000000000001,
+      "Mid Clouds": 25.200000000000003,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 19:00:00",
@@ -437,8 +521,11 @@
       "Prob Precip 0.1mm": 47.440000000000005,
       "Prob Precip 1.0mm": 5.48,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 34.20000000000001,
+      "Mid Clouds": 16.8,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 20:00:00",
@@ -452,8 +539,11 @@
       "Prob Precip 0.1mm": 38.1857142857143,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 1.5714285714285718,
+      "Low Clouds": 14.85714285714286,
+      "Mid Clouds": 6.571428571428573,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 21:00:00",
@@ -467,8 +557,11 @@
       "Prob Precip 0.1mm": 26.7,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 21.200000000000003,
+      "Mid Clouds": 5.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 22:00:00",
@@ -482,8 +575,11 @@
       "Prob Precip 0.1mm": 15.540000000000001,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2944
+      "Sunshine": 0.0,
+      "Low Clouds": 11.4,
+      "Mid Clouds": 1.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-29 23:00:00",
@@ -497,8 +593,11 @@
       "Prob Precip 0.1mm": 4.557142857142858,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2892
+      "Sunshine": 0.0,
+      "Low Clouds": 7.142857142857144,
+      "Mid Clouds": 1.7142857142857146,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 00:00:00",
@@ -512,8 +611,11 @@
       "Prob Precip 0.1mm": 3.1600000000000006,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2555
+      "Sunshine": 0.0,
+      "Low Clouds": 15.600000000000001,
+      "Mid Clouds": 7.800000000000001,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 01:00:00",
@@ -527,8 +629,11 @@
       "Prob Precip 0.1mm": 1.94,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2477
+      "Sunshine": 0.0,
+      "Low Clouds": 9.0,
+      "Mid Clouds": 9.8,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 02:00:00",
@@ -542,8 +647,11 @@
       "Prob Precip 0.1mm": 0.8571428571428572,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2606
+      "Sunshine": 0.0,
+      "Low Clouds": 7.285714285714287,
+      "Mid Clouds": 9.285714285714286,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 03:00:00",
@@ -557,8 +665,11 @@
       "Prob Precip 0.1mm": 0.4800000000000001,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2236
+      "Sunshine": 0.0,
+      "Low Clouds": 10.0,
+      "Mid Clouds": 13.600000000000001,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 04:00:00",
@@ -572,8 +683,11 @@
       "Prob Precip 0.1mm": 0.24000000000000005,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2188
+      "Sunshine": 0.0,
+      "Low Clouds": 10.2,
+      "Mid Clouds": 13.400000000000002,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 05:00:00",
@@ -587,8 +701,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2390
+      "Sunshine": 0.0,
+      "Low Clouds": 7.285714285714287,
+      "Mid Clouds": 10.000000000000002,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 06:00:00",
@@ -602,8 +719,11 @@
       "Prob Precip 0.1mm": 0.5599999999999999,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2156
+      "Sunshine": 0.0,
+      "Low Clouds": 9.8,
+      "Mid Clouds": 13.600000000000003,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 07:00:00",
@@ -617,8 +737,11 @@
       "Prob Precip 0.1mm": 1.1800000000000002,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2558
+      "Sunshine": 25.800000000000008,
+      "Low Clouds": 6.800000000000001,
+      "Mid Clouds": 16.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 08:00:00",
@@ -632,8 +755,11 @@
       "Prob Precip 0.1mm": 1.685714285714286,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 25.428571428571434,
+      "Low Clouds": 9.857142857142858,
+      "Mid Clouds": 6.142857142857144,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 09:00:00",
@@ -647,8 +773,11 @@
       "Prob Precip 0.1mm": 4.38,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 29.800000000000004,
+      "Low Clouds": 16.4,
+      "Mid Clouds": 4.800000000000001,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 10:00:00",
@@ -662,8 +791,11 @@
       "Prob Precip 0.1mm": 6.980000000000001,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Light Rain",
-      "Visibility": 9999
+      "Sunshine": 30.200000000000003,
+      "Low Clouds": 16.8,
+      "Mid Clouds": 0.4,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 11:00:00",
@@ -677,8 +809,11 @@
       "Prob Precip 0.1mm": 9.714285714285715,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 28.28571428571429,
+      "Low Clouds": 18.71428571428572,
+      "Mid Clouds": 3.000000000000001,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 12:00:00",
@@ -692,8 +827,11 @@
       "Prob Precip 0.1mm": 19.500000000000004,
       "Prob Precip 1.0mm": 2.1999999999999997,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 26.4,
+      "Low Clouds": 30.200000000000003,
+      "Mid Clouds": 12.600000000000001,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 13:00:00",
@@ -707,8 +845,11 @@
       "Prob Precip 0.1mm": 29.32,
       "Prob Precip 1.0mm": 4.3,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 20.0,
+      "Low Clouds": 45.8,
+      "Mid Clouds": 21.6,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 14:00:00",
@@ -722,8 +863,11 @@
       "Prob Precip 0.1mm": 39.885714285714286,
       "Prob Precip 1.0mm": 6.8000000000000025,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 15.571428571428575,
+      "Low Clouds": 38.00000000000001,
+      "Mid Clouds": 14.571428571428575,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 15:00:00",
@@ -737,8 +881,11 @@
       "Prob Precip 0.1mm": 41.38,
       "Prob Precip 1.0mm": 8.9,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 13.0,
+      "Low Clouds": 43.800000000000004,
+      "Mid Clouds": 20.599999999999998,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 16:00:00",
@@ -752,8 +899,11 @@
       "Prob Precip 0.1mm": 43.63999999999999,
       "Prob Precip 1.0mm": 11.4,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 8499
+      "Sunshine": 12.000000000000002,
+      "Low Clouds": 46.2,
+      "Mid Clouds": 14.200000000000001,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 17:00:00",
@@ -767,8 +917,11 @@
       "Prob Precip 0.1mm": 46.24285714285714,
       "Prob Precip 1.0mm": 14.771428571428574,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 12.714285714285717,
+      "Low Clouds": 28.142857142857146,
+      "Mid Clouds": 9.571428571428573,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 18:00:00",
@@ -782,8 +935,11 @@
       "Prob Precip 0.1mm": 38.46,
       "Prob Precip 1.0mm": 9.200000000000001,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 12.200000000000003,
+      "Low Clouds": 19.000000000000004,
+      "Mid Clouds": 11.200000000000001,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 19:00:00",
@@ -797,8 +953,11 @@
       "Prob Precip 0.1mm": 31.000000000000004,
       "Prob Precip 1.0mm": 4.6000000000000005,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 33.2,
+      "Mid Clouds": 13.399999999999999,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 20:00:00",
@@ -812,8 +971,11 @@
       "Prob Precip 0.1mm": 24.700000000000003,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 1.7142857142857146,
+      "Low Clouds": 10.714285714285715,
+      "Mid Clouds": 6.000000000000002,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 21:00:00",
@@ -827,8 +989,11 @@
       "Prob Precip 0.1mm": 16.375,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 8.0,
+      "Mid Clouds": 3.75,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 22:00:00",
@@ -842,8 +1007,11 @@
       "Prob Precip 0.1mm": 8.2,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 3.5,
+      "Mid Clouds": 8.25,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-06-30 23:00:00",
@@ -857,8 +1025,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2884
+      "Sunshine": 0.0,
+      "Low Clouds": 0.14285714285714288,
+      "Mid Clouds": 7.714285714285715,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 00:00:00",
@@ -872,8 +1043,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 0.25,
+      "Mid Clouds": 17.25,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 01:00:00",
@@ -887,8 +1061,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 18.000000000000004,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 02:00:00",
@@ -902,8 +1079,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2611
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 8.571428571428573,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 03:00:00",
@@ -917,8 +1097,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2920
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 13.25,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 04:00:00",
@@ -932,8 +1115,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2763
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 12.75,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 05:00:00",
@@ -947,8 +1133,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2834
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 7.666666666666668,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 06:00:00",
@@ -962,8 +1151,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2484
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 9.75,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 07:00:00",
@@ -977,8 +1169,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2937
+      "Sunshine": 36.99999999999999,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 8.25,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 08:00:00",
@@ -992,8 +1187,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 34.66666666666667,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 1.0000000000000002,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 09:00:00",
@@ -1007,8 +1205,11 @@
       "Prob Precip 0.1mm": 0.125,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 43.25000000000001,
+      "Low Clouds": 3.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 10:00:00",
@@ -1022,8 +1223,11 @@
       "Prob Precip 0.1mm": 0.25,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 42.25,
+      "Low Clouds": 2.5,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 11:00:00",
@@ -1037,8 +1241,11 @@
       "Prob Precip 0.1mm": 0.45000000000000007,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 36.33333333333334,
+      "Low Clouds": 4.000000000000001,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 12:00:00",
@@ -1052,8 +1259,11 @@
       "Prob Precip 0.1mm": 11.05,
       "Prob Precip 1.0mm": 1.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 37.75,
+      "Low Clouds": 11.25,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 13:00:00",
@@ -1067,8 +1277,11 @@
       "Prob Precip 0.1mm": 21.775000000000002,
       "Prob Precip 1.0mm": 2.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 34.25,
+      "Low Clouds": 29.75,
+      "Mid Clouds": 19.75,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 14:00:00",
@@ -1082,8 +1295,11 @@
       "Prob Precip 0.1mm": 32.85,
       "Prob Precip 1.0mm": 3.45,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 30.666666666666668,
+      "Low Clouds": 23.833333333333336,
+      "Mid Clouds": 10.333333333333334,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 15:00:00",
@@ -1097,8 +1313,11 @@
       "Prob Precip 0.1mm": 33.96666666666667,
       "Prob Precip 1.0mm": 8.033333333333335,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 48.00000000000001,
+      "Low Clouds": 14.0,
+      "Mid Clouds": 11.666666666666668,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 16:00:00",
@@ -1112,8 +1331,11 @@
       "Prob Precip 0.1mm": 37.4,
       "Prob Precip 1.0mm": 13.1,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 51.00000000000001,
+      "Low Clouds": 15.0,
+      "Mid Clouds": 2.3333333333333335,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 17:00:00",
@@ -1127,8 +1349,11 @@
       "Prob Precip 0.1mm": 43.95000000000001,
       "Prob Precip 1.0mm": 19.53333333333334,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 33.00000000000001,
+      "Low Clouds": 25.66666666666667,
+      "Mid Clouds": 5.666666666666667,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 18:00:00",
@@ -1142,8 +1367,11 @@
       "Prob Precip 0.1mm": 37.333333333333336,
       "Prob Precip 1.0mm": 12.1,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 40.666666666666664,
+      "Low Clouds": 15.666666666666666,
+      "Mid Clouds": 11.666666666666668,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 19:00:00",
@@ -1157,8 +1385,11 @@
       "Prob Precip 0.1mm": 33.8,
       "Prob Precip 1.0mm": 6.066666666666666,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 8499
+      "Sunshine": 0.0,
+      "Low Clouds": 13.999999999999998,
+      "Mid Clouds": 2.6666666666666665,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 20:00:00",
@@ -1172,8 +1403,11 @@
       "Prob Precip 0.1mm": 31.41666666666667,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 2.333333333333334,
+      "Low Clouds": 2.5000000000000004,
+      "Mid Clouds": 0.16666666666666669,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 21:00:00",
@@ -1187,8 +1421,11 @@
       "Prob Precip 0.1mm": 23.366666666666664,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2403
+      "Sunshine": 0.0,
+      "Low Clouds": 3.333333333333333,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 22:00:00",
@@ -1202,8 +1439,11 @@
       "Prob Precip 0.1mm": 16.399999999999995,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 1976
+      "Sunshine": 0.0,
+      "Low Clouds": 1.6666666666666665,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-01 23:00:00",
@@ -1217,8 +1457,11 @@
       "Prob Precip 0.1mm": 9.316666666666668,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2434
+      "Sunshine": 0.0,
+      "Low Clouds": 0.6666666666666667,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 00:00:00",
@@ -1232,8 +1475,11 @@
       "Prob Precip 0.1mm": 7.466666666666667,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2392
+      "Sunshine": 0.0,
+      "Low Clouds": 10.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 01:00:00",
@@ -1247,8 +1493,11 @@
       "Prob Precip 0.1mm": 5.3999999999999995,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2066
+      "Sunshine": 0.0,
+      "Low Clouds": 12.666666666666666,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 02:00:00",
@@ -1262,8 +1511,11 @@
       "Prob Precip 0.1mm": 3.4833333333333334,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2154
+      "Sunshine": 0.0,
+      "Low Clouds": 5.833333333333335,
+      "Mid Clouds": 0.16666666666666669,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 03:00:00",
@@ -1277,8 +1529,11 @@
       "Prob Precip 0.1mm": 1.7,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2397
+      "Sunshine": 0.0,
+      "Low Clouds": 3.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 04:00:00",
@@ -1292,8 +1547,11 @@
       "Prob Precip 0.1mm": 0.8999999999999999,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2236
+      "Sunshine": 0.0,
+      "Low Clouds": 3.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 05:00:00",
@@ -1307,8 +1565,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2010
+      "Sunshine": 0.0,
+      "Low Clouds": 0.5000000000000001,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 06:00:00",
@@ -1322,8 +1583,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2320
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 07:00:00",
@@ -1337,8 +1601,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2641
+      "Sunshine": 47.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 08:00:00",
@@ -1352,8 +1619,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 26.333333333333336,
+      "Low Clouds": 1.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 09:00:00",
@@ -1367,8 +1637,11 @@
       "Prob Precip 0.1mm": 2.3,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 59.00000000000001,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 10:00:00",
@@ -1382,8 +1655,11 @@
       "Prob Precip 0.1mm": 4.6,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 8499
+      "Sunshine": 57.99999999999999,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 11:00:00",
@@ -1397,8 +1673,11 @@
       "Prob Precip 0.1mm": 15.083333333333336,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 30.166666666666668,
+      "Low Clouds": 17.5,
+      "Mid Clouds": 5.833333333333335,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 12:00:00",
@@ -1412,8 +1691,11 @@
       "Prob Precip 0.1mm": 14.0,
       "Prob Precip 1.0mm": 5.1,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 56.0,
+      "Low Clouds": 13.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 13:00:00",
@@ -1427,8 +1709,11 @@
       "Prob Precip 0.1mm": 21.1,
       "Prob Precip 1.0mm": 10.3,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 52.0,
+      "Low Clouds": 26.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 14:00:00",
@@ -1442,8 +1727,11 @@
       "Prob Precip 0.1mm": 39.78333333333333,
       "Prob Precip 1.0mm": 23.799999999999997,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 23.166666666666668,
+      "Low Clouds": 19.66666666666667,
+      "Mid Clouds": 13.666666666666666,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 15:00:00",
@@ -1457,8 +1745,11 @@
       "Prob Precip 0.1mm": 32.3,
       "Prob Precip 1.0mm": 17.7,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 33.0,
+      "Low Clouds": 65.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 16:00:00",
@@ -1472,8 +1763,11 @@
       "Prob Precip 0.1mm": 36.5,
       "Prob Precip 1.0mm": 20.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 34.0,
+      "Low Clouds": 30.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 17:00:00",
@@ -1487,8 +1781,11 @@
       "Prob Precip 0.1mm": 54.56666666666668,
       "Prob Precip 1.0mm": 29.466666666666672,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 26.83333333333334,
+      "Low Clouds": 9.333333333333336,
+      "Mid Clouds": 8.666666666666668,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 18:00:00",
@@ -1502,8 +1799,11 @@
       "Prob Precip 0.1mm": 35.5,
       "Prob Precip 1.0mm": 14.8,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Light Rain",
-      "Visibility": 9999
+      "Sunshine": 50.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 19:00:00",
@@ -1517,8 +1817,11 @@
       "Prob Precip 0.1mm": 30.4,
       "Prob Precip 1.0mm": 7.4,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 8499
+      "Sunshine": 0.0,
+      "Low Clouds": 3.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 20:00:00",
@@ -1532,8 +1835,11 @@
       "Prob Precip 0.1mm": 32.13333333333333,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 5.833333333333335,
+      "Low Clouds": 10.000000000000002,
+      "Mid Clouds": 1.6666666666666667,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 21:00:00",
@@ -1547,8 +1853,11 @@
       "Prob Precip 0.1mm": 20.1,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 3.0,
+      "Mid Clouds": 4.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 22:00:00",
@@ -1562,8 +1871,11 @@
       "Prob Precip 0.1mm": 14.9,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2789
+      "Sunshine": 0.0,
+      "Low Clouds": 2.0,
+      "Mid Clouds": 5.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-02 23:00:00",
@@ -1577,8 +1889,11 @@
       "Prob Precip 0.1mm": 4.8500000000000005,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2724
+      "Sunshine": 0.0,
+      "Low Clouds": 8.666666666666668,
+      "Mid Clouds": 1.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 00:00:00",
@@ -1592,8 +1907,11 @@
       "Prob Precip 0.1mm": 6.5,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2472
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 5.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 01:00:00",
@@ -1607,8 +1925,11 @@
       "Prob Precip 0.1mm": 3.2,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2392
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 5.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 02:00:00",
@@ -1622,8 +1943,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2424
+      "Sunshine": 0.0,
+      "Low Clouds": 1.166666666666667,
+      "Mid Clouds": 0.8333333333333334,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 03:00:00",
@@ -1637,8 +1961,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2475
+      "Sunshine": 0.0,
+      "Low Clouds": 2.0,
+      "Mid Clouds": 100.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 04:00:00",
@@ -1652,8 +1979,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2716
+      "Sunshine": 0.0,
+      "Low Clouds": 2.0,
+      "Mid Clouds": 100.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 05:00:00",
@@ -1667,8 +1997,11 @@
       "Prob Precip 0.1mm": 1.466666666666667,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2267
+      "Sunshine": 0.0,
+      "Low Clouds": 0.33333333333333337,
+      "Mid Clouds": 16.333333333333336,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 06:00:00",
@@ -1682,8 +2015,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2479
+      "Sunshine": 0.0,
+      "Low Clouds": 4.0,
+      "Mid Clouds": 89.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 07:00:00",
@@ -1697,8 +2033,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2799
+      "Sunshine": 19.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 61.99999999999999,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 08:00:00",
@@ -1712,8 +2051,11 @@
       "Prob Precip 0.1mm": 1.466666666666667,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 22.833333333333336,
+      "Low Clouds": 0.16666666666666669,
+      "Mid Clouds": 6.000000000000001,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 09:00:00",
@@ -1727,8 +2069,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 47.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 9.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 10:00:00",
@@ -1742,8 +2087,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 8499
+      "Sunshine": 56.0,
+      "Low Clouds": 1.0,
+      "Mid Clouds": 5.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 11:00:00",
@@ -1757,8 +2105,11 @@
       "Prob Precip 0.1mm": 1.9166666666666667,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 8499
+      "Sunshine": 33.83333333333334,
+      "Low Clouds": 12.166666666666668,
+      "Mid Clouds": 0.8333333333333334,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 12:00:00",
@@ -1772,8 +2123,11 @@
       "Prob Precip 0.1mm": 11.1,
       "Prob Precip 1.0mm": 0.8999999999999999,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 20.0,
+      "Low Clouds": 40.0,
+      "Mid Clouds": 77.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 13:00:00",
@@ -1787,8 +2141,11 @@
       "Prob Precip 0.1mm": 22.1,
       "Prob Precip 1.0mm": 1.7999999999999998,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 59.00000000000001,
+      "Mid Clouds": 89.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 14:00:00",
@@ -1802,8 +2159,11 @@
       "Prob Precip 0.1mm": 34.06666666666667,
       "Prob Precip 1.0mm": 5.800000000000002,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 20.333333333333336,
+      "Low Clouds": 32.33333333333334,
+      "Mid Clouds": 25.66666666666667,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 15:00:00",
@@ -1847,8 +2207,11 @@
       "Prob Precip 0.1mm": 84.11666666666667,
       "Prob Precip 1.0mm": 31.23333333333334,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 20.5,
+      "Low Clouds": 11.333333333333334,
+      "Mid Clouds": 19.833333333333336,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 18:00:00",
@@ -1892,8 +2255,11 @@
       "Prob Precip 0.1mm": 53.583333333333336,
       "Prob Precip 1.0mm": 12.750000000000002,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2944
+      "Sunshine": 7.166666666666667,
+      "Low Clouds": 9.500000000000002,
+      "Mid Clouds": 3.0000000000000004,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-03 23:00:00",
@@ -1907,8 +2273,11 @@
       "Prob Precip 0.1mm": 5.983333333333334,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2629
+      "Sunshine": 0.0,
+      "Low Clouds": 5.166666666666667,
+      "Mid Clouds": 2.5000000000000004,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-04 02:00:00",
@@ -1922,8 +2291,11 @@
       "Prob Precip 0.1mm": 6.850000000000001,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2245
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 0.8333333333333334,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-04 05:00:00",
@@ -1937,8 +2309,11 @@
       "Prob Precip 0.1mm": 21.63333333333333,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 1879
+      "Sunshine": 0.0,
+      "Low Clouds": 2.166666666666667,
+      "Mid Clouds": 9.833333333333334,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-04 08:00:00",
@@ -1952,8 +2327,11 @@
       "Prob Precip 0.1mm": 17.650000000000002,
       "Prob Precip 1.0mm": 11.200000000000001,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 20.666666666666668,
+      "Low Clouds": 7.333333333333335,
+      "Mid Clouds": 10.5,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-04 11:00:00",
@@ -1967,8 +2345,11 @@
       "Prob Precip 0.1mm": 21.98,
       "Prob Precip 1.0mm": 4.4,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 23.800000000000004,
+      "Low Clouds": 16.8,
+      "Mid Clouds": 14.200000000000001,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-04 14:00:00",
@@ -1982,8 +2363,11 @@
       "Prob Precip 0.1mm": 63.98333333333334,
       "Prob Precip 1.0mm": 11.850000000000001,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 19.833333333333336,
+      "Low Clouds": 28.666666666666668,
+      "Mid Clouds": 11.166666666666668,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-04 17:00:00",
@@ -1997,8 +2381,11 @@
       "Prob Precip 0.1mm": 70.66,
       "Prob Precip 1.0mm": 29.560000000000002,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Light Rain",
-      "Visibility": 4908
+      "Sunshine": 15.000000000000002,
+      "Low Clouds": 24.800000000000004,
+      "Mid Clouds": 9.000000000000002,
+      "High Clouds": 0.0,
+      "Condition": "Light Rain"
     },
     {
       "Datetime": "2026-07-04 20:00:00",
@@ -2012,8 +2399,11 @@
       "Prob Precip 0.1mm": 51.91666666666668,
       "Prob Precip 1.0mm": 1.0833333333333335,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 12.333333333333334,
+      "Low Clouds": 5.500000000000001,
+      "Mid Clouds": 10.333333333333334,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-04 23:00:00",
@@ -2027,8 +2417,11 @@
       "Prob Precip 0.1mm": 8.82,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2483
+      "Sunshine": 0.0,
+      "Low Clouds": 1.6,
+      "Mid Clouds": 10.600000000000001,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-05 02:00:00",
@@ -2042,8 +2435,11 @@
       "Prob Precip 0.1mm": 1.9500000000000002,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2160
+      "Sunshine": 0.0,
+      "Low Clouds": 0.8333333333333334,
+      "Mid Clouds": 13.833333333333336,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-05 05:00:00",
@@ -2057,8 +2453,11 @@
       "Prob Precip 0.1mm": 42.92,
       "Prob Precip 1.0mm": 19.5,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2201
+      "Sunshine": 0.0,
+      "Low Clouds": 7.000000000000001,
+      "Mid Clouds": 10.400000000000002,
+      "High Clouds": 0.0,
+      "Condition": "Light Rain"
     },
     {
       "Datetime": "2026-07-05 08:00:00",
@@ -2072,8 +2471,11 @@
       "Prob Precip 0.1mm": 16.25,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 16.333333333333336,
+      "Low Clouds": 10.000000000000002,
+      "Mid Clouds": 4.666666666666667,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-05 11:00:00",
@@ -2087,8 +2489,11 @@
       "Prob Precip 0.1mm": 2.2800000000000002,
       "Prob Precip 1.0mm": 1.6800000000000002,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 22.2,
+      "Low Clouds": 21.200000000000003,
+      "Mid Clouds": 15.000000000000002,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-05 14:00:00",
@@ -2102,8 +2507,11 @@
       "Prob Precip 0.1mm": 36.21666666666667,
       "Prob Precip 1.0mm": 15.083333333333336,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 23.833333333333336,
+      "Low Clouds": 40.16666666666668,
+      "Mid Clouds": 6.833333333333334,
+      "High Clouds": 0.0,
+      "Condition": "Light Rain"
     },
     {
       "Datetime": "2026-07-05 17:00:00",
@@ -2117,8 +2525,11 @@
       "Prob Precip 0.1mm": 21.94,
       "Prob Precip 1.0mm": 19.500000000000007,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 21.8,
+      "Low Clouds": 4.800000000000001,
+      "Mid Clouds": 1.6,
+      "High Clouds": 0.0,
+      "Condition": "Light Rain"
     },
     {
       "Datetime": "2026-07-05 20:00:00",
@@ -2132,8 +2543,11 @@
       "Prob Precip 0.1mm": 10.500000000000002,
       "Prob Precip 1.0mm": 2.5000000000000004,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 13.666666666666668,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 1.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-05 23:00:00",
@@ -2147,8 +2561,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 2.4000000000000004,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-06 02:00:00",
@@ -2162,8 +2579,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 3103
+      "Sunshine": 0.0,
+      "Low Clouds": 0.5000000000000001,
+      "Mid Clouds": 3.833333333333334,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-06 05:00:00",
@@ -2177,8 +2597,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2712
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 2.4000000000000004,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-06 08:00:00",
@@ -2192,8 +2615,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 20.83333333333334,
+      "Low Clouds": 0.33333333333333337,
+      "Mid Clouds": 0.8333333333333334,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-06 11:00:00",
@@ -2207,8 +2633,11 @@
       "Prob Precip 0.1mm": 2.175,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 27.75,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 3.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-06 14:00:00",
@@ -2222,8 +2651,11 @@
       "Prob Precip 0.1mm": 4.1,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 28.200000000000003,
+      "Low Clouds": 19.000000000000004,
+      "Mid Clouds": 6.4,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-06 17:00:00",
@@ -2237,8 +2669,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 26.75,
+      "Low Clouds": 0.5,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-06 20:00:00",
@@ -2252,8 +2687,11 @@
       "Prob Precip 0.1mm": 7.320000000000001,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 11.200000000000001,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-06 23:00:00",
@@ -2267,8 +2705,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-07 02:00:00",
@@ -2282,8 +2723,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2957
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-07 05:00:00",
@@ -2297,8 +2741,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2601
+      "Sunshine": 0.0,
+      "Low Clouds": 0.5,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-07 08:00:00",
@@ -2312,8 +2759,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 17.8,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-07 11:00:00",
@@ -2327,8 +2777,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 26.000000000000004,
+      "Low Clouds": 0.5,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-07 14:00:00",
@@ -2342,8 +2795,11 @@
       "Prob Precip 0.1mm": 4.760000000000002,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 26.0,
+      "Low Clouds": 33.6,
+      "Mid Clouds": 0.2,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-07 17:00:00",
@@ -2357,8 +2813,11 @@
       "Prob Precip 0.1mm": 0.44999999999999996,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 8499
+      "Sunshine": 18.25,
+      "Low Clouds": 11.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-07 20:00:00",
@@ -2372,8 +2831,11 @@
       "Prob Precip 0.1mm": 4.880000000000001,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 8.6,
+      "Low Clouds": 11.4,
+      "Mid Clouds": 2.2,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-07 23:00:00",
@@ -2387,8 +2849,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-08 02:00:00",
@@ -2402,8 +2867,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2893
+      "Sunshine": 0.0,
+      "Low Clouds": 3.0000000000000004,
+      "Mid Clouds": 1.4000000000000001,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-08 05:00:00",
@@ -2417,8 +2885,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2369
+      "Sunshine": 0.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 1.6666666666666665,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-08 08:00:00",
@@ -2432,8 +2903,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 13.5,
+      "Low Clouds": 1.0,
+      "Mid Clouds": 2.5,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-08 11:00:00",
@@ -2447,8 +2921,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 59.00000000000001,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-08 14:00:00",
@@ -2477,8 +2954,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 57.99999999999999,
+      "Low Clouds": 5.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-08 20:00:00",
@@ -2486,14 +2966,71 @@
       "Dewpoint": 22.55,
       "Pressure": 1012.3,
       "Rain": 0.0,
-      "Wind": 5.1,
-      "Wind Dir.": 74.5,
+      "Wind": 5.660585529313376,
+      "Wind Dir.": 71.27752711410403,
+      "Wind Gust": 13.8,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
+      "Sunshine": 35.0,
+      "Low Clouds": 3.5,
+      "Mid Clouds": 3.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
+    },
+    {
+      "Datetime": "2026-07-09 02:00:00",
+      "Temperature": 25.05,
+      "Dewpoint": 22.15,
+      "Pressure": 1012.05,
+      "Rain": 0.0,
+      "Wind": 5.339609941065136,
+      "Wind Dir.": 97.5058025354799,
+      "Wind Gust": 9.450000000000001,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
+      "Sunshine": 0.0,
+      "Low Clouds": 3.0,
+      "Mid Clouds": 2.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
+    },
+    {
+      "Datetime": "2026-07-09 08:00:00",
+      "Temperature": 25.650000000000002,
+      "Dewpoint": 21.45,
+      "Pressure": 1013.5,
+      "Rain": 0.0,
+      "Wind": 4.1063417645246405,
+      "Wind Dir.": 142.44209633592433,
+      "Wind Gust": 10.0,
+      "Prob Precip 0.1mm": 0.0,
+      "Prob Precip 1.0mm": 0.0,
+      "Prob Precip 10.0mm": 0.0,
+      "Sunshine": 18.499999999999996,
+      "Low Clouds": 0.5,
+      "Mid Clouds": 0.5,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
+    },
+    {
+      "Datetime": "2026-07-09 14:00:00",
+      "Temperature": 28.350000000000005,
+      "Dewpoint": 22.099999999999998,
+      "Pressure": 1009.5999999999998,
+      "Rain": 0.0,
+      "Wind": 12.006146294146129,
+      "Wind Dir.": 232.06988426643903,
       "Wind Gust": 12.45,
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 58.50000000000001,
+      "Low Clouds": 1.5,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-09 02:00:00",
@@ -2552,8 +3089,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 35.5,
+      "Low Clouds": 6.5,
+      "Mid Clouds": 2.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-10 02:00:00",
@@ -2567,8 +3107,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2681
+      "Sunshine": 0.0,
+      "Low Clouds": 2.5,
+      "Mid Clouds": 1.5,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-10 08:00:00",
@@ -2582,8 +3125,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 15.500000000000002,
+      "Low Clouds": 2.5,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-10 14:00:00",
@@ -2597,8 +3143,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 53.5,
+      "Low Clouds": 3.5,
+      "Mid Clouds": 2.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-10 20:00:00",
@@ -2612,8 +3161,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 34.0,
+      "Low Clouds": 6.0,
+      "Mid Clouds": 2.5,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-11 02:00:00",
@@ -2627,8 +3179,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2557
+      "Sunshine": 0.0,
+      "Low Clouds": 4.0,
+      "Mid Clouds": 4.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-11 08:00:00",
@@ -2642,8 +3197,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 15.500000000000002,
+      "Low Clouds": 3.5,
+      "Mid Clouds": 2.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-11 14:00:00",
@@ -2657,8 +3215,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 30.0,
+      "Low Clouds": 58.49999999999999,
+      "Mid Clouds": 9.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-11 20:00:00",
@@ -2672,8 +3233,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Light Rain",
-      "Visibility": 4750
+      "Sunshine": 18.0,
+      "Low Clouds": 7.0,
+      "Mid Clouds": 4.5,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-12 02:00:00",
@@ -2687,8 +3251,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2797
+      "Sunshine": 0.0,
+      "Low Clouds": 10.999999999999998,
+      "Mid Clouds": 2.5,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-12 08:00:00",
@@ -2702,8 +3269,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 17.0,
+      "Low Clouds": 0.5,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-12 14:00:00",
@@ -2717,8 +3287,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 48.50000000000001,
+      "Low Clouds": 40.5,
+      "Mid Clouds": 3.5,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-12 20:00:00",
@@ -2732,8 +3305,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Light Rain",
-      "Visibility": 4162
+      "Sunshine": 26.5,
+      "Low Clouds": 11.5,
+      "Mid Clouds": 17.0,
+      "High Clouds": 0.0,
+      "Condition": "Light Rain"
     },
     {
       "Datetime": "2026-07-13 02:00:00",
@@ -2747,8 +3323,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 0.0,
+      "Low Clouds": 25.0,
+      "Mid Clouds": 11.5,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-13 08:00:00",
@@ -2762,8 +3341,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 15.0,
+      "Low Clouds": 1.0,
+      "Mid Clouds": 3.5,
+      "High Clouds": 0.0,
+      "Condition": "Light Rain"
     },
     {
       "Datetime": "2026-07-13 14:00:00",
@@ -2777,8 +3359,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 8499
+      "Sunshine": 28.0,
+      "Low Clouds": 84.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-13 20:00:00",
@@ -2792,8 +3377,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Light Rain",
-      "Visibility": 4523
+      "Sunshine": 16.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 1.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-14 02:00:00",
@@ -2807,8 +3395,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 2480
+      "Sunshine": 0.0,
+      "Low Clouds": 1.0,
+      "Mid Clouds": 5.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-14 08:00:00",
@@ -2822,8 +3413,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 16.0,
+      "Low Clouds": 0.0,
+      "Mid Clouds": 5.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     },
     {
       "Datetime": "2026-07-14 14:00:00",
@@ -2852,8 +3446,11 @@
       "Prob Precip 0.1mm": 0.0,
       "Prob Precip 1.0mm": 0.0,
       "Prob Precip 10.0mm": 0.0,
-      "Condition": "Normal",
-      "Visibility": 9999
+      "Sunshine": 44.0,
+      "Low Clouds": 55.0,
+      "Mid Clouds": 0.0,
+      "High Clouds": 0.0,
+      "Condition": "Normal"
     }
   ]
 }

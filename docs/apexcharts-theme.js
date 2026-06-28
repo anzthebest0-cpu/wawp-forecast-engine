@@ -198,7 +198,7 @@ const CHART_WIND_OPTIONS = {
   chart: {
     ...TITAN_BASE.chart,
     id:     'titan-wind',
-    type:   'area',
+    type:   'line',
     height: 200,
     group:  'meteogram',
   },
@@ -217,16 +217,23 @@ const CHART_WIND_OPTIONS = {
   },
 
   series: [
-    { name: 'Wind (kt)',  data: [] },
-    { name: 'Gust (kt)',  data: [] },
+    { name: 'Wind (kt)',  type: 'area', data: [] },
+    { name: 'Gust (kt)',  type: 'line', data: [] },
+    { name: 'Dir (°)',    type: 'scatter', data: [] },
   ],
 
-  colors: [TITAN_COLORS.cyan, TITAN_COLORS.amber],
+  colors: [TITAN_COLORS.cyan, TITAN_COLORS.amber, '#8b5cf6'],
 
   stroke: {
     curve:  'smooth',
-    width:  [2, 1.5],
-    dashArray: [0, 3],
+    width:  [2, 1.5, 0],
+    dashArray: [0, 3, 0],
+  },
+  
+  markers: {
+    size: [0, 0, 3],
+    colors: ['#8b5cf6'],
+    strokeWidth: 0,
   },
 
   dropShadow: {
@@ -240,8 +247,8 @@ const CHART_WIND_OPTIONS = {
   },
 
   fill: {
-    type:    ['gradient', 'solid'],
-    opacity: [1, 0],
+    type:    ['gradient', 'solid', 'solid'],
+    opacity: [1, 1, 1],
     gradient: {
       shade:          'dark',
       type:           'vertical',
@@ -256,18 +263,41 @@ const CHART_WIND_OPTIONS = {
     },
   },
 
-  yaxis: {
-    labels: {
-      style: {
-        colors:     TITAN_COLORS.text,
-        fontSize:   '10px',
-        fontFamily: TITAN_COLORS.font,
+  yaxis: [
+    {
+      labels: {
+        style: { colors: TITAN_COLORS.text, fontSize: '10px', fontFamily: TITAN_COLORS.font },
+        formatter: (v) => v !== undefined ? `${v.toFixed(0)}kt` : '',
       },
-      formatter: (v) => `${Math.round(v)}kt`,
+      tickAmount: 4,
+      min: 0,
+      seriesName: 'Wind (kt)'
     },
-    tickAmount: 4,
-    min: 0,
-  },
+    {
+      show: false, // Hide Gust axis, scale it with Wind
+      seriesName: 'Wind (kt)'
+    },
+    {
+      opposite: true,
+      min: 0,
+      max: 360,
+      tickAmount: 4,
+      labels: {
+        style: { colors: '#8b5cf6', fontSize: '10px', fontFamily: TITAN_COLORS.font },
+        formatter: (v) => v !== undefined ? `${v.toFixed(0)}°` : '',
+      },
+      seriesName: 'Dir (°)'
+    }
+  ],
+  
+  tooltip: {
+    theme: 'light',
+    y: [
+      { formatter: (v) => `${v.toFixed(2)} kt` },
+      { formatter: (v) => `${v.toFixed(2)} kt` },
+      { formatter: (v) => `${v.toFixed(0)} °` }
+    ]
+  }
 };
 
 // ── CHART 3: PRECIPITATION ───────────────────────────────────
@@ -347,43 +377,47 @@ const CHART_RAIN_OPTIONS = {
 };
 
 // ── CHART 4: ATMOSPHERE ──────────────────────────────────────
-const CHART_ATMOS_OPTIONS = {
+// ── CHART 4: CLOUDS HEATMAP ──────────────────────────────────
+const CHART_CLOUD_HEATMAP_OPTIONS = {
   ...TITAN_BASE,
   chart: {
     ...TITAN_BASE.chart,
-    type: 'line',
+    type: 'heatmap',
+    height: 150,
+    group: 'meteogram',
   },
-  colors: ['#8b5cf6', '#10b981'],
-  stroke: {
-    curve: 'smooth',
-    width: [2, 2],
-    dashArray: [0, 4]
+  title: {
+    text: 'CLOUD COVER (%)',
+    align: 'left',
+    style: { fontSize: '10px', fontWeight: '600', fontFamily: TITAN_COLORS.font, color: 'rgba(138,154,184,0.7)', letterSpacing: '0.1em' },
+    offsetY: 4,
   },
-  yaxis: [
-    {
-      labels: {
-        style: { colors: "#8b5cf6", fontSize: '10px', fontFamily: TITAN_COLORS.font },
-        formatter: (v) => v ? `${Math.round(v)}m` : ''
-      },
-      tickAmount: 4
-    },
-    {
-      opposite: true,
-      labels: {
-        style: { colors: "#10b981", fontSize: '10px', fontFamily: TITAN_COLORS.font },
-        formatter: (v) => v ? `${v.toFixed(1)}hPa` : ''
-      },
-      tickAmount: 4
+  plotOptions: {
+    heatmap: {
+      shadeIntensity: 0.5,
+      radius: 4,
+      useFillColorAsStroke: false,
+      colorScale: {
+        ranges: [
+          { from: 0, to: 10, color: '#f1f5f9', name: 'Clear' },
+          { from: 11, to: 40, color: '#cbd5e1', name: 'Few' },
+          { from: 41, to: 70, color: '#94a3b8', name: 'Scattered' },
+          { from: 71, to: 90, color: '#64748b', name: 'Broken' },
+          { from: 91, to: 100, color: '#334155', name: 'Overcast' }
+        ]
+      }
     }
-  ],
-  tooltip: {
-    theme: 'dark',
-    y: [
-      { formatter: (v) => `${Math.round(v)} m` },
-      { formatter: (v) => `${v.toFixed(1)} hPa` }
-    ]
+  },
+  dataLabels: {
+    enabled: false
+  },
+  yaxis: {
+    labels: {
+      style: { colors: TITAN_COLORS.text, fontSize: '10px', fontFamily: TITAN_COLORS.font }
+    }
   }
 };
+
 
 // ── CHART INIT HELPER ────────────────────────────────────────
 /**
@@ -400,16 +434,39 @@ function initTitanCharts(data) {
     { name: 'Temp (°C)',  data: data.tempData  || [] },
     { name: 'Dewpt (°C)', data: data.dewData   || [] },
   ];
+  // Add weather conditions as annotations to the Temp chart
+  const tempAnnotations = { xaxis: [] };
+  if (data.condData) {
+      data.condData.forEach(pt => {
+          if (pt[1] && pt[1] !== 'Normal') {
+              let icon = '🌧️';
+              if (pt[1] === 'Heavy Rain') icon = '⛈️';
+              else if (pt[1] === 'Light Rain') icon = '🌦️';
+              
+              tempAnnotations.xaxis.push({
+                  x: pt[0],
+                  borderColor: 'transparent',
+                  label: {
+                      text: icon,
+                      style: { fontSize: '18px', background: 'transparent' },
+                      offsetY: -10
+                  }
+              });
+          }
+      });
+  }
+
   const chartTemp = new ApexCharts(
     document.querySelector('#chart-temp'),
-    { ...CHART_TEMP_OPTIONS, series: tempSeries }
+    { ...CHART_TEMP_OPTIONS, series: tempSeries, annotations: tempAnnotations }
   );
   chartTemp.render();
 
   // Wind
   const windSeries = [
-    { name: 'Wind (kt)', data: data.windData || [] },
-    { name: 'Gust (kt)', data: data.gustData || [] },
+    { name: 'Wind (kt)', type: 'area', data: data.windData || [] },
+    { name: 'Gust (kt)', type: 'line', data: data.gustData || [] },
+    { name: 'Dir (°)', type: 'scatter', data: data.windDirData || [] },
   ];
   const chartWind = new ApexCharts(
     document.querySelector('#chart-wind'),
@@ -425,39 +482,18 @@ function initTitanCharts(data) {
   );
   chartRain.render();
 
-  // Atmos
-  const atmosSeries = [
-    { name: 'Visibility (m)', data: data.visData || [] },
-    { name: 'Pressure (hPa)', data: data.pressData || [] },
+  // Clouds Heatmap
+  const cloudSeries = [
+    { name: 'High', data: data.highCloudData || [] },
+    { name: 'Mid', data: data.midCloudData || [] },
+    { name: 'Low', data: data.lowCloudData || [] }
   ];
-  
-  // Add weather conditions as annotations to the Atmos chart
-  const annotations = { points: [] };
-  if (data.condData) {
-      data.condData.forEach(pt => {
-          if (pt[1] && pt[1] !== 'Normal') {
-              let icon = '🌧️';
-              if (pt[1] === 'Heavy Rain') icon = '⛈️';
-              else if (pt[1] === 'Light Rain') icon = '🌦️';
-              
-              annotations.points.push({
-                  x: pt[0],
-                  y: 9999, // Place near top of visibility
-                  marker: { size: 0 },
-                  label: {
-                      text: icon,
-                      style: { fontSize: '16px', background: 'transparent' }
-                  }
-              });
-          }
-      });
-  }
 
-  const chartAtmos = new ApexCharts(
-    document.querySelector('#chart-atmos'),
-    { ...CHART_ATMOS_OPTIONS, series: atmosSeries, annotations: annotations }
+  const chartClouds = new ApexCharts(
+    document.querySelector('#chart-clouds'),
+    { ...CHART_CLOUD_HEATMAP_OPTIONS, series: cloudSeries }
   );
-  chartAtmos.render();
+  chartClouds.render();
 
-  return { chartTemp, chartWind, chartRain, chartAtmos };
+  return { chartTemp, chartWind, chartRain, chartClouds };
 }

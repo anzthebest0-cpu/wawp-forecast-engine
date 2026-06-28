@@ -105,8 +105,10 @@ async function loadDashboard() {
             windData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Wind]),
             gustData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Gust || 0]),
             rainData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Rain]),
-            visData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Visibility || 9999]),
-            pressData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Pressure || 1010]),
+            windDirData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Wind Dir.'] || 0]),
+            highCloudData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['High Clouds'] || 0]),
+            midCloudData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Mid Clouds'] || 0]),
+            lowCloudData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Low Clouds'] || 0]),
             condData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Condition || 'Normal'])
         };
         
@@ -134,6 +136,7 @@ async function loadDashboard() {
         // 5.5 Individual Models
         if (modelsData && data) {
             setupIndividualModels(modelsData, data.map(d=>d.Datetime));
+            setupSpreadCharts(modelsData, data.map(d=>d.Datetime));
         }
         
         // 6. Regional & Climatology
@@ -167,6 +170,37 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDashboard();
 });
 
+function setupSpreadCharts(modelsData, timeLabels) {
+    // Reusable function to create spread series
+    const createSeries = (param) => {
+        const series = [];
+        for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
+            // align with timeLabels
+            const dataPts = [];
+            for (const t of timeLabels) {
+                const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
+                dataPts.push([ts, modelVals[t] || null]);
+            }
+            series.push({ name: model, data: dataPts });
+        }
+        return series;
+    };
+
+    const spreadOptions = (title, yAxisLabel, isBar=false) => ({
+        ...TITAN_BASE,
+        chart: { ...TITAN_BASE.chart, type: isBar ? 'bar' : 'line', height: 250 },
+        title: { text: title, style: { fontSize: '12px', fontWeight: 'bold', fontFamily: TITAN_COLORS.font } },
+        stroke: { curve: 'smooth', width: 2 },
+        markers: { size: 0 },
+        xaxis: { type: 'datetime', labels: { style: { colors: TITAN_COLORS.text } } },
+        yaxis: { title: { text: yAxisLabel }, labels: { style: { colors: TITAN_COLORS.text } } },
+        legend: { position: 'right' }
+    });
+
+    new ApexCharts(document.querySelector('#spread-temp'), { ...spreadOptions('Temperature Spread', '°C'), series: createSeries('Temperature') }).render();
+    new ApexCharts(document.querySelector('#spread-wind'), { ...spreadOptions('Wind Speed Spread', 'kt'), series: createSeries('Wind Speed') }).render();
+    new ApexCharts(document.querySelector('#spread-rain'), { ...spreadOptions('Rainfall Spread', 'mm', true), series: createSeries('Rainfall') }).render();
+}
 
 function setupRegionalCharts() {
     const now = new Date();
