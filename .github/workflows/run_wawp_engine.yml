@@ -1,0 +1,60 @@
+name: WAWP Meteologix Engine
+
+on:
+  schedule:
+    - cron: '30 0 * * *'  # 00:30 UTC -> 08:30 WITA
+    - cron: '30 6 * * *'  # 06:30 UTC -> 14:30 WITA
+    - cron: '30 12 * * *' # 12:30 UTC -> 20:30 WITA
+    - cron: '30 18 * * *' # 18:30 UTC -> 02:30 WITA
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          # Use apt-get for linux dependencies (Chrome for Selenium)
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+          pip install -r requirements.txt
+
+      - name: Run Pipeline
+        run: python run_pipeline.py
+
+      - name: Commit and Push DB and Archives
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add wawp_forecasts.db docs/data/
+          git commit -m "chore: auto-update forecast database and dashboard" || exit 0
+          git push
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs
+
+  deploy-pages:
+    needs: run-pipeline
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

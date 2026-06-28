@@ -1,0 +1,49 @@
+{
+  "metadata": {
+    "period": "Last 7 Days"
+  },
+  "metrics": {
+    "ECMWF": {
+      "RMSE_Temp": 1.2,
+      "RMSE_Wind": 3.0,
+      "POD_Rain": 0.85,
+      "FAR_Rain": 0.2
+    },
+    "GFS": {
+      "RMSE_Temp": 1.2,
+      "RMSE_Wind": 3.0,
+      "POD_Rain": 0.85,
+      "FAR_Rain": 0.2
+    },
+    "ICON": {
+      "RMSE_Temp": 1.2,
+      "RMSE_Wind": 3.0,
+      "POD_Rain": 0.85,
+      "FAR_Rain": 0.2
+    },
+    "ACCESS-G3": {
+      "RMSE_Temp": 1.2,
+      "RMSE_Wind": 3.0,
+      "POD_Rain": 0.85,
+      "FAR_Rain": 0.2
+    },
+    "UKMO": {
+      "RMSE_Temp": 1.2,
+      "RMSE_Wind": 3.0,
+      "POD_Rain": 0.85,
+      "FAR_Rain": 0.2
+    },
+    "GEM": {
+      "RMSE_Temp": 1.2,
+      "RMSE_Wind": 3.0,
+      "POD_Rain": 0.85,
+      "FAR_Rain": 0.2
+    },
+    "Multi-Model": {
+      "RMSE_Temp": 1.2,
+      "RMSE_Wind": 3.0,
+      "POD_Rain": 0.85,
+      "FAR_Rain": 0.2
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "metadata": {
+    "updated_at": "2026-06-28 02:19:20"
+  },
+  "weights": {
+    "Temperature": {
+      "ECMWF": 0.143,
+      "GFS": 0.143,
+      "ICON": 0.143,
+      "ACCESS-G3": 0.143,
+      "UKMO": 0.143,
+      "GEM": 0.143,
+      "Multi-Model": 0.143
+    },
+    "Dewpoint": {
+      "ECMWF": 0.143,
+      "GFS": 0.143,
+      "ICON": 0.143,
+      "ACCESS-G3": 0.143,
+      "UKMO": 0.143,
+      "GEM": 0.143,
+      "Multi-Model": 0.143
+    },
+    "Pressure": {
+      "ECMWF": 0.143,
+      "GFS": 0.143,
+      "ICON": 0.143,
+      "ACCESS-G3": 0.143,
+      "UKMO": 0.143,
+      "GEM": 0.143,
+      "Multi-Model": 0.143
+    },
+    "Rainfall": {
+      "ECMWF": 0.143,
+      "GFS": 0.143,
+      "ICON": 0.143,
+      "ACCESS-G3": 0.143,
+      "UKMO": 0.143,
+      "GEM": 0.143,
+      "Multi-Model": 0.143
+    },
+    "Wind Speed": {
+      "ECMWF": 0.143,
+      "GFS": 0.143,
+      "ICON": 0.143,
+      "ACCESS-G3": 0.143,
+      "UKMO": 0.143,
+      "GEM": 0.143,
+      "Multi-Model": 0.143
+    },
+    "Wind Direction": {
+      "ECMWF": 0.143,
+      "GFS": 0.143,
+      "ICON": 0.143,
+      "ACCESS-G3": 0.143,
+      "UKMO": 0.143,
+      "GEM": 0.143,
+      "Multi-Model": 0.143
+    },
+    "Wind Gust": {
+      "ECMWF": 0.143,
+      "GFS": 0.143,
+      "ICON": 0.143,
+      "ACCESS-G3": 0.143,
+      "UKMO": 0.143,
+      "GEM": 0.143,
+      "Multi-Model": 0.143
+    }
+  }
+}
