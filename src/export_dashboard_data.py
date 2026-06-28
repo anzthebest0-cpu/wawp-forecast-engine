@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import shutil
 from datetime import datetime, timezone, timedelta
 import pandas as pd
 
@@ -192,5 +193,14 @@ def export_all(db: ForecastDB, output_dir: str):
     }
     with open(history_path, 'a', encoding='utf-8') as f:
         f.write(json.dumps(snapshot) + "\n")
-        
+
+    # 4. Copy Climatology Data
+    try:
+        clim_src = r'D:\UJI_PERFORMA_MODEL\New_CODE\wawp_climatology.json'
+        clim_dst = os.path.join(output_dir, 'climatology.json')
+        if os.path.exists(clim_src):
+            shutil.copy(clim_src, clim_dst)
+    except Exception as e:
+        log.error(f"Failed to copy climatology: {e}")
+
     log.info("Dashboard exports complete.")
