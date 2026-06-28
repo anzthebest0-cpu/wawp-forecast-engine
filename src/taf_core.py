@@ -531,8 +531,8 @@ def _build_change_groups(
             permanent = n_matching / lookahead_len > 0.5
 
         if target_rain:  # This is a rain block (dry -> rainy)
-            total_rain = sum(consensus_truth[h]["rain_raw"] for h in range(start, end+1))
-            peak_rain = max(consensus_truth[h]["rain_raw"] for h in range(start, end+1))
+            total_rain = sum(consensus_truth[h]["rain"] for h in range(start, end+1))
+            peak_rain = max(consensus_truth[h]["rain"] for h in range(start, end+1))
             wx_str = "+RA" if peak_rain >= _RC.HEAVY_RAIN_THR else "RA"
             agr = avg_agreement(start, end)
             vis_code, cloud_group = _get_worst_vis_cloud(start, end)
