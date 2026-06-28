@@ -208,24 +208,24 @@ def export_all(db: ForecastDB, output_dir: str):
             for m in p_df.columns:
                 p_df[m] = qm_mapper.transform_series(p_df[m], model=m)
                 
-        # Apply Diurnal Bias from legacy guidance
-        legacy_key = param_legacy_map.get(param) if 'param_legacy_map' in locals() else None
-        if legacy_key and legacy_key in legacy_params:
-            diurnal_bias = legacy_params[legacy_key].get("diurnal_bias", {})
-            if diurnal_bias:
-                for m in p_df.columns:
-                    m_bias = diurnal_bias.get(m, {})
-                    if m_bias:
-                        def apply_bias(row):
-                            if pd.isna(row): return row
-                            hr = str(row.name.hour)
-                            offset = float(m_bias.get(hr, 0.0))
-                            if param in ["Rainfall", "Wind Speed"]:
-                                return max(0.0, row - offset)
-                            elif param == "Wind Dir.":
-                                return (row - offset) % 360.0
-                            return row - offset
-                        p_df[m] = p_df[m].to_frame().apply(lambda x: apply_bias(x), axis=1)
+        # Apply Diurnal Bias from legacy guidance - DISABLED due to UTC/Local skewing
+        # legacy_key = param_legacy_map.get(param) if 'param_legacy_map' in locals() else None
+        # if legacy_key and legacy_key in legacy_params:
+        #     diurnal_bias = legacy_params[legacy_key].get("diurnal_bias", {})
+        #     if diurnal_bias:
+        #         for m in p_df.columns:
+        #             m_bias = diurnal_bias.get(m, {})
+        #             if m_bias:
+        #                 def apply_bias(row):
+        #                     if pd.isna(row): return row
+        #                     hr = str(row.name.hour)
+        #                     offset = float(m_bias.get(hr, 0.0))
+        #                     if param in ["Rainfall", "Wind Speed"]:
+        #                         return max(0.0, row - offset)
+        #                     elif param == "Wind Dir.":
+        #                         return (row - offset) % 360.0
+        #                     return row - offset
+        #                 p_df[m] = p_df[m].to_frame().apply(lambda x: apply_bias(x), axis=1)
                 
         if param == "Wind Dir.":
             consensus[param] = p_df.apply(lambda row: circular_weighted_mean(row.dropna().values, [weights[m] for m in row.dropna().index]) if not row.dropna().empty else np.nan, axis=1)

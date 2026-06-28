@@ -292,7 +292,7 @@ const CHART_WIND_DIR_OPTIONS = {
     ...TITAN_BASE.chart,
     id:     'titan-wind-dir',
     type:   'scatter',
-    height: 150,
+    height: 100,
     group:  'meteogram',
   },
   title: {
@@ -301,24 +301,33 @@ const CHART_WIND_DIR_OPTIONS = {
     style: { fontSize: '10px', fontWeight: '600', fontFamily: TITAN_COLORS.font, color: 'rgba(138,154,184,0.7)', letterSpacing: '0.1em' },
     offsetY: 4,
   },
-  series: [{ name: 'Dir (°)', data: [] }],
+  series: [],
   colors: ['#8b5cf6'],
-  markers: {
-    size: 4,
-    strokeWidth: 0,
+  markers: { size: 0 },
+  dataLabels: {
+    enabled: true,
+    formatter: function(val, opts) {
+      const dp = opts.w.config.series[opts.seriesIndex].data[opts.dataPointIndex];
+      const v = parseFloat(dp.meta);
+      if (isNaN(v)) return '';
+      const arrows = ['↓', '↙', '←', '↖', '↑', '↗', '→', '↘', '↓'];
+      return arrows[Math.round(((v % 360 + 360) % 360) / 45)];
+    },
+    style: { fontSize: '16px', colors: ['#8b5cf6'], fontFamily: 'Arial' },
+    offsetY: 2
   },
   yaxis: {
-    min: 0,
-    max: 360,
-    tickAmount: 4,
-    labels: {
-      style: { colors: '#8b5cf6', fontSize: '10px', fontFamily: TITAN_COLORS.font },
-      formatter: (v) => v !== undefined ? `${v.toFixed(0)}°` : '',
-    }
+    show: false,
+    min: 0, max: 2
   },
   tooltip: {
     theme: 'light',
-    y: { formatter: (v) => `${v.toFixed(0)} °` }
+    y: {
+      formatter: function(val, { series, seriesIndex, dataPointIndex, w }) {
+        const dp = w.config.series[seriesIndex].data[dataPointIndex];
+        return dp ? `${parseFloat(dp.meta).toFixed(0)} °` : '';
+      }
+    }
   }
 };
 
@@ -421,11 +430,11 @@ const CHART_CLOUD_HEATMAP_OPTIONS = {
       useFillColorAsStroke: false,
       colorScale: {
         ranges: [
-          { from: 0, to: 10, color: '#f8fafc', name: 'Clear' },
-          { from: 11, to: 40, color: '#bae6fd', name: 'Few' },
-          { from: 41, to: 70, color: '#38bdf8', name: 'SCT' },
-          { from: 71, to: 90, color: '#0284c7', name: 'BKN' },
-          { from: 91, to: 100, color: '#1e1b4b', name: 'OVC' }
+          { from: 0, to: 10, color: '#f8fafc', name: 'Clear (0-10%)' },
+          { from: 11, to: 40, color: '#bae6fd', name: 'Few (11-40%)' },
+          { from: 41, to: 70, color: '#38bdf8', name: 'SCT (41-70%)' },
+          { from: 71, to: 90, color: '#0284c7', name: 'BKN (71-90%)' },
+          { from: 91, to: 100, color: '#1e1b4b', name: 'OVC (91-100%)' }
         ]
       }
     }
@@ -476,6 +485,7 @@ function initTitanCharts(data) {
                   label: {
                       text: icon,
                       borderColor: 'transparent',
+                      orientation: 'horizontal',
                       style: { fontSize: '18px', background: 'transparent' },
                       offsetY: -10
                   }
@@ -501,9 +511,9 @@ function initTitanCharts(data) {
   );
   chartWind.render();
 
-  // Wind Dir
+  // Wind Dir (Flat Line Scatter with Arrow DataLabels)
   const windDirSeries = [
-    { name: 'Dir (°)', type: 'scatter', data: data.windDirData || [] },
+    { name: 'Dir (°)', type: 'scatter', data: (data.windDirData || []).map(d => ({ x: d[0], y: 1, meta: d[1] })) },
   ];
   const chartWindDir = new ApexCharts(
     document.querySelector('#chart-wind-dir'),
