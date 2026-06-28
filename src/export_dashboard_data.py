@@ -182,4 +182,15 @@ def export_all(db: ForecastDB, output_dir: str):
     with open(perf_path, 'w', encoding='utf-8') as f:
         json.dump({"metadata": {"period": "Last 60 Days"}, "metrics": global_metrics}, f, indent=2)
         
+    # Append to Weight History
+    history_path = os.path.join(output_dir, "weight_history.jsonl")
+    snapshot = {
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S"),
+        "station": "Bandara_Sangia_Ni_Bandera",
+        "method": "CRPS",
+        "weights": global_weights
+    }
+    with open(history_path, 'a', encoding='utf-8') as f:
+        f.write(json.dumps(snapshot) + "\n")
+        
     log.info("Dashboard exports complete.")
