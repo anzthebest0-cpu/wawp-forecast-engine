@@ -219,21 +219,18 @@ const CHART_WIND_OPTIONS = {
   series: [
     { name: 'Wind (kt)',  type: 'area', data: [] },
     { name: 'Gust (kt)',  type: 'line', data: [] },
-    { name: 'Dir (°)',    type: 'scatter', data: [] },
   ],
 
-  colors: [TITAN_COLORS.cyan, TITAN_COLORS.amber, '#8b5cf6'],
+  colors: [TITAN_COLORS.cyan, TITAN_COLORS.amber],
 
   stroke: {
     curve:  'smooth',
-    width:  [2, 1.5, 0],
-    dashArray: [0, 3, 0],
+    width:  [2, 1.5],
+    dashArray: [0, 3],
   },
   
   markers: {
-    size: [0, 0, 3],
-    colors: ['#8b5cf6'],
-    strokeWidth: 0,
+    size: 0,
   },
 
   dropShadow: {
@@ -247,8 +244,8 @@ const CHART_WIND_OPTIONS = {
   },
 
   fill: {
-    type:    ['gradient', 'solid', 'solid'],
-    opacity: [1, 1, 1],
+    type:    ['gradient', 'solid'],
+    opacity: [1, 1],
     gradient: {
       shade:          'dark',
       type:           'vertical',
@@ -276,17 +273,6 @@ const CHART_WIND_OPTIONS = {
     {
       show: false, // Hide Gust axis, scale it with Wind
       seriesName: 'Wind (kt)'
-    },
-    {
-      opposite: true,
-      min: 0,
-      max: 360,
-      tickAmount: 4,
-      labels: {
-        style: { colors: '#8b5cf6', fontSize: '10px', fontFamily: TITAN_COLORS.font },
-        formatter: (v) => v !== undefined ? `${v.toFixed(0)}°` : '',
-      },
-      seriesName: 'Dir (°)'
     }
   ],
   
@@ -294,9 +280,45 @@ const CHART_WIND_OPTIONS = {
     theme: 'light',
     y: [
       { formatter: (v) => `${v.toFixed(2)} kt` },
-      { formatter: (v) => `${v.toFixed(2)} kt` },
-      { formatter: (v) => `${v.toFixed(0)} °` }
+      { formatter: (v) => `${v.toFixed(2)} kt` }
     ]
+  }
+};
+
+// ── CHART 2.5: WIND DIRECTION ────────────────────────────────
+const CHART_WIND_DIR_OPTIONS = {
+  ...TITAN_BASE,
+  chart: {
+    ...TITAN_BASE.chart,
+    id:     'titan-wind-dir',
+    type:   'scatter',
+    height: 150,
+    group:  'meteogram',
+  },
+  title: {
+    text:   'WIND DIRECTION',
+    align:  'left',
+    style: { fontSize: '10px', fontWeight: '600', fontFamily: TITAN_COLORS.font, color: 'rgba(138,154,184,0.7)', letterSpacing: '0.1em' },
+    offsetY: 4,
+  },
+  series: [{ name: 'Dir (°)', data: [] }],
+  colors: ['#8b5cf6'],
+  markers: {
+    size: 4,
+    strokeWidth: 0,
+  },
+  yaxis: {
+    min: 0,
+    max: 360,
+    tickAmount: 4,
+    labels: {
+      style: { colors: '#8b5cf6', fontSize: '10px', fontFamily: TITAN_COLORS.font },
+      formatter: (v) => v !== undefined ? `${v.toFixed(0)}°` : '',
+    }
+  },
+  tooltip: {
+    theme: 'light',
+    y: { formatter: (v) => `${v.toFixed(0)} °` }
   }
 };
 
@@ -394,22 +416,27 @@ const CHART_CLOUD_HEATMAP_OPTIONS = {
   },
   plotOptions: {
     heatmap: {
-      shadeIntensity: 0.5,
+      shadeIntensity: 0.8,
       radius: 4,
       useFillColorAsStroke: false,
       colorScale: {
         ranges: [
-          { from: 0, to: 10, color: '#f1f5f9', name: 'Clear' },
-          { from: 11, to: 40, color: '#cbd5e1', name: 'Few' },
-          { from: 41, to: 70, color: '#94a3b8', name: 'Scattered' },
-          { from: 71, to: 90, color: '#64748b', name: 'Broken' },
-          { from: 91, to: 100, color: '#334155', name: 'Overcast' }
+          { from: 0, to: 10, color: '#f8fafc', name: 'Clear' },
+          { from: 11, to: 40, color: '#bae6fd', name: 'Few' },
+          { from: 41, to: 70, color: '#38bdf8', name: 'SCT' },
+          { from: 71, to: 90, color: '#0284c7', name: 'BKN' },
+          { from: 91, to: 100, color: '#1e1b4b', name: 'OVC' }
         ]
       }
     }
   },
   dataLabels: {
     enabled: false
+  },
+  legend: {
+    show: true,
+    position: 'bottom',
+    labels: { colors: TITAN_COLORS.text }
   },
   yaxis: {
     labels: {
@@ -448,6 +475,7 @@ function initTitanCharts(data) {
                   borderColor: 'transparent',
                   label: {
                       text: icon,
+                      borderColor: 'transparent',
                       style: { fontSize: '18px', background: 'transparent' },
                       offsetY: -10
                   }
@@ -465,14 +493,23 @@ function initTitanCharts(data) {
   // Wind
   const windSeries = [
     { name: 'Wind (kt)', type: 'area', data: data.windData || [] },
-    { name: 'Gust (kt)', type: 'line', data: data.gustData || [] },
-    { name: 'Dir (°)', type: 'scatter', data: data.windDirData || [] },
+    { name: 'Gust (kt)', type: 'line', data: data.gustData || [] }
   ];
   const chartWind = new ApexCharts(
     document.querySelector('#chart-wind'),
     { ...CHART_WIND_OPTIONS, series: windSeries }
   );
   chartWind.render();
+
+  // Wind Dir
+  const windDirSeries = [
+    { name: 'Dir (°)', type: 'scatter', data: data.windDirData || [] },
+  ];
+  const chartWindDir = new ApexCharts(
+    document.querySelector('#chart-wind-dir'),
+    { ...CHART_WIND_DIR_OPTIONS, series: windDirSeries }
+  );
+  chartWindDir.render();
 
   // Rain
   const rainSeries = [{ name: 'Rain (mm)', data: data.rainData || [] }];
@@ -495,5 +532,5 @@ function initTitanCharts(data) {
   );
   chartClouds.render();
 
-  return { chartTemp, chartWind, chartRain, chartClouds };
+  return { chartTemp, chartWind, chartWindDir, chartRain, chartClouds };
 }
