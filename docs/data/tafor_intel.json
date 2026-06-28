@@ -26,11 +26,11 @@
     "issued_day": 29,
     "base_group": {
       "dir": "090",
-      "spd": "03",
+      "spd": "04",
       "gust": "07",
       "vis": "3100",
       "wx": "",
-      "cloud": "BKN010",
+      "cloud": "BKN009",
       "trends": [],
       "badge": "MME 0500Z Shift",
       "metrics": {
@@ -38,7 +38,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 290500Z\nTAF WAWP 290500Z 2906/3006 09003KT 3100 BKN010=",
+    "taf_text": "FTID40 WAWP 290500Z\nTAF WAWP 290500Z 2906/3006 09004KT 3100 BKN009=",
     "warnings": []
   },
   "1100": {
@@ -46,7 +46,7 @@
     "issued_utc": "1100",
     "issued_day": 29,
     "base_group": {
-      "dir": "170",
+      "dir": "140",
       "spd": "04",
       "gust": "10",
       "vis": "7000",
@@ -59,7 +59,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 291100Z\nTAF WAWP 291100Z 2912/3012 17004KT 7000 BKN036=",
+    "taf_text": "FTID40 WAWP 291100Z\nTAF WAWP 291100Z 2912/3012 14004KT 7000 BKN036=",
     "warnings": []
   },
   "1700": {
