@@ -61,6 +61,29 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
     raw    = header + '\n' + body + '='
     return '\n'.join(' '.join(l.split()).rstrip() for l in raw.splitlines())
 
+def _generate_narration(bg: dict, trends: list) -> str:
+    vis = bg.get('vis', '9999')
+    vis_desc = 'baik' if vis == '9999' or int(vis) > 8000 else ('sedang' if int(vis) >= 5000 else 'terbatas')
+    wind = int(bg.get('spd', 0))
+    wind_desc = f'ringan hingga sedang ({wind} KT)' if wind < 10 else f'cukup kencang ({wind} KT)'
+    cloud_raw = bg.get('cloud', 'SCT018')
+    cloud_desc = 'berawan sebagian' if 'SCT' in cloud_raw or 'FEW' in cloud_raw else 'berawan tebal'
+    
+    parts = [f'Secara umum cuaca {cloud_desc} dengan jarak pandang {vis_desc}. Angin dominan bertiup dengan kecepatan {wind_desc}.']
+    
+    rain_trends = []
+    if trends:
+        for t in trends:
+            if 'RA' in t.get('wx', '') or 'TS' in t.get('wx', ''):
+                h1 = t['valid_start'].strftime('%H%M')
+                h2 = t['valid_end'].strftime('%H%M')
+                rain_trends.append(f'{h1}Z - {h2}Z')
+                
+    if rain_trends:
+        parts.append(f'Terdapat potensi presipitasi/hujan pada periode: {", ".join(rain_trends)}.')
+        
+    return ' '.join(parts)
+
 def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: dict, model_weights: dict, target_issuance: str = None) -> dict:
     """
     Core TAF generator. Takes the consensus DataFrame and raw/QM model data 
@@ -199,6 +222,7 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
     # Build actual TAF text
     # valid_start_utc was already calculated above
     taf_text = _build_taf_text(best_guess, valid_start_utc, iss_day, iss_utc)
+    narration_text = _generate_narration(best_guess, trends)
     
     return {
         "valid_start": valid_start.strftime("%Y-%m-%d %H:%M:%S"),
@@ -206,5 +230,6 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
         "issued_day": iss_day,
         "base_group": best_guess,
         "taf_text": taf_text,
+        "narration": narration_text,
         "warnings": warnings
     }

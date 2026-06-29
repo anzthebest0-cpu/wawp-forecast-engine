@@ -59,9 +59,13 @@
                 <div class="panel taf-panel">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-4);">
                         <h3 style="margin-bottom: 0;">Draft TAF</h3>
-                        <button id="copy-taf-btn" style="background: var(--cyan-glow); color: var(--cyan); border: 1px solid rgba(0, 212, 255, 0.25); padding: 4px 12px; border-radius: var(--r-sm); cursor: pointer; font-size: var(--ts-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; transition: all var(--t-base);">Copy</button>
+                        <div>
+                            <button id="toggle-manual-btn" style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border-glass); padding: 4px 12px; border-radius: var(--r-sm); cursor: pointer; font-size: var(--ts-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; transition: all var(--t-base); margin-right: 8px;">Manual Override</button>
+                            <button id="copy-taf-btn" style="background: var(--cyan-glow); color: var(--cyan); border: 1px solid rgba(0, 212, 255, 0.25); padding: 4px 12px; border-radius: var(--r-sm); cursor: pointer; font-size: var(--ts-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; transition: all var(--t-base);">Copy</button>
+                        </div>
                     </div>
                     <div class="taf-content" id="taf-text-display">Loading TAF...</div>
+                    <div id="taf-manual-boxes" style="display:none; flex-direction:column; gap:8px;"></div>
                     <div class="warnings" id="taf-warnings"></div>
                 </div>
 
@@ -72,6 +76,12 @@
                         <!-- Populated via JS -->
                     </div>
                 </div>
+            </div>
+            
+            <!-- Narrative Panel -->
+            <div class="panel" style="margin-top: 20px;">
+                <h3 style="margin-bottom: 10px;">Narasi Prakiraan Cuaca (AI Summary)</h3>
+                <div id="taf-narration" style="color: var(--text-secondary); line-height: 1.6;">Loading narrative...</div>
             </div>
         </section>
 

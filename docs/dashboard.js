@@ -62,6 +62,32 @@ async function loadDashboard() {
             } else {
                 document.getElementById('taf-warnings').innerHTML = '';
             }
+            
+            // Populate Narration
+            const narrationBox = document.getElementById('taf-narration');
+            if (narrationBox) {
+                narrationBox.innerText = intelObj.narration || "Narasi tidak tersedia untuk saat ini.";
+            }
+
+            // Create manual edit boxes
+            const tafLines = (intelObj.taf_text || "").split('\n');
+            const manualContainer = document.getElementById('taf-manual-boxes');
+            if(manualContainer) {
+                manualContainer.innerHTML = '';
+                tafLines.forEach(line => {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = line;
+                    input.className = 'manual-taf-input';
+                    input.style.width = '100%';
+                    input.style.padding = '8px';
+                    input.style.background = 'var(--bg-tertiary)';
+                    input.style.color = 'var(--text-primary)';
+                    input.style.border = '1px solid var(--border-glass)';
+                    input.style.borderRadius = '4px';
+                    manualContainer.appendChild(input);
+                });
+            }
         }
         
         renderIntel(intel);
@@ -394,10 +420,48 @@ function setupIndividualModels(modelsData, timeLabels) {
 
 // Copy TAF button logic
 document.addEventListener('DOMContentLoaded', () => {
+    let isManualOverride = false;
+    
+    const toggleBtn = document.getElementById('toggle-manual-btn');
+    const tafTextDisplay = document.getElementById('taf-text-display');
+    const tafManualBoxes = document.getElementById('taf-manual-boxes');
+    
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            isManualOverride = !isManualOverride;
+            if (isManualOverride) {
+                toggleBtn.innerText = 'Cancel Manual';
+                toggleBtn.style.color = 'var(--amber)';
+                toggleBtn.style.borderColor = 'var(--amber)';
+                tafTextDisplay.style.display = 'none';
+                tafManualBoxes.style.display = 'flex';
+            } else {
+                toggleBtn.innerText = 'Manual Override';
+                toggleBtn.style.color = 'var(--text-secondary)';
+                toggleBtn.style.borderColor = 'var(--border-glass)';
+                tafTextDisplay.style.display = 'block';
+                tafManualBoxes.style.display = 'none';
+            }
+        });
+    }
+
     const copyBtn = document.getElementById('copy-taf-btn');
     if (copyBtn) {
         copyBtn.addEventListener('click', async () => {
-            const tafText = document.getElementById('taf-text-display').innerText;
+            let tafText = "";
+            if (isManualOverride) {
+                const inputs = tafManualBoxes.querySelectorAll('.manual-taf-input');
+                const lines = [];
+                inputs.forEach(input => {
+                    if (input.value.trim() !== "") {
+                        lines.push(input.value.trim());
+                    }
+                });
+                tafText = lines.join('\n');
+            } else {
+                tafText = document.getElementById('taf-text-display').innerText;
+            }
+            
             try {
                 await navigator.clipboard.writeText(tafText);
                 const originalText = copyBtn.innerText;
