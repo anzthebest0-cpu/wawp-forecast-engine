@@ -26,12 +26,12 @@
     "issued_utc": "0500",
     "issued_day": 30,
     "base_group": {
-      "dir": "130",
+      "dir": "150",
       "spd": "05",
       "gust": "10",
       "vis": "7000",
       "wx": "",
-      "cloud": "SCT038",
+      "cloud": "SCT037",
       "trends": [],
       "badge": "MME 0500Z Shift",
       "metrics": {
@@ -39,7 +39,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 300500\nTAF WAWP 300500Z 3006/0106 13005KT 7000 SCT038=",
+    "taf_text": "FTID40 WAWP 300500\nTAF WAWP 300500Z 3006/0106 15005KT 7000 SCT037=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang sedang. Angin dominan bertiup dengan kecepatan ringan hingga sedang (5 KT).",
     "warnings": []
   },
