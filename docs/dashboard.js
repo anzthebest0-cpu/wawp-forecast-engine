@@ -100,8 +100,6 @@ async function loadDashboard() {
         wContainer.innerHTML = wHtml;
         
         // 4. Meteogram Tab (using apexcharts from guidance)
-        const data = guidance.data;
-        
         // Convert to [timestamp_ms, value] format expected by apexcharts-theme.js
         const chartData = {
             tempData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Temperature]),
