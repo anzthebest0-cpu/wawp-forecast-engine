@@ -98,7 +98,14 @@ async function loadDashboard() {
             wHtml += `</div>`;
         }
         wContainer.innerHTML = wHtml;
+        // Filter data to only show current and future hours
+        const now = new Date();
+        const localNow = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+        const witaHourStr = localNow.toISOString().replace('T', ' ').substring(0, 13) + ':00:00';
         
+        const futureData = data.filter(d => d.Datetime >= witaHourStr);
+        const renderData = futureData.length > 0 ? futureData : data;
+
         // 4. Meteogram Tab (using apexcharts from guidance)
         // Convert to [timestamp_ms, value] format expected by apexcharts-theme.js
         const chartData = {
