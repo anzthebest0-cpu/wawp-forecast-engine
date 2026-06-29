@@ -46,12 +46,12 @@
     "issued_utc": "1100",
     "issued_day": 29,
     "base_group": {
-      "dir": "090",
-      "spd": "06",
-      "gust": "10",
+      "dir": "100",
+      "spd": "03",
+      "gust": "05",
       "vis": "9999",
       "wx": "",
-      "cloud": "FEW018",
+      "cloud": "FEW016",
       "trends": [],
       "badge": "MME 1100Z Shift",
       "metrics": {
@@ -59,7 +59,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 291100\nTAF WAWP 291100Z 2912/3012 09006KT 9999 FEW018=",
+    "taf_text": "FTID40 WAWP 291100\nTAF WAWP 291100Z 2912/3012 10003KT 9999 FEW016=",
     "warnings": []
   },
   "1700": {
