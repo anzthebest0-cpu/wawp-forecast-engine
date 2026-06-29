@@ -102,16 +102,16 @@ async function loadDashboard() {
         // 4. Meteogram Tab (using apexcharts from guidance)
         // Convert to [timestamp_ms, value] format expected by apexcharts-theme.js
         const chartData = {
-            tempData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Temperature]),
-            dewData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Dewpoint]),
-            windData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Wind]),
-            gustData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Gust || 0]),
-            rainData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Rain]),
-            windDirData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Wind Dir.'] || 0]),
-            highCloudData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['High Clouds'] || 0]),
-            midCloudData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Mid Clouds'] || 0]),
-            lowCloudData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Low Clouds'] || 0]),
-            condData: data.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Condition || 'Normal'])
+            tempData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Temperature]),
+            dewData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Dewpoint]),
+            windData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Wind]),
+            gustData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Gust || 0]),
+            rainData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Rain]),
+            windDirData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Wind Dir.'] || 0]),
+            highCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['High Clouds'] || 0]),
+            midCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Mid Clouds'] || 0]),
+            lowCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Low Clouds'] || 0]),
+            condData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Condition || 'Normal'])
         };
         
         // Initialize charts using the new TITAN_BASE design system
@@ -119,7 +119,7 @@ async function loadDashboard() {
         
         // 5. Matrix Tab
         const tbody = document.querySelector("#data-table tbody");
-        data.forEach(d => {
+        renderData.forEach(d => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${d.Datetime.substring(11, 16)}</td>
@@ -136,9 +136,9 @@ async function loadDashboard() {
         });
         
         // 5.5 Individual Models
-        if (modelsData && data) {
-            setupIndividualModels(modelsData, data.map(d=>d.Datetime));
-            setupSpreadCharts(modelsData, data.map(d=>d.Datetime));
+        if (modelsData && renderData) {
+            setupIndividualModels(modelsData, renderData.map(d=>d.Datetime));
+            setupSpreadCharts(modelsData, renderData.map(d=>d.Datetime));
         }
         
         // 6. Regional & Climatology
