@@ -1,12 +1,13 @@
 async function loadDashboard() {
     try {
-        const [intelRes, weightsRes, perfRes, guidanceRes, climRes, modelsRes] = await Promise.all([
-            fetch('data/tafor_intel.json'),
-            fetch('data/latest_weights.json'),
-            fetch('data/latest_performance.json'),
-            fetch('data/taf_guidance.json'),
-            fetch('data/climatology.json'),
-            fetch('data/individual_models.json')
+        const cb = '?t=' + new Date().getTime();
+        const [intelRes, weightsRes, perfRes, dataRes, climRes, modelsRes] = await Promise.all([
+            fetch('data/tafor_intel.json' + cb),
+            fetch('data/latest_weights.json' + cb),
+            fetch('data/latest_performance.json' + cb),
+            fetch('data/taf_guidance.json' + cb),
+            fetch('data/climatology.json' + cb),
+            fetch('data/individual_models.json' + cb)
         ]);
         
         const intelData = await intelRes.json();
@@ -14,12 +15,15 @@ async function loadDashboard() {
         let intel = intelData[currentIssuance] || intelData;
         const weights = await weightsRes.json();
         const perf = await perfRes.json();
-        const guidance = await guidanceRes.json();
-        const clim_data = (climRes && climRes.ok && typeof climRes.json === 'function') ? await climRes.json().catch(()=>null) : null;
+        const guidanceJson = await dataRes.json();
+        const data = guidanceJson.data;
+        const generatedAt = guidanceJson.metadata ? guidanceJson.metadata.generated_at : intel.valid_start;
+
+        const clim_data = (climRes && climRes.ok) ? await climRes.json().catch(()=>null) : null;
         const modelsData = (modelsRes && modelsRes.ok && typeof modelsRes.json === 'function') ? await modelsRes.json().catch(()=>null) : null;
 
         // 1. Update Header
-        document.getElementById('update-time').innerText = intel.valid_start + " UTC";
+        document.getElementById('update-time').innerText = generatedAt + " UTC";
         
         function renderIntel(intelObj) {
             document.getElementById('taf-text-display').innerText = intelObj.taf_text || "TAF Unavailable";
@@ -179,7 +183,9 @@ function setupSpreadCharts(modelsData, timeLabels) {
             const dataPts = [];
             for (const t of timeLabels) {
                 const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
-                dataPts.push([ts, modelVals[t] || null]);
+                if (modelVals[t] !== undefined && modelVals[t] !== null) {
+                    dataPts.push([ts, modelVals[t]]);
+                }
             }
             series.push({ name: model, data: dataPts });
         }

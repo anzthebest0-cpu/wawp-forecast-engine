@@ -136,12 +136,13 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
         
     valid_start = pd.to_datetime(consensus_truth[0]["Datetime"])
     
+    valid_start_utc = valid_start - timedelta(hours=8)
+    
     if target_issuance:
         iss_utc = target_issuance
-        iss_utc_obj = pd.to_datetime(target_issuance, format="%H%M").replace(year=valid_start.year, month=valid_start.month, day=valid_start.day)
-        iss_day = valid_start.day if int(iss_utc[:2]) > valid_start.hour else (valid_start - timedelta(days=1)).day
+        iss_day = (valid_start_utc - timedelta(hours=1)).day
     else:
-        iss_utc_obj = (valid_start - timedelta(hours=8)) - timedelta(hours=1)
+        iss_utc_obj = valid_start_utc - timedelta(hours=1)
         iss_utc = f"{iss_utc_obj.hour:02d}00"
         iss_day = iss_utc_obj.day
     
@@ -196,8 +197,7 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
     }
     
     # Build actual TAF text
-    # Convert valid_start (LST) back to UTC for the TAF string
-    valid_start_utc = valid_start - timedelta(hours=8)
+    # valid_start_utc was already calculated above
     taf_text = _build_taf_text(best_guess, valid_start_utc, iss_day, iss_utc)
     
     return {

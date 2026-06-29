@@ -726,11 +726,18 @@ tbody tr:hover td {
     width: auto; height: 2px;
   }
   .last-update {
-    display: none; /* Hide on mobile to save vertical space */
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--sp-2) var(--sp-4);
+    border-top: none;
+    border-bottom: 1px solid var(--col-border);
+    background: var(--col-surface-3);
   }
   .content {
-    height: calc(100vh - 110px);
-    padding: var(--sp-4);
+    height: calc(100vh - 140px);
+    padding: var(--sp-3);
   }
   .header-bar {
     flex-direction: column;
@@ -743,8 +750,11 @@ tbody tr:hover td {
     padding: var(--sp-4);
   }
   .table-container {
-    margin: 0 -var(--sp-4);
-    padding: 0 var(--sp-4);
+    margin: 0 -var(--sp-3);
+    padding: 0 var(--sp-3);
     border-radius: 0;
+  }
+  .param-value {
+    font-size: var(--ts-md);
   }
 }
