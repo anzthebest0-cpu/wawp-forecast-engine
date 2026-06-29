@@ -289,6 +289,19 @@ def export_all(db: ForecastDB, output_dir: str):
             s_dict = {k: (None if pd.isna(v) else v) for k, v in s_dict.items()}
             model_data_str[prm][m_name] = s_dict
             
+    # Extract Run_Init_UTC
+    run_init = {}
+    if 'run_init_utc' in df_fcst.columns:
+        for m in MODELS:
+            m_df = df_fcst[df_fcst["model"] == m].dropna(subset=['run_init_utc'])
+            if not m_df.empty:
+                # Convert UTC string to Date string, or keep it as is if it's already formatted
+                val = m_df['run_init_utc'].iloc[0]
+                run_init[m] = str(val) if val else "Unknown"
+            else:
+                run_init[m] = "Unknown"
+    model_data_str["Run_Init"] = run_init
+            
     with open(os.path.join(output_dir, "individual_models.json"), 'w', encoding='utf-8') as f:
         json.dump(model_data_str, f, indent=2, default=str, allow_nan=False)
         

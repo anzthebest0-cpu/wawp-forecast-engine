@@ -328,6 +328,27 @@ function setupIndividualModels(modelsData, timeLabels) {
         tbody.innerHTML = '';
         if(!timeLabels) return;
         
+        const initBadge = document.getElementById('model-init-badge');
+        if (initBadge && modelsData['Run_Init'] && modelsData['Run_Init'][modelName]) {
+            let initStr = modelsData['Run_Init'][modelName];
+            if (initStr === "Unknown") {
+                initBadge.innerText = "Init: Unknown";
+                initBadge.style.color = "var(--text-secondary)";
+                initBadge.style.borderColor = "var(--border-glass)";
+            } else {
+                // Ensure it has Z suffix
+                if (!initStr.endsWith('Z')) {
+                    initStr = initStr.replace(' ', 'T') + 'Z';
+                }
+                const d = new Date(initStr);
+                const hrs = String(d.getUTCHours()).padStart(2, '0');
+                const mns = String(d.getUTCMinutes()).padStart(2, '0');
+                initBadge.innerText = `Init: ${hrs}${mns}Z`;
+                initBadge.style.color = "var(--cyan)";
+                initBadge.style.borderColor = "rgba(0, 212, 255, 0.25)";
+            }
+        }
+        
         timeLabels.forEach(dt => {
             const temp = modelsData['Temperature']?.[modelName]?.[dt];
             const dew = modelsData['Dewpoint']?.[modelName]?.[dt];
