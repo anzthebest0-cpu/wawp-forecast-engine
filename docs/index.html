@@ -54,7 +54,10 @@
             <div class="intel-grid">
                 <!-- TAF Editor Panel -->
                 <div class="panel taf-panel">
-                    <h3>Draft TAF</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-4);">
+                        <h3 style="margin-bottom: 0;">Draft TAF</h3>
+                        <button id="copy-taf-btn" style="background: var(--cyan-glow); color: var(--cyan); border: 1px solid rgba(0, 212, 255, 0.25); padding: 4px 12px; border-radius: var(--r-sm); cursor: pointer; font-size: var(--ts-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; transition: all var(--t-base);">Copy</button>
+                    </div>
                     <div class="taf-content" id="taf-text-display">Loading TAF...</div>
                     <div class="warnings" id="taf-warnings"></div>
                 </div>

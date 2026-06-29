@@ -363,3 +363,29 @@ function setupIndividualModels(modelsData, timeLabels) {
     // Render first model initially
     renderModel(modelSelect.value);
 }
+
+// Copy TAF button logic
+document.addEventListener('DOMContentLoaded', () => {
+    const copyBtn = document.getElementById('copy-taf-btn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+            const tafText = document.getElementById('taf-text-display').innerText;
+            try {
+                await navigator.clipboard.writeText(tafText);
+                const originalText = copyBtn.innerText;
+                copyBtn.innerText = 'Copied!';
+                copyBtn.style.background = 'var(--green-glow)';
+                copyBtn.style.color = 'var(--green)';
+                copyBtn.style.borderColor = 'rgba(0, 230, 118, 0.25)';
+                setTimeout(() => {
+                    copyBtn.innerText = originalText;
+                    copyBtn.style.background = 'var(--cyan-glow)';
+                    copyBtn.style.color = 'var(--cyan)';
+                    copyBtn.style.borderColor = 'rgba(0, 212, 255, 0.25)';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+        });
+    }
+});

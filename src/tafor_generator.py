@@ -57,7 +57,7 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
         if extras: line += ' ' + ' '.join(extras)
         body += '\n     ' + line
         
-    header = f'FTID40 WAWP {issued_str}'
+    header = f'FTID40 WAWP {iss_day:02d}{issued_hh}00'
     raw    = header + '\n' + body + '='
     return '\n'.join(' '.join(l.split()).rstrip() for l in raw.splitlines())
 
