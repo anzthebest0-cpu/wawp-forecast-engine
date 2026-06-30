@@ -270,11 +270,11 @@ function setupRegionalCharts() {
     const currentHour = now.getUTCHours();
     let anchorHour = Math.max(...slots.filter(h => h <= currentHour));
     if(anchorHour === -Infinity) anchorHour = 18; // fallback to previous day if needed
+    const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
     
     function renderRegionalChartType(chartType) {
         let sigwxHtml = '';
         let firstUrl = '';
-        const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
         
         if (chartType === "olr") {
             document.getElementById('sigwx-slots').innerHTML = "";
