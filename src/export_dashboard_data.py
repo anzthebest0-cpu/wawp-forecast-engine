@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import shutil
+import math
 from datetime import datetime, timezone, timedelta
 import pandas as pd
 
@@ -12,6 +13,16 @@ from src.quantile_mapper import QuantileMapper
 from src.tafor_generator import generate_tafor
 
 log = logging.getLogger("exporter")
+
+def sanitize_for_json(obj):
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(v) for v in obj]
+    elif isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+    return obj
 
 def _long_to_wide(df_long: pd.DataFrame, param: str) -> pd.DataFrame:
     """Convert long DB output to wide format for QuantileMapper and Consensus."""
@@ -416,7 +427,7 @@ def export_all(db: ForecastDB, output_dir: str):
     perf_path = os.path.join(output_dir, "latest_performance.json")
     with open(perf_path, 'w', encoding='utf-8') as f:
         # global_metrics is now nested: { "24 Hours": { "Temperature": { "overall": {}, ... } }, ... }
-        json.dump({"metadata": {"period": "Lookback"}, "metrics": global_metrics}, f, indent=2)
+        json.dump({"metadata": {"period": "Lookback"}, "metrics": sanitize_for_json(global_metrics)}, f, indent=2)
         
     # Append to Weight History
     history_path = os.path.join(output_dir, "weight_history.jsonl")
