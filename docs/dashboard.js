@@ -25,10 +25,15 @@ async function loadDashboard() {
         
         const healthData = (healthRes && healthRes.ok) ? await healthRes.json().catch(()=>null) : null;
         if (healthData) {
-            document.getElementById('db-forecast-count').innerText = healthData.forecast_records.toLocaleString();
-            document.getElementById('db-obs-count').innerText = healthData.observation_records.toLocaleString();
-            document.getElementById('db-size').innerText = healthData.size_mb + ' MB';
-            document.getElementById('db-last-sync').innerText = healthData.last_sync_utc + ' UTC';
+            const fcElem = document.getElementById('db-forecast-count');
+            const obsElem = document.getElementById('db-obs-count');
+            const sizeElem = document.getElementById('db-size');
+            const syncElem = document.getElementById('db-last-sync');
+            
+            if (fcElem) fcElem.innerText = healthData.forecast_records.toLocaleString();
+            if (obsElem) obsElem.innerText = healthData.observation_records.toLocaleString();
+            if (sizeElem) sizeElem.innerText = healthData.size_mb + ' MB';
+            if (syncElem) syncElem.innerText = healthData.last_sync_utc + ' UTC';
         }
 
         // 1. Update Header
