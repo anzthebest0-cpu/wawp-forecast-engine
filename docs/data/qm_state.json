@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0",
+  "vote_thr": 1.0,
+  "n_quantiles": 20,
+  "min_samples": 10,
+  "saved_at": "2026-06-30T11:00:07.598481+00:00",
+  "models": {
+    "ECMWF": {
+      "fc_quantiles": [
+        1.0,
+        2.5,
+        3.7,
+        5.0
+      ],
+      "obs_quantiles": [
+        1.0,
+        5.0,
+        10.0,
+        20.0
+      ],
+      "obs_max": 20.0,
+      "source": "seed",
+      "n_pairs": 0,
+      "fitted_at": "2026-06-30T11:00:07.591168+00:00"
+    },
+    "GFS": {
+      "fc_quantiles": [
+        1.0,
+        2.3,
+        2.9,
+        3.7
+      ],
+      "obs_quantiles": [
+        1.0,
+        5.0,
+        10.0,
+        20.0
+      ],
+      "obs_max": 20.0,
+      "source": "seed",
+      "n_pairs": 0,
+      "fitted_at": "2026-06-30T11:00:07.592799+00:00"
+    },
+    "ICON": {
+      "fc_quantiles": [
+        1.0,
+        1.4,
+        1.7,
+        1.9
+      ],
+      "obs_quantiles": [
+        1.0,
+        5.0,
+        10.0,
+        20.0
+      ],
+      "obs_max": 20.0,
+      "source": "seed",
+      "n_pairs": 0,
+      "fitted_at": "2026-06-30T11:00:07.594436+00:00"
+    },
+    "ACCESS-G3": {
+      "fc_quantiles": [
+        1.0,
+        2.9,
+        3.8,
+        5.0
+      ],
+      "obs_quantiles": [
+        1.0,
+        5.0,
+        10.0,
+        20.0
+      ],
+      "obs_max": 20.0,
+      "source": "seed",
+      "n_pairs": 0,
+      "fitted_at": "2026-06-30T11:00:07.596109+00:00"
+    }
+  }
+}

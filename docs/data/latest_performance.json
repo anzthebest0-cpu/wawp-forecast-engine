@@ -3,12 +3,262 @@
     "period": "Last 60 Days"
   },
   "metrics": {
-    "Temperature": {},
+    "Temperature": {
+      "ECMWF": {
+        "RMSE": 3.953,
+        "Bias": 0.713,
+        "MAE": 3.611,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 1.0
+      },
+      "GFS": {
+        "RMSE": 4.195,
+        "Bias": 0.538,
+        "MAE": 3.844,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 1.0
+      },
+      "ICON": {
+        "RMSE": 4.906,
+        "Bias": 1.278,
+        "MAE": 4.358,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 1.0
+      },
+      "ACCESS-G3": {
+        "RMSE": 5.169,
+        "Bias": -0.411,
+        "MAE": 4.567,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 1.0
+      },
+      "UKMO": {
+        "RMSE": 5.415,
+        "Bias": -2.569,
+        "MAE": 4.564,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 1.0
+      },
+      "GEM": {
+        "RMSE": 4.41,
+        "Bias": 1.02,
+        "MAE": 4.18,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 1.0
+      },
+      "Multi-Model": null
+    },
     "Dewpoint": {},
     "Pressure": {},
-    "Rainfall": {},
-    "Wind Speed": {},
-    "Wind Dir.": {},
-    "Wind Gust": {}
+    "Rainfall": {
+      "ECMWF": {
+        "RMSE": 0.115,
+        "Bias": 0.04,
+        "MAE": 0.04,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "GFS": {
+        "RMSE": 0.052,
+        "Bias": 0.013,
+        "MAE": 0.013,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "ICON": {
+        "RMSE": 0.0,
+        "Bias": 0.0,
+        "MAE": 0.0,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "ACCESS-G3": {
+        "RMSE": 0.109,
+        "Bias": 0.038,
+        "MAE": 0.038,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "UKMO": {
+        "RMSE": 0.042,
+        "Bias": 0.013,
+        "MAE": 0.013,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "GEM": {
+        "RMSE": 0.059,
+        "Bias": 0.015,
+        "MAE": 0.015,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "Multi-Model": null
+    },
+    "Wind Speed": {
+      "ECMWF": {
+        "RMSE": 3.257,
+        "Bias": 1.229,
+        "MAE": 2.722,
+        "CRPS": null,
+        "HSS": -0.126,
+        "CSI": 0.148
+      },
+      "GFS": {
+        "RMSE": 5.299,
+        "Bias": 4.513,
+        "MAE": 4.549,
+        "CRPS": null,
+        "HSS": 0.084,
+        "CSI": 0.341
+      },
+      "ICON": {
+        "RMSE": 3.792,
+        "Bias": 2.804,
+        "MAE": 3.32,
+        "CRPS": null,
+        "HSS": -0.087,
+        "CSI": 0.25
+      },
+      "ACCESS-G3": {
+        "RMSE": 3.102,
+        "Bias": 1.656,
+        "MAE": 2.616,
+        "CRPS": null,
+        "HSS": -0.214,
+        "CSI": 0.152
+      },
+      "UKMO": {
+        "RMSE": 3.533,
+        "Bias": 2.644,
+        "MAE": 3.129,
+        "CRPS": null,
+        "HSS": -0.168,
+        "CSI": 0.227
+      },
+      "GEM": {
+        "RMSE": 3.602,
+        "Bias": 2.667,
+        "MAE": 2.867,
+        "CRPS": null,
+        "HSS": 0.186,
+        "CSI": 0.462
+      },
+      "Multi-Model": null
+    },
+    "Wind Dir.": {
+      "ECMWF": {
+        "RMSE": 86.257,
+        "Bias": 16.6,
+        "MAE": 68.378,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.022
+      },
+      "GFS": {
+        "RMSE": 92.8,
+        "Bias": 7.244,
+        "MAE": 76.267,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.022
+      },
+      "ICON": {
+        "RMSE": 82.217,
+        "Bias": 1.511,
+        "MAE": 64.356,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.044
+      },
+      "ACCESS-G3": {
+        "RMSE": 88.81,
+        "Bias": 7.311,
+        "MAE": 68.911,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "UKMO": {
+        "RMSE": 85.07,
+        "Bias": -9.022,
+        "MAE": 70.444,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "GEM": {
+        "RMSE": 107.858,
+        "Bias": 34.6,
+        "MAE": 88.067,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "Multi-Model": null
+    },
+    "Wind Gust": {
+      "ECMWF": {
+        "RMSE": 7.919,
+        "Bias": 7.702,
+        "MAE": 7.702,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "GFS": {
+        "RMSE": 11.703,
+        "Bias": 11.284,
+        "MAE": 11.284,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "ICON": {
+        "RMSE": 12.097,
+        "Bias": 11.718,
+        "MAE": 11.718,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "ACCESS-G3": {
+        "RMSE": 11.819,
+        "Bias": 11.596,
+        "MAE": 11.596,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "UKMO": {
+        "RMSE": 12.519,
+        "Bias": 12.331,
+        "MAE": 12.331,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "GEM": {
+        "RMSE": 9.806,
+        "Bias": 9.493,
+        "MAE": 9.493,
+        "CRPS": null,
+        "HSS": 0.0,
+        "CSI": 0.0
+      },
+      "Multi-Model": null
+    }
   }
 }
