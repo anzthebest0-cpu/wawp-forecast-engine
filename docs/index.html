@@ -209,14 +209,40 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3>Regional Aviation Charts</h3>
                     <select id="regional-chart-type" style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-glass); padding: 5px; border-radius: 4px;">
-                        <option value="mediumsigwx">Medium Level SIGWX (FL100-FL450)</option>
-                        <option value="highsigwx">High Level SIGWX (FL250-FL630)</option>
-                        <option value="windtemp_100">Wind/Temp FL100</option>
-                        <option value="windtemp_140">Wind/Temp FL140</option>
-                        <option value="windtemp_180">Wind/Temp FL180</option>
-                        <option value="windtemp_240">Wind/Temp FL240</option>
-                        <option value="windtemp_340">Wind/Temp FL340</option>
-                        <option value="windtemp_390">Wind/Temp FL390</option>
+                        <optgroup label="Aviation Hazards">
+                            <option value="mediumsigwx">Medium Level SIGWX (FL100-FL450)</option>
+                            <option value="highsigwx">High Level SIGWX (FL250-FL630)</option>
+                            <option value="olr">OLR Chart (Indonesia)</option>
+                        </optgroup>
+                        <optgroup label="Wind/Temp">
+                            <option value="windtemp_100">Wind/Temp FL100</option>
+                            <option value="windtemp_140">Wind/Temp FL140</option>
+                            <option value="windtemp_180">Wind/Temp FL180</option>
+                            <option value="windtemp_240">Wind/Temp FL240</option>
+                            <option value="windtemp_340">Wind/Temp FL340</option>
+                            <option value="windtemp_390">Wind/Temp FL390</option>
+                        </optgroup>
+                        <optgroup label="Upper Air Sounding (RASON)">
+                            <option value="rason_wind_streamlines_Surface_cubic.png">Surface Wind Streamlines</option>
+                            <option value="rason_wind_streamlines_925p0_cubic.png">925 hPa Wind Streamlines</option>
+                            <option value="rason_wind_streamlines_850p0_cubic.png">850 hPa Wind Streamlines</option>
+                            <option value="rason_vertical_wind_shear_Surface-925p0_cubic.png">Wind Shear Surface-925</option>
+                            <option value="rason_vertical_wind_shear_Surface-850p0_cubic.png">Wind Shear Surface-850</option>
+                            <option value="rason_CAPE_plus_Surface_cubic.png">CAPE+</option>
+                            <option value="rason_LI_Surface_cubic.png">Lifted Index (LI)</option>
+                            <option value="rason_KI_Surface_cubic.png">K-Index (KI)</option>
+                            <option value="rason_TT_Surface_cubic.png">Total Totals (TT)</option>
+                            <option value="rason_SWEAT_Surface_cubic.png">SWEAT Index</option>
+                            <option value="rason_freezing_level_surface_cubic.png">Freezing Level</option>
+                            <option value="rason_RH_Surface_cubic.png">Surface RH</option>
+                            <option value="rason_RH_850p0_cubic.png">850 hPa RH</option>
+                            <option value="rason_RH_700p0_cubic.png">700 hPa RH</option>
+                            <option value="rason_omega_700p0_cubic.png">700 hPa Omega (Vertical Motion)</option>
+                            <option value="rason_temp_850p0_cubic.png">850 hPa Temp</option>
+                            <option value="rason_mixing_ratio_850p0_cubic.png">850 hPa Mixing Ratio</option>
+                            <option value="rason_EPT_850p0_cubic.png">850 hPa EPT</option>
+                            <option value="rason_thickness_1000-500_cubic.png">1000-500 hPa Thickness</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div style="margin-bottom: 10px;" id="sigwx-slots">

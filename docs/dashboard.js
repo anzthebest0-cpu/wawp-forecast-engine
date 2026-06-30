@@ -276,6 +276,25 @@ function setupRegionalCharts() {
         let firstUrl = '';
         const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
         
+        if (chartType === "olr") {
+            document.getElementById('sigwx-slots').innerHTML = "";
+            document.getElementById('sigwx-img').src = "https://cews.bmkg.go.id/operational-early-warning-pdi/0_Latest/olr.cfs.all.indonesia.2_latest.png";
+            return;
+        }
+
+        if (chartType.startsWith("rason_")) {
+            const fn = chartType.replace("rason_", "");
+            const d = String(now.getUTCDate()).padStart(2,'0');
+            const m = String(now.getUTCMonth() + 1).padStart(2,'0');
+            const y = now.getUTCFullYear();
+            const dateStr = `${d}${m}${y}`;
+            const url = `https://web-aviation.bmkg.go.id/rason/${dateStr}/${fn}`;
+            
+            document.getElementById('sigwx-slots').innerHTML = `<div style="color:var(--text-secondary); font-size:0.85em; margin-bottom: 5px;">Date: ${d}/${m}/${y}</div>`;
+            document.getElementById('sigwx-img').src = url;
+            return;
+        }
+        
         // Parse type (e.g. mediumsigwx, highsigwx, windtemp_100)
         let basePath = chartType;
         let prefix = "sigwx_";
