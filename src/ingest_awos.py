@@ -23,8 +23,8 @@ def ingest_latest_awos():
             sep=r"\s+",
             skiprows=4,
             header=None,
-            usecols=[1, 2, 5, 6, 8, 9, 12],
-            names=["Date", "Hour", "Temp", "Dew", "WD", "WS", "Rain"],
+            usecols=[1, 2, 4, 5, 6, 8, 9, 12],
+            names=["Date", "Hour", "Pressure", "Temp", "Dew", "WD", "WS", "Rain"],
             encoding="utf-8"
         )
     except Exception as e:
@@ -33,6 +33,7 @@ def ingest_latest_awos():
 
     # Unit scaling
     # Unit scaling
+    df["Pressure"] = pd.to_numeric(df["Pressure"], errors="coerce") / 10.0
     df["Temp"] = pd.to_numeric(df["Temp"], errors="coerce") / 10.0
     df["Dew"]  = pd.to_numeric(df["Dew"], errors="coerce") / 10.0
     df["Rain"] = pd.to_numeric(df["Rain"], errors="coerce") / 10.0
@@ -63,6 +64,7 @@ def ingest_latest_awos():
     
     for _, row in df.iterrows():
         obs_time = row["UTC"].strftime("%Y-%m-%d %H:%M:%S")
+        pressure = row["Pressure"] if pd.notna(row["Pressure"]) else None
         temp = row["Temp"] if pd.notna(row["Temp"]) else None
         dew = row["Dew"] if pd.notna(row["Dew"]) else None
         wd = row["WD"] if pd.notna(row["WD"]) else None
@@ -77,16 +79,16 @@ def ingest_latest_awos():
             # Update
             cursor.execute("""
                 UPDATE awos_observations
-                SET temperature = ?, dewpoint = ?, wind_dir = ?, wind_speed = ?, rain_1h = ?
+                SET temperature = ?, dewpoint = ?, pressure = ?, wind_dir = ?, wind_speed = ?, rain_1h = ?
                 WHERE id = ?
-            """, (temp, dew, wd, ws, rain, existing[0]))
+            """, (temp, dew, pressure, wd, ws, rain, existing[0]))
             updated += 1
         else:
             # Insert
             cursor.execute("""
-                INSERT INTO awos_observations (location, obs_time, temperature, dewpoint, wind_dir, wind_speed, rain_1h)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, ("Bandara_Sangia_Ni_Bandera", obs_time, temp, dew, wd, ws, rain))
+                INSERT INTO awos_observations (location, obs_time, temperature, dewpoint, pressure, wind_dir, wind_speed, rain_1h)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, ("Bandara_Sangia_Ni_Bandera", obs_time, temp, dew, pressure, wd, ws, rain))
             inserted += 1
 
     conn.commit()

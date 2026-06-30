@@ -173,6 +173,7 @@ async function loadDashboard() {
                 <td>${d.Datetime.substring(11, 16)}</td>
                 <td style="color: #ef4444">${Number(d.Temperature).toFixed(1)}</td>
                 <td style="color: #3b82f6">${Number(d.Dewpoint).toFixed(1)}</td>
+                <td style="color: #a855f7">${Number(d.Pressure).toFixed(1)}</td>
                 <td>${Number(d['Wind Dir.'] || 0).toFixed(0)}°</td>
                 <td style="color: #10b981">${Number(d.Wind).toFixed(1)}</td>
                 <td style="color: #0ea5e9">${Number(d.Rain).toFixed(1)}</td>
@@ -472,6 +473,26 @@ function renderVerification() {
             document.getElementById('verify-dew-chart').innerText = 'No sufficient verification data yet.';
         }
         
+        // Pressure MAE
+        const presMetrics = lbMetrics['Pressure']?.overall;
+        if (presMetrics && Object.keys(presMetrics).length > 0) {
+            const models = Object.keys(presMetrics).filter(m => presMetrics[m] && presMetrics[m].MAE !== null);
+            models.sort((a,b) => presMetrics[a].MAE - presMetrics[b].MAE);
+            const options = {
+                series: [{ name: 'MAE (hPa)', data: models.map(m => presMetrics[m].MAE) }],
+                chart: { type: 'bar', height: 300, background: 'transparent', toolbar: { show: false } },
+                plotOptions: { bar: { horizontal: true, borderRadius: 4, colors: { ranges: [{ from: 0, to: 100, color: '#a855f7' }] } } },
+                dataLabels: { enabled: true, style: { colors: ['#fff'] } },
+                xaxis: { categories: models, labels: { style: { colors: '#94a3b8' } } },
+                yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 600 } } },
+                theme: { mode: 'dark' }
+            };
+            document.getElementById('verify-pressure-chart').innerHTML = '';
+            new ApexCharts(document.getElementById('verify-pressure-chart'), options).render();
+        } else {
+            document.getElementById('verify-pressure-chart').innerText = 'No sufficient verification data yet.';
+        }
+        
         // Wind Speed MAE
         const windMetrics = lbMetrics['Wind Speed']?.overall;
         if (windMetrics && Object.keys(windMetrics).length > 0) {
@@ -705,6 +726,7 @@ function setupIndividualModels(modelsData, timeLabels) {
         timeLabels.forEach(dt => {
             const temp = modelsData['Temperature']?.[modelName]?.[dt];
             const dew = modelsData['Dewpoint']?.[modelName]?.[dt];
+            const pres = modelsData['Pressure']?.[modelName]?.[dt];
             const windDir = modelsData['Wind Dir.']?.[modelName]?.[dt];
             const windSpd = modelsData['Wind Speed']?.[modelName]?.[dt];
             const gust = modelsData['Wind Gust']?.[modelName]?.[dt];
@@ -718,6 +740,7 @@ function setupIndividualModels(modelsData, timeLabels) {
                     <td>${dt.substring(11, 16)}</td>
                     <td style="color: #ef4444">${Number(temp).toFixed(1)}</td>
                     <td style="color: #3b82f6">${Number(dew).toFixed(1)}</td>
+                    <td style="color: #a855f7">${pres !== undefined ? Number(pres).toFixed(1) : '-'}</td>
                     <td>${windDir !== undefined ? Number(windDir).toFixed(0) + '°' : '-'}</td>
                     <td style="color: #10b981">${windSpd !== undefined ? Number(windSpd).toFixed(1) : '-'}</td>
                     <td style="color: #f59e0b">${gust !== undefined ? Number(gust).toFixed(1) : '-'}</td>
