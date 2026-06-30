@@ -271,24 +271,42 @@ function setupRegionalCharts() {
     let anchorHour = Math.max(...slots.filter(h => h <= currentHour));
     if(anchorHour === -Infinity) anchorHour = 18; // fallback to previous day if needed
     
-    let sigwxHtml = '';
-    let firstUrl = '';
-    const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
-    
-    for(let i=0; i<4; i++) {
-        let dt = new Date(now);
-        dt.setUTCHours(anchorHour - (6*i), 0, 0, 0);
-        let yr = dt.getUTCFullYear();
-        let mo = months[dt.getUTCMonth()];
-        let da = String(dt.getUTCDate()).padStart(2, '0');
-        let hr = String(dt.getUTCHours()).padStart(2, '0');
-        let fn = `sigwx_${yr}${mo}${da}${hr}00.jpeg`;
-        let url = `https://web-aviation.bmkg.go.id/model/mediumsigwx/${yr}/${mo}/${fn}`;
-        if(i===0) firstUrl = url;
-        sigwxHtml += `<button onclick="document.getElementById('sigwx-img').src='${url}'" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); margin-right:8px; padding:5px 10px; border-radius:4px; cursor:pointer;">${da}/${mo} ${hr}Z</button>`;
+    function renderRegionalChartType(chartType) {
+        let sigwxHtml = '';
+        let firstUrl = '';
+        const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+        
+        // Parse type (e.g. mediumsigwx, highsigwx, windtemp_100)
+        let basePath = chartType;
+        let prefix = "sigwx_";
+        if (chartType.startsWith("windtemp_")) {
+            basePath = "windtemp";
+            prefix = "wt" + chartType.split("_")[1] + "_";
+        }
+        
+        for(let i=0; i<4; i++) {
+            let dt = new Date(now);
+            dt.setUTCHours(anchorHour - (6*i), 0, 0, 0);
+            let yr = dt.getUTCFullYear();
+            let mo = months[dt.getUTCMonth()];
+            let da = String(dt.getUTCDate()).padStart(2, '0');
+            let hr = String(dt.getUTCHours()).padStart(2, '0');
+            let fn = `${prefix}${yr}${mo}${da}${hr}00.jpeg`;
+            let url = `https://web-aviation.bmkg.go.id/model/${basePath}/${yr}/${mo}/${fn}`;
+            if(i===0) firstUrl = url;
+            sigwxHtml += `<button onclick="document.getElementById('sigwx-img').src='${url}'" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); margin-right:8px; padding:5px 10px; border-radius:4px; cursor:pointer;">${da}/${mo} ${hr}Z</button>`;
+        }
+        document.getElementById('sigwx-slots').innerHTML = sigwxHtml;
+        document.getElementById('sigwx-img').src = firstUrl;
     }
-    document.getElementById('sigwx-slots').innerHTML = sigwxHtml;
-    document.getElementById('sigwx-img').src = firstUrl;
+
+    const regionalSelect = document.getElementById('regional-chart-type');
+    if (regionalSelect) {
+        regionalSelect.addEventListener('change', (e) => {
+            renderRegionalChartType(e.target.value);
+        });
+        renderRegionalChartType(regionalSelect.value);
+    }
     
     // CB Animation
     let yesterday = new Date(now);
@@ -414,6 +432,47 @@ function renderVerification() {
         } else {
             document.getElementById('verify-rain-chart').innerText = 'No sufficient verification data yet.';
         }
+        
+        // Dewpoint MAE
+        const dewMetrics = lbMetrics['Dewpoint']?.overall;
+        if (dewMetrics && Object.keys(dewMetrics).length > 0) {
+            const models = Object.keys(dewMetrics).filter(m => dewMetrics[m] && dewMetrics[m].MAE !== null);
+            models.sort((a,b) => dewMetrics[a].MAE - dewMetrics[b].MAE);
+            const options = {
+                series: [{ name: 'MAE (°C)', data: models.map(m => dewMetrics[m].MAE) }],
+                chart: { type: 'bar', height: 300, background: 'transparent', toolbar: { show: false } },
+                plotOptions: { bar: { horizontal: true, borderRadius: 4, colors: { ranges: [{ from: 0, to: 100, color: '#3b82f6' }] } } },
+                dataLabels: { enabled: true, style: { colors: ['#fff'] } },
+                xaxis: { categories: models, labels: { style: { colors: '#94a3b8' } } },
+                yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 600 } } },
+                theme: { mode: 'dark' }
+            };
+            document.getElementById('verify-dew-chart').innerHTML = '';
+            new ApexCharts(document.getElementById('verify-dew-chart'), options).render();
+        } else {
+            document.getElementById('verify-dew-chart').innerText = 'No sufficient verification data yet.';
+        }
+        
+        // Wind Speed MAE
+        const windMetrics = lbMetrics['Wind Speed']?.overall;
+        if (windMetrics && Object.keys(windMetrics).length > 0) {
+            const models = Object.keys(windMetrics).filter(m => windMetrics[m] && windMetrics[m].MAE !== null);
+            models.sort((a,b) => windMetrics[a].MAE - windMetrics[b].MAE);
+            const options = {
+                series: [{ name: 'MAE (kt)', data: models.map(m => windMetrics[m].MAE) }],
+                chart: { type: 'bar', height: 300, background: 'transparent', toolbar: { show: false } },
+                plotOptions: { bar: { horizontal: true, borderRadius: 4, colors: { ranges: [{ from: 0, to: 100, color: '#10b981' }] } } },
+                dataLabels: { enabled: true, style: { colors: ['#fff'] } },
+                xaxis: { categories: models, labels: { style: { colors: '#94a3b8' } } },
+                yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 600 } } },
+                theme: { mode: 'dark' }
+            };
+            document.getElementById('verify-wind-chart').innerHTML = '';
+            new ApexCharts(document.getElementById('verify-wind-chart'), options).render();
+        } else {
+            document.getElementById('verify-wind-chart').innerText = 'No sufficient verification data yet.';
+        }
+
     }
     else if (window.currentVerifySub === 'verify-leadtime') {
         const param = document.getElementById('leadtime-param-select').value;
