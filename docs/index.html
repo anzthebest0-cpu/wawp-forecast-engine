@@ -282,6 +282,9 @@
                 <!-- DB Health Widget -->
                 <div class="panel">
                     <h3>Database Status</h3>
+                    <p style="color: var(--text-secondary); margin-top: 5px; font-size: 0.9em; line-height: 1.4;">
+                        The backend SQLite database continuously archives the historical predictions from all 7 global models (Forecast Records). Once AWOS observations are ingested, the system compares the historical forecasts against the actual weather to mathematically calculate which model performs best.
+                    </p>
                     <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
                         <div class="param-card">
                             <div class="param-label">Forecast Records</div>
