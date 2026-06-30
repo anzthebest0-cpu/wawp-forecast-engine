@@ -202,7 +202,9 @@ async function loadDashboard() {
         
     } catch (e) {
         console.error(e);
-        document.getElementById('update-time').innerText = "Load failed";
+        document.getElementById('update-time').innerText = "Load failed: " + (e.message || e);
+        const tafDisplay = document.getElementById('taf-text-display');
+        if (tafDisplay) tafDisplay.innerText = e.stack || e;
     }
 }
 
