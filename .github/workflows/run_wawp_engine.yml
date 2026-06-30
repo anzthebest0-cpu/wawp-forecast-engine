@@ -45,7 +45,7 @@ jobs:
           git stash push -m "runner-data"
           git pull --rebase origin main
           git stash pop || true
-          git checkout --theirs wawp_forecasts.db docs/data/weight_history.jsonl docs/data/climatology.json || true
+          git checkout --theirs wawp_forecasts.db docs/data/ || true
           git add wawp_forecasts.db docs/data/
           git commit -m "chore: auto-update forecast database and dashboard" || exit 0
           git push
