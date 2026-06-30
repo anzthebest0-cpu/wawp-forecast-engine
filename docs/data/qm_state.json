@@ -3,7 +3,7 @@
   "vote_thr": 1.0,
   "n_quantiles": 20,
   "min_samples": 10,
-  "saved_at": "2026-06-30T13:13:02.129491+00:00",
+  "saved_at": "2026-06-30T13:30:31.356074+00:00",
   "models": {
     "ECMWF": {
       "fc_quantiles": [
@@ -21,7 +21,7 @@
       "obs_max": 20.0,
       "source": "seed",
       "n_pairs": 0,
-      "fitted_at": "2026-06-30T13:13:02.124042+00:00"
+      "fitted_at": "2026-06-30T13:30:31.348147+00:00"
     },
     "GFS": {
       "fc_quantiles": [
@@ -39,7 +39,7 @@
       "obs_max": 20.0,
       "source": "seed",
       "n_pairs": 0,
-      "fitted_at": "2026-06-30T13:13:02.125165+00:00"
+      "fitted_at": "2026-06-30T13:30:31.349753+00:00"
     },
     "ICON": {
       "fc_quantiles": [
@@ -57,7 +57,7 @@
       "obs_max": 20.0,
       "source": "seed",
       "n_pairs": 0,
-      "fitted_at": "2026-06-30T13:13:02.126227+00:00"
+      "fitted_at": "2026-06-30T13:30:31.351295+00:00"
     },
     "ACCESS-G3": {
       "fc_quantiles": [
@@ -75,7 +75,7 @@
       "obs_max": 20.0,
       "source": "seed",
       "n_pairs": 0,
-      "fitted_at": "2026-06-30T13:13:02.127277+00:00"
+      "fitted_at": "2026-06-30T13:30:31.352850+00:00"
     }
   }
 }
