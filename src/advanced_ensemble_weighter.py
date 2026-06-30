@@ -2026,7 +2026,7 @@ class AdvancedEnsembleWeighter:
                                  lead_col: str = "Lead_Hour",
                                  parameter: str = "Rainfall",
                                  is_circular: bool = False,
-                                 min_samples: int = 50) -> Dict[str, float]:
+                                 min_samples: int = 24) -> Dict[str, float]:
         """
         Compute the final fused weight vector by blending four weight components.
 

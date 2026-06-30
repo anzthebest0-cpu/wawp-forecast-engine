@@ -53,6 +53,9 @@ def ingest_latest_awos():
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
+    # Fix any previously mislabeled locations
+    cursor.execute("UPDATE awos_observations SET location = 'Bandara_Sangia_Ni_Bandera' WHERE location = 'WAWP'")
+
     inserted = 0
     updated = 0
     
@@ -64,7 +67,7 @@ def ingest_latest_awos():
         rain = row["Rain"] if pd.notna(row["Rain"]) else 0.0
         
         # Check if exists
-        cursor.execute("SELECT id FROM awos_observations WHERE location = 'WAWP' AND obs_time = ?", (obs_time,))
+        cursor.execute("SELECT id FROM awos_observations WHERE location = 'Bandara_Sangia_Ni_Bandera' AND obs_time = ?", (obs_time,))
         existing = cursor.fetchone()
         
         if existing:
@@ -80,7 +83,7 @@ def ingest_latest_awos():
             cursor.execute("""
                 INSERT INTO awos_observations (location, obs_time, temperature, wind_dir, wind_speed, rain_1h)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, ("WAWP", obs_time, temp, wd, ws, rain))
+            """, ("Bandara_Sangia_Ni_Bandera", obs_time, temp, wd, ws, rain))
             inserted += 1
 
     conn.commit()
