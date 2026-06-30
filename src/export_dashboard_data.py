@@ -13,24 +13,90 @@ from src.tafor_generator import generate_tafor
 
 log = logging.getLogger("exporter")
 
-def _wide_to_long(df_wide: pd.DataFrame, param: str) -> pd.DataFrame:
-    """Convert wide DB output to long format for weighter."""
-    obs_col = f"OBS_{param.replace(' ', '_')}"
-    if df_wide.empty or obs_col not in df_wide.columns:
+def _long_to_wide(df_long: pd.DataFrame, param: str) -> pd.DataFrame:
+    """Convert long DB output to wide format for QuantileMapper and Consensus."""
+    if df_long.empty:
         return pd.DataFrame()
         
-    long_rows = []
-    for m in MODELS:
-        if m in df_wide.columns:
-            subset = df_wide[["Datetime", m, obs_col]].copy()
-            subset = subset.rename(columns={"Datetime": "WITA_Target", m: "forecast", obs_col: "obs"})
-            subset["Model"] = m
-            subset = subset.dropna(subset=["forecast", "obs"])
-            long_rows.append(subset)
+    df_long = df_long.copy()
+    # Need to keep Datetime and OBS
+    obs_col = f"OBS_{param.replace(' ', '_')}"
+    
+    # Extract unique observations
+    obs_df = df_long.drop_duplicates(subset=["Datetime"])[["Datetime", "obs"]].rename(columns={"obs": obs_col})
+    
+    # Pivot forecasts
+    wide_df = df_long.pivot_table(index="Datetime", columns="Model", values="forecast", aggfunc="last").reset_index()
+    
+    # Merge observations back
+    return pd.merge(wide_df, obs_df, on="Datetime", how="left")
+
+def calculate_advanced_metrics(weighter, df_long: pd.DataFrame, param: str, is_circular: bool):
+    """Calculate standard metrics, lead-time metrics, and diurnal bias."""
+    metrics_payload = {
+        "overall": {},
+        "lead_time": {},
+        "diurnal_bias": {},
+        "significance": {}
+    }
+    
+    if df_long.empty:
+        return metrics_payload
+        
+    # Calculate Lead Hour
+    df_long["Datetime"] = pd.to_datetime(df_long["Datetime"])
+    if "Run_Init_UTC" in df_long.columns:
+        df_long["Run_Init_UTC"] = pd.to_datetime(df_long["Run_Init_UTC"], format="mixed", utc=True, errors="coerce").dt.tz_localize(None)
+        df_long["Lead_Hour"] = (df_long["Datetime"] - df_long["Run_Init_UTC"]).dt.total_seconds() / 3600.0
+        df_long["Lead_Hour"] = df_long["Lead_Hour"].fillna(0)
+    else:
+        df_long["Lead_Hour"] = 0
+        
+    # Set expected WITA_Target for weighter
+    df_w = df_long.copy()
+    df_w["WITA_Target"] = df_w["Datetime"]
+    
+    # Overall Metrics
+    overall = weighter.calculate_all_metrics(df_w, parameter=param, is_circular=is_circular)
+    for m, sk in overall.items():
+        if sk.rmse < 900:
+            metrics_payload["overall"][m] = {
+                "RMSE": round(sk.rmse, 3), "Bias": round(sk.bias, 3), "MAE": round(sk.mae, 3),
+                "HSS": round(sk.hss, 3) if hasattr(sk, 'hss') else None,
+                "CSI": round(sk.csi, 3) if hasattr(sk, 'csi') else None
+            }
             
-    if not long_rows:
-        return pd.DataFrame()
-    return pd.concat(long_rows, ignore_index=True)
+    # Lead-Time Analysis
+    brackets = {"Day 1": (0, 24), "Day 2": (24, 48), "Day 3": (48, 72), "Day 4+": (72, 999)}
+    for b_name, (lo, hi) in brackets.items():
+        sub = df_w[(df_w["Lead_Hour"] >= lo) & (df_w["Lead_Hour"] < hi)]
+        if len(sub) > 0:
+            sub_metrics = weighter.calculate_all_metrics(sub, parameter=param, is_circular=is_circular, min_samples=3)
+            b_data = {}
+            for m, sk in sub_metrics.items():
+                if sk.rmse < 900:
+                    b_data[m] = {"RMSE": round(sk.rmse, 3)}
+            metrics_payload["lead_time"][b_name] = b_data
+            
+    # Diurnal Bias (UTC -> Local +8 conceptually)
+    df_w["Hour"] = (df_w["Datetime"] + pd.Timedelta(hours=8)).dt.hour
+    diurnal = {}
+    for m in MODELS:
+        m_df = df_w[df_w["Model"] == m]
+        if len(m_df) > 0:
+            if is_circular:
+                # Circular mean error not implemented linearly, skip
+                diurnal[m] = {str(h): 0.0 for h in range(24)}
+            else:
+                bias_by_hour = m_df.groupby("Hour").apply(lambda x: (x["forecast"] - x["obs"]).mean()).to_dict()
+                diurnal[m] = {str(h): round(bias_by_hour.get(h, 0.0), 3) for h in range(24)}
+    metrics_payload["diurnal_bias"] = diurnal
+    
+    # Extract Significancy from weighter if it exists
+    if hasattr(weighter, 'significance') and param == "Rainfall":
+        metrics_payload["significance"] = weighter.significance
+
+    return metrics_payload
 
 def export_all(db: ForecastDB, output_dir: str):
     """
@@ -56,67 +122,90 @@ def export_all(db: ForecastDB, output_dir: str):
         
     # 1. Calculate Weights & Metrics
     log.info("Calculating dynamic weights from recent observations...")
-    weighter = AdvancedEnsembleWeighter()
+    weighter = AdvancedEnsembleWeighter()    
+    global_weights = {}
+    global_metrics = {
+        "24 Hours": {}, "3 Days": {}, "7 Days": {}, "Month": {}
+    }
     
-    # Use last 60 days of overlap
+    # Use last 60 days of overlap for the baseline pull
     end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=60)
-    start_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
-    end_str = end_date.strftime('%Y-%m-%d %H:%M:%S')
     
-    global_weights = {}
-    global_metrics = {}
+    start_str = start_date.strftime("%Y-%m-%d %H:%M:%S")
+    end_str = end_date.strftime("%Y-%m-%d %H:%M:%S")
+    
+    model_data = {}
     qm_mapper = QuantileMapper()
     
     for param in ["Temperature", "Dewpoint", "Pressure", "Rainfall", "Wind Speed", "Wind Dir.", "Wind Gust"]:
-        df_wide = db.get_verification_pairs(param, start_str, end_str)
-        df_long = _wide_to_long(df_wide, param)
+        global_weights[param] = {m: 1.0/len(MODELS) for m in MODELS}
         
+        # Native LONG format from DB
+        df_long_60d = db.get_verification_pairs(param, start_str, end_str)
         is_circular = (param == "Wind Dir.")
         
-        if not df_long.empty:
-            metrics = weighter.calculate_all_metrics(
-                df_long, parameter=param, is_circular=is_circular
-            )
-            # Just take equal weights if data too sparse, else CRPS weights
+        # --- LOOKBACK METRICS CALCULATION ---
+        if not df_long_60d.empty:
+            df_long_60d["Datetime_obj"] = pd.to_datetime(df_long_60d["Datetime"])
+            max_dt = df_long_60d["Datetime_obj"].max()
+            
+            lookbacks = {
+                "24 Hours": 1,
+                "3 Days": 3,
+                "7 Days": 7,
+                "Month": 30
+            }
+            
+            for lb_name, days in lookbacks.items():
+                lb_thresh = max_dt - pd.Timedelta(days=days)
+                df_lb = df_long_60d[df_long_60d["Datetime_obj"] >= lb_thresh]
+                # calculate advanced metrics
+                global_metrics[lb_name][param] = calculate_advanced_metrics(weighter, df_lb, param, is_circular)
+        else:
+            for lb_name in global_metrics.keys():
+                global_metrics[lb_name][param] = calculate_advanced_metrics(weighter, pd.DataFrame(), param, is_circular)
+                
+        # --- GLOBAL WEIGHTS & MAPPER (Using 60d) ---
+        df_wide = _long_to_wide(df_long_60d, param)
+        
+        if not df_long_60d.empty:
+            # Set WITA_Target for CRPS
+            df_crps = df_long_60d.copy()
+            df_crps["WITA_Target"] = pd.to_datetime(df_crps["Datetime"])
             try:
-                w = weighter.calculate_weights_crps(df_long, parameter=param, is_circular=is_circular)
+                w = weighter.calculate_weights_crps(df_crps, parameter=param, is_circular=is_circular)
             except Exception as e:
                 log.warning(f"CRPS weights failed for {param}: {e}")
                 w = {m: 1.0/len(MODELS) for m in MODELS}
                 
             global_weights[param] = w
             
-            # Serialize metrics
-            param_metrics = {}
-            for m, sk in metrics.items():
-                if sk.rmse < 900:
-                    param_metrics[m] = {
-                        "RMSE": round(sk.rmse, 3),
-                        "Bias": round(sk.bias, 3),
-                        "MAE": round(sk.mae, 3),
-                        "CRPS": None,
-                        "HSS": round(sk.hss, 3) if hasattr(sk, 'hss') else None,
-                        "CSI": round(sk.csi, 3) if hasattr(sk, 'csi') else None
-                    }
-                else:
-                    param_metrics[m] = None
-            global_metrics[param] = param_metrics
-            
             # If Rainfall, update Quantile Mapper
             if param == "Rainfall":
                 try:
                     for m in MODELS:
                         if m in df_wide.columns:
-                            m_df = df_wide[[m, f"OBS_Rainfall"]].dropna()
-                            m_df = m_df.rename(columns={m: "Rain", f"OBS_Rainfall": "OBS_Rain"})
+                            m_df = df_wide[[m, "OBS_Rainfall"]].dropna()
+                            m_df = m_df.rename(columns={m: "Rain", "OBS_Rainfall": "OBS_Rain"})
                             qm_mapper.fit_model(m_df, model=m)
                     qm_mapper.save()
                 except Exception as e:
-                    log.warning(f"QM fit failed: {e}")
-        else:
-            global_weights[param] = {m: 1.0/len(MODELS) for m in MODELS}
-            global_metrics[param] = {}
+                    log.error(f"QM Fit failed: {e}")
+                    
+        # Apply QM to Rainfall forecasts
+        if param == "Rainfall" and not df_wide.empty:
+            p_df = df_wide.copy()
+            p_df.set_index("Datetime", inplace=True)
+            for m in p_df.columns:
+                if m in MODELS:
+                    p_df[m] = qm_mapper.transform_series(p_df[m], model=m)
+            # Disable diurnal bias for now
+            
+            model_data[param] = {m: p_df[m].dropna() for m in p_df.columns if m in MODELS}
+        elif not df_wide.empty:
+            p_df = df_wide.copy().set_index("Datetime")
+            model_data[param] = {m: p_df[m].dropna() for m in p_df.columns if m in MODELS}
             
     # --- RESTORE LEGACY INTELLIGENCE ---
     # Since DB is new, we fallback to the trained weights and diurnal biases from New_CODE
@@ -326,7 +415,8 @@ def export_all(db: ForecastDB, output_dir: str):
         
     perf_path = os.path.join(output_dir, "latest_performance.json")
     with open(perf_path, 'w', encoding='utf-8') as f:
-        json.dump({"metadata": {"period": "Last 60 Days"}, "metrics": global_metrics}, f, indent=2)
+        # global_metrics is now nested: { "24 Hours": { "Temperature": { "overall": {}, ... } }, ... }
+        json.dump({"metadata": {"period": "Lookback"}, "metrics": global_metrics}, f, indent=2)
         
     # Append to Weight History
     history_path = os.path.join(output_dir, "weight_history.jsonl")

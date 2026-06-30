@@ -189,24 +189,19 @@ class ForecastDB:
         if not f_col or not o_col:
             return pd.DataFrame()
             
-        # We pivot the models so that we have ECMWF, GFS, etc. as columns
+        # Return long format directly to preserve model-specific run_init_utc for Lead-Time calculation
         query = f"""
             SELECT 
                 f.forecast_time as Datetime,
-                MAX(CASE WHEN f.model = 'ECMWF' THEN f.{f_col} END) as ECMWF,
-                MAX(CASE WHEN f.model = 'GFS' THEN f.{f_col} END) as GFS,
-                MAX(CASE WHEN f.model = 'ICON' THEN f.{f_col} END) as ICON,
-                MAX(CASE WHEN f.model = 'METEOBLUE' THEN f.{f_col} END) as METEOBLUE,
-                MAX(CASE WHEN f.model = 'ACCESS-G3' THEN f.{f_col} END) as [ACCESS-G3],
-                MAX(CASE WHEN f.model = 'UKMO' THEN f.{f_col} END) as UKMO,
-                MAX(CASE WHEN f.model = 'GEM' THEN f.{f_col} END) as GEM,
-                o.{o_col} as [OBS_{param.replace(' ', '_')}]
+                f.model as Model,
+                f.run_init_utc as Run_Init_UTC,
+                f.{f_col} as forecast,
+                o.{o_col} as obs
             FROM meteologix_forecasts f
             INNER JOIN awos_observations o 
                 ON f.location = o.location 
                 AND f.forecast_time = o.obs_time
             WHERE f.forecast_time >= ? AND f.forecast_time <= ?
-            GROUP BY f.forecast_time, o.{o_col}
         """
         return pd.read_sql_query(query, self.conn, params=(start_date, end_date))
 

@@ -330,50 +330,168 @@ function setupRegionalCharts() {
 // ==============================================================================
 // VERIFICATION AND PERSISTENCY
 // ==============================================================================
+window.verifyData = null;
+window.currentLookback = "Month";
+window.currentVerifySub = "verify-skill";
 
 function setupVerification(perfData) {
     if(!perfData || !perfData.metrics) return;
+    window.verifyData = perfData;
     
-    // 1. Temperature MAE
-    const tempMetrics = perfData.metrics['Temperature'];
-    if (tempMetrics && Object.keys(tempMetrics).length > 0) {
-        const models = Object.keys(tempMetrics).filter(m => tempMetrics[m] && tempMetrics[m].MAE !== null);
-        models.sort((a,b) => tempMetrics[a].MAE - tempMetrics[b].MAE); // Lower is better
-        
-        const options = {
-            series: [{ name: 'MAE (°C)', data: models.map(m => tempMetrics[m].MAE) }],
-            chart: { type: 'bar', height: 300, background: 'transparent', toolbar: { show: false } },
-            plotOptions: { bar: { horizontal: true, borderRadius: 4, colors: { ranges: [{ from: 0, to: 100, color: '#ef4444' }] } } },
-            dataLabels: { enabled: true, style: { colors: ['#fff'] } },
-            xaxis: { categories: models, labels: { style: { colors: '#94a3b8' } } },
-            yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 600 } } },
-            theme: { mode: 'dark' }
-        };
-        document.getElementById('verify-temp-chart').innerHTML = '';
-        new ApexCharts(document.getElementById('verify-temp-chart'), options).render();
-    } else {
-        document.getElementById('verify-temp-chart').innerText = 'No sufficient verification data yet.';
-    }
+    // Attach listeners to Lookback radios
+    document.querySelectorAll('.lookback-radio input').forEach(el => {
+        el.addEventListener('change', (e) => {
+            window.currentLookback = e.target.value;
+            renderVerification();
+        });
+    });
+    
+    // Attach listeners to Subtabs
+    document.querySelectorAll('.verify-subtab').forEach(el => {
+        el.addEventListener('click', (e) => {
+            document.querySelectorAll('.verify-subtab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.verify-content').forEach(c => c.style.display = 'none');
+            
+            e.target.classList.add('active');
+            const targetId = e.target.getAttribute('data-sub');
+            document.getElementById(targetId).style.display = 'block';
+            window.currentVerifySub = targetId;
+            renderVerification();
+        });
+    });
+    
+    // Attach listeners to param selectors
+    document.getElementById('leadtime-param-select').addEventListener('change', renderVerification);
+    document.getElementById('diurnal-param-select').addEventListener('change', renderVerification);
+    
+    renderVerification();
+}
 
-    // 2. Rainfall HSS
-    const rainMetrics = perfData.metrics['Rainfall'];
-    if (rainMetrics && Object.keys(rainMetrics).length > 0) {
-        const models = Object.keys(rainMetrics).filter(m => rainMetrics[m] && rainMetrics[m].HSS !== null);
-        models.sort((a,b) => rainMetrics[b].HSS - rainMetrics[a].HSS); // Higher is better
-        
-        const options = {
-            series: [{ name: 'HSS', data: models.map(m => rainMetrics[m].HSS) }],
-            chart: { type: 'bar', height: 300, background: 'transparent', toolbar: { show: false } },
-            plotOptions: { bar: { horizontal: true, borderRadius: 4, colors: { ranges: [{ from: -1, to: 1, color: '#0ea5e9' }] } } },
-            dataLabels: { enabled: true, style: { colors: ['#fff'] } },
-            xaxis: { categories: models, labels: { style: { colors: '#94a3b8' } } },
-            yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 600 } } },
-            theme: { mode: 'dark' }
-        };
-        document.getElementById('verify-rain-chart').innerHTML = '';
-        new ApexCharts(document.getElementById('verify-rain-chart'), options).render();
-    } else {
-        document.getElementById('verify-rain-chart').innerText = 'No sufficient verification data yet.';
+function renderVerification() {
+    if(!window.verifyData) return;
+    const lbMetrics = window.verifyData.metrics[window.currentLookback];
+    if(!lbMetrics) return;
+    
+    if (window.currentVerifySub === 'verify-skill') {
+        // Temperature MAE
+        const tempMetrics = lbMetrics['Temperature']?.overall;
+        if (tempMetrics && Object.keys(tempMetrics).length > 0) {
+            const models = Object.keys(tempMetrics).filter(m => tempMetrics[m] && tempMetrics[m].MAE !== null);
+            models.sort((a,b) => tempMetrics[a].MAE - tempMetrics[b].MAE);
+            const options = {
+                series: [{ name: 'MAE (°C)', data: models.map(m => tempMetrics[m].MAE) }],
+                chart: { type: 'bar', height: 300, background: 'transparent', toolbar: { show: false } },
+                plotOptions: { bar: { horizontal: true, borderRadius: 4, colors: { ranges: [{ from: 0, to: 100, color: '#ef4444' }] } } },
+                dataLabels: { enabled: true, style: { colors: ['#fff'] } },
+                xaxis: { categories: models, labels: { style: { colors: '#94a3b8' } } },
+                yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 600 } } },
+                theme: { mode: 'dark' }
+            };
+            document.getElementById('verify-temp-chart').innerHTML = '';
+            new ApexCharts(document.getElementById('verify-temp-chart'), options).render();
+        } else {
+            document.getElementById('verify-temp-chart').innerText = 'No sufficient verification data yet.';
+        }
+    
+        // Rainfall HSS
+        const rainMetrics = lbMetrics['Rainfall']?.overall;
+        if (rainMetrics && Object.keys(rainMetrics).length > 0) {
+            const models = Object.keys(rainMetrics).filter(m => rainMetrics[m] && rainMetrics[m].HSS !== null);
+            models.sort((a,b) => rainMetrics[b].HSS - rainMetrics[a].HSS);
+            const options = {
+                series: [{ name: 'HSS', data: models.map(m => rainMetrics[m].HSS) }],
+                chart: { type: 'bar', height: 300, background: 'transparent', toolbar: { show: false } },
+                plotOptions: { bar: { horizontal: true, borderRadius: 4, colors: { ranges: [{ from: -1, to: 1, color: '#0ea5e9' }] } } },
+                dataLabels: { enabled: true, style: { colors: ['#fff'] } },
+                xaxis: { categories: models, labels: { style: { colors: '#94a3b8' } } },
+                yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 600 } } },
+                theme: { mode: 'dark' }
+            };
+            document.getElementById('verify-rain-chart').innerHTML = '';
+            new ApexCharts(document.getElementById('verify-rain-chart'), options).render();
+        } else {
+            document.getElementById('verify-rain-chart').innerText = 'No sufficient verification data yet.';
+        }
+    }
+    else if (window.currentVerifySub === 'verify-leadtime') {
+        const param = document.getElementById('leadtime-param-select').value;
+        const ltData = lbMetrics[param]?.lead_time;
+        if (ltData && Object.keys(ltData).length > 0) {
+            const days = ["Day 1", "Day 2", "Day 3", "Day 4+"];
+            const models = Object.keys(lbMetrics[param].overall || {}).filter(m => m !== 'Multi-Model');
+            
+            const series = models.map(m => {
+                return {
+                    name: m,
+                    data: days.map(d => (ltData[d] && ltData[d][m]) ? ltData[d][m].RMSE : null)
+                }
+            });
+            
+            const options = {
+                series: series,
+                chart: { type: 'line', height: 350, background: 'transparent', toolbar: { show: false } },
+                stroke: { width: 3, curve: 'smooth' },
+                xaxis: { categories: days, labels: { style: { colors: '#94a3b8' } } },
+                yaxis: { title: { text: 'RMSE' }, labels: { style: { colors: '#94a3b8' } } },
+                theme: { mode: 'dark' },
+                legend: { position: 'top' }
+            };
+            document.getElementById('verify-leadtime-chart').innerHTML = '';
+            new ApexCharts(document.getElementById('verify-leadtime-chart'), options).render();
+        } else {
+            document.getElementById('verify-leadtime-chart').innerText = 'Insufficient data for Lead-Time Analysis.';
+        }
+    }
+    else if (window.currentVerifySub === 'verify-diurnal') {
+        const param = document.getElementById('diurnal-param-select').value;
+        const dData = lbMetrics[param]?.diurnal_bias;
+        if (dData && Object.keys(dData).length > 0) {
+            const hours = Array.from({length: 24}, (_, i) => i.toString());
+            const models = Object.keys(lbMetrics[param].overall || {}).filter(m => m !== 'Multi-Model');
+            
+            const series = models.map(m => {
+                return {
+                    name: m,
+                    data: hours.map(h => (dData[m] && dData[m][h] !== undefined) ? dData[m][h] : null)
+                }
+            });
+            
+            const options = {
+                series: series,
+                chart: { type: 'line', height: 350, background: 'transparent', toolbar: { show: false } },
+                stroke: { width: 2, curve: 'smooth' },
+                xaxis: { categories: hours.map(h => h.padStart(2, '0') + ':00'), labels: { style: { colors: '#94a3b8' } } },
+                yaxis: { title: { text: 'Bias' }, labels: { style: { colors: '#94a3b8' } } },
+                theme: { mode: 'dark' },
+                legend: { position: 'top' },
+                annotations: {
+                    yaxis: [{ y: 0, borderColor: '#ef4444', label: { text: 'Zero Bias', style: { color: '#fff', background: '#ef4444' } } }]
+                }
+            };
+            document.getElementById('verify-diurnal-chart').innerHTML = '';
+            new ApexCharts(document.getElementById('verify-diurnal-chart'), options).render();
+        } else {
+            document.getElementById('verify-diurnal-chart').innerText = 'Insufficient data for Diurnal Analysis.';
+        }
+    }
+    else if (window.currentVerifySub === 'verify-significancy') {
+        const sigData = lbMetrics['Rainfall']?.significance;
+        if (sigData && sigData.fused) {
+            const html = `
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 15px; border-radius: 8px;">
+                    <h4 style="color: var(--green); margin-bottom: 10px;">Test Results</h4>
+                    <p><strong>Diebold-Mariano Stat (DM):</strong> ${Number(sigData.fused.dm_stat).toFixed(3)}</p>
+                    <p><strong>P-Value:</strong> ${Number(sigData.fused.p_value).toFixed(4)}</p>
+                    <p><strong>Newey-West Bandwidth:</strong> ${sigData.fused.nw_bandwidth}</p>
+                    <p style="margin-top: 10px; font-weight: bold; color: ${sigData.fused.p_value < 0.05 ? 'var(--green)' : 'var(--amber)'};">
+                        ${sigData.fused.p_value < 0.05 ? '[OK] Weighted ensemble significantly better than equal weighting (p < 0.05)' : '[WARN] Improvement is not statistically significant'}
+                    </p>
+                </div>
+            `;
+            document.getElementById('verify-significancy-content').innerHTML = html;
+        } else {
+            document.getElementById('verify-significancy-content').innerText = 'No significancy test data available.';
+        }
     }
 }
 
@@ -393,14 +511,15 @@ function setupPersistency(persData) {
     // Temp/Dew Chart
     const tempOptions = {
         series: [
-            { name: 'Temperature (°C)', data: times.map((t,i) => [t, temp[i]]) },
-            { name: 'Dewpoint (°C)', data: times.map((t,i) => [t, dew[i]]) }
+            { name: 'Temperature (°C)', data: temp },
+            { name: 'Dewpoint (°C)', data: dew }
         ],
-        chart: { type: 'area', height: 300, background: 'transparent', animations: { enabled: false }, toolbar: { show: false } },
+        chart: { type: 'area', height: 300, background: 'transparent', toolbar: { show: false } },
+        stroke: { width: 2, curve: 'smooth' },
+        fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.1 } },
         colors: ['#ef4444', '#3b82f6'],
         dataLabels: { enabled: false },
-        stroke: { curve: 'smooth', width: 2 },
-        xaxis: { type: 'datetime', labels: { style: { colors: '#94a3b8' }, datetimeUTC: false } },
+        xaxis: { type: 'datetime', categories: times, labels: { style: { colors: '#94a3b8' } } },
         yaxis: { labels: { style: { colors: '#94a3b8' } } },
         theme: { mode: 'dark' }
     };
@@ -410,14 +529,14 @@ function setupPersistency(persData) {
     // Rain/Wind Chart
     const rainOptions = {
         series: [
-            { name: 'Rainfall (mm)', type: 'bar', data: times.map((t,i) => [t, rain[i]]) },
-            { name: 'Wind Speed (kt)', type: 'line', data: times.map((t,i) => [t, wind[i]]) }
+            { name: 'Rainfall (mm)', type: 'bar', data: rain },
+            { name: 'Wind Speed (kt)', type: 'line', data: wind }
         ],
-        chart: { height: 300, background: 'transparent', animations: { enabled: false }, toolbar: { show: false } },
+        chart: { height: 300, background: 'transparent', toolbar: { show: false } },
         colors: ['#0ea5e9', '#10b981'],
         dataLabels: { enabled: false },
         stroke: { curve: 'smooth', width: [0, 2] },
-        xaxis: { type: 'datetime', labels: { style: { colors: '#94a3b8' }, datetimeUTC: false } },
+        xaxis: { type: 'datetime', categories: times, labels: { style: { colors: '#94a3b8' } } },
         yaxis: [
             { title: { text: 'Rain (mm)' }, labels: { style: { colors: '#0ea5e9' } } },
             { opposite: true, title: { text: 'Wind (kt)' }, labels: { style: { colors: '#10b981' } } }

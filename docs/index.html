@@ -336,15 +336,80 @@
 
         <!-- Tab 9: Live Verification -->
         <section id="tab-verify" class="tab-pane">
-            <h2>Live Verification (Hits & Misses)</h2>
-            <div class="intel-grid">
-                <div class="panel chart-panel">
-                    <h3>Temperature Accuracy (MAE)</h3>
-                    <div id="verify-temp-chart">Loading...</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 10px; margin-bottom: 20px;">
+                <div style="display: flex; gap: 15px;">
+                    <button class="verify-subtab active" data-sub="verify-skill">Skill Analysis</button>
+                    <button class="verify-subtab" data-sub="verify-leadtime">Lead-Time Accuracy</button>
+                    <button class="verify-subtab" data-sub="verify-significancy">Significancy</button>
+                    <button class="verify-subtab" data-sub="verify-diurnal">Diurnal Bias</button>
                 </div>
-                <div class="panel chart-panel">
-                    <h3>Rainfall Skill (HSS)</h3>
-                    <div id="verify-rain-chart">Loading...</div>
+                
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span style="color: var(--text-secondary); font-size: 0.9em;">Lookback:</span>
+                    <label class="lookback-radio"><input type="radio" name="lookback" value="24 Hours"> 24 Hours</label>
+                    <label class="lookback-radio"><input type="radio" name="lookback" value="3 Days"> 3 Days</label>
+                    <label class="lookback-radio"><input type="radio" name="lookback" value="7 Days"> 7 Days</label>
+                    <label class="lookback-radio"><input type="radio" name="lookback" value="Month" checked> Month</label>
+                </div>
+            </div>
+            
+            <!-- Skill Analysis Sub-tab -->
+            <div id="verify-skill" class="verify-content active">
+                <div class="intel-grid">
+                    <div class="panel chart-panel">
+                        <h3>Temperature Accuracy (MAE)</h3>
+                        <div id="verify-temp-chart">Loading...</div>
+                    </div>
+                    <div class="panel chart-panel">
+                        <h3>Rainfall Skill (HSS)</h3>
+                        <div id="verify-rain-chart">Loading...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lead-Time Accuracy Sub-tab -->
+            <div id="verify-leadtime" class="verify-content" style="display: none;">
+                <div class="intel-grid">
+                    <div class="panel chart-panel" style="grid-column: 1 / -1;">
+                        <h3>Lead-Time Drift Analysis (RMSE)</h3>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <select id="leadtime-param-select" style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-glass); padding: 5px; border-radius: 4px;">
+                                <option value="Temperature">Temperature</option>
+                                <option value="Rainfall">Rainfall</option>
+                                <option value="Wind Speed">Wind Speed</option>
+                                <option value="Pressure">Pressure</option>
+                            </select>
+                        </div>
+                        <div id="verify-leadtime-chart">Loading...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Significancy Sub-tab -->
+            <div id="verify-significancy" class="verify-content" style="display: none;">
+                <div class="panel">
+                    <h3>Diebold-Mariano Test (Rainfall)</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 15px;">Tests if the fused ensemble is significantly better than equal-weighting.</p>
+                    <div id="verify-significancy-content">Loading...</div>
+                </div>
+            </div>
+            
+            <!-- Diurnal Bias Sub-tab -->
+            <div id="verify-diurnal" class="verify-content" style="display: none;">
+                <div class="intel-grid">
+                    <div class="panel chart-panel" style="grid-column: 1 / -1;">
+                        <h3>Time-of-Day Bias</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9em; margin-bottom: 10px;">Calculated using local time (UTC+8). Positive values indicate over-forecasting.</p>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <select id="diurnal-param-select" style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-glass); padding: 5px; border-radius: 4px;">
+                                <option value="Temperature">Temperature</option>
+                                <option value="Rainfall">Rainfall</option>
+                                <option value="Wind Speed">Wind Speed</option>
+                                <option value="Pressure">Pressure</option>
+                            </select>
+                        </div>
+                        <div id="verify-diurnal-chart">Loading...</div>
+                    </div>
                 </div>
             </div>
         </section>
