@@ -1,10 +1,6 @@
 {
-  "size_mb": 1.0,
+  "size_mb": 1.23,
   "forecast_records": 3731,
   "observation_records": 0,
-<<<<<<< Updated upstream
-  "last_sync_utc": "2026-06-30 10:07:19"
-=======
-  "last_sync_utc": "2026-06-30 10:07:42"
->>>>>>> Stashed changes
+  "last_sync_utc": "2026-06-30 10:13:35"
 }
