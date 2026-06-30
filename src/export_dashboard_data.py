@@ -23,7 +23,7 @@ def _wide_to_long(df_wide: pd.DataFrame, param: str) -> pd.DataFrame:
     for m in MODELS:
         if m in df_wide.columns:
             subset = df_wide[["Datetime", m, obs_col]].copy()
-            subset = subset.rename(columns={m: "forecast", obs_col: "obs"})
+            subset = subset.rename(columns={"Datetime": "WITA_Target", m: "forecast", obs_col: "obs"})
             subset["Model"] = m
             subset = subset.dropna(subset=["forecast", "obs"])
             long_rows.append(subset)
@@ -95,13 +95,12 @@ def export_all(db: ForecastDB, output_dir: str):
                         "RMSE": round(sk.rmse, 3),
                         "Bias": round(sk.bias, 3),
                         "MAE": round(sk.mae, 3),
-                        "CRPS": round(sk.crps, 3) if sk.crps is not None else None,
+                        "CRPS": None,
                         "HSS": round(sk.hss, 3) if hasattr(sk, 'hss') else None,
                         "CSI": round(sk.csi, 3) if hasattr(sk, 'csi') else None
                     }
                 else:
                     param_metrics[m] = None
-                    param_metrics[m] = {"RMSE": None, "Bias": None, "MAE": None, "CRPS": None}
             global_metrics[param] = param_metrics
             
             # If Rainfall, update Quantile Mapper
