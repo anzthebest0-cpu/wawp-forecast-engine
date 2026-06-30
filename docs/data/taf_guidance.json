@@ -1,28 +1,10 @@
 {
   "metadata": {
-    "generated_at": "2026-06-30 09:59:11",
+    "generated_at": "2026-06-30 10:07:20",
     "version": "v200",
     "location": "Bandara_Sangia_Ni_Bandera"
   },
   "data": [
-    {
-      "Datetime": "2026-06-30 18:00:00",
-      "Temperature": 27.600000000000005,
-      "Dewpoint": 21.819999999999997,
-      "Pressure": 1009.1800000000002,
-      "Rain": 0.0,
-      "Wind": 5.6000000000000005,
-      "Wind Dir.": 52.92527754051704,
-      "Wind Gust": 10.120000000000001,
-      "Prob Precip 0.1mm": 27.200000000000003,
-      "Prob Precip 1.0mm": 18.2,
-      "Prob Precip 10.0mm": 0.0,
-      "Sunshine": 23.2,
-      "Low Clouds": 8.6,
-      "Mid Clouds": 0.4,
-      "High Clouds": 0.0,
-      "Condition": "Normal"
-    },
     {
       "Datetime": "2026-06-30 19:00:00",
       "Temperature": 26.820000000000004,
