@@ -41,6 +41,19 @@ def export_all(db: ForecastDB, output_dir: str):
     """
     os.makedirs(output_dir, exist_ok=True)
     
+    # 0. Database Health Checker
+    db_size_bytes = os.path.getsize(db.conn.execute("PRAGMA database_list").fetchall()[0][2]) if os.path.exists('wawp_forecasts.db') else 0
+    forecast_count = db.conn.execute("SELECT COUNT(*) FROM meteologix_forecasts").fetchone()[0]
+    obs_count = db.conn.execute("SELECT COUNT(*) FROM awos_observations").fetchone()[0]
+    db_health = {
+        "size_mb": round(db_size_bytes / (1024 * 1024), 2),
+        "forecast_records": forecast_count,
+        "observation_records": obs_count,
+        "last_sync_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    }
+    with open(os.path.join(output_dir, "db_health.json"), "w") as f:
+        json.dump(db_health, f, indent=2)
+        
     # 1. Calculate Weights & Metrics
     log.info("Calculating dynamic weights from recent observations...")
     weighter = AdvancedEnsembleWeighter()

@@ -31,6 +31,7 @@
             <li data-tab="tab-models">Individual Models</li>
             <li data-tab="tab-regional">Regional Charts</li>
             <li data-tab="tab-climatology">Climatology Engine</li>
+            <li data-tab="tab-health" style="color: var(--amber); font-weight: 600;">System Health</li>
         </ul>
         <div class="last-update">
             <div>Last Forecast Run:</div>
@@ -271,7 +272,61 @@
                     <div class="taf-content" id="climatology-text">Loading climatology...</div>
                 </div>
             </div>
+        <!-- Tab 8: System Health (Added) -->
+        <section id="tab-health" class="tab-pane">
+            <h2>System Health & Verification Data</h2>
+            <div class="intel-grid">
+                
+                <!-- DB Health Widget -->
+                <div class="panel">
+                    <h3>Database Status</h3>
+                    <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+                        <div class="param-card">
+                            <div class="param-label">Forecast Records</div>
+                            <div class="param-value" id="db-forecast-count">Loading...</div>
+                        </div>
+                        <div class="param-card">
+                            <div class="param-label">Observation Records</div>
+                            <div class="param-value" id="db-obs-count">Loading...</div>
+                        </div>
+                        <div class="param-card">
+                            <div class="param-label">Database Size</div>
+                            <div class="param-value" id="db-size">Loading...</div>
+                        </div>
+                        <div class="param-card">
+                            <div class="param-label">Last Synchronization</div>
+                            <div class="param-value" id="db-last-sync" style="font-size: 1.1em;">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AWOS Upload Widget -->
+                <div class="panel">
+                    <h3>Manual AWOS Ingestion</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">Upload local AWOS `.dat` files to the central GitHub repository to trigger Live Verification metrics processing.</p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9em;">GitHub Access Token (PAT)</label>
+                            <input type="password" id="github-pat-input" placeholder="ghp_xxxxxxxxxxxx" style="width: 100%; padding: 10px; background: var(--bg-tertiary); border: 1px solid var(--border-glass); border-radius: 4px; color: var(--text-primary);">
+                            <div style="font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;">*Saved securely in your browser's localStorage.</div>
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9em;">AWOS Data File (.dat)</label>
+                            <input type="file" id="awos-file-input" accept=".dat" style="width: 100%; padding: 10px; background: var(--bg-tertiary); border: 1px solid var(--border-glass); border-radius: 4px; color: var(--text-primary);">
+                        </div>
+                        
+                        <button id="upload-awos-btn" style="background: var(--cyan-glow); color: var(--cyan); border: 1px solid rgba(0, 212, 255, 0.25); padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: all 0.2s;">
+                            Upload & Trigger Verification
+                        </button>
+                        
+                        <div id="upload-status" style="display:none; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center;"></div>
+                    </div>
+                </div>
+            </div>
         </section>
+        
     </main>
 
     <script src="dashboard.js?v=3.0"></script>

@@ -1,13 +1,14 @@
 async function loadDashboard() {
     try {
         const cb = '?t=' + new Date().getTime();
-        const [intelRes, weightsRes, perfRes, dataRes, climRes, modelsRes] = await Promise.all([
+        const [intelRes, weightsRes, perfRes, dataRes, climRes, modelsRes, healthRes] = await Promise.all([
             fetch('data/tafor_intel.json' + cb),
             fetch('data/latest_weights.json' + cb),
             fetch('data/latest_performance.json' + cb),
             fetch('data/taf_guidance.json' + cb),
             fetch('data/climatology.json' + cb),
-            fetch('data/individual_models.json' + cb)
+            fetch('data/individual_models.json' + cb),
+            fetch('data/db_health.json' + cb).catch(()=>null)
         ]);
         
         const intelData = await intelRes.json();
@@ -21,6 +22,14 @@ async function loadDashboard() {
 
         const clim_data = (climRes && climRes.ok) ? await climRes.json().catch(()=>null) : null;
         const modelsData = (modelsRes && modelsRes.ok && typeof modelsRes.json === 'function') ? await modelsRes.json().catch(()=>null) : null;
+        
+        const healthData = (healthRes && healthRes.ok) ? await healthRes.json().catch(()=>null) : null;
+        if (healthData) {
+            document.getElementById('db-forecast-count').innerText = healthData.forecast_records.toLocaleString();
+            document.getElementById('db-obs-count').innerText = healthData.observation_records.toLocaleString();
+            document.getElementById('db-size').innerText = healthData.size_mb + ' MB';
+            document.getElementById('db-last-sync').innerText = healthData.last_sync_utc + ' UTC';
+        }
 
         // 1. Update Header
         document.getElementById('update-time').innerText = generatedAt + " UTC";
@@ -479,5 +488,108 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Failed to copy text: ', err);
             }
         });
+    }
+
+    // AWOS Upload Logic
+    const patInput = document.getElementById('github-pat-input');
+    const awosInput = document.getElementById('awos-file-input');
+    const uploadBtn = document.getElementById('upload-awos-btn');
+    const statusDiv = document.getElementById('upload-status');
+
+    if (patInput) {
+        patInput.value = localStorage.getItem('gh_wawp_pat') || '';
+        patInput.addEventListener('input', (e) => {
+            localStorage.setItem('gh_wawp_pat', e.target.value);
+        });
+    }
+
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', async () => {
+            const token = patInput.value.trim();
+            if (!token) {
+                showStatus('Error: GitHub Token is required.', 'var(--amber)');
+                return;
+            }
+            if (!awosInput.files || awosInput.files.length === 0) {
+                showStatus('Error: Please select a .dat file.', 'var(--amber)');
+                return;
+            }
+            
+            const file = awosInput.files[0];
+            uploadBtn.innerText = 'Uploading...';
+            uploadBtn.disabled = true;
+            showStatus('Reading file...', 'var(--text-secondary)');
+            
+            try {
+                // Read as base64
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = async () => {
+                    const base64Content = reader.result.split(',')[1];
+                    
+                    // GitHub API push
+                    const repoOwner = "anzthebest0-cpu";
+                    const repoName = "wawp-forecast-engine";
+                    const path = "data/raw_obs/latest.dat";
+                    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}`;
+                    
+                    // Get current file SHA if exists to overwrite
+                    let sha = null;
+                    try {
+                        const getRes = await fetch(apiUrl, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (getRes.ok) {
+                            const getJson = await getRes.json();
+                            sha = getJson.sha;
+                        }
+                    } catch(e) {}
+                    
+                    const payload = {
+                        message: `Upload manual AWOS observation: ${file.name}`,
+                        content: base64Content,
+                        branch: "main"
+                    };
+                    if (sha) payload.sha = sha;
+                    
+                    const putRes = await fetch(apiUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (putRes.ok) {
+                        showStatus('Upload Successful! Verification Engine triggered.', 'var(--green)');
+                        setTimeout(() => {
+                            uploadBtn.innerText = 'Upload & Trigger Verification';
+                            uploadBtn.disabled = false;
+                            awosInput.value = '';
+                        }, 3000);
+                    } else {
+                        const errText = await putRes.text();
+                        showStatus(`Upload Failed: ${putRes.status}`, 'var(--red)');
+                        console.error(errText);
+                        uploadBtn.innerText = 'Upload & Trigger Verification';
+                        uploadBtn.disabled = false;
+                    }
+                };
+            } catch(e) {
+                showStatus(`Error: ${e.message}`, 'var(--red)');
+                uploadBtn.innerText = 'Upload & Trigger Verification';
+                uploadBtn.disabled = false;
+            }
+        });
+    }
+    
+    function showStatus(msg, color) {
+        if (!statusDiv) return;
+        statusDiv.style.display = 'block';
+        statusDiv.innerText = msg;
+        statusDiv.style.color = color;
+        statusDiv.style.border = `1px solid ${color}`;
+        statusDiv.style.background = 'var(--bg-tertiary)';
     }
 });
