@@ -32,6 +32,8 @@
             <li data-tab="tab-regional">Regional Charts</li>
             <li data-tab="tab-climatology">Climatology Engine</li>
             <li data-tab="tab-health" style="color: var(--amber); font-weight: 600;">System Health</li>
+            <li data-tab="tab-verify">Live Verification</li>
+            <li data-tab="tab-persistency">Persistency (Obs)</li>
         </ul>
         <div class="last-update">
             <div>Last Forecast Run:</div>
@@ -329,6 +331,34 @@
                         <div id="upload-status" style="display:none; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center;"></div>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Tab 9: Live Verification -->
+        <section id="tab-verify" class="tab-pane">
+            <h2>Live Verification (Hits & Misses)</h2>
+            <div class="intel-grid">
+                <div class="panel chart-panel">
+                    <h3>Temperature Accuracy (MAE)</h3>
+                    <div id="verify-temp-chart">Loading...</div>
+                </div>
+                <div class="panel chart-panel">
+                    <h3>Rainfall Skill (HSS)</h3>
+                    <div id="verify-rain-chart">Loading...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 10: Persistency -->
+        <section id="tab-persistency" class="tab-pane">
+            <h2>Historical Persistency (Last 5 Days)</h2>
+            <div class="panel chart-panel" style="margin-bottom: 20px;">
+                <h3>Temperature & Dewpoint</h3>
+                <div id="persistency-temp-chart">Loading...</div>
+            </div>
+            <div class="panel chart-panel" style="margin-bottom: 20px;">
+                <h3>Rainfall & Wind</h3>
+                <div id="persistency-rain-chart">Loading...</div>
             </div>
         </section>
         

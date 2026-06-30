@@ -95,9 +95,12 @@ def export_all(db: ForecastDB, output_dir: str):
                         "RMSE": round(sk.rmse, 3),
                         "Bias": round(sk.bias, 3),
                         "MAE": round(sk.mae, 3),
-                        "CRPS": round(sk.crps, 3) if sk.crps is not None else None
+                        "CRPS": round(sk.crps, 3) if sk.crps is not None else None,
+                        "HSS": round(sk.hss, 3) if hasattr(sk, 'hss') else None,
+                        "CSI": round(sk.csi, 3) if hasattr(sk, 'csi') else None
                     }
                 else:
+                    param_metrics[m] = None
                     param_metrics[m] = {"RMSE": None, "Bias": None, "MAE": None, "CRPS": None}
             global_metrics[param] = param_metrics
             

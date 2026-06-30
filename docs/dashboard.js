@@ -1,14 +1,15 @@
 async function loadDashboard() {
     try {
         const cb = '?t=' + new Date().getTime();
-        const [intelRes, weightsRes, perfRes, dataRes, climRes, modelsRes, healthRes] = await Promise.all([
+        const [intelRes, weightsRes, perfRes, dataRes, climRes, modelsRes, healthRes, persRes] = await Promise.all([
             fetch('data/tafor_intel.json' + cb),
             fetch('data/latest_weights.json' + cb),
             fetch('data/latest_performance.json' + cb),
             fetch('data/taf_guidance.json' + cb),
             fetch('data/climatology.json' + cb),
             fetch('data/individual_models.json' + cb),
-            fetch('data/db_health.json' + cb).catch(()=>null)
+            fetch('data/db_health.json' + cb).catch(()=>null),
+            fetch('data/persistency.json' + cb).catch(()=>null)
         ]);
         
         const intelData = await intelRes.json();
@@ -194,6 +195,11 @@ async function loadDashboard() {
             setupClimatology(clim_data, intel.valid_start);
         }
         
+        // 7. Verification & Persistency
+        const persData = (persRes && persRes.ok) ? await persRes.json().catch(()=>null) : null;
+        if (perf) setupVerification(perf);
+        if (persData) setupPersistency(persData);
+        
     } catch (e) {
         console.error(e);
         document.getElementById('update-time').innerText = "Load failed";
@@ -319,6 +325,107 @@ function setupRegionalCharts() {
         uaSelect.addEventListener('change', updateUaImage);
         updateUaImage();
     }
+}
+
+// ==============================================================================
+// VERIFICATION AND PERSISTENCY
+// ==============================================================================
+
+function setupVerification(perfData) {
+    if(!perfData || !perfData.metrics) return;
+    
+    // 1. Temperature MAE
+    const tempMetrics = perfData.metrics['Temperature'];
+    if (tempMetrics && Object.keys(tempMetrics).length > 0) {
+        const models = Object.keys(tempMetrics).filter(m => tempMetrics[m] && tempMetrics[m].MAE !== null);
+        models.sort((a,b) => tempMetrics[a].MAE - tempMetrics[b].MAE); // Lower is better
+        
+        const options = {
+            series: [{ name: 'MAE (°C)', data: models.map(m => tempMetrics[m].MAE) }],
+            chart: { type: 'bar', height: 300, background: 'transparent', toolbar: { show: false } },
+            plotOptions: { bar: { horizontal: true, borderRadius: 4, colors: { ranges: [{ from: 0, to: 100, color: '#ef4444' }] } } },
+            dataLabels: { enabled: true, style: { colors: ['#fff'] } },
+            xaxis: { categories: models, labels: { style: { colors: '#94a3b8' } } },
+            yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 600 } } },
+            theme: { mode: 'dark' }
+        };
+        document.getElementById('verify-temp-chart').innerHTML = '';
+        new ApexCharts(document.getElementById('verify-temp-chart'), options).render();
+    } else {
+        document.getElementById('verify-temp-chart').innerText = 'No sufficient verification data yet.';
+    }
+
+    // 2. Rainfall HSS
+    const rainMetrics = perfData.metrics['Rainfall'];
+    if (rainMetrics && Object.keys(rainMetrics).length > 0) {
+        const models = Object.keys(rainMetrics).filter(m => rainMetrics[m] && rainMetrics[m].HSS !== null);
+        models.sort((a,b) => rainMetrics[b].HSS - rainMetrics[a].HSS); // Higher is better
+        
+        const options = {
+            series: [{ name: 'HSS', data: models.map(m => rainMetrics[m].HSS) }],
+            chart: { type: 'bar', height: 300, background: 'transparent', toolbar: { show: false } },
+            plotOptions: { bar: { horizontal: true, borderRadius: 4, colors: { ranges: [{ from: -1, to: 1, color: '#0ea5e9' }] } } },
+            dataLabels: { enabled: true, style: { colors: ['#fff'] } },
+            xaxis: { categories: models, labels: { style: { colors: '#94a3b8' } } },
+            yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 600 } } },
+            theme: { mode: 'dark' }
+        };
+        document.getElementById('verify-rain-chart').innerHTML = '';
+        new ApexCharts(document.getElementById('verify-rain-chart'), options).render();
+    } else {
+        document.getElementById('verify-rain-chart').innerText = 'No sufficient verification data yet.';
+    }
+}
+
+function setupPersistency(persData) {
+    if(!persData || persData.length === 0) {
+        document.getElementById('persistency-temp-chart').innerText = 'No historical observation data found.';
+        document.getElementById('persistency-rain-chart').innerText = 'No historical observation data found.';
+        return;
+    }
+    
+    const times = persData.map(d => new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime());
+    const temp = persData.map(d => d.temperature);
+    const dew = persData.map(d => d.dewpoint);
+    const rain = persData.map(d => d.rain_1h);
+    const wind = persData.map(d => d.wind_speed);
+
+    // Temp/Dew Chart
+    const tempOptions = {
+        series: [
+            { name: 'Temperature (°C)', data: times.map((t,i) => [t, temp[i]]) },
+            { name: 'Dewpoint (°C)', data: times.map((t,i) => [t, dew[i]]) }
+        ],
+        chart: { type: 'area', height: 300, background: 'transparent', animations: { enabled: false }, toolbar: { show: false } },
+        colors: ['#ef4444', '#3b82f6'],
+        dataLabels: { enabled: false },
+        stroke: { curve: 'smooth', width: 2 },
+        xaxis: { type: 'datetime', labels: { style: { colors: '#94a3b8' }, datetimeUTC: false } },
+        yaxis: { labels: { style: { colors: '#94a3b8' } } },
+        theme: { mode: 'dark' }
+    };
+    document.getElementById('persistency-temp-chart').innerHTML = '';
+    new ApexCharts(document.getElementById('persistency-temp-chart'), tempOptions).render();
+
+    // Rain/Wind Chart
+    const rainOptions = {
+        series: [
+            { name: 'Rainfall (mm)', type: 'bar', data: times.map((t,i) => [t, rain[i]]) },
+            { name: 'Wind Speed (kt)', type: 'line', data: times.map((t,i) => [t, wind[i]]) }
+        ],
+        chart: { height: 300, background: 'transparent', animations: { enabled: false }, toolbar: { show: false } },
+        colors: ['#0ea5e9', '#10b981'],
+        dataLabels: { enabled: false },
+        stroke: { curve: 'smooth', width: [0, 2] },
+        xaxis: { type: 'datetime', labels: { style: { colors: '#94a3b8' }, datetimeUTC: false } },
+        yaxis: [
+            { title: { text: 'Rain (mm)' }, labels: { style: { colors: '#0ea5e9' } } },
+            { opposite: true, title: { text: 'Wind (kt)' }, labels: { style: { colors: '#10b981' } } }
+        ],
+        theme: { mode: 'dark' }
+    };
+    document.getElementById('persistency-rain-chart').innerHTML = '';
+    new ApexCharts(document.getElementById('persistency-rain-chart'), rainOptions).render();
 }
 
 function setupClimatology(clim, valid_start_str) {

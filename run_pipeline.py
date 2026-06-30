@@ -5,6 +5,7 @@ import sys
 from src.scrape_meteologix import main as scrape_models
 from src.db_manager import ForecastDB
 from src.export_dashboard_data import export_all
+from src.ingest_awos import ingest_latest_awos
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,6 +39,13 @@ def run():
         db.close()
         sys.exit(1)
         
+    # 2.5 Ingest AWOS data if exists
+    try:
+        ingest_latest_awos()
+        log.info("AWOS ingestion completed.")
+    except Exception as e:
+        log.error(f"AWOS ingestion failed: {e}")
+
     # 3. Generate Consensus and Export to Dashboard
     try:
         export_all(db, DOCS_DIR)
