@@ -730,11 +730,14 @@ tbody tr:hover td {
 
 /* ── MOBILE RESPONSIVENESS (Portrait & Horizontal) ────────── */
 @media (max-width: 900px) {
+  html, body {
+    height: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
   body {
     flex-direction: column;
-    height: auto;
-    overflow: auto;
-    min-height: 100vh;
   }
   .sidebar {
     width: 100%;
