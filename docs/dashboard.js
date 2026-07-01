@@ -370,6 +370,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
         title: { text: title, style: { fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' } },
         stroke: { curve: 'smooth', width: isBar ? 0 : [0, 0, 2] },
         dataLabels: { enabled: false },
+        tooltip: { enabled: false },
         markers: { size: 0 },
         xaxis: { type: 'datetime', labels: { style: { colors: 'var(--text-secondary)' } } },
         yaxis: { title: { text: yAxisLabel }, labels: { style: { colors: 'var(--text-secondary)' }, formatter: (val) => val.toFixed(1) } },
