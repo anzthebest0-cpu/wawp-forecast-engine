@@ -266,7 +266,7 @@ async function loadDashboard() {
         }
         
         // 7. Verification & Persistency
-        const persData = (persRes && persRes.ok) ? await persRes.json().catch(()=>null) : null;
+        const persData = results[7].status === 'fulfilled' ? results[7].value : null;
         if (perf) setupVerification(perf);
         if (persData) setupPersistency(persData);
         
