@@ -426,11 +426,11 @@ const CHART_CLOUD_HEATMAP_OPTIONS = {
       useFillColorAsStroke: false,
       colorScale: {
         ranges: [
-          { from: -10, to: 10, color: '#1e1b4b', name: 'Clear (0-10%)' },
-          { from: 10.001, to: 40, color: '#0284c7', name: 'Few (11-40%)' },
+          { from: -10, to: 10, color: '#f8fafc', name: 'Clear (0-10%)' },
+          { from: 10.001, to: 40, color: '#bae6fd', name: 'Few (11-40%)' },
           { from: 40.001, to: 70, color: '#38bdf8', name: 'SCT (41-70%)' },
-          { from: 70.001, to: 90, color: '#bae6fd', name: 'BKN (71-90%)' },
-          { from: 90.001, to: 200, color: '#f8fafc', name: 'OVC (91-100%)' }
+          { from: 70.001, to: 90, color: '#0284c7', name: 'BKN (71-90%)' },
+          { from: 90.001, to: 200, color: '#1e1b4b', name: 'OVC (91-100%)' }
         ]
       }
     }

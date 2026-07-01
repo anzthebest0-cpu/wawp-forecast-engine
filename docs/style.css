@@ -806,6 +806,14 @@ tbody tr:hover td {
   .panel {
     padding: var(--sp-4);
   }
+  .chart-panel {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--sp-3);
+  }
+  .chart-panel > div {
+    min-width: 700px; /* Prevent charts from crumbling on narrow screens */
+  }
   .table-container {
     margin: 0 -var(--sp-3);
     padding: 0 var(--sp-3);
