@@ -13,16 +13,22 @@ def estimate_visibility(rain_mmh, rh_pct, temp_c, dewpoint_c,
                         baseline_dry_vis_m=9999):
     dd = temp_c - dewpoint_c
 
-    # Pressure factor
-    if pressure_trend_hpa_3h > 1.0:
-        pressure_factor = 1.15
-    elif pressure_trend_hpa_3h < -1.0:
-        pressure_factor = 0.80
-    else:
+    # Tropical Pressure Factor Logic (gated by moisture to avoid diurnal tide artifact)
+    if rain_mmh <= 0.1 and rh_pct < 85.0:
         pressure_factor = 1.0
+    else:
+        # Moist / precip regime: allow pressure signal to affect visibility
+        if pressure_trend_hpa_3h <= -2.5:
+            pressure_factor = 0.80   # strong fall, significant deterioration
+        elif pressure_trend_hpa_3h <= -1.5:
+            pressure_factor = 0.90   # moderate fall
+        elif pressure_trend_hpa_3h >= 1.5:
+            pressure_factor = 1.15   # moderate/strong rise: clearing
+        else:
+            pressure_factor = 1.0
 
-    if abs(pressure_hpa - 1013.25) > 15:
-        pressure_factor *= 1.05
+        if abs(pressure_hpa - 1013.25) > 15:
+            pressure_factor *= 1.05
 
     # Rain branch
     if rain_mmh > 0.1:
