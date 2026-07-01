@@ -37,9 +37,9 @@
   --green-dim:       #059669;
   --green-glow:      rgba(16, 185, 129, 0.15);
 
-  --text-primary:    #f8fafc;
+  --text-primary:    #e2e8f0;   /* Softer white to reduce harsh contrast */
   --text-secondary:  #cbd5e1;
-  --text-muted:      #64748b;
+  --text-muted:      #94a3b8;   /* Lightened from #64748b to make it more visible */
   --text-accent:     var(--cyan);
 
   /* — Typography — */

@@ -348,7 +348,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
         ];
     };
 
-    const createStackedSeries = (param) => {
+    const createBarSeries = (param) => {
         const series = [];
         for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
             if (model === 'Multi-Model') continue;
@@ -359,22 +359,22 @@ function setupSpreadCharts(modelsData, timeLabels) {
                     dataPts.push([ts, modelVals[t]]);
                 }
             }
-            series.push({ name: model, data: dataPts, type: 'area' });
+            series.push({ name: model, data: dataPts, type: 'bar' });
         }
         return series;
     };
 
-    const spreadOptions = (title, yAxisLabel, isStacked=false) => ({
+    const spreadOptions = (title, yAxisLabel, isBar=false) => ({
         ...TITAN_BASE,
-        chart: { ...TITAN_BASE.chart, type: 'area', height: 280, stacked: isStacked },
+        chart: { ...TITAN_BASE.chart, type: isBar ? 'bar' : 'area', height: 280, stacked: isBar, animations: { enabled: false } },
         title: { text: title, style: { fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' } },
-        stroke: { curve: 'smooth', width: isStacked ? 1 : [0, 0, 2] },
+        stroke: { curve: 'smooth', width: isBar ? 0 : [0, 0, 2] },
         dataLabels: { enabled: false },
         markers: { size: 0 },
         xaxis: { type: 'datetime', labels: { style: { colors: 'var(--text-secondary)' } } },
         yaxis: { title: { text: yAxisLabel }, labels: { style: { colors: 'var(--text-secondary)' }, formatter: (val) => val.toFixed(1) } },
         legend: { position: 'top' },
-        fill: isStacked ? { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.6, opacityTo: 0.2 } } : { opacity: [0.15, 0.4, 1] }
+        fill: isBar ? { opacity: 0.85 } : { opacity: [0.15, 0.4, 1] }
     });
 
     const tempOptions = spreadOptions('Temperature Plume (°C)', '°C');
@@ -421,8 +421,8 @@ function setupSpreadCharts(modelsData, timeLabels) {
     windOptions.colors = ['#10b981', '#10b981', '#10b981'];
     new ApexCharts(document.querySelector('#spread-wind'), { ...windOptions, series: createPlumeSeries('Wind Speed') }).render();
     
-    const rainOptions = spreadOptions('Rainfall Spread (Stacked)', 'mm', true);
-    new ApexCharts(document.querySelector('#spread-rain'), { ...rainOptions, series: createStackedSeries('Rainfall') }).render();
+    const rainOptions = spreadOptions('Rainfall Spread (Bar)', 'mm', true);
+    new ApexCharts(document.querySelector('#spread-rain'), { ...rainOptions, series: createBarSeries('Rainfall') }).render();
 }
 
 function setupRegionalCharts() {
