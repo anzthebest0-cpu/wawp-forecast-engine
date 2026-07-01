@@ -32,28 +32,30 @@ def run():
     # 2. Ingest into local DB (WAL mode, INSERT OR IGNORE)
     db = ForecastDB(DB_PATH)
     try:
-        new_count = db.ingest_rows(stacked_rows)
-        log.info(f"Database ingested {new_count} new rows (duplicates ignored).")
-    except Exception as e:
-        log.error(f"Database ingestion failed: {e}")
-        db.close()
-        sys.exit(1)
-        
-    # 2.5 Ingest AWOS data if exists
-    try:
-        ingest_latest_awos()
-        log.info("AWOS ingestion completed.")
-    except Exception as e:
-        log.error(f"AWOS ingestion failed: {e}")
+        try:
+            new_count = db.ingest_rows(stacked_rows)
+            log.info(f"Database ingested {new_count} new rows (duplicates ignored).")
+        except Exception as e:
+            log.error(f"Database ingestion failed: {e}")
+            sys.exit(1)
+            
+        # 2.5 Ingest AWOS data if exists
+        try:
+            ingest_latest_awos()
+            log.info("AWOS ingestion completed.")
+        except Exception as e:
+            log.error(f"AWOS ingestion failed: {e}")
 
-    # 3. Generate Consensus and Export to Dashboard
-    try:
-        export_all(db, DOCS_DIR)
-        log.info("Dashboard data exported.")
-    except Exception as e:
-        log.error(f"Exporter failed: {e}")
+        # 3. Generate Consensus and Export to Dashboard
+        try:
+            export_all(db, DOCS_DIR)
+            log.info("Dashboard data exported.")
+        except Exception as e:
+            log.error(f"Exporter failed: {e}")
+            
+    finally:
+        db.close()
         
-    db.close()
     log.info("Pipeline finished successfully.")
 
 if __name__ == "__main__":

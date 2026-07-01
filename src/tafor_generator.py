@@ -27,9 +27,19 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
     wx    = (bg.get('wx',   '') or '').upper()
     cloud = (bg.get('cloud','SCT018') or 'SCT018').upper()
     
+    # Implement CAVOK logic for Base Group
+    cavok_cloud = False
+    if cloud == 'NSC': cavok_cloud = True
+    elif len(cloud) >= 3 and cloud[-3:].isdigit() and int(cloud[-3:]) >= 50: cavok_cloud = True
+
+    if vis == '9999' and cavok_cloud and not wx:
+        vis = 'CAVOK'
+        cloud = ''
+        wx = ''
+    
     parts = [f'TAF WAWP {issued_str}', valid_str, wind, vis]
     if wx: parts.append(wx)
-    parts.append(cloud)
+    if cloud: parts.append(cloud)
     
     body = ' '.join(filter(None, parts))
     
@@ -41,8 +51,10 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
         tgst = str(t.get('gust','') or '')
         tvis = (t.get('vis','')     or '')
         twx  = (t.get('wx','')      or '').upper()
-        tcld = [c.upper() for c in (t.get('clouds',[]) or []) if c]
-        
+        tcld = [c.upper() for c in (t.get('clouds',[t.get('cloud', '')]) or []) if c]
+        if not tcld and t.get('cloud'):
+            tcld = [t.get('cloud').upper()]
+            
         if not tdir or not tspd:
             wp = ''
         else:
@@ -51,6 +63,17 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
                 wp = f"{t_wind_dir}{tspd.zfill(2)}G{tgst.zfill(2)}KT"
             else:
                 wp = f"{t_wind_dir}{tspd.zfill(2)}KT"
+                
+        # Implement CAVOK logic for Change Groups
+        t_cavok = False
+        if tvis == '9999' and not twx:
+            if not tcld or tcld[0] == 'NSC' or (len(tcld[0]) >= 3 and tcld[0][-3:].isdigit() and int(tcld[0][-3:]) >= 50):
+                t_cavok = True
+                
+        if t_cavok:
+            tvis = 'CAVOK'
+            tcld = []
+            twx = ''
         
         line = f'{gt} {ts}'.strip()
         extras = [x for x in [wp, tvis, twx] + tcld if x]

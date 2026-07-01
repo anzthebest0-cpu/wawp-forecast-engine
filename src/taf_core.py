@@ -973,6 +973,91 @@ def _build_change_groups(
             })
             i = end_h + 1
 
+    # -- PHASE 2b : Vis & Ceiling change groups --------------------------------
+    prev_vis = 9999 if consensus_truth[0]["vis"] == "9999" else int(consensus_truth[0]["vis"])
+    def get_ceil(c_str):
+        if c_str == "NSC" or c_str.startswith("FEW") or c_str.startswith("SCT"):
+            return 999
+        try:
+            return int(c_str[3:])
+        except:
+            return 999
+            
+    prev_ceil = get_ceil(consensus_truth[0]["cloud"])
+    i = 1
+    while i < N:
+        curr_vis = 9999 if consensus_truth[i]["vis"] == "9999" else int(consensus_truth[i]["vis"])
+        curr_ceil = get_ceil(consensus_truth[i]["cloud"])
+        
+        vis_trigger = False
+        if prev_vis >= 5000 and curr_vis < 5000: vis_trigger = True
+        elif prev_vis >= 1500 and curr_vis < 1500: vis_trigger = True
+        
+        ceil_trigger = False
+        if prev_ceil >= 15 and curr_ceil < 15: ceil_trigger = True
+        elif prev_ceil >= 5 and curr_ceil < 5: ceil_trigger = True
+        
+        if not (vis_trigger or ceil_trigger):
+            i += 1
+            continue
+            
+        end_h = i
+        while end_h < N:
+            v = 9999 if consensus_truth[end_h]["vis"] == "9999" else int(consensus_truth[end_h]["vis"])
+            c = get_ceil(consensus_truth[end_h]["cloud"])
+            v_trig = (prev_vis >= 5000 and v < 5000) or (prev_vis >= 1500 and v < 1500)
+            c_trig = (prev_ceil >= 15 and c < 15) or (prev_ceil >= 5 and c < 5)
+            if not (v_trig or c_trig):
+                break
+            end_h += 1
+        end_h -= 1
+        
+        D = end_h - i + 1
+        new_vis = consensus_truth[i]["vis"] if vis_trigger else ""
+        new_cloud = consensus_truth[i]["cloud"] if ceil_trigger else ""
+        
+        lookahead = min(i + 8, N) - i
+        if lookahead >= 3:
+            n_match = 0
+            for fh in range(i, min(i+8, N)):
+                fh_v = 9999 if consensus_truth[fh]["vis"] == "9999" else int(consensus_truth[fh]["vis"])
+                fh_c = get_ceil(consensus_truth[fh]["cloud"])
+                fh_v_trig = vis_trigger and ((prev_vis >= 5000 and fh_v < 5000) or (prev_vis >= 1500 and fh_v < 1500))
+                fh_c_trig = ceil_trigger and ((prev_ceil >= 15 and fh_c < 15) or (prev_ceil >= 5 and fh_c < 5))
+                if fh_v_trig or fh_c_trig:
+                    n_match += 1
+            permanent = (n_match / lookahead) > 0.5
+        else:
+            permanent = False
+            
+        if permanent:
+            te = i
+            ts = max(0, i - 1)
+            if te > ts:
+                groups.append({
+                    "type": "BECMG",
+                    "time_str": make_time_str(ts, te),
+                    "time_h_start": (start_hour + ts) % 24,
+                    "time_h_end": (start_hour + te) % 24,
+                    "wx": "", "vis": new_vis, "cloud": new_cloud,
+                    "dir": "", "spd": "", "gust": "",
+                    "_prio": 8, "_rain": 0.0,
+                })
+                if vis_trigger: prev_vis = curr_vis
+                if ceil_trigger: prev_ceil = curr_ceil
+        else:
+            t_end = tempo_window_end(i, D)
+            groups.append({
+                "type": "TEMPO",
+                "time_str": make_time_str(i, t_end),
+                "time_h_start": (start_hour + i) % 24,
+                "time_h_end": (start_hour + t_end) % 24,
+                "wx": "", "vis": new_vis, "cloud": new_cloud,
+                "dir": "", "spd": "", "gust": "",
+                "_prio": 5, "_rain": 0.0,
+            })
+        i = end_h + 1
+
     # -- PHASE 3 : merge overlapping TEMPO groups ------------------------------
     # A rain-TEMPO and a wind-TEMPO covering the same window are merged so
     # the single group carries both wind AND weather information.

@@ -1,30 +1,30 @@
 async function loadDashboard() {
     try {
         const cb = '?t=' + new Date().getTime();
-        const [intelRes, weightsRes, perfRes, dataRes, climRes, modelsRes, healthRes, persRes] = await Promise.all([
-            fetch('data/tafor_intel.json' + cb),
-            fetch('data/latest_weights.json' + cb),
-            fetch('data/latest_performance.json' + cb),
-            fetch('data/taf_guidance.json' + cb),
-            fetch('data/climatology.json' + cb),
-            fetch('data/individual_models.json' + cb),
-            fetch('data/db_health.json' + cb).catch(()=>null),
-            fetch('data/persistency.json' + cb).catch(()=>null)
+        const results = await Promise.allSettled([
+            fetch('data/tafor_intel.json' + cb).then(r => r.json()),
+            fetch('data/latest_weights.json' + cb).then(r => r.json()),
+            fetch('data/latest_performance.json' + cb).then(r => r.json()),
+            fetch('data/taf_guidance.json' + cb).then(r => r.json()),
+            fetch('data/climatology.json' + cb).then(r => r.json()),
+            fetch('data/individual_models.json' + cb).then(r => r.json()),
+            fetch('data/db_health.json' + cb).then(r => r.json()),
+            fetch('data/persistency.json' + cb).then(r => r.json())
         ]);
         
-        const intelData = await intelRes.json();
+        const intelData = results[0].status === 'fulfilled' ? results[0].value : {};
         let currentIssuance = "2300";
-        let intel = intelData[currentIssuance] || intelData;
-        const weights = await weightsRes.json();
-        const perf = await perfRes.json();
-        const guidanceJson = await dataRes.json();
-        const data = guidanceJson.data;
-        const generatedAt = guidanceJson.metadata ? guidanceJson.metadata.generated_at : intel.valid_start;
+        let intel = intelData[currentIssuance] || intelData || {};
+        const weights = results[1].status === 'fulfilled' ? results[1].value : {weights: {}};
+        const perf = results[2].status === 'fulfilled' ? results[2].value : null;
+        const guidanceJson = results[3].status === 'fulfilled' ? results[3].value : {data: []};
+        const data = guidanceJson.data || [];
+        const generatedAt = guidanceJson.metadata ? guidanceJson.metadata.generated_at : (intel.valid_start || "Unknown");
 
-        const clim_data = (climRes && climRes.ok) ? await climRes.json().catch(()=>null) : null;
-        const modelsData = (modelsRes && modelsRes.ok && typeof modelsRes.json === 'function') ? await modelsRes.json().catch(()=>null) : null;
+        const clim_data = results[4].status === 'fulfilled' ? results[4].value : null;
+        const modelsData = results[5].status === 'fulfilled' ? results[5].value : null;
         
-        const healthData = (healthRes && healthRes.ok) ? await healthRes.json().catch(()=>null) : null;
+        const healthData = results[6].status === 'fulfilled' ? results[6].value : null;
         if (healthData) {
             const fcElem = document.getElementById('db-forecast-count');
             const obsElem = document.getElementById('db-obs-count');
@@ -35,6 +35,70 @@ async function loadDashboard() {
             if (obsElem) obsElem.innerText = healthData.observation_records.toLocaleString();
             if (sizeElem) sizeElem.innerText = healthData.size_mb + ' MB';
             if (syncElem) syncElem.innerText = healthData.last_sync_utc + ' UTC';
+        }
+
+        function startShiftCountdown() {
+            const labelEl = document.getElementById('next-taf-issuance-label');
+            const cdEl = document.getElementById('shift-countdown');
+            if(!labelEl || !cdEl) return;
+            
+            function update() {
+                const now = new Date();
+                const h = now.getUTCHours();
+                const m = now.getUTCMinutes();
+                const s = now.getUTCSeconds();
+                
+                const shifts = [5, 11, 17, 23];
+                let next = shifts.find(shift => shift > h || (shift === h && m === 0 && s === 0));
+                
+                let target = new Date(now);
+                if (next === undefined) {
+                    next = 5;
+                    target.setUTCDate(target.getUTCDate() + 1);
+                }
+                target.setUTCHours(next, 0, 0, 0);
+                
+                const diff = target - now;
+                const hrs = Math.floor(diff / 3600000);
+                const mins = Math.floor((diff % 3600000) / 60000);
+                const secs = Math.floor((diff % 60000) / 1000);
+                
+                labelEl.innerText = `${String(next).padStart(2, '0')}00Z`;
+                cdEl.innerText = `-${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+                
+                if(diff < 3600000) { // < 1 hour
+                    document.getElementById('shift-status-banner').style.background = 'rgba(245, 158, 11, 0.1)';
+                    document.getElementById('shift-status-banner').style.borderLeft = '4px solid var(--amber)';
+                    cdEl.style.color = 'var(--amber)';
+                }
+            }
+            update();
+            setInterval(update, 1000);
+        }
+        startShiftCountdown();
+        
+        // TS Probability logic
+        const tsProbVal = document.getElementById('ts-prob-val');
+        const tsProbTime = document.getElementById('ts-prob-time');
+        if (tsProbVal && tsProbTime && renderData && renderData.length > 0) {
+            let maxProb = 0;
+            let peakTime = "";
+            renderData.forEach(d => {
+                let prob = d['Prob Precip 10.0mm'] || 0;
+                if(prob > maxProb) {
+                    maxProb = prob;
+                    peakTime = d.Datetime.substring(11, 16);
+                }
+            });
+            tsProbVal.innerText = maxProb.toFixed(0) + '%';
+            if (maxProb > 0) {
+                tsProbTime.innerText = `Peak window: ${peakTime} WITA`;
+            } else {
+                tsProbTime.innerText = `No significant risk`;
+            }
+            if (maxProb >= 30) {
+                tsProbVal.style.color = 'var(--red)';
+            }
         }
 
         // 1. Update Header
@@ -167,10 +231,13 @@ async function loadDashboard() {
         
         // 5. Matrix Tab
         const tbody = document.querySelector("#data-table tbody");
-        renderData.forEach(d => {
+        renderData.forEach((d, idx) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${d.Datetime.substring(11, 16)}</td>
+                <td>
+                    ${d.Datetime.substring(11, 16)}<br>
+                    <span style="font-size:0.8em; color:var(--text-secondary)">+${idx}h</span>
+                </td>
                 <td style="color: #ef4444">${Number(d.Temperature).toFixed(1)}</td>
                 <td style="color: #3b82f6">${Number(d.Dewpoint).toFixed(1)}</td>
                 <td style="color: #a855f7">${Number(d.Pressure).toFixed(1)}</td>
@@ -260,6 +327,29 @@ function setupSpreadCharts(modelsData, timeLabels) {
     });
 
     new ApexCharts(document.querySelector('#spread-temp'), { ...spreadOptions('Temperature Spread', '°C'), series: createSeries('Temperature') }).render();
+    
+    // T - Td Spread (Fog Risk)
+    const createSpreadTTdSeries = () => {
+        const series = [];
+        for (const [model, modelVals] of Object.entries(modelsData['Temperature'] || {})) {
+            const dataPts = [];
+            for (const t of timeLabels) {
+                const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
+                const temp = modelsData['Temperature'][model]?.[t];
+                const dew = modelsData['Dewpoint']?.[model]?.[t];
+                if (temp !== undefined && dew !== undefined) {
+                    dataPts.push([ts, Math.max(0, temp - dew)]);
+                }
+            }
+            series.push({ name: model, data: dataPts });
+        }
+        return series;
+    };
+    const ttdContainer = document.querySelector('#spread-t-td');
+    if (ttdContainer) {
+        new ApexCharts(ttdContainer, { ...spreadOptions('T - Td Spread (Fog Risk)', '°C'), series: createSpreadTTdSeries() }).render();
+    }
+    
     new ApexCharts(document.querySelector('#spread-wind'), { ...spreadOptions('Wind Speed Spread', 'kt'), series: createSeries('Wind Speed') }).render();
     new ApexCharts(document.querySelector('#spread-rain'), { ...spreadOptions('Rainfall Spread', 'mm', true), series: createSeries('Rainfall') }).render();
 }

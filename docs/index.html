@@ -57,6 +57,11 @@
                 </div>
             </div>
             
+            <div id="shift-status-banner" style="background: rgba(14, 165, 233, 0.1); border-left: 4px solid var(--cyan); padding: 12px 20px; margin-bottom: 20px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-weight: 600; color: var(--cyan);">Next Mandatory TAF Issuance: <span id="next-taf-issuance-label">...</span></div>
+                <div id="shift-countdown" style="font-family: var(--font-mono); font-weight: bold; font-size: 1.1em; color: var(--text-primary);">00:00:00</div>
+            </div>
+            
             <div class="intel-grid">
                 <!-- TAF Editor Panel -->
                 <div class="panel taf-panel">
@@ -77,6 +82,15 @@
                     <h3>Base Group Parameters</h3>
                     <div class="param-grid" id="bg-params">
                         <!-- Populated via JS -->
+                    </div>
+                    
+                    <h3 style="margin-top: 25px; margin-bottom: 15px; color: var(--amber);">Thunderstorm (TS) Risk</h3>
+                    <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 15px; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px;">
+                            <span style="color: var(--text-secondary); font-size: 0.9em;">Max Convective Probability</span>
+                            <span id="ts-prob-val" style="font-size: 1.5em; font-weight: 700; color: var(--amber);">--%</span>
+                        </div>
+                        <div id="ts-prob-time" style="font-size: 0.85em; color: var(--text-secondary); text-align: right;">Peak window: --</div>
                     </div>
                 </div>
             </div>
@@ -121,6 +135,9 @@
             <h2>Consensus Spread</h2>
             <div class="panel chart-panel">
                 <div id="spread-temp"></div>
+            </div>
+            <div class="panel chart-panel">
+                <div id="spread-t-td"></div>
             </div>
             <div class="panel chart-panel">
                 <div id="spread-wind"></div>
