@@ -288,6 +288,19 @@ function switchTab(tabId) {
 
 // Global setup
 document.addEventListener('DOMContentLoaded', () => {
+    // Theme toggle logic
+    const themeBtn = document.getElementById('theme-toggle');
+    if (themeBtn) {
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.add('light-mode');
+        }
+        themeBtn.addEventListener('click', () => {
+            document.documentElement.classList.toggle('light-mode');
+            const isLight = document.documentElement.classList.contains('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        });
+    }
+
     document.querySelectorAll('.nav-links li').forEach(li => {
         li.addEventListener('click', () => {
             switchTab(li.getAttribute('data-tab'));
@@ -359,7 +372,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
         dataLabels: { enabled: false },
         markers: { size: 0 },
         xaxis: { type: 'datetime', labels: { style: { colors: 'var(--text-secondary)' } } },
-        yaxis: { title: { text: yAxisLabel }, labels: { style: { colors: 'var(--text-secondary)' } } },
+        yaxis: { title: { text: yAxisLabel }, labels: { style: { colors: 'var(--text-secondary)' }, formatter: (val) => val.toFixed(1) } },
         legend: { position: 'top' },
         fill: isStacked ? { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.6, opacityTo: 0.2 } } : { opacity: [0.15, 0.4, 1] }
     });
