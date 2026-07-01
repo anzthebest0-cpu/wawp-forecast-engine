@@ -296,11 +296,47 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupSpreadCharts(modelsData, timeLabels) {
-    // Reusable function to create spread series
-    const createSeries = (param) => {
+    const getPercentile = (dataArr, p) => {
+        if(dataArr.length === 0) return null;
+        dataArr.sort((a,b) => a-b);
+        const index = (dataArr.length - 1) * p;
+        const lower = Math.floor(index);
+        const upper = Math.ceil(index);
+        const weight = index - lower;
+        if(upper >= dataArr.length) return dataArr[lower];
+        return dataArr[lower] * (1 - weight) + dataArr[upper] * weight;
+    };
+
+    const createPlumeSeries = (param) => {
+        const rangeMaxMin = [];
+        const rangeIQR = [];
+        const medLine = [];
+        
+        for (const t of timeLabels) {
+            const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
+            const vals = [];
+            for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
+                if (modelVals[t] !== undefined && modelVals[t] !== null && model !== 'Multi-Model') {
+                    vals.push(modelVals[t]);
+                }
+            }
+            if (vals.length > 0) {
+                rangeMaxMin.push({ x: ts, y: [getPercentile(vals, 0.0), getPercentile(vals, 1.0)] });
+                rangeIQR.push({ x: ts, y: [getPercentile(vals, 0.25), getPercentile(vals, 0.75)] });
+                medLine.push({ x: ts, y: getPercentile(vals, 0.50) });
+            }
+        }
+        return [
+            { name: 'Min-Max Range', type: 'rangeArea', data: rangeMaxMin },
+            { name: 'Interquartile Range', type: 'rangeArea', data: rangeIQR },
+            { name: 'Median', type: 'line', data: medLine }
+        ];
+    };
+
+    const createStackedSeries = (param) => {
         const series = [];
         for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
-            // align with timeLabels
+            if (model === 'Multi-Model') continue;
             const dataPts = [];
             for (const t of timeLabels) {
                 const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
@@ -308,50 +344,70 @@ function setupSpreadCharts(modelsData, timeLabels) {
                     dataPts.push([ts, modelVals[t]]);
                 }
             }
-            series.push({ name: model, data: dataPts });
+            series.push({ name: model, data: dataPts, type: 'area' });
         }
         return series;
     };
 
-    const spreadOptions = (title, yAxisLabel, isBar=false) => ({
+    const spreadOptions = (title, yAxisLabel, isStacked=false) => ({
         ...TITAN_BASE,
-        chart: { ...TITAN_BASE.chart, type: isBar ? 'bar' : 'line', height: 250 },
-        title: { text: title, style: { fontSize: '12px', fontWeight: 'bold', fontFamily: TITAN_COLORS.font } },
-        stroke: { curve: 'smooth', width: 1.5 },
+        chart: { ...TITAN_BASE.chart, type: 'area', height: 280, stacked: isStacked },
+        title: { text: title, style: { fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' } },
+        stroke: { curve: 'smooth', width: isStacked ? 1 : [0, 0, 2] },
         dataLabels: { enabled: false },
-        tooltip: { enabled: false },
         markers: { size: 0 },
-        xaxis: { type: 'datetime', labels: { style: { colors: TITAN_COLORS.text } } },
-        yaxis: { title: { text: yAxisLabel }, labels: { style: { colors: TITAN_COLORS.text } } },
-        legend: { position: 'right' }
+        xaxis: { type: 'datetime', labels: { style: { colors: 'var(--text-secondary)' } } },
+        yaxis: { title: { text: yAxisLabel }, labels: { style: { colors: 'var(--text-secondary)' } } },
+        legend: { position: 'top' },
+        fill: isStacked ? { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.6, opacityTo: 0.2 } } : { opacity: [0.15, 0.4, 1] }
     });
 
-    new ApexCharts(document.querySelector('#spread-temp'), { ...spreadOptions('Temperature Spread', '°C'), series: createSeries('Temperature') }).render();
+    const tempOptions = spreadOptions('Temperature Plume (°C)', '°C');
+    tempOptions.colors = ['#ef4444', '#ef4444', '#ef4444'];
+    new ApexCharts(document.querySelector('#spread-temp'), { ...tempOptions, series: createPlumeSeries('Temperature') }).render();
     
-    // T - Td Spread (Fog Risk)
-    const createSpreadTTdSeries = () => {
-        const series = [];
-        for (const [model, modelVals] of Object.entries(modelsData['Temperature'] || {})) {
-            const dataPts = [];
-            for (const t of timeLabels) {
-                const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
+    // T - Td Spread (Fog Risk) Plume
+    const createSpreadTTdPlume = () => {
+        const rangeMaxMin = [];
+        const rangeIQR = [];
+        const medLine = [];
+        for (const t of timeLabels) {
+            const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
+            const vals = [];
+            for (const [model, modelVals] of Object.entries(modelsData['Temperature'] || {})) {
+                if (model === 'Multi-Model') continue;
                 const temp = modelsData['Temperature'][model]?.[t];
                 const dew = modelsData['Dewpoint']?.[model]?.[t];
                 if (temp !== undefined && dew !== undefined) {
-                    dataPts.push([ts, Math.max(0, temp - dew)]);
+                    vals.push(Math.max(0, temp - dew));
                 }
             }
-            series.push({ name: model, data: dataPts });
+            if (vals.length > 0) {
+                rangeMaxMin.push({ x: ts, y: [getPercentile(vals, 0.0), getPercentile(vals, 1.0)] });
+                rangeIQR.push({ x: ts, y: [getPercentile(vals, 0.25), getPercentile(vals, 0.75)] });
+                medLine.push({ x: ts, y: getPercentile(vals, 0.50) });
+            }
         }
-        return series;
+        return [
+            { name: 'Min-Max Range', type: 'rangeArea', data: rangeMaxMin },
+            { name: 'Interquartile Range', type: 'rangeArea', data: rangeIQR },
+            { name: 'Median', type: 'line', data: medLine }
+        ];
     };
+    
     const ttdContainer = document.querySelector('#spread-t-td');
     if (ttdContainer) {
-        new ApexCharts(ttdContainer, { ...spreadOptions('T - Td Spread (Fog Risk)', '°C'), series: createSpreadTTdSeries() }).render();
+        const ttdOptions = spreadOptions('T - Td Plume (Fog Risk)', '°C');
+        ttdOptions.colors = ['#a855f7', '#a855f7', '#a855f7'];
+        new ApexCharts(ttdContainer, { ...ttdOptions, series: createSpreadTTdPlume() }).render();
     }
     
-    new ApexCharts(document.querySelector('#spread-wind'), { ...spreadOptions('Wind Speed Spread', 'kt'), series: createSeries('Wind Speed') }).render();
-    new ApexCharts(document.querySelector('#spread-rain'), { ...spreadOptions('Rainfall Spread', 'mm', true), series: createSeries('Rainfall') }).render();
+    const windOptions = spreadOptions('Wind Speed Plume (kt)', 'kt');
+    windOptions.colors = ['#10b981', '#10b981', '#10b981'];
+    new ApexCharts(document.querySelector('#spread-wind'), { ...windOptions, series: createPlumeSeries('Wind Speed') }).render();
+    
+    const rainOptions = spreadOptions('Rainfall Spread (Stacked)', 'mm', true);
+    new ApexCharts(document.querySelector('#spread-rain'), { ...rainOptions, series: createStackedSeries('Rainfall') }).render();
 }
 
 function setupRegionalCharts() {
@@ -907,7 +963,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // AWOS Upload Logic
+    // AWOS Upload Logic (GitHub API Direct - INSECURE)
     const patInput = document.getElementById('github-pat-input');
     const awosInput = document.getElementById('awos-file-input');
     const uploadBtn = document.getElementById('upload-awos-btn');
@@ -920,7 +976,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (uploadBtn) {
+    if (uploadBtn && patInput && awosInput) {
         uploadBtn.addEventListener('click', async () => {
             const token = patInput.value.trim();
             if (!token) {
@@ -979,23 +1035,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     
                     if (putRes.ok) {
-                        showStatus('Upload Successful! Verification Engine triggered.', 'var(--green)');
+                        showStatus('Upload Successful! GitHub Actions triggered.', 'var(--green)');
                         setTimeout(() => {
-                            uploadBtn.innerText = 'Upload & Trigger Verification';
+                            uploadBtn.innerText = 'Upload to GitHub & Trigger Verification';
                             uploadBtn.disabled = false;
                             awosInput.value = '';
                         }, 3000);
                     } else {
                         const errText = await putRes.text();
-                        showStatus(`Upload Failed: ${putRes.status}`, 'var(--red)');
+                        showStatus(`Upload Failed: ${putRes.status}`, 'var(--crimson)');
                         console.error(errText);
-                        uploadBtn.innerText = 'Upload & Trigger Verification';
+                        uploadBtn.innerText = 'Upload to GitHub & Trigger Verification';
                         uploadBtn.disabled = false;
                     }
                 };
             } catch(e) {
-                showStatus(`Error: ${e.message}`, 'var(--red)');
-                uploadBtn.innerText = 'Upload & Trigger Verification';
+                showStatus(`Error: ${e.message}`, 'var(--crimson)');
+                uploadBtn.innerText = 'Upload to GitHub & Trigger Verification';
                 uploadBtn.disabled = false;
             }
         });
@@ -1007,6 +1063,6 @@ document.addEventListener('DOMContentLoaded', () => {
         statusDiv.innerText = msg;
         statusDiv.style.color = color;
         statusDiv.style.border = `1px solid ${color}`;
-        statusDiv.style.background = 'var(--bg-tertiary)';
+        statusDiv.style.background = 'rgba(255, 255, 255, 0.05)';
     }
 });

@@ -10,36 +10,36 @@
 /* ── DESIGN TOKENS ────────────────────────────────────────── */
 :root {
 
-  /* — Color: Base (Light Mode) — */
-  --col-void:        #f1f5f9;   /* deepest background */
-  --col-base:        #f8fafc;   /* page bg */
-  --col-surface-1:   #ffffff;   /* panel bg */
-  --col-surface-2:   #ffffff;   /* card bg */
-  --col-surface-3:   #f1f5f9;   /* elevated card / hover */
-  --col-border:      rgba(0,0,0,0.08);
-  --col-border-2:    rgba(0,0,0,0.15);
+  /* — Color: Base (Dark Mode) — */
+  --col-void:        #050507;   /* deepest background */
+  --col-base:        #0a0b10;   /* page bg */
+  --col-surface-1:   rgba(255, 255, 255, 0.03);   /* panel bg */
+  --col-surface-2:   rgba(255, 255, 255, 0.05);   /* card bg */
+  --col-surface-3:   rgba(255, 255, 255, 0.08);   /* elevated card / hover */
+  --col-border:      rgba(255, 255, 255, 0.1);
+  --col-border-2:    rgba(255, 255, 255, 0.2);
 
   /* — Color: Accent Palette — */
   --cyan:            #0ea5e9;   /* primary accent */
-  --cyan-dim:        #38bdf8;
+  --cyan-dim:        #0284c7;
   --cyan-glow:       rgba(14, 165, 233, 0.18);
   --cyan-glow-hard:  rgba(14, 165, 233, 0.35);
 
   --amber:           #f5a623;   /* WARNING only */
-  --amber-dim:       #c07d0f;
+  --amber-dim:       #d97706;
   --amber-glow:      rgba(245, 166, 35, 0.18);
 
-  --crimson:         #ff3b5c;   /* CRITICAL only */
-  --crimson-dim:     #c42040;
-  --crimson-glow:    rgba(255, 59, 92, 0.18);
+  --crimson:         #ef4444;   /* CRITICAL only */
+  --crimson-dim:     #b91c1c;
+  --crimson-glow:    rgba(239, 68, 68, 0.18);
 
-  --green:           #00e676;   /* CAVOK / clear */
-  --green-dim:       #00b259;
-  --green-glow:      rgba(0, 230, 118, 0.15);
+  --green:           #10b981;   /* CAVOK / clear */
+  --green-dim:       #059669;
+  --green-glow:      rgba(16, 185, 129, 0.15);
 
-  --text-primary:    #1e293b;
-  --text-secondary:  #cbd5e1; /* Made brighter for visibility */
-  --text-muted:      #94a3b8;
+  --text-primary:    #f8fafc;
+  --text-secondary:  #cbd5e1;
+  --text-muted:      #64748b;
   --text-accent:     var(--cyan);
 
   /* — Typography — */
@@ -114,6 +114,8 @@ body {
   min-width: var(--sidebar-w);
   height: 100vh;
   background: var(--col-surface-1);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-right: 1px solid var(--col-border);
   display: flex;
   flex-direction: column;
@@ -357,11 +359,13 @@ body {
 /* ── BASE PANEL ───────────────────────────────────────────── */
 .panel {
   background: var(--col-surface-1);
-  border: 1px solid rgba(0,0,0,0.1);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--col-border);
   border-radius: var(--r-xl);
   padding: var(--sp-6);
   position: relative;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.05);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 
 /* Glass shine effect */
@@ -371,7 +375,7 @@ body {
   inset: 0;
   border-radius: inherit;
   background: linear-gradient(135deg,
-    rgba(255,255,255,0.6) 0%,
+    rgba(255,255,255,0.05) 0%,
     transparent 60%);
   pointer-events: none;
 }

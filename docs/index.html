@@ -337,17 +337,17 @@
                     <div style="display: flex; flex-direction: column; gap: 15px;">
                         <div>
                             <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9em;">GitHub Access Token (PAT)</label>
-                            <input type="password" id="github-pat-input" placeholder="ghp_xxxxxxxxxxxx" style="width: 100%; padding: 10px; background: var(--bg-tertiary); border: 1px solid var(--border-glass); border-radius: 4px; color: var(--text-primary);">
+                            <input type="password" id="github-pat-input" placeholder="ghp_xxxxxxxxxxxx" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--col-border); border-radius: 4px; color: var(--text-primary);">
                             <div style="font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;">*Saved securely in your browser's localStorage.</div>
                         </div>
                         
                         <div>
                             <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9em;">AWOS Data File (.dat)</label>
-                            <input type="file" id="awos-file-input" accept=".dat" style="width: 100%; padding: 10px; background: var(--bg-tertiary); border: 1px solid var(--border-glass); border-radius: 4px; color: var(--text-primary);">
+                            <input type="file" id="awos-file-input" accept=".dat" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--col-border); border-radius: 4px; color: var(--text-primary);">
                         </div>
                         
                         <button id="upload-awos-btn" style="background: var(--cyan-glow); color: var(--cyan); border: 1px solid rgba(0, 212, 255, 0.25); padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: all 0.2s;">
-                            Upload & Trigger Verification
+                            Upload to GitHub & Trigger Verification
                         </button>
                         
                         <div id="upload-status" style="display:none; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center;"></div>
