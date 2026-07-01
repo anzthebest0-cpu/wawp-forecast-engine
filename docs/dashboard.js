@@ -336,35 +336,9 @@ function setupRegionalCharts() {
     let yyr = yesterday.getUTCFullYear();
     let cbStr = `${yda}${ymo}${yyr}`;
     document.getElementById('cb-img').src = `https://web-aviation.bmkg.go.id/prakcb/${cbStr}/CB_FORECAST_ANIMATION_${cbStr}.gif`;
-    
-    // Upper Air Charts
-    const uaDate = document.getElementById('ua-date');
-    const uaSelect = document.getElementById('ua-chart-select');
-    const uaImg = document.getElementById('ua-img');
-    const uaUrl = document.getElementById('ua-url');
-    
-    if(uaDate && uaSelect && uaImg) {
-        let uaDt = new Date(now);
-        let uaYr = uaDt.getUTCFullYear();
-        let uaMo = String(uaDt.getUTCMonth()+1).padStart(2, '0');
-        let uaDa = String(uaDt.getUTCDate()).padStart(2, '0');
-        uaDate.value = `${uaYr}-${uaMo}-${uaDa}`;
-        
-        function updateUaImage() {
-            const dateStr = uaDate.value; // YYYY-MM-DD
-            if(!dateStr) return;
-            const [y, m, d] = dateStr.split('-');
-            const ddmmyyyy = `${d}${m}${y}`;
-            const file = uaSelect.value;
-            const finalUrl = `https://web-aviation.bmkg.go.id/rason/${ddmmyyyy}/${file}`;
-            uaImg.src = finalUrl;
-            if(uaUrl) uaUrl.innerText = finalUrl;
-        }
-        
-        uaDate.addEventListener('change', updateUaImage);
-        uaSelect.addEventListener('change', updateUaImage);
-        updateUaImage();
-    }
+}
+
+function setupVerifyCharts(lbMetrics, ltData) {
 }
 
 // ==============================================================================
