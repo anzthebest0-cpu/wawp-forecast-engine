@@ -21,6 +21,14 @@ async function loadDashboard() {
         const data = guidanceJson.data || [];
         const generatedAt = guidanceJson.metadata ? guidanceJson.metadata.generated_at : (intel.valid_start || "Unknown");
 
+        // Filter data to only show current and future hours
+        const now = new Date();
+        const localNow = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+        const witaHourStr = localNow.toISOString().replace('T', ' ').substring(0, 13) + ':00:00';
+        
+        const futureData = data.filter(d => d.Datetime >= witaHourStr);
+        const renderData = futureData.length > 0 ? futureData : data;
+
         const clim_data = results[4].status === 'fulfilled' ? results[4].value : null;
         const modelsData = results[5].status === 'fulfilled' ? results[5].value : null;
         
@@ -203,13 +211,7 @@ async function loadDashboard() {
             wHtml += `</div>`;
         }
         wContainer.innerHTML = wHtml;
-        // Filter data to only show current and future hours
-        const now = new Date();
-        const localNow = new Date(now.getTime() + (8 * 60 * 60 * 1000));
-        const witaHourStr = localNow.toISOString().replace('T', ' ').substring(0, 13) + ':00:00';
-        
-        const futureData = data.filter(d => d.Datetime >= witaHourStr);
-        const renderData = futureData.length > 0 ? futureData : data;
+        // Render data is already filtered above
 
         // 4. Meteogram Tab (using apexcharts from guidance)
         // Convert to [timestamp_ms, value] format expected by apexcharts-theme.js
