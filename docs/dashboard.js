@@ -285,14 +285,33 @@ function setupRegionalCharts() {
 
         if (chartType.startsWith("rason_")) {
             const fn = chartType.replace("rason_", "");
-            const d = String(now.getUTCDate()).padStart(2,'0');
-            const m = String(now.getUTCMonth() + 1).padStart(2,'0');
-            const y = now.getUTCFullYear();
+            
+            // Allow user to select date, defaulting to current UTC date if not set
+            if (!window.rasonDate) window.rasonDate = new Date();
+            
+            const d = String(window.rasonDate.getUTCDate()).padStart(2,'0');
+            const m = String(window.rasonDate.getUTCMonth() + 1).padStart(2,'0');
+            const y = window.rasonDate.getUTCFullYear();
             const dateStr = `${d}${m}${y}`;
             const url = `https://web-aviation.bmkg.go.id/rason/${dateStr}/${fn}`;
             
-            document.getElementById('sigwx-slots').innerHTML = `<div style="color:var(--text-secondary); font-size:0.85em; margin-bottom: 5px;">Date: ${d}/${m}/${y}</div>`;
+            const html = `
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                    <span style="color:var(--text-secondary); font-size:0.85em;">Select Date:</span>
+                    <input type="date" id="rason-date-picker" value="${y}-${m}-${d}" 
+                           style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px; border-radius:4px;">
+                </div>
+            `;
+            
+            document.getElementById('sigwx-slots').innerHTML = html;
             document.getElementById('sigwx-img').src = url;
+            
+            document.getElementById('rason-date-picker').addEventListener('change', (e) => {
+                if (e.target.value) {
+                    window.rasonDate = new Date(e.target.value + 'T00:00:00Z');
+                    renderRegionalChartType(chartType);
+                }
+            });
             return;
         }
         
