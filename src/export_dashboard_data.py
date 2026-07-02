@@ -344,6 +344,22 @@ def export_all(db: ForecastDB, output_dir: str):
                 
         if param == "Wind Dir.":
             consensus[param] = p_df.apply(lambda row: circular_weighted_mean(row.dropna().values, [weights[m] for m in row.dropna().index]) if not row.dropna().empty else np.nan, axis=1)
+        elif param == "Rainfall":
+            def apply_rain_consensus(row):
+                valid = row.dropna()
+                if valid.empty: return np.nan
+                w = [weights[m] for m in valid.index]
+                w_sum = sum(w)
+                if w_sum == 0: return np.nan
+                r_mean = np.average(valid, weights=w)
+                if r_mean >= 1.0:
+                    var = sum(w_i * (r - r_mean)**2 for r, w_i in zip(valid, w)) / w_sum
+                    r_std = var ** 0.5
+                    if r_std >= 2.0 * r_mean:
+                        restoration = min(1.0 + 0.10 * (r_std / r_mean), 1.30)
+                        return r_mean * restoration
+                return r_mean
+            consensus[param] = p_df.apply(apply_rain_consensus, axis=1)
         else:
             consensus[param] = p_df.apply(lambda row: np.average(row.dropna(), weights=[weights[m] for m in row.dropna().index]) if not row.dropna().empty else np.nan, axis=1)
             

@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import numpy as np
 from datetime import datetime, timedelta
+from src.vis_cloud_proxy import get_weather_phenomenon
 
 from src.advanced_ensemble_weighter import MODELS
 
@@ -269,11 +270,28 @@ def _build_change_groups(
     def make_time_str(hs: int, he: int) -> str:
         """Convert raw h-indices (relative to valid_start) to a DDHH/DDHH string.
         No timing offset applied - use rain_time_str() for onset/TEMPO groups."""
+        if he <= hs:
+            he = hs + 1  # Enforce minimum 1-hour duration
+
         ts_dt = valid_start + timedelta(hours=hs)
         te_dt = valid_start + timedelta(hours=he)
         ts_utc = (start_hour + hs) % 24
         te_utc = (start_hour + he) % 24
         return f"{ts_dt.day:02d}{ts_utc:02d}/{te_dt.day:02d}{te_utc:02d}"
+
+    def clamp_change_group_to_validity(t_start: int, t_end: int, taf_validity_hours: int = 24) -> tuple[int, int] | None:
+        """
+        Clamp a change group's time range to the TAF validity window.
+        """
+        if t_start >= taf_validity_hours:
+            return None
+        if t_start < 0:
+            t_start = 0
+        if t_end > taf_validity_hours:
+            t_end = taf_validity_hours
+        if t_end - t_start < 1:
+            return None
+        return (t_start, t_end)
 
     def rain_time_str(hs: int, he: int) -> tuple | None:
         """
@@ -900,7 +918,8 @@ def _build_change_groups(
         new_spd = str(curr["spd"]).zfill(2)
         new_gst = str(int(curr.get("gust", 0))).zfill(2)
 
-        if fraction >= 0.5:
+        MIN_LOOKAHEAD = 3
+        if fraction >= 0.5 and (look_end - i) >= MIN_LOOKAHEAD:
             # Permanent wind change -> BECMG
             # [v5.6.0 TG-C2] Adaptive window: high persistence -> 1h, medium -> 2h.
             # [v5.6.0 TG-L1] Guard against zero-length window near TAF end.
@@ -1016,6 +1035,39 @@ def _build_change_groups(
         new_vis = consensus_truth[i]["vis"] if vis_trigger else ""
         new_cloud = consensus_truth[i]["cloud"] if ceil_trigger else ""
         
+        wx_str = ""
+        if new_vis and int(new_vis) < 5000:
+            hour_data = consensus_truth[i]
+            local_hour_wita = (start_hour + i + 8) % 24
+            wx_str = get_weather_phenomenon(
+                rain_mmh=hour_data.get("rain", 0.0),
+                rh_pct=hour_data.get("relative_humidity_pct", 80.0),
+                temp_c=hour_data.get("temp_c", 28.0),
+                dewpoint_c=hour_data.get("dewpoint_c", 24.0),
+                vis_m=int(new_vis),
+                local_hour_wita=local_hour_wita
+            )
+            if not wx_str:
+                # Hard rule: no vis-only sub-5000m change groups without a phenomenon
+                if ceil_trigger:
+                    new_vis = ""  # Drop the visibility change, keep ceiling
+                else:
+                    i = end_h + 1
+                    continue
+        elif vis_trigger and new_vis:
+            # Check for light rain even if vis >= 5000
+            hour_data = consensus_truth[i]
+            if hour_data.get("rain", 0.0) >= 0.4:
+                local_hour_wita = (start_hour + i + 8) % 24
+                wx_str = get_weather_phenomenon(
+                    rain_mmh=hour_data.get("rain", 0.0),
+                    rh_pct=hour_data.get("relative_humidity_pct", 80.0),
+                    temp_c=hour_data.get("temp_c", 28.0),
+                    dewpoint_c=hour_data.get("dewpoint_c", 24.0),
+                    vis_m=int(new_vis),
+                    local_hour_wita=local_hour_wita
+                )
+        
         lookahead = min(i + 8, N) - i
         if lookahead >= 3:
             n_match = 0
@@ -1033,13 +1085,15 @@ def _build_change_groups(
         if permanent:
             te = i
             ts = max(0, i - 1)
-            if te > ts:
+            clamped = clamp_change_group_to_validity(ts, te)
+            if clamped:
+                ts, te = clamped
                 groups.append({
                     "type": "BECMG",
                     "time_str": make_time_str(ts, te),
                     "time_h_start": (start_hour + ts) % 24,
                     "time_h_end": (start_hour + te) % 24,
-                    "wx": "", "vis": new_vis, "cloud": new_cloud,
+                    "wx": wx_str, "vis": new_vis, "cloud": new_cloud,
                     "dir": "", "spd": "", "gust": "",
                     "_prio": 8, "_rain": 0.0,
                 })
@@ -1047,15 +1101,18 @@ def _build_change_groups(
                 if ceil_trigger: prev_ceil = curr_ceil
         else:
             t_end = tempo_window_end(i, D)
-            groups.append({
-                "type": "TEMPO",
-                "time_str": make_time_str(i, t_end),
-                "time_h_start": (start_hour + i) % 24,
-                "time_h_end": (start_hour + t_end) % 24,
-                "wx": "", "vis": new_vis, "cloud": new_cloud,
-                "dir": "", "spd": "", "gust": "",
-                "_prio": 5, "_rain": 0.0,
-            })
+            clamped = clamp_change_group_to_validity(i, t_end)
+            if clamped:
+                ts, te = clamped
+                groups.append({
+                    "type": "TEMPO",
+                    "time_str": make_time_str(ts, te),
+                    "time_h_start": (start_hour + ts) % 24,
+                    "time_h_end": (start_hour + te) % 24,
+                    "wx": wx_str, "vis": new_vis, "cloud": new_cloud,
+                    "dir": "", "spd": "", "gust": "",
+                    "_prio": 5, "_rain": 0.0,
+                })
         i = end_h + 1
 
     # -- PHASE 3 : merge overlapping TEMPO groups ------------------------------
@@ -1153,19 +1210,15 @@ def _build_change_groups(
             changed = False
             out: list[dict] = []
             for g in grps:
-                if (out
-                        and "TEMPO" in out[-1]["type"]
-                        and out[-1].get("type", "") not in ("BECMG",)
-                        and "BECMG" in g["type"]
-                        and _he(out[-1]) > _hs(g)):   # overlap detected
+                if out and _he(out[-1]) > _hs(g):   # overlap detected
                     prev = out[-1]
-                    new_end_h = _hs(g)                # truncate to BECMG start
-                    if new_end_h - _hs(prev) >= 1:   # keep if window ≥ 1 h
+                    new_end_h = _hs(g)                # truncate to new group start
+                    if new_end_h - _hs(prev) >= 1:    # keep if window >= 1 h
                         prev["time_str"]   = make_time_str(_hs(prev), new_end_h)
                         prev["time_h_end"] = (start_hour + new_end_h) % 24
                         out.append(g)
                     else:
-                        # TEMPO window collapsed - drop it, keep only BECMG
+                        # previous window collapsed - drop it, keep only new group
                         out.pop()
                         out.append(g)
                     changed = True

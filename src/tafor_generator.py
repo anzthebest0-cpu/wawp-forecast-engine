@@ -32,7 +32,7 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
     if cloud == 'NSC': cavok_cloud = True
     elif len(cloud) >= 3 and cloud[-3:].isdigit() and int(cloud[-3:]) >= 50: cavok_cloud = True
 
-    if vis == '9999' and cavok_cloud and not wx:
+    if vis == '9999' and cavok_cloud and not wx and bg.get('rain', 0.0) <= 0.1:
         vis = 'CAVOK'
         cloud = ''
         wx = ''
@@ -98,9 +98,13 @@ def _generate_narration(bg: dict, trends: list) -> str:
     if trends:
         for t in trends:
             if 'RA' in t.get('wx', '') or 'TS' in t.get('wx', ''):
-                h1 = t['valid_start'].strftime('%H%M')
-                h2 = t['valid_end'].strftime('%H%M')
-                rain_trends.append(f'{h1}Z - {h2}Z')
+                t_str = t.get('time_str', '')
+                if '/' in t_str:
+                    fragments = t_str.split('/')
+                    if len(fragments) == 2 and len(fragments[0]) == 4 and len(fragments[1]) == 4:
+                        h1 = fragments[0][2:] + '00'
+                        h2 = fragments[1][2:] + '00'
+                        rain_trends.append(f'{h1}Z - {h2}Z')
                 
     if rain_trends:
         parts.append(f'Terdapat potensi presipitasi/hujan pada periode: {", ".join(rain_trends)}.')
@@ -152,6 +156,7 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
             "temp_c": hour_data["temp_c"],
             "dewpoint_c": hour_data["dewpoint_c"],
             "pressure_hpa": hour_data["pressure_hpa"],
+            "relative_humidity_pct": hour_data["relative_humidity_pct"],
             "vis": vis_code,
             "cloud": cloud_group,
             "Datetime": row["Datetime"]
@@ -211,8 +216,8 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
     # Generate change groups
     trends, warnings = _build_change_groups(
         consensus_truth=consensus_truth,
-        valid_start=valid_start,
-        start_hour=valid_start.hour,
+        valid_start=valid_start_utc,
+        start_hour=valid_start_utc.hour,
         meteo_data_local=meteo_data_local,
         corrected_rain_data=qm_rain_local,
         rain_timing_offset=0, 
@@ -237,6 +242,7 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
         'vis': first_row['vis'],
         'wx': '',
         'cloud': first_row['cloud'],
+        'rain': first_row.get('rain', 0.0),
         'trends': trends,
         'badge': f'MME {iss_utc}Z Shift',
         'metrics': {'leader_rmse': 'N/A', 'leader_strat': 'N/A'}
