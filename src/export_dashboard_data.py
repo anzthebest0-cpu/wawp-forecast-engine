@@ -404,14 +404,14 @@ def export_all(db: ForecastDB, output_dir: str):
             s_dict = {k: (None if pd.isna(v) else v) for k, v in s_dict.items()}
             model_data_str[prm][m_name] = s_dict
             
-    # Extract Run_Init_UTC
+    # Extract Run_Init_UTC — use the most recent init per model
     run_init = {}
     if 'run_init_utc' in df_fcst.columns:
         for m in MODELS:
             m_df = df_fcst[df_fcst["model"] == m].dropna(subset=['run_init_utc'])
             if not m_df.empty:
-                # Convert UTC string to Date string, or keep it as is if it's already formatted
-                val = m_df['run_init_utc'].iloc[0]
+                # Take the latest (MAX) init time, not just the first row
+                val = m_df['run_init_utc'].max()
                 run_init[m] = str(val) if val else "Unknown"
             else:
                 run_init[m] = "Unknown"

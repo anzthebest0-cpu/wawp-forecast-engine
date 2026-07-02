@@ -43,10 +43,9 @@ ARCHIVE_DIR = os.path.join(os.path.dirname(_HERE), "Archives", "Meteologix_Multi
 WITA = timezone(timedelta(hours=8))
 KPH_PER_KNOT = 1.852
 
-# Models that initialize 4 times daily (00Z, 06Z, 12Z, 18Z)
-MODELS_4X = {"ECMWF", "GFS", "ICON", "ACCESS-G3", "UKMO"}
-# Models that initialize 2 times daily (00Z, 12Z only)
-MODELS_2X = {"GEM", "Multi-Model"}
+# Model update schedules are now extracted live from the page's
+# <div class="model-update-info"> element during scraping.
+# No hardcoded schedule assumptions needed.
 
 # ================== LOGGING ==================
 logging.basicConfig(
@@ -68,10 +67,27 @@ SIMBOL = {
 # ================== SCRAPER & PARSER ==================
 
 def parse_run_init(text: str) -> datetime | None:
-    """Extract UTC initialization time from Meteologix script text."""
+    """
+    Extract UTC initialization time from the Meteologix page.
+    
+    Tries two strategies in order:
+      1. HTML div text: "Forecast from DD.MM.YYYY, HHz (UTC)"
+      2. JS variable fallback: hccompact_model_starttime = <epoch_ms>
+    """
     if not text:
         return None
     
+    # Strategy 1: Parse from <div class="model-run-info"> text
+    # Format: "Forecast from 01.07.2026, 18z (UTC)"
+    m = re.search(
+        r'Forecast\s+from\s+(\d{2})\.(\d{2})\.(\d{4}),?\s*(\d{1,2})z',
+        text, re.IGNORECASE
+    )
+    if m:
+        day, month, year, hour = int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
+        return datetime(year, month, day, hour, 0, 0, tzinfo=timezone.utc)
+    
+    # Strategy 2: Fallback to JS variable (legacy)
     m = re.search(r'hccompact_model_starttime\s*=\s*["\']?(\d+)["\']?', text)
     if m:
         ts_ms = int(m.group(1))
@@ -79,8 +95,18 @@ def parse_run_init(text: str) -> datetime | None:
         
     return None
 
-def scrape_meteogram_script(url: str) -> str:
-    """Fetch the Highcharts script block from a meteogram page using Selenium."""
+def scrape_meteogram_script(url: str) -> tuple:
+    """
+    Fetch the Highcharts script block AND model metadata from a Meteologix page.
+    
+    Returns:
+        (script_text, run_info_text, update_info_text)
+        - script_text:      The JS containing hccompact_data_* variables.
+        - run_info_text:     Text from <div class="model-run-info">, e.g.
+                            "Forecast from 01.07.2026, 18z (UTC)"
+        - update_info_text:  Text from <div class="model-update-info">, e.g.
+                            "Update: 4 times a day, approx. 09:00am, ..."
+    """
     from selenium import webdriver
     from selenium.webdriver.chrome.service import Service
     from selenium.webdriver.chrome.options import Options
@@ -118,14 +144,31 @@ def scrape_meteogram_script(url: str) -> str:
         except TimeoutException:
             log.warning("Timeout waiting for hccompact variables on: %s", url)
 
-        # Extract all script tags text
+        # ── Extract model metadata from HTML divs ──
+        run_info_text = ""
+        update_info_text = ""
+        try:
+            el = driver.find_element(By.CSS_SELECTOR, "div.model-run-info")
+            run_info_text = el.text.strip()
+            log.info("  Model run info: %s", run_info_text)
+        except Exception:
+            log.warning("  Could not find div.model-run-info on: %s", url)
+        
+        try:
+            el = driver.find_element(By.CSS_SELECTOR, "div.model-update-info")
+            update_info_text = el.text.strip()
+            log.info("  Model update schedule: %s", update_info_text)
+        except Exception:
+            log.debug("  Could not find div.model-update-info on: %s", url)
+
+        # ── Extract all script tags text ──
         scripts = driver.execute_script(
             "return Array.from(document.querySelectorAll('script'))"
             ".map(function(s){return s.textContent||'';});"
         )
         for txt in scripts:
             if "hccompact_data_symbols" in txt or "hccompact_data_direction" in txt:
-                return txt, txt # Pass the script text twice to use the second one for parsing
+                return txt, run_info_text, update_info_text
         
         raise RuntimeError("No script tag containing meteogram data found.")
     finally:
@@ -440,8 +483,19 @@ def main() -> tuple[dict, list]:
     for model_name, url in MODEL_URLS.items():
         log.info("Processing model: %s", model_name)
         try:
-            script_txt, run_init_text = scrape_meteogram_script(url)
-            run_init_utc = parse_run_init(run_init_text)
+            script_txt, run_info_text, update_info_text = scrape_meteogram_script(url)
+            
+            # Prioritize HTML div text for init time; fallback to JS variable
+            run_init_utc = parse_run_init(run_info_text) if run_info_text else None
+            if run_init_utc is None:
+                run_init_utc = parse_run_init(script_txt)
+                if run_init_utc:
+                    log.warning("  Used JS fallback for init time (HTML div missing)")
+            
+            if run_init_utc:
+                log.info("  Init time: %s", run_init_utc.strftime("%Y-%m-%d %H:%MZ"))
+            else:
+                log.warning("  Could not determine init time for %s", model_name)
             
             model_rows = decode_model_script(script_txt, model_name, run_init_utc)
             all_models_data[model_name] = model_rows
