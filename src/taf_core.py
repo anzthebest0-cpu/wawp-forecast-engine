@@ -392,8 +392,8 @@ def _build_change_groups(
                         and gap_start > 0 and base[gap_start - 1]
                         and gap_end < N  and base[gap_end]
                         and all(
-                            # v109: use bias-corrected MME mean, not raw
-                            consensus_truth[h]["mme_corrected_rain"] >= MME_BRIDGE_MM
+                            # v109: use bias-corrected MME mean (which is stored under "rain" in our pipeline)
+                            consensus_truth[h]["rain"] >= MME_BRIDGE_MM
                             for h in range(gap_start, gap_end)
                         )):
                     for h in range(gap_start, gap_end):
