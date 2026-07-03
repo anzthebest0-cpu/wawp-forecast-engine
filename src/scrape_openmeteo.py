@@ -65,23 +65,27 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger("openmeteo")
 
 
-def _get_json(url: str, retries: int = 3) -> dict:
+def _get_json(url: str, retries: int = 4, timeout: int = 90) -> dict:
     for attempt in range(retries):
         try:
-            with urllib.request.urlopen(url, timeout=60) as response:
+            with urllib.request.urlopen(url, timeout=timeout) as response:
                 return json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code == 400:
                 log.warning(f"Open-Meteo 400 skipped: {url}")
                 return {}
             if e.code == 429 and attempt < retries - 1:
-                time.sleep(60)
+                wait_s = min(60 * (attempt + 1), 180)
+                log.warning(f"Open-Meteo 429 rate limit; retrying in {wait_s}s ({attempt + 1}/{retries})")
+                time.sleep(wait_s)
                 continue
             raise
-        except Exception:
+        except Exception as e:
             if attempt == retries - 1:
                 raise
-            time.sleep(2 ** attempt)
+            wait_s = min(15 * (attempt + 1), 60)
+            log.warning(f"Open-Meteo request failed ({attempt + 1}/{retries}): {e}; retrying in {wait_s}s")
+            time.sleep(wait_s)
     return {}
 
 
@@ -195,13 +199,19 @@ def main() -> tuple[dict, list[dict], list[dict]]:
     openmeteo_rows = []
     for model_name, model_id in MODELS_OPENMETEO.items():
         log.info(f"Fetching Open-Meteo model {model_name} ({model_id})")
-        rows, om_rows = fetch_model(model_name, model_id)
+        try:
+            rows, om_rows = fetch_model(model_name, model_id)
+        except Exception as e:
+            log.error(f"Open-Meteo model {model_name} failed after retries: {e}")
+            continue
         if not rows:
             log.warning(f"No Open-Meteo rows for {model_name}")
             continue
         dashboard_rows.extend(rows)
         openmeteo_rows.extend(om_rows)
         all_models_data[model_name] = rows
+    if not openmeteo_rows:
+        raise RuntimeError("All Open-Meteo model fetches failed or returned no rows")
     return all_models_data, dashboard_rows, openmeteo_rows
 
 
