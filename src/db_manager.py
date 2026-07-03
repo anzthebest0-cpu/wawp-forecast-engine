@@ -191,7 +191,55 @@ class ForecastDB:
                 method          TEXT,
                 low_confidence  INTEGER DEFAULT 0,
                 metadata        TEXT,
+                source_type     TEXT DEFAULT 'unknown',
+                correction_layer TEXT DEFAULT 'historical_prior',
+                regime          TEXT DEFAULT 'ALL',
+                valid_period_start TEXT,
+                valid_period_end TEXT,
+                n_events        INTEGER,
+                validation_method TEXT,
+                mae_before      REAL,
+                mae_after       REAL,
+                skill_score     REAL,
+                deprecated      INTEGER DEFAULT 0,
                 UNIQUE(model, parameter, lead_bucket)
+            );
+        """)
+        for ddl in [
+            "ALTER TABLE qm_cdfs ADD COLUMN source_type TEXT DEFAULT 'unknown'",
+            "ALTER TABLE qm_cdfs ADD COLUMN correction_layer TEXT DEFAULT 'historical_prior'",
+            "ALTER TABLE qm_cdfs ADD COLUMN regime TEXT DEFAULT 'ALL'",
+            "ALTER TABLE qm_cdfs ADD COLUMN valid_period_start TEXT",
+            "ALTER TABLE qm_cdfs ADD COLUMN valid_period_end TEXT",
+            "ALTER TABLE qm_cdfs ADD COLUMN n_events INTEGER",
+            "ALTER TABLE qm_cdfs ADD COLUMN validation_method TEXT",
+            "ALTER TABLE qm_cdfs ADD COLUMN mae_before REAL",
+            "ALTER TABLE qm_cdfs ADD COLUMN mae_after REAL",
+            "ALTER TABLE qm_cdfs ADD COLUMN skill_score REAL",
+            "ALTER TABLE qm_cdfs ADD COLUMN deprecated INTEGER DEFAULT 0",
+        ]:
+            try:
+                cursor.execute(ddl)
+            except sqlite3.OperationalError:
+                pass
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS qm_corrections_applied (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                forecast_record_id INTEGER,
+                model TEXT NOT NULL,
+                parameter TEXT NOT NULL,
+                valid_time TEXT,
+                lead_hours REAL,
+                raw_value REAL,
+                historical_prior_value REAL,
+                operational_residual_value REAL,
+                final_corrected_value REAL,
+                historical_qm_id INTEGER,
+                operational_qm_id INTEGER,
+                correction_layer_used TEXT NOT NULL,
+                applied_at TEXT NOT NULL,
+                pipeline_run_id TEXT NOT NULL,
+                UNIQUE(forecast_record_id, parameter, pipeline_run_id)
             );
         """)
         
@@ -341,6 +389,22 @@ class ForecastDB:
                 if pd.isna(value):
                     clean[key] = None
             clean_rows.append(clean)
+
+        for location, model, run_init in sorted({
+            (row["location"], row["model"], row["run_init_utc"])
+            for row in clean_rows
+            if row.get("location") and row.get("model") and row.get("run_init_utc")
+        }):
+            cursor.execute(
+                """
+                DELETE FROM openmeteo_forecasts
+                WHERE location = ?
+                  AND model = ?
+                  AND run_init_utc = ?
+                  AND lead_hours < 0
+                """,
+                (location, model, run_init),
+            )
 
         cursor.executemany(sql, clean_rows)
         self.conn.commit()

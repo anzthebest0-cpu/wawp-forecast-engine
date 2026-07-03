@@ -58,6 +58,7 @@ to fit an empirical mapper for a given model.
 from __future__ import annotations
 
 import json
+import math
 import os
 import tempfile
 from datetime import datetime, timezone
@@ -97,6 +98,11 @@ MODELS = [
 MULTIPARAM_MODELS_OPENMETEO = MODELS
 LEAD_BUCKETS_DEFAULT = ["L1_0_6h", "L2_6_12h", "L3_12_24h", "L4_24_48h", "L5_48plus"]
 LEAD_BUCKETS_GUST = ["L1_0_6h", "L2_6_18h", "L3_18h_plus"]
+HISTORICAL_PRIOR_BUCKET = "GLOBAL"
+SOURCE_CONTINUOUS = "continuous_historical"
+SOURCE_OPERATIONAL = "operational_multiinit"
+LAYER_HISTORICAL = "historical_prior"
+LAYER_OPERATIONAL = "operational_residual"
 QM_MULTIPARAM_PARAMS = {
     "temperature": {"type": "linear", "min_samples": 100},
     "dewpoint": {"type": "linear", "min_samples": 100},
@@ -486,20 +492,30 @@ def _fit_qm_circular(fcst: np.ndarray, obs: np.ndarray) -> dict | None:
     if len(fc) < 2:
         return None
     diff = ((ob - fc + 180.0) % 360.0) - 180.0
-    result = _fit_empirical(fc, diff)
-    if result:
-        result["method"] = "circular_delta"
-    return result
+    radians = np.deg2rad(diff)
+    mean_rad = math.atan2(float(np.mean(np.sin(radians))), float(np.mean(np.cos(radians))))
+    offset = float(np.rad2deg(mean_rad))
+    resultant = float((np.mean(np.sin(radians)) ** 2 + np.mean(np.cos(radians)) ** 2) ** 0.5)
+    return {
+        "fcst_quantiles": [0.0, 360.0],
+        "obs_quantiles": [offset, offset],
+        "n_samples": int(len(fc)),
+        "method": "circular_offset",
+        "offset_deg": offset,
+        "resultant_length": resultant,
+    }
 
 
 def _fit_qm_zero_inflated(fcst: np.ndarray, obs: np.ndarray) -> dict | None:
     fc, ob = _as_arrays(fcst, obs)
-    wet_mask = (fc > 0.1) | (ob > 0.1)
+    wet_mask = (fc > 0.1) & (ob > 0.1)
     fc_wet = np.maximum(fc[wet_mask], 0.0)
     ob_wet = np.maximum(ob[wet_mask], 0.0)
     result = _fit_empirical(fc_wet, ob_wet)
     if result:
         result["method"] = "zero_inflated"
+        result["n_events"] = int(wet_mask.sum())
+        result["fcst_wet_fraction"] = float((fc > 0.1).mean()) if len(fc) else 0.0
         result["obs_wet_fraction"] = float((ob > 0.1).mean()) if len(ob) else 0.0
     return result
 
@@ -561,7 +577,10 @@ def _apply_qm_nonneg(value: float, qm: dict) -> float:
 def _apply_qm_circular(value: float, qm: dict) -> float:
     if value is None or pd.isna(value):
         return value
-    delta = _apply_quantile(value, qm["fcst_quantiles"], qm["obs_quantiles"])
+    if qm.get("method") == "circular_offset":
+        delta = float(qm.get("offset_deg") or 0.0)
+    else:
+        delta = _apply_quantile(value, qm["fcst_quantiles"], qm["obs_quantiles"])
     return float((float(value) + delta) % 360.0)
 
 
@@ -628,7 +647,7 @@ def _score_before_after(parameter: str, fcst: np.ndarray, obs: np.ndarray, qm: d
 
 def apply_qm_value(value: float, parameter: str, qm: dict) -> float:
     method = qm.get("method") or QM_MULTIPARAM_PARAMS.get(parameter, {}).get("type")
-    if method == "circular_delta":
+    if method in {"circular_delta", "circular_offset"}:
         return _apply_qm_circular(value, qm)
     if method in {"nonneg", "gamma_parametric", "nonneg_gamma_fallback"}:
         return _apply_qm_nonneg(value, qm)
@@ -637,8 +656,11 @@ def apply_qm_value(value: float, parameter: str, qm: dict) -> float:
     return _apply_qm_linear(value, qm)
 
 
-def fit_multiparam_qm_to_db(conn, log_fn=print) -> dict:
-    trained = {}
+def _table_columns(conn, table: str) -> set[str]:
+    return {row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+
+
+def _ensure_qm_schema(conn) -> None:
     cur = conn.cursor()
     cur.execute("""
         CREATE TABLE IF NOT EXISTS qm_cdfs (
@@ -658,104 +680,385 @@ def fit_multiparam_qm_to_db(conn, log_fn=print) -> dict:
             method TEXT,
             low_confidence INTEGER DEFAULT 0,
             metadata TEXT,
+            source_type TEXT DEFAULT 'unknown',
+            correction_layer TEXT DEFAULT 'historical_prior',
+            regime TEXT DEFAULT 'ALL',
+            valid_period_start TEXT,
+            valid_period_end TEXT,
+            n_events INTEGER,
+            validation_method TEXT,
+            mae_before REAL,
+            mae_after REAL,
+            skill_score REAL,
+            deprecated INTEGER DEFAULT 0,
             UNIQUE(model, parameter, lead_bucket)
         )
     """)
+    for ddl in [
+        "ALTER TABLE qm_cdfs ADD COLUMN source_type TEXT DEFAULT 'unknown'",
+        "ALTER TABLE qm_cdfs ADD COLUMN correction_layer TEXT DEFAULT 'historical_prior'",
+        "ALTER TABLE qm_cdfs ADD COLUMN regime TEXT DEFAULT 'ALL'",
+        "ALTER TABLE qm_cdfs ADD COLUMN valid_period_start TEXT",
+        "ALTER TABLE qm_cdfs ADD COLUMN valid_period_end TEXT",
+        "ALTER TABLE qm_cdfs ADD COLUMN n_events INTEGER",
+        "ALTER TABLE qm_cdfs ADD COLUMN validation_method TEXT",
+        "ALTER TABLE qm_cdfs ADD COLUMN mae_before REAL",
+        "ALTER TABLE qm_cdfs ADD COLUMN mae_after REAL",
+        "ALTER TABLE qm_cdfs ADD COLUMN skill_score REAL",
+        "ALTER TABLE qm_cdfs ADD COLUMN deprecated INTEGER DEFAULT 0",
+    ]:
+        try:
+            cur.execute(ddl)
+        except Exception:
+            pass
+
+
+def _skill_score(scores: dict) -> float | None:
+    before = scores.get("mae_before")
+    after = scores.get("mae_after")
+    if before is None or after is None or before <= 0:
+        return None
+    return float((before - after) / before)
+
+
+def _bias_improved(scores: dict) -> bool:
+    before = scores.get("bias_before")
+    after = scores.get("bias_after")
+    if before is None or after is None:
+        return False
+    return abs(float(after)) <= abs(float(before))
+
+
+def _enabled_by_validation(parameter: str, scores: dict) -> bool:
+    skill = _skill_score(scores)
+    if skill is None:
+        return False
+    if parameter == "rain":
+        return skill >= -0.02 and _bias_improved(scores)
+    return skill >= 0.0 or _bias_improved(scores)
+
+
+def _min_samples_for_layer(parameter: str, correction_layer: str) -> int:
+    if correction_layer == LAYER_OPERATIONAL:
+        return {
+            "temperature": 100,
+            "dewpoint": 100,
+            "pressure": 100,
+            "wind_speed": 150,
+            "wind_gust": 100,
+            "wind_dir": 100,
+            "rain": 75,
+        }.get(parameter, QM_MULTIPARAM_PARAMS[parameter]["min_samples"])
+    if parameter == "rain":
+        return 50
+    return QM_MULTIPARAM_PARAMS[parameter]["min_samples"]
+
+
+def _event_count(parameter: str, fcst: np.ndarray, obs: np.ndarray) -> int:
+    fc, ob = _as_arrays(fcst, obs)
+    if parameter == "rain":
+        return int(((fc > 0.1) & (ob > 0.1)).sum())
+    if parameter == "wind_gust":
+        return int(((fc > 0.0) & (ob > 0.0)).sum())
+    return int(len(fc))
+
+
+def _read_pair_frame(conn, model: str, parameter: str, bucket: str, source_type: str, correction_layer: str) -> pd.DataFrame:
+    fc_col, obs_col = PARAM_DB_MAP[parameter]
+    bucket_col = "lead_bucket_gust" if parameter == "wind_gust" else "lead_bucket"
+    cols = _table_columns(conn, "qm_training_pairs")
+    source_pred = "source_type = ? AND correction_layer = ?" if {"source_type", "correction_layer"}.issubset(cols) else "1=1"
+    valid_expr = "valid_time" if "valid_time" in cols else "NULL AS valid_time"
+    params: list[Any] = [model, bucket]
+    if source_pred != "1=1":
+        params.extend([source_type, correction_layer])
+    return pd.read_sql_query(
+        f"""
+        SELECT {fc_col} AS fcst, {obs_col} AS obs, {valid_expr}
+        FROM qm_training_pairs
+        WHERE model = ? AND {bucket_col} = ?
+          AND {source_pred}
+          AND {fc_col} IS NOT NULL AND {obs_col} IS NOT NULL
+        """,
+        conn,
+        params=tuple(params),
+    )
+
+
+def _insert_qm(
+    conn,
+    model: str,
+    parameter: str,
+    bucket: str,
+    qm: dict,
+    scores: dict,
+    source_type: str,
+    correction_layer: str,
+    regime: str,
+    valid_start: str | None,
+    valid_end: str | None,
+    enabled: bool,
+) -> int:
+    skill = _skill_score(scores)
+    low_conf = bool(qm.get("low_confidence", False))
+    metadata = {k: v for k, v in qm.items() if k not in {"fcst_quantiles", "obs_quantiles"}}
+    conn.execute("""
+        INSERT INTO qm_cdfs (
+            model, parameter, lead_bucket, fcst_quantiles, obs_quantiles,
+            n_samples, crps_before, crps_after, bias_before, bias_after,
+            trained_at, enabled, method, low_confidence, metadata,
+            source_type, correction_layer, regime, valid_period_start, valid_period_end,
+            n_events, validation_method, mae_before, mae_after, skill_score, deprecated
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(model, parameter, lead_bucket) DO UPDATE SET
+            fcst_quantiles=excluded.fcst_quantiles,
+            obs_quantiles=excluded.obs_quantiles,
+            n_samples=excluded.n_samples,
+            crps_before=excluded.crps_before,
+            crps_after=excluded.crps_after,
+            bias_before=excluded.bias_before,
+            bias_after=excluded.bias_after,
+            trained_at=excluded.trained_at,
+            enabled=excluded.enabled,
+            method=excluded.method,
+            low_confidence=excluded.low_confidence,
+            metadata=excluded.metadata,
+            source_type=excluded.source_type,
+            correction_layer=excluded.correction_layer,
+            regime=excluded.regime,
+            valid_period_start=excluded.valid_period_start,
+            valid_period_end=excluded.valid_period_end,
+            n_events=excluded.n_events,
+            validation_method=excluded.validation_method,
+            mae_before=excluded.mae_before,
+            mae_after=excluded.mae_after,
+            skill_score=excluded.skill_score,
+            deprecated=excluded.deprecated
+    """, (
+        model,
+        parameter,
+        bucket,
+        json.dumps(qm["fcst_quantiles"]),
+        json.dumps(qm["obs_quantiles"]),
+        qm["n_samples"],
+        scores["mae_before"],
+        scores["mae_after"],
+        scores["bias_before"],
+        scores["bias_after"],
+        datetime.now(timezone.utc).isoformat(),
+        1 if enabled else 0,
+        qm.get("method"),
+        1 if low_conf else 0,
+        json.dumps(metadata),
+        source_type,
+        correction_layer,
+        regime,
+        valid_start,
+        valid_end,
+        int(qm.get("n_events") or qm.get("n_samples") or 0),
+        "in_sample_guardrail",
+        scores["mae_before"],
+        scores["mae_after"],
+        skill,
+        0,
+    ))
+    row = conn.execute(
+        "SELECT id FROM qm_cdfs WHERE model=? AND parameter=? AND lead_bucket=?",
+        (model, parameter, bucket),
+    ).fetchone()
+    return int(row[0]) if row else 0
+
+
+def fit_multiparam_qm_to_db(conn, log_fn=print) -> dict:
+    trained = {}
+    _ensure_qm_schema(conn)
+    conn.execute(
+        """
+        UPDATE qm_cdfs
+        SET enabled=0, deprecated=1
+        WHERE COALESCE(source_type, 'unknown') = 'unknown'
+           OR (correction_layer = ? AND lead_bucket <> ?)
+        """,
+        (LAYER_HISTORICAL, HISTORICAL_PRIOR_BUCKET),
+    )
+    historical_qm: dict[tuple[str, str], dict] = {}
     for model in MULTIPARAM_MODELS_OPENMETEO:
         trained[model] = {}
-        for parameter, (fc_col, obs_col) in PARAM_DB_MAP.items():
-            buckets = LEAD_BUCKETS_GUST if parameter == "wind_gust" else LEAD_BUCKETS_DEFAULT
-            bucket_col = "lead_bucket_gust" if parameter == "wind_gust" else "lead_bucket"
+        for parameter in PARAM_DB_MAP:
             trained[model][parameter] = {}
+
+            hist_df = _read_pair_frame(
+                conn, model, parameter, HISTORICAL_PRIOR_BUCKET, SOURCE_CONTINUOUS, LAYER_HISTORICAL
+            )
+            min_samples = _min_samples_for_layer(parameter, LAYER_HISTORICAL)
+            n_events = _event_count(parameter, hist_df.get("fcst", []), hist_df.get("obs", [])) if not hist_df.empty else 0
+            if len(hist_df) >= min_samples and (parameter != "rain" or n_events >= min_samples):
+                qm = _fit_param(parameter, hist_df["fcst"].to_numpy(), hist_df["obs"].to_numpy())
+                if qm:
+                    qm["n_events"] = n_events
+                    scores = _score_before_after(parameter, hist_df["fcst"].to_numpy(), hist_df["obs"].to_numpy(), qm)
+                    enabled = _enabled_by_validation(parameter, scores)
+                    low_conf = bool(qm.get("low_confidence", False))
+                    valid_start = str(hist_df["valid_time"].min()) if "valid_time" in hist_df else None
+                    valid_end = str(hist_df["valid_time"].max()) if "valid_time" in hist_df else None
+                    qm_id = _insert_qm(
+                        conn, model, parameter, HISTORICAL_PRIOR_BUCKET, qm, scores,
+                        SOURCE_CONTINUOUS, LAYER_HISTORICAL, "ALL", valid_start, valid_end, enabled
+                    )
+                    historical_qm[(model, parameter)] = qm if enabled else {}
+                    trained[model][parameter][HISTORICAL_PRIOR_BUCKET] = {
+                        "enabled": enabled,
+                        "source_type": SOURCE_CONTINUOUS,
+                        "correction_layer": LAYER_HISTORICAL,
+                        "n_samples": qm["n_samples"],
+                        "n_events": n_events,
+                        "low_confidence": low_conf,
+                        "skill_score": _skill_score(scores),
+                        "qm_id": qm_id,
+                    }
+                    if low_conf:
+                        log_fn(f"[LOW-CONF] {model}/{parameter}/GLOBAL historical prior: {qm['n_samples']} samples")
+                else:
+                    trained[model][parameter][HISTORICAL_PRIOR_BUCKET] = {"enabled": False, "n_samples": int(len(hist_df)), "n_events": n_events}
+            else:
+                trained[model][parameter][HISTORICAL_PRIOR_BUCKET] = {"enabled": False, "n_samples": int(len(hist_df)), "n_events": n_events}
+
+            buckets = LEAD_BUCKETS_GUST if parameter == "wind_gust" else LEAD_BUCKETS_DEFAULT
             for bucket in buckets:
-                df = pd.read_sql_query(
-                    f"""
-                    SELECT {fc_col} AS fcst, {obs_col} AS obs
-                    FROM qm_training_pairs
-                    WHERE model = ? AND {bucket_col} = ?
-                      AND {fc_col} IS NOT NULL AND {obs_col} IS NOT NULL
-                    """,
-                    conn,
-                    params=(model, bucket),
-                )
-                min_samples = QM_MULTIPARAM_PARAMS[parameter]["min_samples"]
-                if len(df) < min_samples:
-                    trained[model][parameter][bucket] = {"enabled": False, "n_samples": int(len(df))}
+                op_df = _read_pair_frame(conn, model, parameter, bucket, SOURCE_OPERATIONAL, LAYER_OPERATIONAL)
+                min_op = _min_samples_for_layer(parameter, LAYER_OPERATIONAL)
+                op_events = _event_count(parameter, op_df.get("fcst", []), op_df.get("obs", [])) if not op_df.empty else 0
+                key = f"{bucket}_operational_residual"
+                if len(op_df) < min_op or (parameter == "rain" and op_events < min_op):
+                    trained[model][parameter][key] = {"enabled": False, "n_samples": int(len(op_df)), "n_events": op_events}
                     continue
-                qm = _fit_param(parameter, df["fcst"].to_numpy(), df["obs"].to_numpy())
+                prior = historical_qm.get((model, parameter))
+                fc_values = op_df["fcst"].to_numpy()
+                if prior:
+                    fc_values = np.array([apply_qm_value(v, parameter, prior) for v in fc_values], dtype=float)
+                qm = _fit_param(parameter, fc_values, op_df["obs"].to_numpy())
                 if not qm:
-                    trained[model][parameter][bucket] = {"enabled": False, "n_samples": int(len(df))}
+                    trained[model][parameter][key] = {"enabled": False, "n_samples": int(len(op_df)), "n_events": op_events}
                     continue
-                scores = _score_before_after(parameter, df["fcst"].to_numpy(), df["obs"].to_numpy(), qm)
-                low_conf = bool(qm.get("low_confidence", False))
-                cur.execute("""
-                    INSERT INTO qm_cdfs (
-                        model, parameter, lead_bucket, fcst_quantiles, obs_quantiles,
-                        n_samples, crps_before, crps_after, bias_before, bias_after,
-                        trained_at, enabled, method, low_confidence, metadata
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(model, parameter, lead_bucket) DO UPDATE SET
-                        fcst_quantiles=excluded.fcst_quantiles,
-                        obs_quantiles=excluded.obs_quantiles,
-                        n_samples=excluded.n_samples,
-                        crps_before=excluded.crps_before,
-                        crps_after=excluded.crps_after,
-                        bias_before=excluded.bias_before,
-                        bias_after=excluded.bias_after,
-                        trained_at=excluded.trained_at,
-                        enabled=excluded.enabled,
-                        method=excluded.method,
-                        low_confidence=excluded.low_confidence,
-                        metadata=excluded.metadata
-                """, (
-                    model,
-                    parameter,
-                    bucket,
-                    json.dumps(qm["fcst_quantiles"]),
-                    json.dumps(qm["obs_quantiles"]),
-                    qm["n_samples"],
-                    scores["mae_before"],
-                    scores["mae_after"],
-                    scores["bias_before"],
-                    scores["bias_after"],
-                    datetime.now(timezone.utc).isoformat(),
-                    1,
-                    qm.get("method"),
-                    1 if low_conf else 0,
-                    json.dumps({k: v for k, v in qm.items() if k not in {"fcst_quantiles", "obs_quantiles"}}),
-                ))
-                trained[model][parameter][bucket] = {"enabled": True, "n_samples": qm["n_samples"], "low_confidence": low_conf}
-                if low_conf:
-                    log_fn(f"[LOW-CONF] {model}/{parameter}/{bucket}: {qm['n_samples']} samples")
+                qm["n_events"] = op_events
+                scores = _score_before_after(parameter, fc_values, op_df["obs"].to_numpy(), qm)
+                enabled = _enabled_by_validation(parameter, scores)
+                valid_start = str(op_df["valid_time"].min()) if "valid_time" in op_df else None
+                valid_end = str(op_df["valid_time"].max()) if "valid_time" in op_df else None
+                qm_id = _insert_qm(
+                    conn, model, parameter, bucket, qm, scores,
+                    SOURCE_OPERATIONAL, LAYER_OPERATIONAL, "ALL", valid_start, valid_end, enabled
+                )
+                trained[model][parameter][key] = {
+                    "enabled": enabled,
+                    "source_type": SOURCE_OPERATIONAL,
+                    "correction_layer": LAYER_OPERATIONAL,
+                    "n_samples": qm["n_samples"],
+                    "n_events": op_events,
+                    "low_confidence": bool(qm.get("low_confidence", False)),
+                    "skill_score": _skill_score(scores),
+                    "qm_id": qm_id,
+                }
     conn.commit()
     return trained
 
 
-def load_multiparam_qm(conn, model: str, parameter: str, lead_hours: float) -> dict | None:
-    bucket = _lead_bucket(lead_hours, parameter)
-    row = conn.execute("""
-        SELECT fcst_quantiles, obs_quantiles, method, metadata
+def _load_qm_by_bucket(
+    conn,
+    model: str,
+    parameter: str,
+    bucket: str,
+    source_type: str | None = None,
+    correction_layer: str | None = None,
+) -> dict | None:
+    _ensure_qm_schema(conn)
+    filters = ["model=?", "parameter=?", "lead_bucket=?", "enabled=1", "COALESCE(deprecated, 0)=0"]
+    params: list[Any] = [model, parameter, bucket]
+    if source_type:
+        filters.append("source_type=?")
+        params.append(source_type)
+    if correction_layer:
+        filters.append("correction_layer=?")
+        params.append(correction_layer)
+    row = conn.execute(f"""
+        SELECT id, fcst_quantiles, obs_quantiles, method, metadata, source_type,
+               correction_layer, low_confidence, skill_score
         FROM qm_cdfs
-        WHERE model=? AND parameter=? AND lead_bucket=? AND enabled=1
-    """, (model, parameter, bucket)).fetchone()
+        WHERE {" AND ".join(filters)}
+        ORDER BY trained_at DESC
+        LIMIT 1
+    """, tuple(params)).fetchone()
     if not row:
         return None
-    metadata = json.loads(row[3] or "{}")
+    metadata = json.loads(row[4] or "{}")
     metadata.update({
-        "fcst_quantiles": json.loads(row[0]),
-        "obs_quantiles": json.loads(row[1]),
-        "method": row[2],
+        "id": row[0],
+        "fcst_quantiles": json.loads(row[1]),
+        "obs_quantiles": json.loads(row[2]),
+        "method": row[3],
+        "source_type": row[5],
+        "correction_layer": row[6],
+        "low_confidence": bool(row[7]),
+        "skill_score": row[8],
     })
     return metadata
 
 
+def load_multiparam_qm(conn, model: str, parameter: str, lead_hours: float) -> dict | None:
+    bucket = _lead_bucket(lead_hours, parameter)
+    return (
+        _load_qm_by_bucket(conn, model, parameter, bucket, SOURCE_OPERATIONAL, LAYER_OPERATIONAL)
+        or _load_qm_by_bucket(conn, model, parameter, HISTORICAL_PRIOR_BUCKET, SOURCE_CONTINUOUS, LAYER_HISTORICAL)
+    )
+
+
+def apply_qm_with_layers(value: float, model: str, parameter: str, lead_hours: float, conn=None) -> dict:
+    raw_value = value
+    result = {
+        "raw_value": raw_value,
+        "historical_prior_value": raw_value,
+        "operational_residual_value": None,
+        "final_value": raw_value,
+        "historical_qm_id": None,
+        "operational_qm_id": None,
+        "correction_layer_used": "raw",
+        "low_confidence": False,
+        "lead_bucket": _lead_bucket(lead_hours, parameter),
+    }
+    if conn is None or value is None or pd.isna(value):
+        return result
+
+    hist = _load_qm_by_bucket(
+        conn, model, parameter, HISTORICAL_PRIOR_BUCKET, SOURCE_CONTINUOUS, LAYER_HISTORICAL
+    )
+    current = raw_value
+    if hist:
+        current = apply_qm_value(current, parameter, hist)
+        result.update({
+            "historical_prior_value": current,
+            "final_value": current,
+            "historical_qm_id": hist.get("id"),
+            "correction_layer_used": LAYER_HISTORICAL,
+            "low_confidence": bool(hist.get("low_confidence")),
+        })
+
+    op = _load_qm_by_bucket(
+        conn, model, parameter, result["lead_bucket"], SOURCE_OPERATIONAL, LAYER_OPERATIONAL
+    )
+    if op:
+        current = apply_qm_value(current, parameter, op)
+        result.update({
+            "operational_residual_value": current,
+            "final_value": current,
+            "operational_qm_id": op.get("id"),
+            "correction_layer_used": LAYER_OPERATIONAL,
+            "low_confidence": bool(result["low_confidence"] or op.get("low_confidence")),
+        })
+    return result
+
+
 def apply_multiparam_qm(value: float, model: str, parameter: str, lead_hours: float, conn=None) -> float:
-    if conn is None:
-        return value
-    qm = load_multiparam_qm(conn, model, parameter, lead_hours)
-    if not qm:
-        return value
-    return apply_qm_value(value, parameter, qm)
+    return apply_qm_with_layers(value, model, parameter, lead_hours, conn=conn)["final_value"]
 
 
 # ===========================================================================

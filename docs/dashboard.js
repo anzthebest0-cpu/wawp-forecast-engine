@@ -55,6 +55,7 @@ async function loadDashboard() {
             if (sizeElem) sizeElem.innerText = healthData.size_mb + ' MB';
             if (syncElem) syncElem.innerText = (healthData.last_sync_utc || healthData.latest_model_run_init_utc) + ' UTC';
             setupHealthFreshness(healthData.model_freshness || []);
+            setupQMProvenance(healthData.qm_provenance || null);
         }
 
         function startShiftCountdown() {
@@ -1064,6 +1065,24 @@ function setupHealthFreshness(freshnessRows) {
         `;
         tbody.appendChild(tr);
     });
+}
+
+function setupQMProvenance(prov) {
+    const pct = prov?.percent_by_layer || {};
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = value;
+    };
+    const fmtPct = v => `${Number(v || 0).toFixed(1)}%`;
+    setText('qm-historical-prior', fmtPct(pct.historical_prior));
+    setText('qm-operational-residual', fmtPct(pct.operational_residual));
+    setText('qm-raw', fmtPct(pct.raw));
+    setText('qm-low-confidence', Number(prov?.low_confidence || 0).toLocaleString());
+
+    const note = document.getElementById('qm-provenance-note');
+    if (note && prov) {
+        note.innerText = `${Number(prov.lead_aware_pending || 0).toLocaleString()} values are using historical prior while lead-aware residual QM is still pending.`;
+    }
 }
 
 function setupIndividualModels(modelsData, timeLabels) {

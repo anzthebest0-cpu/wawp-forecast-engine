@@ -95,7 +95,7 @@ def fetch_model(model_name: str, model_id: str, forecast_days: int = 16) -> tupl
         "longitude": LONGITUDE,
         "hourly": ",".join(HOURLY_PARAMS),
         "models": model_id,
-        "forecast_days": forecast_days,
+        "forecast_hours": forecast_days * 24,
         "timezone": TIMEZONE,
         "wind_speed_unit": "kn",
         "precipitation_unit": "mm",
@@ -109,10 +109,11 @@ def fetch_model(model_name: str, model_id: str, forecast_days: int = 16) -> tupl
 
     scraped_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     generation = payload.get("generationtime_ms")
+    # Open-Meteo's forecast endpoint does not expose a true model initialization
+    # timestamp. Use the scrape hour as the operational archive reference so
+    # repeated live collections are retained and can later form lead-residual
+    # verification pairs.
     run_init_utc = scraped_at[:14] + "00:00"
-    if times:
-        first_valid_wita = pd.to_datetime(times[0])
-        run_init_utc = (first_valid_wita - pd.Timedelta(hours=WITA_OFFSET_HOURS)).strftime("%Y-%m-%d %H:%M:%S")
 
     dashboard_rows = []
     openmeteo_rows = []

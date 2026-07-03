@@ -9,7 +9,7 @@ import pandas as pd
 from src.db_manager import ForecastDB
 from src.advanced_ensemble_weighter import AdvancedEnsembleWeighter, MODELS, PARAMETERS
 from src.guidance_generator import generate_consensus
-from src.quantile_mapper import QuantileMapper, apply_multiparam_qm
+from src.quantile_mapper import QuantileMapper, apply_qm_with_layers
 from src.tafor_generator import generate_tafor
 
 log = logging.getLogger("exporter")
@@ -131,21 +131,33 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
     now = datetime.now(timezone.utc)
     model_filter = _model_placeholders()
     current_rows = pd.read_sql_query(f"""
+        WITH latest AS (
+            SELECT model, MAX(scraped_at) AS max_scraped
+            FROM openmeteo_forecasts
+            WHERE run_init_utc <> 'historical_forecast_api'
+              AND lead_hours >= 0
+              AND model IN ({model_filter})
+            GROUP BY model
+        )
         SELECT
-            model,
+            f.model,
             COUNT(*) AS row_count,
-            MAX(scraped_at) AS latest_scraped_at,
-            MAX(run_init_utc) AS latest_run_init_utc,
-            MIN(forecast_time) AS first_forecast_time,
-            MAX(forecast_time) AS last_forecast_time,
-            MIN(lead_hours) AS min_lead_hours,
-            MAX(lead_hours) AS max_lead_hours
-        FROM openmeteo_forecasts
-        WHERE run_init_utc <> 'historical_forecast_api'
-          AND model IN ({model_filter})
-        GROUP BY model
-        ORDER BY model
-    """, db.conn, params=_model_params())
+            MAX(f.scraped_at) AS latest_scraped_at,
+            MAX(f.run_init_utc) AS latest_run_init_utc,
+            MIN(f.forecast_time) AS first_forecast_time,
+            MAX(f.forecast_time) AS last_forecast_time,
+            MIN(f.lead_hours) AS min_lead_hours,
+            MAX(f.lead_hours) AS max_lead_hours
+        FROM openmeteo_forecasts f
+        INNER JOIN latest
+            ON f.model = latest.model
+           AND f.scraped_at = latest.max_scraped
+        WHERE f.run_init_utc <> 'historical_forecast_api'
+          AND f.model IN ({model_filter})
+          AND f.lead_hours >= 0
+        GROUP BY f.model
+        ORDER BY f.model
+    """, db.conn, params=_model_params(2))
 
     freshness = []
     for _, row in current_rows.iterrows():
@@ -176,7 +188,7 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
 
     historical_rows = pd.read_sql_query(f"""
         SELECT model, COUNT(*) AS row_count, MIN(forecast_time) AS first_time, MAX(forecast_time) AS last_time
-        FROM openmeteo_forecasts
+        FROM openmeteo_forecasts f
         WHERE run_init_utc = 'historical_forecast_api'
           AND model IN ({model_filter})
         GROUP BY model
@@ -187,42 +199,65 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
         row["row_count"] = int(row["row_count"])
 
     qm_rows = pd.read_sql_query(f"""
-        SELECT model, parameter, lead_bucket, n_samples, low_confidence
+        SELECT model, parameter, lead_bucket, n_samples, low_confidence,
+               COALESCE(source_type, 'unknown') AS source_type,
+               COALESCE(correction_layer, 'historical_prior') AS correction_layer,
+               COALESCE(regime, 'ALL') AS regime,
+               skill_score
         FROM qm_cdfs
         WHERE enabled = 1
+          AND COALESCE(deprecated, 0) = 0
           AND model IN ({model_filter})
         ORDER BY model, parameter, lead_bucket
     """, db.conn, params=_model_params())
     qm_by_parameter = {}
     qm_by_model = {}
+    qm_by_source = {}
+    qm_by_layer = {}
     low_confidence = []
     for _, row in qm_rows.iterrows():
         qm_by_parameter[row["parameter"]] = qm_by_parameter.get(row["parameter"], 0) + 1
         qm_by_model[row["model"]] = qm_by_model.get(row["model"], 0) + 1
+        qm_by_source[row["source_type"]] = qm_by_source.get(row["source_type"], 0) + 1
+        qm_by_layer[row["correction_layer"]] = qm_by_layer.get(row["correction_layer"], 0) + 1
         if int(row["low_confidence"] or 0):
             low_confidence.append({
                 "model": row["model"],
                 "parameter": row["parameter"],
                 "lead_bucket": row["lead_bucket"],
                 "n_samples": int(row["n_samples"]),
+                "source_type": row["source_type"],
+                "correction_layer": row["correction_layer"],
             })
 
     lead_rows = pd.read_sql_query(f"""
+        WITH latest AS (
+            SELECT model, MAX(scraped_at) AS max_scraped
+            FROM openmeteo_forecasts
+            WHERE run_init_utc <> 'historical_forecast_api'
+              AND lead_hours >= 0
+              AND model IN ({model_filter})
+            GROUP BY model
+        )
         SELECT
             CASE
-                WHEN lead_hours <= 6 THEN 'L1_0_6h'
-                WHEN lead_hours <= 12 THEN 'L2_6_12h'
-                WHEN lead_hours <= 24 THEN 'L3_12_24h'
-                WHEN lead_hours <= 48 THEN 'L4_24_48h'
+                WHEN f.lead_hours <= 6 THEN 'L1_0_6h'
+                WHEN f.lead_hours <= 12 THEN 'L2_6_12h'
+                WHEN f.lead_hours <= 24 THEN 'L3_12_24h'
+                WHEN f.lead_hours <= 48 THEN 'L4_24_48h'
                 ELSE 'L5_48plus'
             END AS lead_bucket,
             COUNT(*) AS row_count
-        FROM openmeteo_forecasts
-        WHERE run_init_utc <> 'historical_forecast_api'
-          AND model IN ({model_filter})
+        FROM openmeteo_forecasts f
+        INNER JOIN latest
+            ON f.model = latest.model
+           AND f.scraped_at = latest.max_scraped
+        WHERE f.run_init_utc <> 'historical_forecast_api'
+          AND f.model IN ({model_filter})
+          AND f.lead_hours >= 0
         GROUP BY lead_bucket
         ORDER BY lead_bucket
-    """, db.conn, params=_model_params())
+    """, db.conn, params=_model_params(2))
 
     lead_bucket_rows = lead_rows.to_dict(orient="records")
     for row in lead_bucket_rows:
@@ -259,8 +294,10 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
         "qm_calibration": {
             "enabled_by_parameter": qm_by_parameter,
             "enabled_by_model": qm_by_model,
+            "enabled_by_source": qm_by_source,
+            "enabled_by_layer": qm_by_layer,
             "low_confidence": low_confidence,
-            "note": "Historical Forecast API calibration is complete for the continuous historical stream. Lead-specific calibration will deepen as operational multi-run collection grows.",
+            "note": "Historical Forecast API calibration is used as a non-lead-aware historical prior. Operational multi-init data trains lead residuals when enough verified pairs exist.",
         },
     }
 
@@ -281,18 +318,35 @@ def export_all(db: ForecastDB, output_dir: str):
     db_size_bytes = os.path.getsize(db.conn.execute("PRAGMA database_list").fetchall()[0][2]) if os.path.exists('wawp_forecasts.db') else 0
     model_filter = _model_placeholders()
     forecast_count = db.conn.execute(
-        f"SELECT COUNT(*) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api' AND model IN ({model_filter})",
-        _model_params()
+        f"""
+        WITH latest AS (
+            SELECT model, MAX(scraped_at) AS max_scraped
+            FROM openmeteo_forecasts
+            WHERE run_init_utc <> 'historical_forecast_api'
+              AND lead_hours >= 0
+              AND model IN ({model_filter})
+            GROUP BY model
+        )
+        SELECT COUNT(*)
+        FROM openmeteo_forecasts f
+        INNER JOIN latest
+            ON f.model = latest.model
+           AND f.scraped_at = latest.max_scraped
+        WHERE f.run_init_utc <> 'historical_forecast_api'
+          AND f.lead_hours >= 0
+          AND f.model IN ({model_filter})
+        """,
+        _model_params(2)
     ).fetchone()[0]
     obs_count = db.conn.execute("SELECT COUNT(*) FROM awos_observations").fetchone()[0]
     obs_1min_count = db.conn.execute("SELECT COUNT(*) FROM awos_observations_1min").fetchone()[0]
     openmeteo_count = db.conn.execute("SELECT COUNT(*) FROM openmeteo_forecasts").fetchone()[0]
     qm_cdf_count = db.conn.execute(
-        f"SELECT COUNT(*) FROM qm_cdfs WHERE enabled=1 AND model IN ({model_filter})",
+        f"SELECT COUNT(*) FROM qm_cdfs WHERE enabled=1 AND COALESCE(deprecated,0)=0 AND model IN ({model_filter})",
         _model_params()
     ).fetchone()[0]
     latest_model_run_init = db.conn.execute(
-        f"SELECT MAX(run_init_utc) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api' AND model IN ({model_filter})",
+        f"SELECT MAX(run_init_utc) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api' AND lead_hours >= 0 AND model IN ({model_filter})",
         _model_params()
     ).fetchone()[0]
     db_health = {
@@ -430,7 +484,7 @@ def export_all(db: ForecastDB, output_dir: str):
     # Wait, guidance_generator expects model_data in memory. 
     # run_pipeline currently passes nothing to export_all! We need to fetch the latest forecast.
     
-    query_latest = f"SELECT MAX(scraped_at) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api' AND model IN ({model_filter})"
+    query_latest = f"SELECT MAX(scraped_at) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api' AND lead_hours >= 0 AND model IN ({model_filter})"
     latest_time_df = pd.read_sql_query(query_latest, db.conn, params=_model_params())
     latest_time = latest_time_df.iloc[0, 0]
     
@@ -452,11 +506,13 @@ def export_all(db: ForecastDB, output_dir: str):
             SELECT model, MAX(scraped_at) as max_scraped
             FROM openmeteo_forecasts
             WHERE run_init_utc <> 'historical_forecast_api'
+              AND lead_hours >= 0
               AND model IN ({model_filter})
             GROUP BY model
         ) latest
         ON m.model = latest.model AND m.scraped_at = latest.max_scraped
         WHERE m.run_init_utc <> 'historical_forecast_api'
+          AND m.lead_hours >= 0
           AND m.model IN ({model_filter})
     """
     df_fcst = pd.read_sql_query(query_fcst, db.conn, params=_model_params(2))
@@ -470,6 +526,10 @@ def export_all(db: ForecastDB, output_dir: str):
         for m in active_models:
             m_df = df_fcst[df_fcst["model"] == m].dropna(subset=['run_init_utc'])
             run_init_by_model[m] = str(m_df['run_init_utc'].max()) if not m_df.empty else None
+    record_id_by_model_time = {}
+    if "id" in df_fcst.columns:
+        for _, row in df_fcst.iterrows():
+            record_id_by_model_time[(row["model"], str(row["forecast_time"]))] = int(row["id"])
     
     model_data = {param: {} for param in ["Temperature", "Dewpoint", "Pressure", "Rainfall", "Wind Speed", "Wind Dir.", "Wind Gust", "Precip Probability", "Sunshine", "Low Clouds", "Mid Clouds", "High Clouds", "Condition", "CAPE", "Lifted Index", "Convective Inhibition", "Weather Code"]}
     
@@ -507,6 +567,14 @@ def export_all(db: ForecastDB, output_dir: str):
     
     consensus = pd.DataFrame(index=pd.to_datetime(df_fcst["forecast_time"].unique()).sort_values())
     consensus.index.name = "Datetime"
+    pipeline_run_id = latest_time or datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    qm_provenance = {
+        "total_values": 0,
+        "by_layer": {"historical_prior": 0, "operational_residual": 0, "raw": 0},
+        "by_parameter": {},
+        "low_confidence": 0,
+        "lead_aware_pending": 0,
+    }
     
     for param in model_data.keys():
         if param == "Condition":
@@ -534,10 +602,38 @@ def export_all(db: ForecastDB, output_dir: str):
                     lead_hours = (p_df.index - (pd.to_datetime(run_init) + pd.Timedelta(hours=8))).total_seconds() / 3600.0
                 else:
                     lead_hours = [0.0] * len(p_df)
-                p_df[m] = [
-                    apply_multiparam_qm(v, m, qm_param_map[param], lh, conn=db.conn)
-                    for v, lh in zip(p_df[m].values, lead_hours)
-                ]
+                corrected_values = []
+                for ts, v, lh in zip(p_df.index, p_df[m].values, lead_hours):
+                    correction = apply_qm_with_layers(v, m, qm_param_map[param], lh, conn=db.conn)
+                    corrected_values.append(correction["final_value"])
+                    layer = correction["correction_layer_used"]
+                    qm_provenance["total_values"] += 1
+                    qm_provenance["by_layer"][layer] = qm_provenance["by_layer"].get(layer, 0) + 1
+                    qm_provenance["by_parameter"].setdefault(param, {"historical_prior": 0, "operational_residual": 0, "raw": 0})
+                    qm_provenance["by_parameter"][param][layer] = qm_provenance["by_parameter"][param].get(layer, 0) + 1
+                    if correction.get("low_confidence"):
+                        qm_provenance["low_confidence"] += 1
+                    if layer == "historical_prior" and float(lh or 0.0) > 6.0:
+                        qm_provenance["lead_aware_pending"] += 1
+                    record_id = record_id_by_model_time.get((m, ts.strftime("%Y-%m-%d %H:%M:%S")))
+                    if record_id is not None:
+                        db.conn.execute("""
+                            INSERT OR IGNORE INTO qm_corrections_applied (
+                                forecast_record_id, model, parameter, valid_time, lead_hours,
+                                raw_value, historical_prior_value, operational_residual_value,
+                                final_corrected_value, historical_qm_id, operational_qm_id,
+                                correction_layer_used, applied_at, pipeline_run_id
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (
+                            record_id, m, qm_param_map[param], ts.strftime("%Y-%m-%d %H:%M:%S"), float(lh or 0.0),
+                            None if pd.isna(correction["raw_value"]) else float(correction["raw_value"]),
+                            None if pd.isna(correction["historical_prior_value"]) else float(correction["historical_prior_value"]),
+                            None if correction["operational_residual_value"] is None or pd.isna(correction["operational_residual_value"]) else float(correction["operational_residual_value"]),
+                            None if pd.isna(correction["final_value"]) else float(correction["final_value"]),
+                            correction["historical_qm_id"], correction["operational_qm_id"],
+                            layer, datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"), pipeline_run_id,
+                        ))
+                p_df[m] = corrected_values
         elif param == "Rainfall":
             for m in p_df.columns:
                 p_df[m] = qm_mapper.transform_series(p_df[m], model=m)
@@ -597,7 +693,19 @@ def export_all(db: ForecastDB, output_dir: str):
                 if not row.dropna().empty else np.nan,
                 axis=1
             )
-            
+    db.conn.commit()
+
+    if qm_provenance["total_values"] > 0:
+        qm_provenance["percent_by_layer"] = {
+            k: round(100.0 * v / qm_provenance["total_values"], 2)
+            for k, v in qm_provenance["by_layer"].items()
+        }
+    else:
+        qm_provenance["percent_by_layer"] = {}
+    db_health["qm_provenance"] = qm_provenance
+    with open(os.path.join(output_dir, "db_health.json"), "w") as f:
+        json.dump(db_health, f, indent=2)
+
     consensus = consensus.reset_index()
     consensus = consensus.rename(columns={"Wind Speed": "Wind", "Rainfall": "Rain"})
     
@@ -639,7 +747,8 @@ def export_all(db: ForecastDB, output_dir: str):
             "latest_model_run_init_utc": latest_model_run_init,
             "forecast_run_label_utc": latest_model_run_init,
             "version": "v200",
-            "location": "Bandara_Sangia_Ni_Bandera"
+            "location": "Bandara_Sangia_Ni_Bandera",
+            "qm_provenance": qm_provenance
         },
         "data": guidance_data.to_dict(orient="records")
     }

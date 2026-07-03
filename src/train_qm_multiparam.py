@@ -23,17 +23,22 @@ def train_all(db_path: str, output_dir: str) -> dict:
         trained = fit_multiparam_qm_to_db(conn, log_fn=log.warning)
         low_conf = []
         rows = conn.execute("""
-            SELECT model, parameter, lead_bucket, n_samples
+            SELECT model, parameter, lead_bucket, n_samples,
+                   COALESCE(source_type, 'unknown') AS source_type,
+                   COALESCE(correction_layer, 'historical_prior') AS correction_layer
             FROM qm_cdfs
             WHERE low_confidence = 1 AND enabled = 1
+              AND COALESCE(deprecated, 0) = 0
             ORDER BY model, parameter, lead_bucket
         """).fetchall()
-        for model, parameter, lead_bucket, n_samples in rows:
+        for model, parameter, lead_bucket, n_samples, source_type, correction_layer in rows:
             low_conf.append({
                 "model": model,
                 "parameter": parameter,
                 "lead_bucket": lead_bucket,
                 "n_samples": n_samples,
+                "source_type": source_type,
+                "correction_layer": correction_layer,
             })
 
     os.makedirs(output_dir, exist_ok=True)

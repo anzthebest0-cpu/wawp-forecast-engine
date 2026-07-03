@@ -444,6 +444,31 @@
                     </table>
                 </div>
             </div>
+
+            <div class="panel" style="margin-top: 20px;">
+                <h3>QM Provenance</h3>
+                <div class="param-grid" id="qm-provenance-grid">
+                    <div class="param-card">
+                        <div class="param-label">Historical Prior</div>
+                        <div class="param-value" id="qm-historical-prior">--</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Operational Residual</div>
+                        <div class="param-value" id="qm-operational-residual">--</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Raw / No Correction</div>
+                        <div class="param-value" id="qm-raw">--</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Low Confidence</div>
+                        <div class="param-value" id="qm-low-confidence">--</div>
+                    </div>
+                </div>
+                <p id="qm-provenance-note" style="color: var(--text-secondary); margin-top: 15px; font-size: 0.9em;">
+                    Historical prior is not lead-aware. Operational residuals will appear after verified multi-init pairs accumulate.
+                </p>
+            </div>
         </section>
 
         <!-- Tab 9: Live Verification -->

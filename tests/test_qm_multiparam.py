@@ -32,6 +32,7 @@ def test_fit_qm_circular_wraps_direction():
     obs = np.array([10, 15, 20, 25, 30], dtype=float)
     qm = _fit_qm_circular(fcst, obs)
     assert qm
+    assert qm["method"] == "circular_offset"
     corrected = apply_qm_value(350, "wind_dir", qm)
     assert 0 <= corrected < 360
 
@@ -74,4 +75,4 @@ def test_fit_multiparam_qm_to_db_synthetic():
         ))
     conn.executemany("INSERT INTO qm_training_pairs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
     trained = fit_multiparam_qm_to_db(conn, log_fn=lambda *_: None)
-    assert trained["ECMWF_HRES"]["temperature"]["L1_0_6h"]["enabled"] is True
+    assert trained["ECMWF_HRES"]["temperature"]["L1_0_6h_operational_residual"]["enabled"] is True

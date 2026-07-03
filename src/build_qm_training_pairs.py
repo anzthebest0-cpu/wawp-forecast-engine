@@ -25,6 +25,20 @@ def build_training_pairs(db) -> int:
             f.forecast_time AS valid_time,
             f.lead_hours,
             CASE
+                WHEN f.run_init_utc = 'historical_forecast_api' THEN 'continuous_historical'
+                ELSE 'operational_multiinit'
+            END AS source_type,
+            CASE
+                WHEN f.run_init_utc = 'historical_forecast_api' THEN 'historical_prior'
+                ELSE 'operational_residual'
+            END AS correction_layer,
+            CASE
+                WHEN CAST(strftime('%H', f.forecast_time) AS INTEGER) BETWEEN 6 AND 11 THEN 'morning_06_11'
+                WHEN CAST(strftime('%H', f.forecast_time) AS INTEGER) BETWEEN 12 AND 19 THEN 'convective_12_19'
+                ELSE 'night_20_05'
+            END AS regime,
+            CASE
+                WHEN f.run_init_utc = 'historical_forecast_api' THEN 'GLOBAL'
                 WHEN f.lead_hours <= 6 THEN 'L1_0_6h'
                 WHEN f.lead_hours <= 12 THEN 'L2_6_12h'
                 WHEN f.lead_hours <= 24 THEN 'L3_12_24h'
@@ -32,6 +46,7 @@ def build_training_pairs(db) -> int:
                 ELSE 'L5_48plus'
             END AS lead_bucket,
             CASE
+                WHEN f.run_init_utc = 'historical_forecast_api' THEN 'GLOBAL'
                 WHEN f.lead_hours <= 6 THEN 'L1_0_6h'
                 WHEN f.lead_hours <= 18 THEN 'L2_6_18h'
                 ELSE 'L3_18h_plus'
@@ -56,6 +71,7 @@ def build_training_pairs(db) -> int:
             AND f.location = o.location
         WHERE o.temperature IS NOT NULL
           AND f.model IN ({model_filter})
+          AND (f.run_init_utc = 'historical_forecast_api' OR f.lead_hours >= 0)
         ORDER BY f.model, f.run_init_utc, f.forecast_time
     """, tuple(MODELS))
     n = db.conn.execute("SELECT COUNT(*) FROM qm_training_pairs_candidate").fetchone()[0]
