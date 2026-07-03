@@ -21,7 +21,9 @@ async function loadDashboard() {
         const perf = results[2].status === 'fulfilled' ? results[2].value : null;
         const guidanceJson = results[3].status === 'fulfilled' ? results[3].value : {data: []};
         const data = guidanceJson.data || [];
-        const generatedAt = guidanceJson.metadata ? guidanceJson.metadata.generated_at : (intel.valid_start || "Unknown");
+        const generatedAt = guidanceJson.metadata
+            ? (guidanceJson.metadata.latest_model_run_init_utc || guidanceJson.metadata.generated_at)
+            : (intel.valid_start || "Unknown");
 
         // Filter data to only show current and future hours
         const now = new Date();
@@ -46,7 +48,8 @@ async function loadDashboard() {
             if (fcElem) fcElem.innerText = healthData.forecast_records.toLocaleString();
             if (obsElem) obsElem.innerText = healthData.observation_records.toLocaleString();
             if (sizeElem) sizeElem.innerText = healthData.size_mb + ' MB';
-            if (syncElem) syncElem.innerText = healthData.last_sync_utc + ' UTC';
+            if (syncElem) syncElem.innerText = (healthData.latest_model_run_init_utc || healthData.last_sync_utc) + ' UTC';
+            setupHealthFreshness(healthData.model_freshness || []);
         }
 
         function startShiftCountdown() {
@@ -96,7 +99,7 @@ async function loadDashboard() {
             let maxProb = 0;
             let peakTime = "";
             renderData.forEach(d => {
-                let prob = d['Prob Precip 10.0mm'] || 0;
+                let prob = d['Precip Probability'] || d['Prob Precip 1.0mm'] || 0;
                 if(prob > maxProb) {
                     maxProb = prob;
                     peakTime = d.Datetime.substring(11, 16);
@@ -250,8 +253,7 @@ async function loadDashboard() {
                 <td>${Number(d['Wind Dir.'] || 0).toFixed(0)}°</td>
                 <td style="color: #10b981">${Number(d.Wind).toFixed(1)}</td>
                 <td style="color: #0ea5e9">${Number(d.Rain).toFixed(1)}</td>
-                <td>${Number(d['Prob Precip 1.0mm'] || 0) > 0 ? Number(d['Prob Precip 1.0mm']).toFixed(1) + '%' : '-'}</td>
-                <td>${Number(d['Prob Precip 10.0mm'] || 0) > 0 ? Number(d['Prob Precip 10.0mm']).toFixed(1) + '%' : '-'}</td>
+                <td>${Number(d['Precip Probability'] || d['Prob Precip 1.0mm'] || 0) > 0 ? Number(d['Precip Probability'] || d['Prob Precip 1.0mm']).toFixed(1) + '%' : '-'}</td>
                 <td>${d.Condition || '-'}</td>
             `;
             tbody.appendChild(tr);
@@ -266,7 +268,9 @@ async function loadDashboard() {
         // 6. Regional & Climatology
         setupRegionalCharts();
         if (diurnalData) setupDiurnalClimatology(diurnalData);
-        if (workflowData) setupSystemWorkflow(workflowData);
+        if (workflowData && (!healthData || !(healthData.model_freshness || []).length)) {
+            setupHealthFreshness(workflowData.model_freshness || []);
+        }
         
         // 7. Verification & Persistency
         const persData = results[7].status === 'fulfilled' ? results[7].value : null;
@@ -984,75 +988,24 @@ function setupDiurnalClimatology(clim) {
     }
 }
 
-function setupSystemWorkflow(workflow) {
-    if(!workflow || !workflow.summary) return;
+function setupHealthFreshness(freshnessRows) {
     const fmtInt = v => Number(v || 0).toLocaleString();
-    const setText = (id, value) => {
-        const el = document.getElementById(id);
-        if (el) el.innerText = value;
-    };
-
-    setText('workflow-generated', `Generated ${workflow.metadata?.generated_at || '--'} UTC`);
-    setText('wf-current-rows', fmtInt(workflow.summary.current_forecast_rows));
-    setText('wf-openmeteo-rows', fmtInt(workflow.summary.openmeteo_rows_total));
-    setText('wf-awos-hourly', fmtInt(workflow.summary.awos_hourly_rows));
-    setText('wf-qm-cdfs', fmtInt(workflow.summary.qm_cdfs_enabled));
-
-    const stagesEl = document.getElementById('workflow-stages');
-    if (stagesEl) {
-        stagesEl.innerHTML = (workflow.pipeline_stages || []).map((s, idx) => `
-            <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:10px;">
-                <div style="font-family:var(--font-mono); color:var(--cyan); min-width:28px;">${String(idx + 1).padStart(2, '0')}</div>
-                <div><strong>${s.name}</strong><br><span style="color:var(--text-secondary);">${s.output}</span></div>
-            </div>
-        `).join('');
-    }
-
-    const tbody = document.querySelector('#workflow-freshness-table tbody');
-    if (tbody) {
-        tbody.innerHTML = '';
-        (workflow.model_freshness || []).forEach(row => {
-            const color = row.status === 'fresh' ? 'var(--green)' : (row.status === 'aging' ? 'var(--amber)' : 'var(--crimson)');
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${row.model}</td>
-                <td>${row.latest_run_init_utc || '-'}</td>
-                <td>${row.latest_scraped_at || '-'}</td>
-                <td>${row.age_hours === null ? '-' : Number(row.age_hours).toFixed(1) + ' h'}</td>
-                <td>${fmtInt(row.row_count)}</td>
-                <td>${row.min_lead_hours ?? '-'}-${row.max_lead_hours ?? '-'} h</td>
-                <td style="color:${color}; font-weight:700;">${row.status}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    const renderChart = (selector, options) => {
-        const el = document.querySelector(selector);
-        if (!el) return;
-        el.innerHTML = '';
-        new ApexCharts(el, options).render();
-    };
-    const leadRows = workflow.lead_bucket_rows_current || [];
-    renderChart('#workflow-lead-chart', {
-        series: [{ name: 'Rows', data: leadRows.map(r => r.row_count) }],
-        chart: { type: 'bar', height: 320, background: 'transparent', toolbar: { show: false } },
-        xaxis: { categories: leadRows.map(r => r.lead_bucket), labels: { style: { colors: '#94a3b8' } } },
-        yaxis: { labels: { style: { colors: '#94a3b8' } } },
-        colors: ['#0ea5e9'],
-        dataLabels: { enabled: false },
-        theme: { mode: 'dark' }
-    });
-
-    const qmEntries = Object.entries(workflow.qm_calibration?.enabled_by_parameter || {});
-    renderChart('#workflow-qm-chart', {
-        series: [{ name: 'Enabled CDFs', data: qmEntries.map(([, v]) => v) }],
-        chart: { type: 'bar', height: 320, background: 'transparent', toolbar: { show: false } },
-        xaxis: { categories: qmEntries.map(([k]) => k), labels: { style: { colors: '#94a3b8' } } },
-        yaxis: { labels: { style: { colors: '#94a3b8' } } },
-        colors: ['#10b981'],
-        dataLabels: { enabled: true },
-        theme: { mode: 'dark' }
+    const tbody = document.querySelector('#health-freshness-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    (freshnessRows || []).forEach(row => {
+        const color = row.status === 'fresh' ? 'var(--green)' : (row.status === 'aging' ? 'var(--amber)' : 'var(--crimson)');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${row.model}</td>
+            <td>${row.latest_run_init_utc || '-'}</td>
+            <td>${row.latest_scraped_at || '-'}</td>
+            <td>${row.age_hours === null ? '-' : Number(row.age_hours).toFixed(1) + ' h'}</td>
+            <td>${fmtInt(row.row_count)}</td>
+            <td>${row.min_lead_hours ?? '-'}-${row.max_lead_hours ?? '-'} h</td>
+            <td style="color:${color}; font-weight:700;">${row.status}</td>
+        `;
+        tbody.appendChild(tr);
     });
 }
 
@@ -1094,8 +1047,7 @@ function setupIndividualModels(modelsData, timeLabels) {
             const windSpd = modelsData['Wind Speed']?.[modelName]?.[dt];
             const gust = modelsData['Wind Gust']?.[modelName]?.[dt];
             const rain = modelsData['Rainfall']?.[modelName]?.[dt];
-            const probRain = modelsData['Prob Precip 1.0mm']?.[modelName]?.[dt];
-            const probRain10 = modelsData['Prob Precip 10.0mm']?.[modelName]?.[dt];
+            const probRain = modelsData['Precip Probability']?.[modelName]?.[dt] ?? modelsData['Prob Precip 1.0mm']?.[modelName]?.[dt];
             
             if(temp !== undefined) {
                 const tr = document.createElement('tr');
@@ -1109,7 +1061,6 @@ function setupIndividualModels(modelsData, timeLabels) {
                     <td style="color: #f59e0b">${gust !== undefined ? Number(gust).toFixed(1) : '-'}</td>
                     <td style="color: #6366f1">${rain !== undefined ? Number(rain).toFixed(1) : '-'}</td>
                     <td>${probRain !== undefined && probRain > 0 ? Number(probRain).toFixed(1) + '%' : '-'}</td>
-                    <td>${probRain10 !== undefined && probRain10 > 0 ? Number(probRain10).toFixed(1) + '%' : '-'}</td>
                 `;
                 tbody.appendChild(tr);
             }

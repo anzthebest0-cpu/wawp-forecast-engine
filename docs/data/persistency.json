@@ -5,7 +5,7 @@
     "dewpoint": 22.4,
     "wind_dir": 150.0,
     "wind_speed": 3.0,
-    "rain_1h": 15.0
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 10:00:00",
@@ -13,7 +13,7 @@
     "dewpoint": 22.4,
     "wind_dir": 141.0,
     "wind_speed": 3.0,
-    "rain_1h": 14.5
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 11:00:00",
@@ -21,7 +21,7 @@
     "dewpoint": 22.4,
     "wind_dir": 95.0,
     "wind_speed": 3.0,
-    "rain_1h": 10.2
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 12:00:00",
@@ -29,7 +29,7 @@
     "dewpoint": 22.7,
     "wind_dir": 214.0,
     "wind_speed": 2.0,
-    "rain_1h": 17.1
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 13:00:00",
@@ -37,7 +37,7 @@
     "dewpoint": 23.1,
     "wind_dir": 164.0,
     "wind_speed": 1.0,
-    "rain_1h": 17.4
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 14:00:00",
@@ -45,7 +45,7 @@
     "dewpoint": 23.0,
     "wind_dir": 360.0,
     "wind_speed": 0.0,
-    "rain_1h": 36.0
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 15:00:00",
@@ -53,7 +53,7 @@
     "dewpoint": 22.5,
     "wind_dir": 151.0,
     "wind_speed": 2.0,
-    "rain_1h": 14.8
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 16:00:00",
@@ -61,7 +61,7 @@
     "dewpoint": 22.4,
     "wind_dir": 360.0,
     "wind_speed": 1.0,
-    "rain_1h": 17.1
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 17:00:00",
@@ -69,7 +69,7 @@
     "dewpoint": 22.7,
     "wind_dir": 360.0,
     "wind_speed": 0.0,
-    "rain_1h": 36.0
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 18:00:00",
@@ -77,7 +77,7 @@
     "dewpoint": 22.1,
     "wind_dir": 124.0,
     "wind_speed": 3.0,
-    "rain_1h": 15.9
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 19:00:00",
@@ -85,7 +85,7 @@
     "dewpoint": 21.8,
     "wind_dir": 360.0,
     "wind_speed": 1.0,
-    "rain_1h": 36.0
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 20:00:00",
@@ -93,7 +93,7 @@
     "dewpoint": 21.3,
     "wind_dir": 179.0,
     "wind_speed": 2.0,
-    "rain_1h": 15.0
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 21:00:00",
@@ -101,7 +101,7 @@
     "dewpoint": 21.1,
     "wind_dir": 160.0,
     "wind_speed": 2.0,
-    "rain_1h": 36.0
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 22:00:00",
@@ -109,7 +109,7 @@
     "dewpoint": 20.9,
     "wind_dir": 149.0,
     "wind_speed": 2.0,
-    "rain_1h": 14.8
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-28 23:00:00",
@@ -117,7 +117,7 @@
     "dewpoint": 21.3,
     "wind_dir": 360.0,
     "wind_speed": 1.0,
-    "rain_1h": 19.0
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 00:00:00",
@@ -125,7 +125,7 @@
     "dewpoint": 22.1,
     "wind_dir": 360.0,
     "wind_speed": 1.0,
-    "rain_1h": 36.0
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 01:00:00",
@@ -133,7 +133,7 @@
     "dewpoint": 22.1,
     "wind_dir": 97.0,
     "wind_speed": 5.0,
-    "rain_1h": 6.9
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 02:00:00",
@@ -141,7 +141,7 @@
     "dewpoint": 21.6,
     "wind_dir": 110.0,
     "wind_speed": 5.0,
-    "rain_1h": 10.8
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 03:00:00",
@@ -149,7 +149,7 @@
     "dewpoint": 22.0,
     "wind_dir": 293.0,
     "wind_speed": 3.0,
-    "rain_1h": 14.1
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 04:00:00",
@@ -157,7 +157,7 @@
     "dewpoint": 22.9,
     "wind_dir": 285.0,
     "wind_speed": 6.0,
-    "rain_1h": 28.6
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 05:00:00",
@@ -165,7 +165,7 @@
     "dewpoint": 23.3,
     "wind_dir": 232.0,
     "wind_speed": 8.0,
-    "rain_1h": 26.9
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 06:00:00",
@@ -173,7 +173,7 @@
     "dewpoint": 23.9,
     "wind_dir": 232.0,
     "wind_speed": 8.0,
-    "rain_1h": 23.3
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 07:00:00",
@@ -181,7 +181,7 @@
     "dewpoint": 23.9,
     "wind_dir": 225.0,
     "wind_speed": 8.0,
-    "rain_1h": 22.5
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 08:00:00",
@@ -189,7 +189,7 @@
     "dewpoint": 23.3,
     "wind_dir": 230.0,
     "wind_speed": 7.0,
-    "rain_1h": 22.3
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 09:00:00",
@@ -197,7 +197,7 @@
     "dewpoint": 23.5,
     "wind_dir": 211.0,
     "wind_speed": 5.0,
-    "rain_1h": 22.2
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 10:00:00",
@@ -205,7 +205,7 @@
     "dewpoint": 23.4,
     "wind_dir": 132.0,
     "wind_speed": 3.0,
-    "rain_1h": 17.5
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 11:00:00",
@@ -213,7 +213,7 @@
     "dewpoint": 22.1,
     "wind_dir": 108.0,
     "wind_speed": 3.0,
-    "rain_1h": 12.6
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 12:00:00",
@@ -221,7 +221,7 @@
     "dewpoint": 22.6,
     "wind_dir": 111.0,
     "wind_speed": 2.0,
-    "rain_1h": 13.6
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 13:00:00",
@@ -229,7 +229,7 @@
     "dewpoint": 22.5,
     "wind_dir": 115.0,
     "wind_speed": 3.0,
-    "rain_1h": 10.2
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 14:00:00",
@@ -237,7 +237,7 @@
     "dewpoint": 22.3,
     "wind_dir": 80.0,
     "wind_speed": 4.0,
-    "rain_1h": 8.5
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 15:00:00",
@@ -245,7 +245,7 @@
     "dewpoint": 22.1,
     "wind_dir": 166.0,
     "wind_speed": 2.0,
-    "rain_1h": 10.4
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 16:00:00",
@@ -253,7 +253,7 @@
     "dewpoint": 21.8,
     "wind_dir": 360.0,
     "wind_speed": 1.0,
-    "rain_1h": 9.8
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 17:00:00",
@@ -261,7 +261,7 @@
     "dewpoint": 21.6,
     "wind_dir": 144.0,
     "wind_speed": 2.0,
-    "rain_1h": 16.7
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 18:00:00",
@@ -269,7 +269,7 @@
     "dewpoint": 21.1,
     "wind_dir": 139.0,
     "wind_speed": 3.0,
-    "rain_1h": 13.0
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 19:00:00",
@@ -277,7 +277,7 @@
     "dewpoint": 21.0,
     "wind_dir": 126.0,
     "wind_speed": 3.0,
-    "rain_1h": 11.6
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 20:00:00",
@@ -285,7 +285,7 @@
     "dewpoint": 20.9,
     "wind_dir": 102.0,
     "wind_speed": 3.0,
-    "rain_1h": 10.4
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 21:00:00",
@@ -293,7 +293,7 @@
     "dewpoint": 20.7,
     "wind_dir": 119.0,
     "wind_speed": 2.0,
-    "rain_1h": 12.3
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 22:00:00",
@@ -301,7 +301,7 @@
     "dewpoint": 20.6,
     "wind_dir": 116.0,
     "wind_speed": 3.0,
-    "rain_1h": 9.9
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-29 23:00:00",
@@ -309,7 +309,7 @@
     "dewpoint": 21.0,
     "wind_dir": 91.0,
     "wind_speed": 1.0,
-    "rain_1h": 3.8
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-30 00:00:00",
@@ -317,7 +317,7 @@
     "dewpoint": 21.2,
     "wind_dir": 113.0,
     "wind_speed": 4.0,
-    "rain_1h": 9.7
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-30 01:00:00",
@@ -325,7 +325,7 @@
     "dewpoint": 21.1,
     "wind_dir": 100.0,
     "wind_speed": 5.0,
-    "rain_1h": 10.8
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-30 02:00:00",
@@ -333,7 +333,7 @@
     "dewpoint": 21.2,
     "wind_dir": 118.0,
     "wind_speed": 7.0,
-    "rain_1h": 11.3
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-30 03:00:00",
@@ -341,7 +341,7 @@
     "dewpoint": 21.3,
     "wind_dir": 110.0,
     "wind_speed": 6.0,
-    "rain_1h": 12.1
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-30 04:00:00",
@@ -349,7 +349,7 @@
     "dewpoint": 21.4,
     "wind_dir": 132.0,
     "wind_speed": 4.0,
-    "rain_1h": 12.0
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-30 05:00:00",
@@ -357,7 +357,7 @@
     "dewpoint": 22.4,
     "wind_dir": 164.0,
     "wind_speed": 5.0,
-    "rain_1h": 15.9
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-30 06:00:00",
@@ -365,7 +365,7 @@
     "dewpoint": 22.3,
     "wind_dir": 168.0,
     "wind_speed": 4.0,
-    "rain_1h": 16.4
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-30 07:00:00",
@@ -373,7 +373,7 @@
     "dewpoint": 22.3,
     "wind_dir": 147.0,
     "wind_speed": 3.0,
-    "rain_1h": 15.2
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-30 08:00:00",
@@ -381,7 +381,7 @@
     "dewpoint": 24.5,
     "wind_dir": 298.0,
     "wind_speed": 6.0,
-    "rain_1h": 29.9
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-30 09:00:00",
@@ -389,7 +389,7 @@
     "dewpoint": 24.4,
     "wind_dir": 312.0,
     "wind_speed": 6.0,
-    "rain_1h": 30.8
+    "rain_1h": 0.0
   },
   {
     "Datetime": "2026-06-30 10:00:00",
@@ -397,6 +397,6 @@
     "dewpoint": 24.1,
     "wind_dir": 319.0,
     "wind_speed": 4.0,
-    "rain_1h": 31.4
+    "rain_1h": 0.0
   }
 ]

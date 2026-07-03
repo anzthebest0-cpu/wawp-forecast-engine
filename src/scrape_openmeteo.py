@@ -30,8 +30,11 @@ HOURLY_PARAMS = [
     "relative_humidity_2m",
     "dew_point_2m",
     "pressure_msl",
+    "precipitation_probability",
+    "precipitation",
     "rain",
     "showers",
+    "snowfall",
     "wind_speed_10m",
     "wind_gusts_10m",
     "wind_direction_10m",
@@ -125,7 +128,10 @@ def fetch_model(model_name: str, model_id: str, forecast_days: int = 16) -> tupl
 
         rain = h("rain", 0.0) or 0.0
         showers = h("showers", 0.0) or 0.0
-        total_rain = float(rain) + float(showers)
+        snowfall = h("snowfall", 0.0) or 0.0
+        precipitation = h("precipitation")
+        total_rain = float(precipitation) if precipitation is not None else float(rain) + float(showers) + float(snowfall)
+        precip_prob = h("precipitation_probability")
         om = {
             "location": LOCATION_NAME,
             "model": model_name,
@@ -138,7 +144,9 @@ def fetch_model(model_name: str, model_id: str, forecast_days: int = 16) -> tupl
             "humidity": h("relative_humidity_2m"),
             "pressure_msl": h("pressure_msl"),
             "rain": total_rain,
+            "precipitation": precipitation,
             "showers": showers,
+            "snowfall": snowfall,
             "wind_speed": h("wind_speed_10m"),
             "wind_gust": h("wind_gusts_10m"),
             "wind_dir": h("wind_direction_10m"),
@@ -152,6 +160,7 @@ def fetch_model(model_name: str, model_id: str, forecast_days: int = 16) -> tupl
             "lifted_index": h("lifted_index"),
             "convective_inhib": h("convective_inhibition"),
             "boundary_layer_h": h("boundary_layer_height"),
+            "precipitation_probability": precip_prob,
         }
         openmeteo_rows.append(om)
         dashboard_rows.append({
@@ -165,8 +174,8 @@ def fetch_model(model_name: str, model_id: str, forecast_days: int = 16) -> tupl
             "Humidity": om["humidity"],
             "Pressure": om["pressure_msl"],
             "Rain": total_rain,
-            "Prob_Precip_0.1": None,
-            "Prob_Precip_1.0": None,
+            "Prob_Precip_0.1": precip_prob,
+            "Prob_Precip_1.0": precip_prob,
             "Prob_Precip_10.0": None,
             "Wind": om["wind_speed"],
             "Gust": om["wind_gust"],

@@ -145,6 +145,8 @@ def _rows_from_payload(model_name: str, payload: dict) -> list[dict]:
         rain = h("rain", idx, 0.0) or 0.0
         showers = h("showers", idx, 0.0) or 0.0
         precipitation = h("precipitation", idx, None)
+        snowfall = h("snowfall", idx, 0.0) or 0.0
+        total_rain = float(precipitation) if precipitation is not None else float(rain) + float(showers) + float(snowfall)
         rows.append({
             "location": LOCATION_NAME,
             "model": model_name,
@@ -156,10 +158,10 @@ def _rows_from_payload(model_name: str, payload: dict) -> list[dict]:
             "dewpoint": h("dew_point_2m", idx),
             "humidity": h("relative_humidity_2m", idx),
             "pressure_msl": h("pressure_msl", idx),
-            "rain": float(rain) + float(showers),
+            "rain": total_rain,
             "precipitation": precipitation,
             "showers": showers,
-            "snowfall": h("snowfall", idx, 0.0),
+            "snowfall": snowfall,
             "wind_speed": h("wind_speed_10m", idx),
             "wind_gust": h("wind_gusts_10m", idx),
             "wind_dir": h("wind_direction_10m", idx),

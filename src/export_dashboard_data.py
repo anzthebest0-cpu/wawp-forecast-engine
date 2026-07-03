@@ -273,6 +273,9 @@ def export_all(db: ForecastDB, output_dir: str):
     obs_1min_count = db.conn.execute("SELECT COUNT(*) FROM awos_observations_1min").fetchone()[0]
     openmeteo_count = db.conn.execute("SELECT COUNT(*) FROM openmeteo_forecasts").fetchone()[0]
     qm_cdf_count = db.conn.execute("SELECT COUNT(*) FROM qm_cdfs WHERE enabled=1").fetchone()[0]
+    latest_model_run_init = db.conn.execute(
+        "SELECT MAX(run_init_utc) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api'"
+    ).fetchone()[0]
     db_health = {
         "size_mb": round(db_size_bytes / (1024 * 1024), 2),
         "forecast_records": forecast_count,
@@ -280,6 +283,7 @@ def export_all(db: ForecastDB, output_dir: str):
         "observation_1min_records": obs_1min_count,
         "openmeteo_records": openmeteo_count,
         "qm_cdfs_enabled": qm_cdf_count,
+        "latest_model_run_init_utc": latest_model_run_init,
         "last_sync_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     }
     with open(os.path.join(output_dir, "db_health.json"), "w") as f:
@@ -413,7 +417,10 @@ def export_all(db: ForecastDB, output_dir: str):
     
     if not latest_time:
         log.warning("No forecasts found in DB.")
-        export_system_workflow(db, output_dir, db_health, latest_time=None)
+        workflow = export_system_workflow(db, output_dir, db_health, latest_time=None)
+        db_health["model_freshness"] = workflow.get("model_freshness", [])
+        with open(os.path.join(output_dir, "db_health.json"), "w") as f:
+            json.dump(db_health, f, indent=2)
         return
         
     log.info(f"Generating TAF guidance for latest scrape: {latest_time}")
@@ -432,7 +439,10 @@ def export_all(db: ForecastDB, output_dir: str):
         WHERE m.run_init_utc <> 'historical_forecast_api'
     """
     df_fcst = pd.read_sql_query(query_fcst, db.conn)
-    export_system_workflow(db, output_dir, db_health, latest_time=latest_time)
+    workflow = export_system_workflow(db, output_dir, db_health, latest_time=latest_time)
+    db_health["model_freshness"] = workflow.get("model_freshness", [])
+    with open(os.path.join(output_dir, "db_health.json"), "w") as f:
+        json.dump(db_health, f, indent=2)
     active_models = sorted(df_fcst["model"].dropna().unique().tolist())
     run_init_by_model = {}
     if 'run_init_utc' in df_fcst.columns:
@@ -440,7 +450,7 @@ def export_all(db: ForecastDB, output_dir: str):
             m_df = df_fcst[df_fcst["model"] == m].dropna(subset=['run_init_utc'])
             run_init_by_model[m] = str(m_df['run_init_utc'].max()) if not m_df.empty else None
     
-    model_data = {param: {} for param in ["Temperature", "Dewpoint", "Pressure", "Rainfall", "Wind Speed", "Wind Dir.", "Wind Gust", "Prob Precip 0.1mm", "Prob Precip 1.0mm", "Prob Precip 10.0mm", "Sunshine", "Low Clouds", "Mid Clouds", "High Clouds", "Condition", "CAPE", "Lifted Index", "Convective Inhibition", "Weather Code"]}
+    model_data = {param: {} for param in ["Temperature", "Dewpoint", "Pressure", "Rainfall", "Wind Speed", "Wind Dir.", "Wind Gust", "Precip Probability", "Sunshine", "Low Clouds", "Mid Clouds", "High Clouds", "Condition", "CAPE", "Lifted Index", "Convective Inhibition", "Weather Code"]}
     
     param_map = {
         "Temperature": "temperature",
@@ -450,9 +460,7 @@ def export_all(db: ForecastDB, output_dir: str):
         "Wind Speed": "wind_speed",
         "Wind Dir.": "wind_dir",
         "Wind Gust": "wind_gust",
-        "Prob Precip 0.1mm": "precipitation_probability",
-        "Prob Precip 1.0mm": "precipitation_probability",
-        "Prob Precip 10.0mm": "precipitation_probability",
+        "Precip Probability": "precipitation_probability",
         "Sunshine": "sunshine_duration",
         "Low Clouds": "cloud_cover_low",
         "Mid Clouds": "cloud_cover_mid",
@@ -606,6 +614,7 @@ def export_all(db: ForecastDB, output_dir: str):
     guidance_payload = {
         "metadata": {
             "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+            "latest_model_run_init_utc": latest_model_run_init,
             "version": "v200",
             "location": "Bandara_Sangia_Ni_Bandera"
         },

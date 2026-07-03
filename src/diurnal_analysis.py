@@ -15,11 +15,17 @@ from datetime import datetime, timezone
 
 import numpy as np
 import pandas as pd
-from scipy import stats as scipy_stats
+try:
+    from scipy import stats as scipy_stats
+except ModuleNotFoundError:
+    scipy_stats = None
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+try:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError:
+    plt = None
 
 LOCATION = "Bandara_Sangia_Ni_Bandera"
 WITA_OFFSET_HOURS = 8
@@ -229,18 +235,42 @@ def statistical_tests(df: pd.DataFrame) -> dict:
     for h in range(24):
         subset = df[df["hour_wita"] == h]["rain_1h"].dropna()
         rain_by_hour.append([(subset > 0.1).sum(), len(subset) - (subset > 0.1).sum()])
-    chi2, p_val, dof, _ = scipy_stats.chi2_contingency(rain_by_hour)
-    tests["rain_chi_square"] = {"statistic": float(chi2), "p_value": float(p_val), "dof": int(dof), "significant": bool(p_val < 0.05)}
+    rain_table = np.array(rain_by_hour, dtype=float)
+    if scipy_stats is None:
+        tests["rain_chi_square"] = {
+            "status": "scipy_unavailable",
+            "statistic": None,
+            "p_value": None,
+            "dof": None,
+            "significant": False,
+        }
+    elif rain_table.sum() == 0 or np.any(rain_table.sum(axis=0) == 0) or np.any(rain_table.sum(axis=1) == 0):
+        tests["rain_chi_square"] = {
+            "status": "insufficient_variation",
+            "statistic": None,
+            "p_value": None,
+            "dof": None,
+            "significant": False,
+        }
+    else:
+        chi2, p_val, dof, _ = scipy_stats.chi2_contingency(rain_table)
+        tests["rain_chi_square"] = {"statistic": float(chi2), "p_value": float(p_val), "dof": int(dof), "significant": bool(p_val < 0.05)}
 
     temp_by_hour = [df[df["hour_wita"] == h]["temperature"].dropna().values for h in range(24)]
     temp_by_hour = [x for x in temp_by_hour if len(x) >= 5]
-    f_stat, p_val = scipy_stats.f_oneway(*temp_by_hour)
-    tests["temp_anova"] = {"f_statistic": float(f_stat), "p_value": float(p_val), "significant": bool(p_val < 0.05)}
+    if scipy_stats is None or len(temp_by_hour) < 2:
+        tests["temp_anova"] = {"status": "scipy_unavailable" if scipy_stats is None else "insufficient_data", "f_statistic": None, "p_value": None, "significant": False}
+    else:
+        f_stat, p_val = scipy_stats.f_oneway(*temp_by_hour)
+        tests["temp_anova"] = {"f_statistic": float(f_stat), "p_value": float(p_val), "significant": bool(p_val < 0.05)}
 
     wind_by_hour = [df[df["hour_wita"] == h]["wind_speed"].dropna().values for h in range(24)]
     wind_by_hour = [x for x in wind_by_hour if len(x) >= 5]
-    h_stat, p_val = scipy_stats.kruskal(*wind_by_hour)
-    tests["wind_speed_kruskal"] = {"h_statistic": float(h_stat), "p_value": float(p_val), "significant": bool(p_val < 0.05)}
+    if scipy_stats is None or len(wind_by_hour) < 2:
+        tests["wind_speed_kruskal"] = {"status": "scipy_unavailable" if scipy_stats is None else "insufficient_data", "h_statistic": None, "p_value": None, "significant": False}
+    else:
+        h_stat, p_val = scipy_stats.kruskal(*wind_by_hour)
+        tests["wind_speed_kruskal"] = {"h_statistic": float(h_stat), "p_value": float(p_val), "significant": bool(p_val < 0.05)}
     return tests
 
 
@@ -329,6 +359,9 @@ def compute_lcl_seasonal_calibration(df: pd.DataFrame) -> dict:
 
 
 def plot_diurnal_climatology(df: pd.DataFrame, output_dir: str) -> None:
+    if plt is None:
+        log.warning("matplotlib is unavailable; skipping diurnal PNG plots")
+        return
     plots_dir = os.path.join(output_dir, "diurnal_plots")
     os.makedirs(plots_dir, exist_ok=True)
     params = [

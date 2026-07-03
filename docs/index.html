@@ -34,7 +34,6 @@
             <li data-tab="tab-models">Individual Models</li>
             <li data-tab="tab-regional">Regional Charts</li>
             <li data-tab="tab-climatology">Climatology Engine</li>
-            <li data-tab="tab-workflow">System Workflow</li>
             <li data-tab="tab-health" style="color: var(--amber); font-weight: 600;">System Health</li>
             <li data-tab="tab-verify">Live Verification</li>
             <li data-tab="tab-persistency">Persistency (Obs)</li>
@@ -166,8 +165,7 @@
                                 <th>Wind Dir</th>
                                 <th>Wind Spd (kt)</th>
                                 <th>Rain (mm)</th>
-                                <th>Prob Precip 1.0mm</th>
-                                <th>Prob Precip 10.0mm</th>
+                                <th>Precip Prob</th>
                                 <th>Condition</th>
                             </tr>
                         </thead>
@@ -214,8 +212,7 @@
                                 <th>Wind Spd (kt)</th>
                                 <th>Gust (kt)</th>
                                 <th>Rain (mm)</th>
-                                <th>Prob Precip 1.0mm</th>
-                                <th>Prob Precip 10.0mm</th>
+                                <th>Precip Prob</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -350,74 +347,7 @@
             </div>
         </section>
 
-        <!-- Tab 7: System Workflow -->
-        <section id="tab-workflow" class="tab-pane">
-            <div class="header-bar">
-                <h2>System Workflow</h2>
-                <span class="mme-badge" id="workflow-generated">Loading...</span>
-            </div>
-
-            <div class="intel-grid" style="margin-bottom: 20px;">
-                <div class="panel">
-                    <h3>Pipeline Totals</h3>
-                    <div class="param-grid">
-                        <div class="param-card">
-                            <div class="param-label">Current Forecast Rows</div>
-                            <div class="param-value" id="wf-current-rows">--</div>
-                        </div>
-                        <div class="param-card">
-                            <div class="param-label">Open-Meteo Rows</div>
-                            <div class="param-value" id="wf-openmeteo-rows">--</div>
-                        </div>
-                        <div class="param-card">
-                            <div class="param-label">AWOS Hourly</div>
-                            <div class="param-value" id="wf-awos-hourly">--</div>
-                        </div>
-                        <div class="param-card">
-                            <div class="param-label">QM CDFs</div>
-                            <div class="param-value" id="wf-qm-cdfs">--</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="panel">
-                    <h3>Run Flow</h3>
-                    <div id="workflow-stages" class="taf-content">Loading workflow...</div>
-                </div>
-            </div>
-
-            <div class="panel" style="margin-bottom: 20px;">
-                <h3>Model Freshness</h3>
-                <div class="table-container">
-                    <table id="workflow-freshness-table">
-                        <thead>
-                            <tr>
-                                <th>Model</th>
-                                <th>Run Init</th>
-                                <th>Scraped</th>
-                                <th>Age</th>
-                                <th>Rows</th>
-                                <th>Lead Range</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="intel-grid">
-                <div class="panel chart-panel">
-                    <h3>Current Lead-Bucket Coverage</h3>
-                    <div id="workflow-lead-chart"></div>
-                </div>
-                <div class="panel chart-panel">
-                    <h3>QM Coverage by Parameter</h3>
-                    <div id="workflow-qm-chart"></div>
-                </div>
-            </div>
-        </section>
-        
-        <!-- Tab 8: System Health (Added) -->
+        <!-- Tab 7: System Health (Added) -->
         <section id="tab-health" class="tab-pane">
             <h2>System Health & Verification Data</h2>
             <div class="intel-grid">
@@ -471,6 +401,26 @@
                         
                         <div id="upload-status" style="display:none; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center;"></div>
                     </div>
+                </div>
+            </div>
+
+            <div class="panel" style="margin-top: 20px;">
+                <h3>Model Freshness</h3>
+                <div class="table-container">
+                    <table id="health-freshness-table">
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Run Init</th>
+                                <th>Scraped</th>
+                                <th>Age</th>
+                                <th>Rows</th>
+                                <th>Lead Range</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </div>
         </section>

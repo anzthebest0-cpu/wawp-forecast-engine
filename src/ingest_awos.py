@@ -2,6 +2,7 @@ import os
 import sqlite3
 import pandas as pd
 import logging
+from src.awos_hourly_parser import read_hourly_awos
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("awos_ingest")
@@ -17,36 +18,10 @@ def ingest_latest_awos():
         return
 
     try:
-        df = pd.read_csv(
-            awos_file,
-            sep=r"\s+",
-            skiprows=4,
-            header=None,
-            usecols=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            names=["Date", "Hour", "QFE", "QFF", "Temp", "Dewp", "RH", "WD", "WS", "Rain"],
-            encoding="utf-8"
-        )
+        df = read_hourly_awos(awos_file)
     except Exception as e:
         log.error(f"Failed to parse {awos_file}: {e}")
         return
-
-    df["QFE"] = pd.to_numeric(df["QFE"], errors="coerce") / 10.0
-    df["QFF"] = pd.to_numeric(df["QFF"], errors="coerce") / 10.0
-    df["Temp"] = pd.to_numeric(df["Temp"], errors="coerce") / 10.0
-    df["Dewp"] = pd.to_numeric(df["Dewp"], errors="coerce") / 10.0
-    df["RH"] = pd.to_numeric(df["RH"], errors="coerce")
-    df["Rain"] = pd.to_numeric(df["Rain"], errors="coerce") / 10.0
-    df["WS"] = pd.to_numeric(df["WS"], errors="coerce")
-    df["WD"] = pd.to_numeric(df["WD"], errors="coerce")
-
-    # Build ISO8601 UTC timestamp
-    df["UTC"] = pd.to_datetime(
-        df["Date"].astype(str) + df["Hour"].astype(str).str.zfill(2),
-        format="%Y%m%d%H",
-        errors="coerce"
-    )
-    
-    df = df.dropna(subset=["UTC"])
     if df.empty:
         log.warning("No valid timestamps found in AWOS file.")
         return

@@ -65,7 +65,10 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from scipy import stats as scipy_stats
+try:
+    from scipy import stats as scipy_stats
+except ModuleNotFoundError:
+    scipy_stats = None
 
 # ---------------------------------------------------------------------------
 # Paths — mirror config.py conventions (no config import to keep this module
@@ -512,6 +515,12 @@ def _fit_qm_gamma(fcst: np.ndarray, obs: np.ndarray) -> dict | None:
     fc, ob = fc[mask], ob[mask]
     if len(fc) < 50:
         return None
+    if scipy_stats is None:
+        fallback = _fit_qm_nonneg(fc, ob)
+        if fallback:
+            fallback["method"] = "nonneg_gamma_unavailable"
+            fallback["low_confidence"] = True
+        return fallback
     try:
         fc_shape, fc_loc, fc_scale = scipy_stats.gamma.fit(fc, floc=0)
         ob_shape, ob_loc, ob_scale = scipy_stats.gamma.fit(ob, floc=0)

@@ -12,11 +12,10 @@ log = logging.getLogger("qm_pairs")
 
 
 def build_training_pairs(db) -> int:
-    log.info("Dropping existing qm_training_pairs table")
-    db.conn.execute("DROP TABLE IF EXISTS qm_training_pairs")
-    log.info("Building qm_training_pairs")
+    log.info("Building qm_training_pairs candidate")
+    db.conn.execute("DROP TABLE IF EXISTS qm_training_pairs_candidate")
     db.conn.execute("""
-        CREATE TABLE qm_training_pairs AS
+        CREATE TABLE qm_training_pairs_candidate AS
         SELECT
             f.model,
             f.run_init_utc,
@@ -55,10 +54,52 @@ def build_training_pairs(db) -> int:
         WHERE o.temperature IS NOT NULL
         ORDER BY f.model, f.run_init_utc, f.forecast_time
     """)
+    n = db.conn.execute("SELECT COUNT(*) FROM qm_training_pairs_candidate").fetchone()[0]
+    if n <= 0:
+        exists = db.conn.execute("""
+            SELECT COUNT(*)
+            FROM sqlite_master
+            WHERE type='table' AND name='qm_training_pairs'
+        """).fetchone()[0]
+        db.conn.execute("DROP TABLE IF EXISTS qm_training_pairs_candidate")
+        if exists:
+            db.conn.commit()
+            log.warning("No new QM training pairs found; preserving existing qm_training_pairs table")
+            return int(db.conn.execute("SELECT COUNT(*) FROM qm_training_pairs").fetchone()[0])
+        log.warning("No QM training pairs found; creating empty qm_training_pairs table")
+        db.conn.execute("""
+            CREATE TABLE qm_training_pairs AS
+            SELECT * FROM (
+                SELECT
+                    CAST(NULL AS TEXT) AS model,
+                    CAST(NULL AS TEXT) AS run_init_utc,
+                    CAST(NULL AS TEXT) AS valid_time,
+                    CAST(NULL AS REAL) AS lead_hours,
+                    CAST(NULL AS TEXT) AS lead_bucket,
+                    CAST(NULL AS TEXT) AS lead_bucket_gust,
+                    CAST(NULL AS REAL) AS fcst_temperature,
+                    CAST(NULL AS REAL) AS fcst_dewpoint,
+                    CAST(NULL AS REAL) AS fcst_pressure,
+                    CAST(NULL AS REAL) AS fcst_wind_speed,
+                    CAST(NULL AS REAL) AS fcst_wind_gust,
+                    CAST(NULL AS REAL) AS fcst_wind_dir,
+                    CAST(NULL AS REAL) AS fcst_rain,
+                    CAST(NULL AS REAL) AS obs_temperature,
+                    CAST(NULL AS REAL) AS obs_dewpoint,
+                    CAST(NULL AS REAL) AS obs_pressure,
+                    CAST(NULL AS REAL) AS obs_wind_speed,
+                    CAST(NULL AS REAL) AS obs_wind_gust,
+                    CAST(NULL AS REAL) AS obs_wind_dir,
+                    CAST(NULL AS REAL) AS obs_rain
+            ) WHERE 0
+        """)
+    else:
+        log.info("Replacing qm_training_pairs table")
+        db.conn.execute("DROP TABLE IF EXISTS qm_training_pairs")
+        db.conn.execute("ALTER TABLE qm_training_pairs_candidate RENAME TO qm_training_pairs")
     db.conn.execute("CREATE INDEX idx_qm_tp_model ON qm_training_pairs(model, lead_bucket)")
     db.conn.execute("CREATE INDEX idx_qm_tp_valid ON qm_training_pairs(valid_time)")
     db.conn.commit()
-    n = db.conn.execute("SELECT COUNT(*) FROM qm_training_pairs").fetchone()[0]
     log.info(f"Built {n} training pairs")
     return int(n)
 

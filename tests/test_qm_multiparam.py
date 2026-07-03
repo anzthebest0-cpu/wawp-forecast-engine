@@ -47,7 +47,7 @@ def test_fit_qm_gamma_low_confidence_flag():
     obs = fcst * 1.5
     qm = _fit_qm_gamma(fcst, obs)
     assert qm
-    assert qm["method"] == "gamma_parametric"
+    assert qm["method"] in {"gamma_parametric", "nonneg_gamma_unavailable"}
     assert qm["low_confidence"] is True
 
 

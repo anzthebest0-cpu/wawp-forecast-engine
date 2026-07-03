@@ -238,10 +238,27 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Optional, Any
 from datetime import datetime, timedelta
 import json
-from sklearn.linear_model import Ridge
-from sklearn.model_selection import TimeSeriesSplit
-from scipy.optimize import nnls
-from scipy import stats
+import math
+try:
+    from sklearn.linear_model import Ridge
+    from sklearn.model_selection import TimeSeriesSplit
+except ModuleNotFoundError:
+    Ridge = None
+    TimeSeriesSplit = None
+try:
+    from scipy.optimize import nnls
+    from scipy.optimize import minimize as sp_minimize
+    from scipy import stats
+except ModuleNotFoundError:
+    nnls = None
+    sp_minimize = None
+    stats = None
+
+
+def _norm_cdf(x: float) -> float:
+    if stats is not None:
+        return float(stats.norm.cdf(x))
+    return 0.5 * (1.0 + math.erf(float(x) / math.sqrt(2.0)))
 
 
 # ==============================================================================
@@ -1018,15 +1035,17 @@ class AdvancedEnsembleWeighter:
         metrics_by_model: Dict[str, SkillMetrics] = {}
         for model in self.models:
             model_data = df[df[model_col] == model]
-            n = len(model_data)
+            fc = pd.to_numeric(model_data[forecast_col], errors="coerce").to_numpy(dtype=float)
+            ob = pd.to_numeric(model_data[obs_col], errors="coerce").to_numpy(dtype=float)
+            valid = ~np.isnan(fc) & ~np.isnan(ob)
+            fc = fc[valid]
+            ob = ob[valid]
+            n = len(fc)
             if n < min_samples:
                 metrics_by_model[model] = SkillMetrics(
                     model_name=model, rmse=999.0, sample_size=n
                 )
                 continue
-
-            fc = model_data[forecast_col].values.astype(float)
-            ob = model_data[obs_col].values.astype(float)
 
             cont       = self.calculate_continuous_metrics(fc, ob, is_circular)
             thresh_all = self.calculate_dichotomous_metrics_multithreshold(
@@ -1154,6 +1173,8 @@ class AdvancedEnsembleWeighter:
         Constraints: positive=True ensures non-negative weights; weights are
         normalised to sum to 1 after fitting.
         """
+        if Ridge is None or TimeSeriesSplit is None:
+            return self._equal_weights()
         pivot = df.pivot_table(index="WITA_Target", columns=model_col,
                                values=forecast_col, aggfunc="first")
         obs = df.groupby("WITA_Target")[obs_col].first()
@@ -1227,6 +1248,8 @@ class AdvancedEnsembleWeighter:
         followed by normalisation, giving the closest feasible non-negative point
         to the minimum-variance solution.
         """
+        if nnls is None:
+            return self._equal_weights()
         errors_by_model: Dict[str, np.ndarray] = {}
         for model in self.models:
             md = df[df[model_col] == model]
@@ -1327,7 +1350,8 @@ class AdvancedEnsembleWeighter:
         contributes.  A final re-fit on the full dataset using the averaged
         weights as a warm start ensures the final weights honour all the data.
         """
-        from scipy.optimize import minimize as sp_minimize
+        if sp_minimize is None or TimeSeriesSplit is None:
+            return self._equal_weights()
 
         # Build aligned (T × M) matrix
         pivot = df.pivot_table(index="WITA_Target", columns=model_col,
@@ -2327,7 +2351,7 @@ class AdvancedEnsembleWeighter:
                     "message": "Zero HAC variance"}
 
         dm_stat = d_mean / np.sqrt(nw_var / n)
-        p_value = float(2.0 * (1.0 - stats.norm.cdf(abs(dm_stat))))
+        p_value = float(2.0 * (1.0 - _norm_cdf(abs(dm_stat))))
 
         return {
             "dm_statistic": float(dm_stat),
@@ -2409,7 +2433,7 @@ class AdvancedEnsembleWeighter:
         if spread_calibration is not None and spread_calibration > 0:
             # Calibrated: P(|error| ≤ spread) under N(0, spread_calibration²)
             confidence = float(
-                2.0 * stats.norm.cdf(spread_calibration / max(ensemble_spread, 1e-9)) - 1.0
+                2.0 * _norm_cdf(spread_calibration / max(ensemble_spread, 1e-9)) - 1.0
             )
             confidence = float(np.clip(confidence, 0.0, 1.0))
         else:

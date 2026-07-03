@@ -1,6 +1,7 @@
 import sqlite3
 import pandas as pd
 from datetime import datetime
+from src.awos_hourly_parser import read_hourly_awos
 
 LOCATION_NAME = "Bandara_Sangia_Ni_Bandera"
 
@@ -275,7 +276,7 @@ class ForecastDB:
 
         cursor = self.conn.cursor()
         sql = """
-            INSERT OR IGNORE INTO openmeteo_forecasts (
+            INSERT INTO openmeteo_forecasts (
                 location, model, run_init_utc, forecast_time, lead_hours, scraped_at,
                 temperature, dewpoint, humidity, pressure_msl, rain, precipitation, showers, snowfall,
                 wind_speed, wind_gust, wind_dir,
@@ -292,6 +293,37 @@ class ForecastDB:
                 :sunshine_duration, :shortwave_radiation, :direct_radiation, :diffuse_radiation,
                 :precipitation_probability, :soil_temperature_0_to_7cm, :soil_moisture_0_to_7cm
             )
+            ON CONFLICT(location, model, run_init_utc, forecast_time) DO UPDATE SET
+                lead_hours=excluded.lead_hours,
+                scraped_at=excluded.scraped_at,
+                temperature=excluded.temperature,
+                dewpoint=excluded.dewpoint,
+                humidity=excluded.humidity,
+                pressure_msl=excluded.pressure_msl,
+                rain=excluded.rain,
+                precipitation=excluded.precipitation,
+                showers=excluded.showers,
+                snowfall=excluded.snowfall,
+                wind_speed=excluded.wind_speed,
+                wind_gust=excluded.wind_gust,
+                wind_dir=excluded.wind_dir,
+                cloud_cover=excluded.cloud_cover,
+                cloud_cover_low=excluded.cloud_cover_low,
+                cloud_cover_mid=excluded.cloud_cover_mid,
+                cloud_cover_high=excluded.cloud_cover_high,
+                weather_code=excluded.weather_code,
+                visibility=excluded.visibility,
+                cape=excluded.cape,
+                lifted_index=excluded.lifted_index,
+                convective_inhib=excluded.convective_inhib,
+                boundary_layer_h=excluded.boundary_layer_h,
+                sunshine_duration=excluded.sunshine_duration,
+                shortwave_radiation=excluded.shortwave_radiation,
+                direct_radiation=excluded.direct_radiation,
+                diffuse_radiation=excluded.diffuse_radiation,
+                precipitation_probability=excluded.precipitation_probability,
+                soil_temperature_0_to_7cm=excluded.soil_temperature_0_to_7cm,
+                soil_moisture_0_to_7cm=excluded.soil_moisture_0_to_7cm
         """
         clean_rows = []
         for row in rows:
@@ -406,13 +438,21 @@ class ForecastDB:
             
         cursor = self.conn.cursor()
         sql = """
-            INSERT OR IGNORE INTO awos_observations (
+            INSERT INTO awos_observations (
                 location, obs_time, temperature, dewpoint, humidity,
                 pressure, wind_dir, wind_speed, rain_1h
             ) VALUES (
                 :location, :obs_time, :temperature, :dewpoint, :humidity,
                 :pressure, :wind_dir, :wind_speed, :rain_1h
             )
+            ON CONFLICT(location, obs_time) DO UPDATE SET
+                temperature=excluded.temperature,
+                dewpoint=excluded.dewpoint,
+                humidity=excluded.humidity,
+                pressure=excluded.pressure,
+                wind_dir=excluded.wind_dir,
+                wind_speed=excluded.wind_speed,
+                rain_1h=excluded.rain_1h
         """
         
         total_inserted = 0
@@ -420,22 +460,7 @@ class ForecastDB:
         
         for f in files:
             try:
-                df = pd.read_csv(
-                    f, sep=r"\s+", skiprows=4, header=None,
-                    usecols=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                    names=["Date", "Hour", "QFE", "QFF", "Temp", "Dewp", "RH", "WD", "WS", "Rain"]
-                )
-                
-                # Convert date strings to datetime (UTC)
-                df["UTC"] = pd.to_datetime(
-                    df["Date"].astype(str) + df["Hour"].astype(str).str.zfill(2),
-                    format="%Y%m%d%H",
-                    errors="coerce"
-                )
-                df = df.dropna(subset=["UTC"])
-                
-                # Convert to numeric, scale where necessary
-                # Temp, Dewp, Rain are in 0.1 units (e.g. 243 = 24.3C)
+                df = read_hourly_awos(f)
                 rows_to_insert = []
                 for _, row in df.iterrows():
                     def clean_val(val, scale=1.0):
@@ -452,13 +477,13 @@ class ForecastDB:
                     rows_to_insert.append({
                         "location": location,
                         "obs_time": obs_time,
-                        "temperature": clean_val(row["Temp"], 0.1),
-                        "dewpoint": clean_val(row["Dewp"], 0.1),
+                        "temperature": clean_val(row["Temp"]),
+                        "dewpoint": clean_val(row["Dewp"]),
                         "humidity": clean_val(row["RH"], 1.0),
-                        "pressure": clean_val(row["QFF"], 0.1),
+                        "pressure": clean_val(row["QFF"]),
                         "wind_dir": clean_val(row["WD"], 1.0),
                         "wind_speed": clean_val(row["WS"], 1.0),
-                        "rain_1h": clean_val(row["Rain"], 0.1)
+                        "rain_1h": clean_val(row["Rain"])
                     })
                     
                 cursor.executemany(sql, rows_to_insert)
