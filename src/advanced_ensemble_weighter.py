@@ -248,7 +248,21 @@ from scipy import stats
 # CONFIGURATION & CONSTANTS
 # ==============================================================================
 
-MODELS = ["ECMWF", "GFS", "ICON", "ACCESS-G3", "UKMO", "GEM", "Multi-Model"]
+MODELS = [
+    "ECMWF_HRES",
+    "GFS_GLOBAL",
+    "GFS_SEAMLESS",
+    "ICON_GLOBAL",
+    "ICON_SEAMLESS",
+    "GEM_GLOBAL",
+    "GEM_SEAMLESS",
+    "CMA_GRAPES_GLOBAL",
+    "JMA_GSM",
+    "BOM_ACCESS_GLOBAL",
+    "METEOFRANCE_ARPEGE_WORLD",
+    "UKMO_GLOBAL_10KM",
+    "ERA5_SEAMLESS",
+]
 
 PARAMETERS = {
     "Temperature":    {"unit": "°C",  "thresholds": [1.0, 2.0, 3.0],        "primary_threshold": 1.0,

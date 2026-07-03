@@ -2,6 +2,8 @@ import sqlite3
 import pandas as pd
 from datetime import datetime
 
+LOCATION_NAME = "Bandara_Sangia_Ni_Bandera"
+
 class ForecastDB:
     def __init__(self, db_path: str):
         self.conn = sqlite3.connect(db_path)
@@ -38,9 +40,27 @@ class ForecastDB:
                 mid_clouds      REAL    DEFAULT 0.0,
                 high_clouds     REAL    DEFAULT 0.0,
                 condition       TEXT,
+                visibility      REAL,
+                cape            REAL,
+                lifted_index    REAL,
+                convective_inhib REAL,
+                weather_code    INTEGER,
+                boundary_layer_h REAL,
                 UNIQUE(location, model, run_init_utc, forecast_time)
             );
         """)
+        for ddl in [
+            "ALTER TABLE meteologix_forecasts ADD COLUMN visibility REAL",
+            "ALTER TABLE meteologix_forecasts ADD COLUMN cape REAL",
+            "ALTER TABLE meteologix_forecasts ADD COLUMN lifted_index REAL",
+            "ALTER TABLE meteologix_forecasts ADD COLUMN convective_inhib REAL",
+            "ALTER TABLE meteologix_forecasts ADD COLUMN weather_code INTEGER",
+            "ALTER TABLE meteologix_forecasts ADD COLUMN boundary_layer_h REAL",
+        ]:
+            try:
+                cursor.execute(ddl)
+            except sqlite3.OperationalError:
+                pass
         
         # Indexes for fast querying
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_forecast_time ON meteologix_forecasts(forecast_time);")
@@ -64,6 +84,115 @@ class ForecastDB:
                 UNIQUE(location, obs_time)
             );
         """)
+        try:
+            cursor.execute("ALTER TABLE awos_observations ADD COLUMN wind_gust_max REAL;")
+        except sqlite3.OperationalError:
+            pass
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_awos_time ON awos_observations(obs_time);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_awos_location_time ON awos_observations(location, obs_time);")
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS awos_observations_1min (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                location        TEXT    NOT NULL,
+                obs_time        TEXT    NOT NULL,
+                wind_speed      REAL,
+                wind_dir        REAL,
+                wind_gust       REAL,
+                wind_gust_dir   REAL,
+                temperature     REAL,
+                dewpoint        REAL,
+                humidity        REAL,
+                pressure_qnh    REAL,
+                rain_1min       REAL,
+                solar_rad       REAL,
+                UNIQUE(location, obs_time)
+            );
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_1min_time ON awos_observations_1min(obs_time);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_1min_date ON awos_observations_1min(date(obs_time));")
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS openmeteo_forecasts (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                location          TEXT    NOT NULL,
+                model             TEXT    NOT NULL,
+                run_init_utc      TEXT    NOT NULL,
+                forecast_time     TEXT    NOT NULL,
+                lead_hours        REAL,
+                scraped_at        TEXT    NOT NULL,
+                temperature       REAL,
+                dewpoint          REAL,
+                humidity          REAL,
+                pressure_msl      REAL,
+                rain              REAL    DEFAULT 0.0,
+                precipitation     REAL    DEFAULT 0.0,
+                showers           REAL    DEFAULT 0.0,
+                snowfall          REAL    DEFAULT 0.0,
+                wind_speed        REAL,
+                wind_gust         REAL,
+                wind_dir          REAL,
+                cloud_cover       REAL,
+                cloud_cover_low   REAL,
+                cloud_cover_mid   REAL,
+                cloud_cover_high  REAL,
+                weather_code      INTEGER,
+                visibility        REAL,
+                cape              REAL,
+                lifted_index      REAL,
+                convective_inhib  REAL,
+                boundary_layer_h  REAL,
+                sunshine_duration REAL,
+                shortwave_radiation REAL,
+                direct_radiation  REAL,
+                diffuse_radiation REAL,
+                precipitation_probability REAL,
+                soil_temperature_0_to_7cm REAL,
+                soil_moisture_0_to_7cm REAL,
+                UNIQUE(location, model, run_init_utc, forecast_time)
+            );
+        """)
+        for ddl in [
+            "ALTER TABLE openmeteo_forecasts ADD COLUMN precipitation REAL DEFAULT 0.0",
+            "ALTER TABLE openmeteo_forecasts ADD COLUMN snowfall REAL DEFAULT 0.0",
+            "ALTER TABLE openmeteo_forecasts ADD COLUMN sunshine_duration REAL",
+            "ALTER TABLE openmeteo_forecasts ADD COLUMN shortwave_radiation REAL",
+            "ALTER TABLE openmeteo_forecasts ADD COLUMN direct_radiation REAL",
+            "ALTER TABLE openmeteo_forecasts ADD COLUMN diffuse_radiation REAL",
+            "ALTER TABLE openmeteo_forecasts ADD COLUMN precipitation_probability REAL",
+            "ALTER TABLE openmeteo_forecasts ADD COLUMN soil_temperature_0_to_7cm REAL",
+            "ALTER TABLE openmeteo_forecasts ADD COLUMN soil_moisture_0_to_7cm REAL",
+        ]:
+            try:
+                cursor.execute(ddl)
+            except sqlite3.OperationalError:
+                pass
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_om_run ON openmeteo_forecasts(model, run_init_utc);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_om_valid ON openmeteo_forecasts(forecast_time);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_om_lead ON openmeteo_forecasts(model, lead_hours);")
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS qm_cdfs (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                model           TEXT NOT NULL,
+                parameter       TEXT NOT NULL,
+                lead_bucket     TEXT NOT NULL,
+                fcst_quantiles  TEXT NOT NULL,
+                obs_quantiles   TEXT NOT NULL,
+                n_samples       INTEGER NOT NULL,
+                crps_before     REAL,
+                crps_after      REAL,
+                bias_before     REAL,
+                bias_after      REAL,
+                trained_at      TEXT NOT NULL,
+                enabled         INTEGER DEFAULT 1,
+                method          TEXT,
+                low_confidence  INTEGER DEFAULT 0,
+                metadata        TEXT,
+                UNIQUE(model, parameter, lead_bucket)
+            );
+        """)
         
         self.conn.commit()
 
@@ -84,13 +213,15 @@ class ForecastDB:
                 temperature, dewpoint, humidity, pressure, rain,
                 prob_precip_01, prob_precip_10, prob_precip_100,
                 wind_speed, wind_gust, wind_dir, sunshine,
-                low_clouds, mid_clouds, high_clouds, condition
+                low_clouds, mid_clouds, high_clouds, condition,
+                visibility, cape, lifted_index, convective_inhib, weather_code, boundary_layer_h
             ) VALUES (
                 :location, :model, :run_init_utc, :forecast_time, :scraped_at,
                 :temperature, :dewpoint, :humidity, :pressure, :rain,
                 :prob_precip_01, :prob_precip_10, :prob_precip_100,
                 :wind_speed, :wind_gust, :wind_dir, :sunshine,
-                :low_clouds, :mid_clouds, :high_clouds, :condition
+                :low_clouds, :mid_clouds, :high_clouds, :condition,
+                :visibility, :cape, :lifted_index, :convective_inhib, :weather_code, :boundary_layer_h
             )
         """
         
@@ -119,6 +250,12 @@ class ForecastDB:
                 "mid_clouds": row.get("Mid_Clouds"),
                 "high_clouds": row.get("High_Clouds"),
                 "condition": row.get("Condition"),
+                "visibility": row.get("Visibility"),
+                "cape": row.get("CAPE"),
+                "lifted_index": row.get("Lifted Index"),
+                "convective_inhib": row.get("Convective Inhibition"),
+                "weather_code": row.get("Weather Code"),
+                "boundary_layer_h": row.get("Boundary Layer Height"),
             }
             # Convert pandas nan to None
             for k, v in clean_row.items():
@@ -130,6 +267,51 @@ class ForecastDB:
         cursor.executemany(sql, clean_rows)
         self.conn.commit()
         
+        return cursor.rowcount
+
+    def ingest_openmeteo_rows(self, rows: list[dict]) -> int:
+        if not rows:
+            return 0
+
+        cursor = self.conn.cursor()
+        sql = """
+            INSERT OR IGNORE INTO openmeteo_forecasts (
+                location, model, run_init_utc, forecast_time, lead_hours, scraped_at,
+                temperature, dewpoint, humidity, pressure_msl, rain, precipitation, showers, snowfall,
+                wind_speed, wind_gust, wind_dir,
+                cloud_cover, cloud_cover_low, cloud_cover_mid, cloud_cover_high,
+                weather_code, visibility, cape, lifted_index, convective_inhib, boundary_layer_h,
+                sunshine_duration, shortwave_radiation, direct_radiation, diffuse_radiation,
+                precipitation_probability, soil_temperature_0_to_7cm, soil_moisture_0_to_7cm
+            ) VALUES (
+                :location, :model, :run_init_utc, :forecast_time, :lead_hours, :scraped_at,
+                :temperature, :dewpoint, :humidity, :pressure_msl, :rain, :precipitation, :showers, :snowfall,
+                :wind_speed, :wind_gust, :wind_dir,
+                :cloud_cover, :cloud_cover_low, :cloud_cover_mid, :cloud_cover_high,
+                :weather_code, :visibility, :cape, :lifted_index, :convective_inhib, :boundary_layer_h,
+                :sunshine_duration, :shortwave_radiation, :direct_radiation, :diffuse_radiation,
+                :precipitation_probability, :soil_temperature_0_to_7cm, :soil_moisture_0_to_7cm
+            )
+        """
+        clean_rows = []
+        for row in rows:
+            clean = {k: row.get(k) for k in [
+                "location", "model", "run_init_utc", "forecast_time", "lead_hours", "scraped_at",
+                "temperature", "dewpoint", "humidity", "pressure_msl", "rain", "precipitation", "showers", "snowfall",
+                "wind_speed", "wind_gust", "wind_dir", "cloud_cover", "cloud_cover_low",
+                "cloud_cover_mid", "cloud_cover_high", "weather_code", "visibility",
+                "cape", "lifted_index", "convective_inhib", "boundary_layer_h",
+                "sunshine_duration", "shortwave_radiation", "direct_radiation", "diffuse_radiation",
+                "precipitation_probability", "soil_temperature_0_to_7cm", "soil_moisture_0_to_7cm"
+            ]}
+            clean["location"] = clean.get("location") or LOCATION_NAME
+            for key, value in list(clean.items()):
+                if pd.isna(value):
+                    clean[key] = None
+            clean_rows.append(clean)
+
+        cursor.executemany(sql, clean_rows)
+        self.conn.commit()
         return cursor.rowcount
 
     def get_latest_forecasts(self, location: str) -> pd.DataFrame:
@@ -189,19 +371,23 @@ class ForecastDB:
         if not f_col or not o_col:
             return pd.DataFrame()
             
-        # Return long format directly to preserve model-specific run_init_utc for Lead-Time calculation
+        # Return long format directly to preserve model-specific run_init_utc for lead-time calculation.
+        # Verification has migrated to Open-Meteo; the old meteologix_forecasts
+        # table is retained only as a compatibility archive for earlier exports.
+        f_col_sql = "pressure_msl" if f_col == "pressure" else f_col
         query = f"""
             SELECT 
                 f.forecast_time as Datetime,
                 f.model as Model,
                 f.run_init_utc as Run_Init_UTC,
-                f.{f_col} as forecast,
+                f.{f_col_sql} as forecast,
                 o.{o_col} as obs
-            FROM meteologix_forecasts f
+            FROM openmeteo_forecasts f
             INNER JOIN awos_observations o 
                 ON f.location = o.location 
                 AND f.forecast_time = o.obs_time
             WHERE f.forecast_time >= ? AND f.forecast_time <= ?
+              AND f.run_init_utc = 'historical_forecast_api'
         """
         return pd.read_sql_query(query, self.conn, params=(start_date, end_date))
 
@@ -221,24 +407,23 @@ class ForecastDB:
         cursor = self.conn.cursor()
         sql = """
             INSERT OR IGNORE INTO awos_observations (
-                location, obs_time, temperature, dewpoint, humidity, 
-                wind_dir, wind_speed, wind_gust_max, rain_1h
+                location, obs_time, temperature, dewpoint, humidity,
+                pressure, wind_dir, wind_speed, rain_1h
             ) VALUES (
                 :location, :obs_time, :temperature, :dewpoint, :humidity,
-                :wind_dir, :wind_speed, :wind_gust_max, :rain_1h
+                :pressure, :wind_dir, :wind_speed, :rain_1h
             )
         """
         
         total_inserted = 0
-        location = "Bandara_Sangia_Ni_Bandera"
+        location = LOCATION_NAME
         
         for f in files:
             try:
-                # Cols: 1=Date, 2=Hour, 5=Temp, 6=Dewp, 7=RH, 8=WD, 9=WS, 11=Gust, 12=Rain
                 df = pd.read_csv(
                     f, sep=r"\s+", skiprows=4, header=None,
-                    usecols=[1, 2, 5, 6, 7, 8, 9, 11, 12], 
-                    names=["Date", "Hour", "Temp", "Dewp", "RH", "WD", "WS", "Gust", "Rain"]
+                    usecols=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    names=["Date", "Hour", "QFE", "QFF", "Temp", "Dewp", "RH", "WD", "WS", "Rain"]
                 )
                 
                 # Convert date strings to datetime (UTC)
@@ -270,9 +455,9 @@ class ForecastDB:
                         "temperature": clean_val(row["Temp"], 0.1),
                         "dewpoint": clean_val(row["Dewp"], 0.1),
                         "humidity": clean_val(row["RH"], 1.0),
+                        "pressure": clean_val(row["QFF"], 0.1),
                         "wind_dir": clean_val(row["WD"], 1.0),
                         "wind_speed": clean_val(row["WS"], 1.0),
-                        "wind_gust_max": clean_val(row["Gust"], 1.0),
                         "rain_1h": clean_val(row["Rain"], 0.1)
                     })
                     

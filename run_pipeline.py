@@ -1,11 +1,15 @@
 import os
 import logging
 import sys
+import json
+from datetime import datetime, timezone
 
-from src.scrape_meteologix import main as scrape_models
+from src.scrape_openmeteo import main as scrape_openmeteo_models
 from src.db_manager import ForecastDB
 from src.export_dashboard_data import export_all
 from src.ingest_awos import ingest_latest_awos
+from src.build_qm_training_pairs import build_training_pairs
+from src.train_qm_multiparam import train_all as train_multiparam_qm
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,16 +21,15 @@ log = logging.getLogger("pipeline")
 def run():
     _HERE = os.path.dirname(os.path.abspath(__file__))
     DB_PATH = os.path.join(_HERE, "wawp_forecasts.db")
-    ARCHIVE_DIR = os.path.join(_HERE, "Archives", "Meteologix_MultiModel")
     DOCS_DIR = os.path.join(_HERE, "docs", "data")
     
-    log.info("Starting WAWP Meteologix Pipeline...")
+    log.info("Starting WAWP Open-Meteo Pipeline...")
     
     # 1. Scrape latest data
     try:
-        all_models_data, stacked_rows = scrape_models()
+        all_models_data, stacked_rows, openmeteo_rows = scrape_openmeteo_models()
     except Exception as e:
-        log.error(f"Scraper failed: {e}")
+        log.error(f"Open-Meteo scraper failed: {e}")
         sys.exit(1)
         
     # 2. Ingest into local DB (WAL mode, INSERT OR IGNORE)
@@ -35,16 +38,42 @@ def run():
         try:
             new_count = db.ingest_rows(stacked_rows)
             log.info(f"Database ingested {new_count} new rows (duplicates ignored).")
+            if openmeteo_rows:
+                om_count = db.ingest_openmeteo_rows(openmeteo_rows)
+                log.info(f"Open-Meteo database ingested {om_count} new rows.")
         except Exception as e:
             log.error(f"Database ingestion failed: {e}")
             sys.exit(1)
             
         # 2.5 Ingest AWOS data if exists
+        awos_stale = False
+        awos_error = None
         try:
             ingest_latest_awos()
             log.info("AWOS ingestion completed.")
         except Exception as e:
             log.error(f"AWOS ingestion failed: {e}")
+            awos_stale = True
+            awos_error = str(e)
+
+        health_path = os.path.join(_HERE, "docs", "data", "pipeline_health.json")
+        os.makedirs(os.path.dirname(health_path), exist_ok=True)
+        with open(health_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "awos_stale": awos_stale,
+                "last_run_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+                "last_error": awos_error,
+            }, f, indent=2)
+
+        try:
+            openmeteo_count = db.conn.execute("SELECT COUNT(*) FROM openmeteo_forecasts").fetchone()[0]
+            obs_count = db.conn.execute("SELECT COUNT(*) FROM awos_observations").fetchone()[0]
+            if openmeteo_count > 0 and obs_count > 0:
+                pair_count = build_training_pairs(db)
+                if pair_count > 0:
+                    train_multiparam_qm(DB_PATH, DOCS_DIR)
+        except Exception as e:
+            log.error(f"QM training refresh failed: {e}")
 
         # 3. Generate Consensus and Export to Dashboard
         try:

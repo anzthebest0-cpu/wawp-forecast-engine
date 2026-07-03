@@ -182,6 +182,8 @@ def _build_change_groups(
     N = len(consensus_truth)
     if N == 0:
         return [], []  # [FIX BUG-1 v113] Must return tuple so callers can unpack (groups, warnings)
+    active_models = list(dict.fromkeys(list(MODELS) + list((corrected_rain_data or {}).keys())))
+    n_active_models = max(len(active_models), 1)
 
     # -- helpers --------------------------------------------------------------
 
@@ -230,14 +232,14 @@ def _build_change_groups(
         total      = 0
         model_vals = []
 
-        for m in MODELS:
+        for m in active_models:
             rows = corrected_rain_data.get(m)
             if rows and h < len(rows):
                 total += 1
                 v = rows[h]
                 model_vals.append(v)
                 # Weight for this model - fall back to equal 1/N if not supplied
-                w = float((model_weights or {}).get(m, 1.0 / len(MODELS)))
+                w = float((model_weights or {}).get(m, 1.0 / n_active_models))
                 w_tot += w
                 if v >= _RC.VOTE_THR:
                     count += 1
@@ -691,10 +693,10 @@ def _build_change_groups(
                             if agr < (_RC.TEMPO_CUT + 0.05):
                                 _peak_h = max(
                                     range(start, min(t_end + 1, len(
-                                        corrected_rain_data.get(MODELS[0], [])
+                                        corrected_rain_data.get(active_models[0], [])
                                     ))),
                                     key=lambda h: sum(
-                                        1 for m in MODELS
+                                        1 for m in active_models
                                         if (corrected_rain_data.get(m)
                                             and h < len(corrected_rain_data[m])
                                             and corrected_rain_data[m][h]
@@ -704,8 +706,8 @@ def _build_change_groups(
                                 )
                                 _model_w = {
                                     m: float((model_weights or {}).get(
-                                        m, 1.0 / len(MODELS)))
-                                    for m in MODELS
+                                        m, 1.0 / n_active_models))
+                                    for m in active_models
                                     if (corrected_rain_data.get(m)
                                         and _peak_h < len(corrected_rain_data[m])
                                         and corrected_rain_data[m][_peak_h]
@@ -1045,7 +1047,12 @@ def _build_change_groups(
                 temp_c=hour_data.get("temp_c", 28.0),
                 dewpoint_c=hour_data.get("dewpoint_c", 24.0),
                 vis_m=int(new_vis),
-                local_hour_wita=local_hour_wita
+                local_hour_wita=local_hour_wita,
+                cape=hour_data.get("cape"),
+                lifted_index=hour_data.get("lifted_index"),
+                cin=hour_data.get("convective_inhib"),
+                weather_code=hour_data.get("weather_code"),
+                month=hour_data.get("month"),
             )
             if not wx_str:
                 # Hard rule: no vis-only sub-5000m change groups without a phenomenon
@@ -1065,7 +1072,12 @@ def _build_change_groups(
                     temp_c=hour_data.get("temp_c", 28.0),
                     dewpoint_c=hour_data.get("dewpoint_c", 24.0),
                     vis_m=int(new_vis),
-                    local_hour_wita=local_hour_wita
+                    local_hour_wita=local_hour_wita,
+                    cape=hour_data.get("cape"),
+                    lifted_index=hour_data.get("lifted_index"),
+                    cin=hour_data.get("convective_inhib"),
+                    weather_code=hour_data.get("weather_code"),
+                    month=hour_data.get("month"),
                 )
         
         lookahead = min(i + 8, N) - i
@@ -1095,7 +1107,7 @@ def _build_change_groups(
                     "time_h_end": (start_hour + te) % 24,
                     "wx": wx_str, "vis": new_vis, "cloud": new_cloud,
                     "dir": "", "spd": "", "gust": "",
-                    "_prio": 8, "_rain": 0.0,
+                    "_prio": 8, "_rain": hour_data.get("rain", 0.0),
                 })
                 if vis_trigger: prev_vis = curr_vis
                 if ceil_trigger: prev_ceil = curr_ceil
@@ -1111,7 +1123,7 @@ def _build_change_groups(
                     "time_h_end": (start_hour + te) % 24,
                     "wx": wx_str, "vis": new_vis, "cloud": new_cloud,
                     "dir": "", "spd": "", "gust": "",
-                    "_prio": 5, "_rain": 0.0,
+                    "_prio": 5, "_rain": hour_data.get("rain", 0.0),
                 })
         i = end_h + 1
 
@@ -1238,6 +1250,7 @@ def _build_change_groups(
     # Strip internal keys before returning to JS
     near_end_flags = [g.pop("_near_end", False) for g in groups]
     for g in groups:
+        g["rain_mmh"] = float(g.get("_rain", 0.0) or 0.0)
         g.pop("_prio", None)
         g.pop("_rain", None)
 

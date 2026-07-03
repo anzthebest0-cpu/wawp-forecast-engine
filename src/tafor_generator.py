@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timedelta
 import pandas as pd
 from src.taf_core import _build_change_groups
-from src.vis_cloud_proxy import build_hourly_vis_cloud
+from src.vis_cloud_proxy import build_hourly_vis_cloud, get_weather_phenomenon
 
 def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
     issued_hh  = iss_utc[:2]
@@ -32,7 +32,8 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
     if cloud == 'NSC': cavok_cloud = True
     elif len(cloud) >= 3 and cloud[-3:].isdigit() and int(cloud[-3:]) >= 50: cavok_cloud = True
 
-    if vis == '9999' and cavok_cloud and not wx and bg.get('rain', 0.0) <= 0.1:
+    rain_at_base = float(bg.get('rain_mmh', bg.get('rain', 0.0)) or 0.0)
+    if vis == '9999' and cavok_cloud and not wx and rain_at_base <= 0.1:
         vis = 'CAVOK'
         cloud = ''
         wx = ''
@@ -66,7 +67,8 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
                 
         # Implement CAVOK logic for Change Groups
         t_cavok = False
-        if tvis == '9999' and not twx:
+        t_rain = float(t.get('rain_mmh', 0.0) or 0.0)
+        if tvis == '9999' and not twx and t_rain <= 0.1:
             if not tcld or tcld[0] == 'NSC' or (len(tcld[0]) >= 3 and tcld[0][-3:].isdigit() and int(tcld[0][-3:]) >= 50):
                 t_cavok = True
                 
@@ -138,6 +140,8 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
             "low_clouds": row["Low Clouds"] if "Low Clouds" in row and pd.notna(row.get("Low Clouds")) else 0.0,
             "mid_clouds": row["Mid Clouds"] if "Mid Clouds" in row and pd.notna(row.get("Mid Clouds")) else 0.0
         }
+        dt = pd.to_datetime(row["Datetime"])
+        hour_data["month"] = dt.month
         
         pressure_history.append(hour_data["pressure_hpa"])
         vis_code, cloud_group = build_hourly_vis_cloud(hour_data, pressure_history)
@@ -157,6 +161,11 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
             "dewpoint_c": hour_data["dewpoint_c"],
             "pressure_hpa": hour_data["pressure_hpa"],
             "relative_humidity_pct": hour_data["relative_humidity_pct"],
+            "cape": row["CAPE"] if "CAPE" in row and pd.notna(row.get("CAPE")) else None,
+            "lifted_index": row["Lifted Index"] if "Lifted Index" in row and pd.notna(row.get("Lifted Index")) else None,
+            "convective_inhib": row["Convective Inhibition"] if "Convective Inhibition" in row and pd.notna(row.get("Convective Inhibition")) else None,
+            "weather_code": row["Weather Code"] if "Weather Code" in row and pd.notna(row.get("Weather Code")) else None,
+            "month": hour_data["month"],
             "vis": vis_code,
             "cloud": cloud_group,
             "Datetime": row["Datetime"]
@@ -200,7 +209,11 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
     # Map model_data into meteo_data_local: {model: {param: series}}
     from src.advanced_ensemble_weighter import MODELS
     
-    meteo_data_local = {m: {} for m in MODELS}
+    active_models = set(MODELS)
+    for models_dict in model_data.values():
+        active_models.update(models_dict.keys())
+    active_models.update(qm_rain_data.keys())
+    meteo_data_local = {m: {} for m in active_models}
     for param, models_dict in model_data.items():
         for m, series in models_dict.items():
             # Slice series to match the window
@@ -214,6 +227,7 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
         qm_rain_local[m] = {i: v for i, v in enumerate(sliced_values)}
             
     # Generate change groups
+    change_group_weights = model_weights.get("Rainfall", model_weights) if isinstance(model_weights, dict) else model_weights
     trends, warnings = _build_change_groups(
         consensus_truth=consensus_truth,
         valid_start=valid_start_utc,
@@ -221,7 +235,7 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
         meteo_data_local=meteo_data_local,
         corrected_rain_data=qm_rain_local,
         rain_timing_offset=0, 
-        model_weights=model_weights
+        model_weights=change_group_weights
     )
     
     # Define Base Group
@@ -234,15 +248,37 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
         d_str = f"{d_rounded:03d}" if d_rounded < 360 else "360"
     else:
         d_str = "000"
+
+    base_wx = ''
+    if first_row.get('vis') and first_row['vis'] != '9999':
+        try:
+            vis_int = int(first_row['vis'])
+            if vis_int < 5000:
+                base_wx = get_weather_phenomenon(
+                    rain_mmh=first_row.get("rain", 0.0),
+                    rh_pct=first_row.get("relative_humidity_pct", 80.0),
+                    temp_c=first_row.get("temp_c", 28.0),
+                    dewpoint_c=first_row.get("dewpoint_c", 24.0),
+                    vis_m=vis_int,
+                    local_hour_wita=valid_start.hour,
+                    cape=first_row.get("cape"),
+                    lifted_index=first_row.get("lifted_index"),
+                    cin=first_row.get("convective_inhib"),
+                    weather_code=first_row.get("weather_code"),
+                    month=first_row.get("month"),
+                )
+        except (ValueError, TypeError):
+            base_wx = ''
         
     best_guess = {
         'dir': d_str,
         'spd': f"{int(first_row['spd']):02d}" if pd.notna(first_row.get('spd')) else "00",
         'gust': f"{int(first_row['gust']):02d}" if pd.notna(first_row.get('gust')) else "00",
         'vis': first_row['vis'],
-        'wx': '',
+        'wx': base_wx,
         'cloud': first_row['cloud'],
         'rain': first_row.get('rain', 0.0),
+        'rain_mmh': first_row.get('rain', 0.0),
         'trends': trends,
         'badge': f'MME {iss_utc}Z Shift',
         'metrics': {'leader_rmse': 'N/A', 'leader_strat': 'N/A'}

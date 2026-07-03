@@ -9,7 +9,7 @@ import pandas as pd
 from src.db_manager import ForecastDB
 from src.advanced_ensemble_weighter import AdvancedEnsembleWeighter, MODELS, PARAMETERS
 from src.guidance_generator import generate_consensus
-from src.quantile_mapper import QuantileMapper
+from src.quantile_mapper import QuantileMapper, apply_multiparam_qm
 from src.tafor_generator import generate_tafor
 
 log = logging.getLogger("exporter")
@@ -109,6 +109,152 @@ def calculate_advanced_metrics(weighter, df_long: pd.DataFrame, param: str, is_c
 
     return metrics_payload
 
+
+def _safe_dt(value):
+    if value is None or pd.isna(value):
+        return None
+    dt = pd.to_datetime(value, errors="coerce", utc=True)
+    if pd.isna(dt):
+        return None
+    return dt.to_pydatetime()
+
+
+def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, latest_time: str | None = None) -> dict:
+    now = datetime.now(timezone.utc)
+    current_rows = pd.read_sql_query("""
+        SELECT
+            model,
+            COUNT(*) AS row_count,
+            MAX(scraped_at) AS latest_scraped_at,
+            MAX(run_init_utc) AS latest_run_init_utc,
+            MIN(forecast_time) AS first_forecast_time,
+            MAX(forecast_time) AS last_forecast_time,
+            MIN(lead_hours) AS min_lead_hours,
+            MAX(lead_hours) AS max_lead_hours
+        FROM openmeteo_forecasts
+        WHERE run_init_utc <> 'historical_forecast_api'
+        GROUP BY model
+        ORDER BY model
+    """, db.conn)
+
+    freshness = []
+    for _, row in current_rows.iterrows():
+        scraped_dt = _safe_dt(row["latest_scraped_at"])
+        age_hours = None
+        if scraped_dt:
+            age_hours = max(0.0, (now - scraped_dt).total_seconds() / 3600.0)
+        status = "missing"
+        if age_hours is not None:
+            if age_hours <= 6:
+                status = "fresh"
+            elif age_hours <= 12:
+                status = "aging"
+            else:
+                status = "stale"
+        freshness.append({
+            "model": row["model"],
+            "row_count": int(row["row_count"]),
+            "latest_scraped_at": row["latest_scraped_at"],
+            "latest_run_init_utc": row["latest_run_init_utc"],
+            "first_forecast_time": row["first_forecast_time"],
+            "last_forecast_time": row["last_forecast_time"],
+            "min_lead_hours": None if pd.isna(row["min_lead_hours"]) else float(row["min_lead_hours"]),
+            "max_lead_hours": None if pd.isna(row["max_lead_hours"]) else float(row["max_lead_hours"]),
+            "age_hours": None if age_hours is None else round(age_hours, 2),
+            "status": status,
+        })
+
+    historical_rows = pd.read_sql_query("""
+        SELECT model, COUNT(*) AS row_count, MIN(forecast_time) AS first_time, MAX(forecast_time) AS last_time
+        FROM openmeteo_forecasts
+        WHERE run_init_utc = 'historical_forecast_api'
+        GROUP BY model
+        ORDER BY model
+    """, db.conn)
+    historical_coverage = historical_rows.to_dict(orient="records")
+    for row in historical_coverage:
+        row["row_count"] = int(row["row_count"])
+
+    qm_rows = pd.read_sql_query("""
+        SELECT model, parameter, lead_bucket, n_samples, low_confidence
+        FROM qm_cdfs
+        WHERE enabled = 1
+        ORDER BY model, parameter, lead_bucket
+    """, db.conn)
+    qm_by_parameter = {}
+    qm_by_model = {}
+    low_confidence = []
+    for _, row in qm_rows.iterrows():
+        qm_by_parameter[row["parameter"]] = qm_by_parameter.get(row["parameter"], 0) + 1
+        qm_by_model[row["model"]] = qm_by_model.get(row["model"], 0) + 1
+        if int(row["low_confidence"] or 0):
+            low_confidence.append({
+                "model": row["model"],
+                "parameter": row["parameter"],
+                "lead_bucket": row["lead_bucket"],
+                "n_samples": int(row["n_samples"]),
+            })
+
+    lead_rows = pd.read_sql_query("""
+        SELECT
+            CASE
+                WHEN lead_hours <= 6 THEN 'L1_0_6h'
+                WHEN lead_hours <= 12 THEN 'L2_6_12h'
+                WHEN lead_hours <= 24 THEN 'L3_12_24h'
+                WHEN lead_hours <= 48 THEN 'L4_24_48h'
+                ELSE 'L5_48plus'
+            END AS lead_bucket,
+            COUNT(*) AS row_count
+        FROM openmeteo_forecasts
+        WHERE run_init_utc <> 'historical_forecast_api'
+        GROUP BY lead_bucket
+        ORDER BY lead_bucket
+    """, db.conn)
+
+    lead_bucket_rows = lead_rows.to_dict(orient="records")
+    for row in lead_bucket_rows:
+        row["row_count"] = int(row["row_count"])
+
+    workflow = {
+        "metadata": {
+            "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
+            "latest_forecast_scrape": latest_time,
+            "timezone": "UTC",
+        },
+        "summary": {
+            "current_forecast_rows": db_health.get("forecast_records"),
+            "openmeteo_rows_total": db_health.get("openmeteo_records"),
+            "awos_hourly_rows": db_health.get("observation_records"),
+            "awos_1min_rows": db_health.get("observation_1min_records"),
+            "qm_cdfs_enabled": db_health.get("qm_cdfs_enabled"),
+            "active_model_count": int(len(freshness)),
+            "historical_model_count": int(len(historical_coverage)),
+        },
+        "pipeline_stages": [
+            {"name": "Open-Meteo fetch", "output": "current 16-day model forecasts"},
+            {"name": "SQLite archive", "output": "run_init_utc, forecast_time, lead_hours, scraped_at"},
+            {"name": "AWOS ingestion", "output": "hourly and 1-minute observations"},
+            {"name": "Training pairs", "output": "forecast-observation joins"},
+            {"name": "QM calibration", "output": "parameter/model correction CDFs"},
+            {"name": "Dynamic weights", "output": "recent skill-weighted ensemble"},
+            {"name": "TAF engine", "output": "base group, change groups, warnings"},
+            {"name": "Dashboard export", "output": "static JSON under docs/data"},
+        ],
+        "model_freshness": freshness,
+        "historical_coverage": historical_coverage,
+        "lead_bucket_rows_current": lead_bucket_rows,
+        "qm_calibration": {
+            "enabled_by_parameter": qm_by_parameter,
+            "enabled_by_model": qm_by_model,
+            "low_confidence": low_confidence,
+            "note": "Historical Forecast API calibration is complete for the continuous historical stream. Lead-specific calibration will deepen as operational multi-run collection grows.",
+        },
+    }
+
+    with open(os.path.join(output_dir, "system_workflow.json"), "w", encoding="utf-8") as f:
+        json.dump(sanitize_for_json(workflow), f, indent=2, default=str, allow_nan=False)
+    return workflow
+
 def export_all(db: ForecastDB, output_dir: str):
     """
     Exports JSON payloads for the HTML dashboard:
@@ -120,12 +266,20 @@ def export_all(db: ForecastDB, output_dir: str):
     
     # 0. Database Health Checker
     db_size_bytes = os.path.getsize(db.conn.execute("PRAGMA database_list").fetchall()[0][2]) if os.path.exists('wawp_forecasts.db') else 0
-    forecast_count = db.conn.execute("SELECT COUNT(*) FROM meteologix_forecasts").fetchone()[0]
+    forecast_count = db.conn.execute(
+        "SELECT COUNT(*) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api'"
+    ).fetchone()[0]
     obs_count = db.conn.execute("SELECT COUNT(*) FROM awos_observations").fetchone()[0]
+    obs_1min_count = db.conn.execute("SELECT COUNT(*) FROM awos_observations_1min").fetchone()[0]
+    openmeteo_count = db.conn.execute("SELECT COUNT(*) FROM openmeteo_forecasts").fetchone()[0]
+    qm_cdf_count = db.conn.execute("SELECT COUNT(*) FROM qm_cdfs WHERE enabled=1").fetchone()[0]
     db_health = {
         "size_mb": round(db_size_bytes / (1024 * 1024), 2),
         "forecast_records": forecast_count,
         "observation_records": obs_count,
+        "observation_1min_records": obs_1min_count,
+        "openmeteo_records": openmeteo_count,
+        "qm_cdfs_enabled": qm_cdf_count,
         "last_sync_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     }
     with open(os.path.join(output_dir, "db_health.json"), "w") as f:
@@ -220,7 +374,7 @@ def export_all(db: ForecastDB, output_dir: str):
             
     # --- RESTORE LEGACY INTELLIGENCE ---
     # Since DB is new, we fallback to the trained weights and diurnal biases from New_CODE
-    legacy_guidance_path = r"D:\UJI_PERFORMA_MODEL\New_CODE\taf_guidance.json"
+    legacy_guidance_path = ""
     legacy_params = {}
     if os.path.exists(legacy_guidance_path):
         try:
@@ -253,12 +407,13 @@ def export_all(db: ForecastDB, output_dir: str):
     # Wait, guidance_generator expects model_data in memory. 
     # run_pipeline currently passes nothing to export_all! We need to fetch the latest forecast.
     
-    query_latest = "SELECT MAX(scraped_at) FROM meteologix_forecasts"
+    query_latest = "SELECT MAX(scraped_at) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api'"
     latest_time_df = pd.read_sql_query(query_latest, db.conn)
     latest_time = latest_time_df.iloc[0, 0]
     
     if not latest_time:
         log.warning("No forecasts found in DB.")
+        export_system_workflow(db, output_dir, db_health, latest_time=None)
         return
         
     log.info(f"Generating TAF guidance for latest scrape: {latest_time}")
@@ -266,37 +421,50 @@ def export_all(db: ForecastDB, output_dir: str):
     # Get the latest scrape for EACH model to handle partial failures
     query_fcst = """
         SELECT m.*
-        FROM meteologix_forecasts m
+        FROM openmeteo_forecasts m
         INNER JOIN (
             SELECT model, MAX(scraped_at) as max_scraped
-            FROM meteologix_forecasts
+            FROM openmeteo_forecasts
+            WHERE run_init_utc <> 'historical_forecast_api'
             GROUP BY model
         ) latest
         ON m.model = latest.model AND m.scraped_at = latest.max_scraped
+        WHERE m.run_init_utc <> 'historical_forecast_api'
     """
     df_fcst = pd.read_sql_query(query_fcst, db.conn)
+    export_system_workflow(db, output_dir, db_health, latest_time=latest_time)
+    active_models = sorted(df_fcst["model"].dropna().unique().tolist())
+    run_init_by_model = {}
+    if 'run_init_utc' in df_fcst.columns:
+        for m in active_models:
+            m_df = df_fcst[df_fcst["model"] == m].dropna(subset=['run_init_utc'])
+            run_init_by_model[m] = str(m_df['run_init_utc'].max()) if not m_df.empty else None
     
-    model_data = {param: {} for param in ["Temperature", "Dewpoint", "Pressure", "Rainfall", "Wind Speed", "Wind Dir.", "Wind Gust", "Prob Precip 0.1mm", "Prob Precip 1.0mm", "Prob Precip 10.0mm", "Sunshine", "Low Clouds", "Mid Clouds", "High Clouds", "Condition"]}
+    model_data = {param: {} for param in ["Temperature", "Dewpoint", "Pressure", "Rainfall", "Wind Speed", "Wind Dir.", "Wind Gust", "Prob Precip 0.1mm", "Prob Precip 1.0mm", "Prob Precip 10.0mm", "Sunshine", "Low Clouds", "Mid Clouds", "High Clouds", "Condition", "CAPE", "Lifted Index", "Convective Inhibition", "Weather Code"]}
     
     param_map = {
         "Temperature": "temperature",
         "Dewpoint": "dewpoint",
-        "Pressure": "pressure",
+        "Pressure": "pressure_msl",
         "Rainfall": "rain",
         "Wind Speed": "wind_speed",
         "Wind Dir.": "wind_dir",
         "Wind Gust": "wind_gust",
-        "Prob Precip 0.1mm": "prob_precip_01",
-        "Prob Precip 1.0mm": "prob_precip_10",
-        "Prob Precip 10.0mm": "prob_precip_100",
-        "Sunshine": "sunshine",
-        "Low Clouds": "low_clouds",
-        "Mid Clouds": "mid_clouds",
-        "High Clouds": "high_clouds",
-        "Condition": "condition"
+        "Prob Precip 0.1mm": "precipitation_probability",
+        "Prob Precip 1.0mm": "precipitation_probability",
+        "Prob Precip 10.0mm": "precipitation_probability",
+        "Sunshine": "sunshine_duration",
+        "Low Clouds": "cloud_cover_low",
+        "Mid Clouds": "cloud_cover_mid",
+        "High Clouds": "cloud_cover_high",
+        "Condition": "condition",
+        "CAPE": "cape",
+        "Lifted Index": "lifted_index",
+        "Convective Inhibition": "convective_inhib",
+        "Weather Code": "weather_code"
     }
     
-    for m in MODELS:
+    for m in active_models:
         m_df = df_fcst[df_fcst["model"] == m].sort_values("forecast_time")
         if not m_df.empty:
             m_df.index = pd.to_datetime(m_df["forecast_time"])
@@ -317,9 +485,31 @@ def export_all(db: ForecastDB, output_dir: str):
             
         weights = global_weights.get(param, {m: 1.0/len(MODELS) for m in MODELS})
         p_df = pd.DataFrame(model_data[param])
+        if p_df.empty:
+            continue
         
         # Quantile Map Rainfall before consensus
-        if param == "Rainfall":
+        qm_param_map = {
+            "Temperature": "temperature",
+            "Dewpoint": "dewpoint",
+            "Pressure": "pressure",
+            "Rainfall": "rain",
+            "Wind Speed": "wind_speed",
+            "Wind Gust": "wind_gust",
+            "Wind Dir.": "wind_dir",
+        }
+        if param in qm_param_map and qm_cdf_count > 0:
+            for m in p_df.columns:
+                run_init = run_init_by_model.get(m)
+                if run_init:
+                    lead_hours = (p_df.index - (pd.to_datetime(run_init) + pd.Timedelta(hours=8))).total_seconds() / 3600.0
+                else:
+                    lead_hours = [0.0] * len(p_df)
+                p_df[m] = [
+                    apply_multiparam_qm(v, m, qm_param_map[param], lh, conn=db.conn)
+                    for v, lh in zip(p_df[m].values, lead_hours)
+                ]
+        elif param == "Rainfall":
             for m in p_df.columns:
                 p_df[m] = qm_mapper.transform_series(p_df[m], model=m)
                 
@@ -342,13 +532,25 @@ def export_all(db: ForecastDB, output_dir: str):
         #                     return row - offset
         #                 p_df[m] = p_df[m].to_frame().apply(lambda x: apply_bias(x), axis=1)
                 
+        def row_weights(valid_index):
+            if len(valid_index) == 0:
+                return []
+            w = [float(weights.get(m, 1.0 / len(valid_index)) or 0.0) for m in valid_index]
+            if sum(w) <= 0:
+                return [1.0 / len(valid_index)] * len(valid_index)
+            return w
+
         if param == "Wind Dir.":
-            consensus[param] = p_df.apply(lambda row: circular_weighted_mean(row.dropna().values, [weights[m] for m in row.dropna().index]) if not row.dropna().empty else np.nan, axis=1)
+            consensus[param] = p_df.apply(
+                lambda row: circular_weighted_mean(row.dropna().values, row_weights(row.dropna().index))
+                if not row.dropna().empty else np.nan,
+                axis=1
+            )
         elif param == "Rainfall":
             def apply_rain_consensus(row):
                 valid = row.dropna()
                 if valid.empty: return np.nan
-                w = [weights[m] for m in valid.index]
+                w = [weights.get(m, 1.0 / len(valid.index)) for m in valid.index]
                 w_sum = sum(w)
                 if w_sum == 0: return np.nan
                 r_mean = np.average(valid, weights=w)
@@ -361,7 +563,11 @@ def export_all(db: ForecastDB, output_dir: str):
                 return r_mean
             consensus[param] = p_df.apply(apply_rain_consensus, axis=1)
         else:
-            consensus[param] = p_df.apply(lambda row: np.average(row.dropna(), weights=[weights[m] for m in row.dropna().index]) if not row.dropna().empty else np.nan, axis=1)
+            consensus[param] = p_df.apply(
+                lambda row: np.average(row.dropna(), weights=row_weights(row.dropna().index))
+                if not row.dropna().empty else np.nan,
+                axis=1
+            )
             
     consensus = consensus.reset_index()
     consensus = consensus.rename(columns={"Wind Speed": "Wind", "Rainfall": "Rain"})
@@ -392,7 +598,7 @@ def export_all(db: ForecastDB, output_dir: str):
     # Output Payloads
     out_path = os.path.join(output_dir, "tafor_intel.json")
     with open(out_path, 'w', encoding='utf-8') as f:
-        json.dump(taf_intel, f, indent=2, default=str)
+        json.dump(sanitize_for_json(taf_intel), f, indent=2, default=str, allow_nan=False)
         
     # Output taf_guidance.json (Consensus data)
     guidance_data = consensus.copy()
@@ -406,7 +612,7 @@ def export_all(db: ForecastDB, output_dir: str):
         "data": guidance_data.to_dict(orient="records")
     }
     with open(os.path.join(output_dir, "taf_guidance.json"), 'w', encoding='utf-8') as f:
-        json.dump(guidance_payload, f, indent=2, default=str, allow_nan=False)
+        json.dump(sanitize_for_json(guidance_payload), f, indent=2, default=str, allow_nan=False)
         
     # Output individual_models.json
     model_data_str = {}
@@ -423,14 +629,8 @@ def export_all(db: ForecastDB, output_dir: str):
     # Extract Run_Init_UTC — use the most recent init per model
     run_init = {}
     if 'run_init_utc' in df_fcst.columns:
-        for m in MODELS:
-            m_df = df_fcst[df_fcst["model"] == m].dropna(subset=['run_init_utc'])
-            if not m_df.empty:
-                # Take the latest (MAX) init time, not just the first row
-                val = m_df['run_init_utc'].max()
-                run_init[m] = str(val) if val else "Unknown"
-            else:
-                run_init[m] = "Unknown"
+        for m in active_models:
+            run_init[m] = run_init_by_model.get(m) or "Unknown"
     model_data_str["Run_Init"] = run_init
             
     with open(os.path.join(output_dir, "individual_models.json"), 'w', encoding='utf-8') as f:
@@ -456,9 +656,16 @@ def export_all(db: ForecastDB, output_dir: str):
     with open(history_path, 'a', encoding='utf-8') as f:
         f.write(json.dumps(snapshot) + "\n")
 
-    # 4. Copy Climatology Data
+    # 4. Copy/Generate Climatology Data
     try:
-        clim_src = r'D:\UJI_PERFORMA_MODEL\New_CODE\wawp_climatology.json'
+        from src.diurnal_analysis import generate_diurnal_analysis
+        if obs_count > 0:
+            generate_diurnal_analysis(db.conn.execute("PRAGMA database_list").fetchall()[0][2], output_dir)
+    except Exception as e:
+        log.warning(f"Diurnal analysis export failed: {e}")
+
+    try:
+        clim_src = os.path.join(output_dir, "wawp_climatology.json")
         clim_dst = os.path.join(output_dir, 'climatology.json')
         if os.path.exists(clim_src):
             shutil.copy(clim_src, clim_dst)

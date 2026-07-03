@@ -1,0 +1,15 @@
+wawp_forecasts.db
+wawp_forecasts.db.backup_*
+wawp_forecasts.db-wal
+wawp_forecasts.db-shm
+meteologix_data.db
+docs/data/qm_state.json
+docs/data/diurnal_climatology.json
+docs/data/diurnal_plots/
+docs/data/qm_status.json
+docs/data/health.json
+Archives/
+data/raw_obs/
+*.pyc
+__pycache__/
+.pytest_cache/
