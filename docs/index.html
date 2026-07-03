@@ -39,7 +39,7 @@
             <li data-tab="tab-persistency">Persistency (Obs)</li>
         </ul>
         <div class="last-update">
-            <div>Last Forecast Run:</div>
+            <div>Last Data Pull:</div>
             <div id="update-time" class="time-val">Loading...</div>
         </div>
     </nav>
@@ -185,19 +185,14 @@
                 <select id="model-select" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px;">
                     <option value="ECMWF_HRES">ECMWF_HRES</option>
                     <option value="GFS_GLOBAL">GFS_GLOBAL</option>
-                    <option value="GFS_SEAMLESS">GFS_SEAMLESS</option>
-                    <option value="ICON_GLOBAL">ICON_GLOBAL</option>
                     <option value="ICON_SEAMLESS">ICON_SEAMLESS</option>
                     <option value="GEM_GLOBAL">GEM_GLOBAL</option>
-                    <option value="GEM_SEAMLESS">GEM_SEAMLESS</option>
                     <option value="CMA_GRAPES_GLOBAL">CMA_GRAPES_GLOBAL</option>
                     <option value="JMA_GSM">JMA_GSM</option>
-                    <option value="BOM_ACCESS_GLOBAL">BOM_ACCESS_GLOBAL</option>
                     <option value="METEOFRANCE_ARPEGE_WORLD">METEOFRANCE_ARPEGE_WORLD</option>
                     <option value="UKMO_GLOBAL_10KM">UKMO_GLOBAL_10KM</option>
-                    <option value="ERA5_SEAMLESS">ERA5_SEAMLESS</option>
                 </select>
-                <span id="model-init-badge" style="margin-left: 15px; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-glass);">Init: Unknown</span>
+                <span id="model-init-badge" style="margin-left: 15px; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-glass);">Run label: Unknown</span>
             </div>
             <div class="panel">
                 <div class="table-container">
@@ -356,7 +351,7 @@
                 <div class="panel">
                     <h3>Database Status</h3>
                     <p style="color: var(--text-secondary); margin-top: 5px; font-size: 0.9em; line-height: 1.4;">
-                        The backend SQLite database continuously archives the historical predictions from all 7 global models (Forecast Records). Once AWOS observations are ingested, the system compares the historical forecasts against the actual weather to mathematically calculate which model performs best.
+                        The backend SQLite database continuously archives the operational Open-Meteo model feeds. Once AWOS observations are ingested, the system compares the historical forecasts against the actual weather to mathematically calculate which model performs best.
                     </p>
                     <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
                         <div class="param-card">
@@ -411,7 +406,7 @@
                         <thead>
                             <tr>
                                 <th>Model</th>
-                                <th>Run Init</th>
+                                <th>Run Label</th>
                                 <th>Scraped</th>
                                 <th>Age</th>
                                 <th>Rows</th>

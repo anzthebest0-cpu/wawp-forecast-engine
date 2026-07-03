@@ -406,6 +406,8 @@ class ForecastDB:
         # Return long format directly to preserve model-specific run_init_utc for lead-time calculation.
         # Verification has migrated to Open-Meteo; the old meteologix_forecasts
         # table is retained only as a compatibility archive for earlier exports.
+        from src.advanced_ensemble_weighter import MODELS
+        model_filter = ",".join("?" for _ in MODELS)
         f_col_sql = "pressure_msl" if f_col == "pressure" else f_col
         query = f"""
             SELECT 
@@ -420,8 +422,9 @@ class ForecastDB:
                 AND f.forecast_time = o.obs_time
             WHERE f.forecast_time >= ? AND f.forecast_time <= ?
               AND f.run_init_utc = 'historical_forecast_api'
+              AND f.model IN ({model_filter})
         """
-        return pd.read_sql_query(query, self.conn, params=(start_date, end_date))
+        return pd.read_sql_query(query, self.conn, params=(start_date, end_date, *MODELS))
 
     def ingest_awos_files(self, directory: str) -> int:
         """

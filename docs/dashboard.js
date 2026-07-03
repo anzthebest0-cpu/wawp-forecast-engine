@@ -1,3 +1,8 @@
+const SPREAD_MAX_HOURS = 96;
+let pendingSpreadModelsData = null;
+let pendingSpreadTimeLabels = [];
+let spreadChartsRendered = false;
+
 async function loadDashboard() {
     try {
         const cb = '?t=' + new Date().getTime();
@@ -22,7 +27,7 @@ async function loadDashboard() {
         const guidanceJson = results[3].status === 'fulfilled' ? results[3].value : {data: []};
         const data = guidanceJson.data || [];
         const generatedAt = guidanceJson.metadata
-            ? (guidanceJson.metadata.latest_model_run_init_utc || guidanceJson.metadata.generated_at)
+            ? (guidanceJson.metadata.latest_data_pull_utc || guidanceJson.metadata.generated_at || guidanceJson.metadata.latest_model_run_init_utc)
             : (intel.valid_start || "Unknown");
 
         // Filter data to only show current and future hours
@@ -48,7 +53,7 @@ async function loadDashboard() {
             if (fcElem) fcElem.innerText = healthData.forecast_records.toLocaleString();
             if (obsElem) obsElem.innerText = healthData.observation_records.toLocaleString();
             if (sizeElem) sizeElem.innerText = healthData.size_mb + ' MB';
-            if (syncElem) syncElem.innerText = (healthData.latest_model_run_init_utc || healthData.last_sync_utc) + ' UTC';
+            if (syncElem) syncElem.innerText = (healthData.last_sync_utc || healthData.latest_model_run_init_utc) + ' UTC';
             setupHealthFreshness(healthData.model_freshness || []);
         }
 
@@ -262,7 +267,12 @@ async function loadDashboard() {
         // 5.5 Individual Models
         if (modelsData && renderData) {
             setupIndividualModels(modelsData, renderData.map(d=>d.Datetime));
-            setupSpreadCharts(modelsData, renderData.map(d=>d.Datetime));
+            pendingSpreadModelsData = modelsData;
+            pendingSpreadTimeLabels = renderData.map(d=>d.Datetime).slice(0, SPREAD_MAX_HOURS);
+            spreadChartsRendered = false;
+            if (document.getElementById('tab-spread')?.classList.contains('active')) {
+                setupSpreadCharts(pendingSpreadModelsData, pendingSpreadTimeLabels);
+            }
         }
         
         // 6. Regional & Climatology
@@ -291,6 +301,10 @@ function switchTab(tabId) {
     
     document.getElementById(tabId).classList.add('active');
     document.querySelector(`.nav-links li[data-tab="${tabId}"]`).classList.add('active');
+
+    if (tabId === 'tab-spread' && pendingSpreadModelsData && !spreadChartsRendered) {
+        setupSpreadCharts(pendingSpreadModelsData, pendingSpreadTimeLabels);
+    }
 }
 
 // Global setup
@@ -318,6 +332,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupSpreadCharts(modelsData, timeLabels) {
+    spreadChartsRendered = true;
+    const spreadTimeLabels = (timeLabels || []).slice(0, SPREAD_MAX_HOURS);
+    ['spread-temp', 'spread-t-td', 'spread-wind', 'spread-rain'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+    });
+
     const getPercentile = (dataArr, p) => {
         if(dataArr.length === 0) return null;
         dataArr.sort((a,b) => a-b);
@@ -334,7 +355,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
         const rangeIQR = [];
         const medLine = [];
         
-        for (const t of timeLabels) {
+        for (const t of spreadTimeLabels) {
             const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
             const vals = [];
             for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
@@ -359,7 +380,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
         const series = [];
         for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
             const dataPts = [];
-            for (const t of timeLabels) {
+            for (const t of spreadTimeLabels) {
                 const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
                 if (modelVals[t] !== undefined && modelVals[t] !== null) {
                     dataPts.push([ts, modelVals[t]]);
@@ -393,7 +414,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
         const rangeMaxMin = [];
         const rangeIQR = [];
         const medLine = [];
-        for (const t of timeLabels) {
+        for (const t of spreadTimeLabels) {
             const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
             const vals = [];
             for (const [model, modelVals] of Object.entries(modelsData['Temperature'] || {})) {
@@ -1022,7 +1043,7 @@ function setupIndividualModels(modelsData, timeLabels) {
         if (initBadge && modelsData['Run_Init'] && modelsData['Run_Init'][modelName]) {
             let initStr = modelsData['Run_Init'][modelName];
             if (initStr === "Unknown") {
-                initBadge.innerText = "Init: Unknown";
+                initBadge.innerText = "Run label: Unknown";
                 initBadge.style.color = "var(--text-secondary)";
                 initBadge.style.borderColor = "var(--border-glass)";
             } else {
@@ -1033,7 +1054,7 @@ function setupIndividualModels(modelsData, timeLabels) {
                 const d = new Date(initStr);
                 const hrs = String(d.getUTCHours()).padStart(2, '0');
                 const mns = String(d.getUTCMinutes()).padStart(2, '0');
-                initBadge.innerText = `Init: ${hrs}${mns}Z`;
+                initBadge.innerText = `Run label: ${hrs}${mns}Z`;
                 initBadge.style.color = "var(--cyan)";
                 initBadge.style.borderColor = "rgba(0, 212, 255, 0.25)";
             }

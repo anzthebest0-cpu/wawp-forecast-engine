@@ -268,17 +268,12 @@ def _norm_cdf(x: float) -> float:
 MODELS = [
     "ECMWF_HRES",
     "GFS_GLOBAL",
-    "GFS_SEAMLESS",
-    "ICON_GLOBAL",
     "ICON_SEAMLESS",
     "GEM_GLOBAL",
-    "GEM_SEAMLESS",
     "CMA_GRAPES_GLOBAL",
     "JMA_GSM",
-    "BOM_ACCESS_GLOBAL",
     "METEOFRANCE_ARPEGE_WORLD",
     "UKMO_GLOBAL_10KM",
-    "ERA5_SEAMLESS",
 ]
 
 PARAMETERS = {

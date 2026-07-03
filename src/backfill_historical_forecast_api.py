@@ -63,17 +63,12 @@ HISTORICAL_MODELS_OPENMETEO = {
     # ECMWF HRES only, per migration requirement.
     "ECMWF_HRES": "ecmwf_ifs025",
     "GFS_GLOBAL": "gfs_global",
-    "GFS_SEAMLESS": "gfs_seamless",
-    "ICON_GLOBAL": "icon_global",
     "ICON_SEAMLESS": "icon_seamless",
     "GEM_GLOBAL": "gem_global",
-    "GEM_SEAMLESS": "gem_seamless",
     "CMA_GRAPES_GLOBAL": "cma_grapes_global",
     "JMA_GSM": "jma_gsm",
-    "BOM_ACCESS_GLOBAL": "bom_access_global",
     "METEOFRANCE_ARPEGE_WORLD": "meteofrance_arpege_world",
     "UKMO_GLOBAL_10KM": "ukmo_global_deterministic_10km",
-    "ERA5_SEAMLESS": "era5_seamless",
 }
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")

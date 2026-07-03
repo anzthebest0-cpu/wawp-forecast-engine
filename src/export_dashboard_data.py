@@ -119,9 +119,18 @@ def _safe_dt(value):
     return dt.to_pydatetime()
 
 
+def _model_placeholders() -> str:
+    return ",".join("?" for _ in MODELS)
+
+
+def _model_params(multiplier: int = 1) -> tuple[str, ...]:
+    return tuple(MODELS) * multiplier
+
+
 def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, latest_time: str | None = None) -> dict:
     now = datetime.now(timezone.utc)
-    current_rows = pd.read_sql_query("""
+    model_filter = _model_placeholders()
+    current_rows = pd.read_sql_query(f"""
         SELECT
             model,
             COUNT(*) AS row_count,
@@ -133,9 +142,10 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
             MAX(lead_hours) AS max_lead_hours
         FROM openmeteo_forecasts
         WHERE run_init_utc <> 'historical_forecast_api'
+          AND model IN ({model_filter})
         GROUP BY model
         ORDER BY model
-    """, db.conn)
+    """, db.conn, params=_model_params())
 
     freshness = []
     for _, row in current_rows.iterrows():
@@ -164,23 +174,25 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
             "status": status,
         })
 
-    historical_rows = pd.read_sql_query("""
+    historical_rows = pd.read_sql_query(f"""
         SELECT model, COUNT(*) AS row_count, MIN(forecast_time) AS first_time, MAX(forecast_time) AS last_time
         FROM openmeteo_forecasts
         WHERE run_init_utc = 'historical_forecast_api'
+          AND model IN ({model_filter})
         GROUP BY model
         ORDER BY model
-    """, db.conn)
+    """, db.conn, params=_model_params())
     historical_coverage = historical_rows.to_dict(orient="records")
     for row in historical_coverage:
         row["row_count"] = int(row["row_count"])
 
-    qm_rows = pd.read_sql_query("""
+    qm_rows = pd.read_sql_query(f"""
         SELECT model, parameter, lead_bucket, n_samples, low_confidence
         FROM qm_cdfs
         WHERE enabled = 1
+          AND model IN ({model_filter})
         ORDER BY model, parameter, lead_bucket
-    """, db.conn)
+    """, db.conn, params=_model_params())
     qm_by_parameter = {}
     qm_by_model = {}
     low_confidence = []
@@ -195,7 +207,7 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
                 "n_samples": int(row["n_samples"]),
             })
 
-    lead_rows = pd.read_sql_query("""
+    lead_rows = pd.read_sql_query(f"""
         SELECT
             CASE
                 WHEN lead_hours <= 6 THEN 'L1_0_6h'
@@ -207,9 +219,10 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
             COUNT(*) AS row_count
         FROM openmeteo_forecasts
         WHERE run_init_utc <> 'historical_forecast_api'
+          AND model IN ({model_filter})
         GROUP BY lead_bucket
         ORDER BY lead_bucket
-    """, db.conn)
+    """, db.conn, params=_model_params())
 
     lead_bucket_rows = lead_rows.to_dict(orient="records")
     for row in lead_bucket_rows:
@@ -266,15 +279,21 @@ def export_all(db: ForecastDB, output_dir: str):
     
     # 0. Database Health Checker
     db_size_bytes = os.path.getsize(db.conn.execute("PRAGMA database_list").fetchall()[0][2]) if os.path.exists('wawp_forecasts.db') else 0
+    model_filter = _model_placeholders()
     forecast_count = db.conn.execute(
-        "SELECT COUNT(*) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api'"
+        f"SELECT COUNT(*) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api' AND model IN ({model_filter})",
+        _model_params()
     ).fetchone()[0]
     obs_count = db.conn.execute("SELECT COUNT(*) FROM awos_observations").fetchone()[0]
     obs_1min_count = db.conn.execute("SELECT COUNT(*) FROM awos_observations_1min").fetchone()[0]
     openmeteo_count = db.conn.execute("SELECT COUNT(*) FROM openmeteo_forecasts").fetchone()[0]
-    qm_cdf_count = db.conn.execute("SELECT COUNT(*) FROM qm_cdfs WHERE enabled=1").fetchone()[0]
+    qm_cdf_count = db.conn.execute(
+        f"SELECT COUNT(*) FROM qm_cdfs WHERE enabled=1 AND model IN ({model_filter})",
+        _model_params()
+    ).fetchone()[0]
     latest_model_run_init = db.conn.execute(
-        "SELECT MAX(run_init_utc) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api'"
+        f"SELECT MAX(run_init_utc) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api' AND model IN ({model_filter})",
+        _model_params()
     ).fetchone()[0]
     db_health = {
         "size_mb": round(db_size_bytes / (1024 * 1024), 2),
@@ -411,8 +430,8 @@ def export_all(db: ForecastDB, output_dir: str):
     # Wait, guidance_generator expects model_data in memory. 
     # run_pipeline currently passes nothing to export_all! We need to fetch the latest forecast.
     
-    query_latest = "SELECT MAX(scraped_at) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api'"
-    latest_time_df = pd.read_sql_query(query_latest, db.conn)
+    query_latest = f"SELECT MAX(scraped_at) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api' AND model IN ({model_filter})"
+    latest_time_df = pd.read_sql_query(query_latest, db.conn, params=_model_params())
     latest_time = latest_time_df.iloc[0, 0]
     
     if not latest_time:
@@ -426,19 +445,21 @@ def export_all(db: ForecastDB, output_dir: str):
     log.info(f"Generating TAF guidance for latest scrape: {latest_time}")
     
     # Get the latest scrape for EACH model to handle partial failures
-    query_fcst = """
+    query_fcst = f"""
         SELECT m.*
         FROM openmeteo_forecasts m
         INNER JOIN (
             SELECT model, MAX(scraped_at) as max_scraped
             FROM openmeteo_forecasts
             WHERE run_init_utc <> 'historical_forecast_api'
+              AND model IN ({model_filter})
             GROUP BY model
         ) latest
         ON m.model = latest.model AND m.scraped_at = latest.max_scraped
         WHERE m.run_init_utc <> 'historical_forecast_api'
+          AND m.model IN ({model_filter})
     """
-    df_fcst = pd.read_sql_query(query_fcst, db.conn)
+    df_fcst = pd.read_sql_query(query_fcst, db.conn, params=_model_params(2))
     workflow = export_system_workflow(db, output_dir, db_health, latest_time=latest_time)
     db_health["model_freshness"] = workflow.get("model_freshness", [])
     with open(os.path.join(output_dir, "db_health.json"), "w") as f:
@@ -614,7 +635,9 @@ def export_all(db: ForecastDB, output_dir: str):
     guidance_payload = {
         "metadata": {
             "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+            "latest_data_pull_utc": latest_time,
             "latest_model_run_init_utc": latest_model_run_init,
+            "forecast_run_label_utc": latest_model_run_init,
             "version": "v200",
             "location": "Bandara_Sangia_Ni_Bandera"
         },

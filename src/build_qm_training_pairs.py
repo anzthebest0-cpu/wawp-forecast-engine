@@ -7,14 +7,17 @@ import logging
 import os
 import sys
 
+from src.advanced_ensemble_weighter import MODELS
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("qm_pairs")
 
 
 def build_training_pairs(db) -> int:
     log.info("Building qm_training_pairs candidate")
+    model_filter = ",".join("?" for _ in MODELS)
     db.conn.execute("DROP TABLE IF EXISTS qm_training_pairs_candidate")
-    db.conn.execute("""
+    db.conn.execute(f"""
         CREATE TABLE qm_training_pairs_candidate AS
         SELECT
             f.model,
@@ -52,8 +55,9 @@ def build_training_pairs(db) -> int:
             ON f.forecast_time = o.obs_time
             AND f.location = o.location
         WHERE o.temperature IS NOT NULL
+          AND f.model IN ({model_filter})
         ORDER BY f.model, f.run_init_utc, f.forecast_time
-    """)
+    """, tuple(MODELS))
     n = db.conn.execute("SELECT COUNT(*) FROM qm_training_pairs_candidate").fetchone()[0]
     if n <= 0:
         exists = db.conn.execute("""
@@ -66,33 +70,9 @@ def build_training_pairs(db) -> int:
             db.conn.commit()
             log.warning("No new QM training pairs found; preserving existing qm_training_pairs table")
             return int(db.conn.execute("SELECT COUNT(*) FROM qm_training_pairs").fetchone()[0])
-        log.warning("No QM training pairs found; creating empty qm_training_pairs table")
-        db.conn.execute("""
-            CREATE TABLE qm_training_pairs AS
-            SELECT * FROM (
-                SELECT
-                    CAST(NULL AS TEXT) AS model,
-                    CAST(NULL AS TEXT) AS run_init_utc,
-                    CAST(NULL AS TEXT) AS valid_time,
-                    CAST(NULL AS REAL) AS lead_hours,
-                    CAST(NULL AS TEXT) AS lead_bucket,
-                    CAST(NULL AS TEXT) AS lead_bucket_gust,
-                    CAST(NULL AS REAL) AS fcst_temperature,
-                    CAST(NULL AS REAL) AS fcst_dewpoint,
-                    CAST(NULL AS REAL) AS fcst_pressure,
-                    CAST(NULL AS REAL) AS fcst_wind_speed,
-                    CAST(NULL AS REAL) AS fcst_wind_gust,
-                    CAST(NULL AS REAL) AS fcst_wind_dir,
-                    CAST(NULL AS REAL) AS fcst_rain,
-                    CAST(NULL AS REAL) AS obs_temperature,
-                    CAST(NULL AS REAL) AS obs_dewpoint,
-                    CAST(NULL AS REAL) AS obs_pressure,
-                    CAST(NULL AS REAL) AS obs_wind_speed,
-                    CAST(NULL AS REAL) AS obs_wind_gust,
-                    CAST(NULL AS REAL) AS obs_wind_dir,
-                    CAST(NULL AS REAL) AS obs_rain
-            ) WHERE 0
-        """)
+        db.conn.commit()
+        log.warning("No QM training pairs found; leaving qm_training_pairs unchanged")
+        return 0
     else:
         log.info("Replacing qm_training_pairs table")
         db.conn.execute("DROP TABLE IF EXISTS qm_training_pairs")

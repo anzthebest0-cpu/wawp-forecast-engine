@@ -66,12 +66,16 @@ def run():
             }, f, indent=2)
 
         try:
-            openmeteo_count = db.conn.execute("SELECT COUNT(*) FROM openmeteo_forecasts").fetchone()[0]
             obs_count = db.conn.execute("SELECT COUNT(*) FROM awos_observations").fetchone()[0]
-            if openmeteo_count > 0 and obs_count > 0:
+            historical_count = db.conn.execute(
+                "SELECT COUNT(*) FROM openmeteo_forecasts WHERE run_init_utc = 'historical_forecast_api'"
+            ).fetchone()[0]
+            if historical_count > 0 and obs_count > 0:
                 pair_count = build_training_pairs(db)
                 if pair_count > 0:
                     train_multiparam_qm(DB_PATH, DOCS_DIR)
+            else:
+                log.info("Skipping QM training refresh: no historical forecast-observation archive overlap yet.")
         except Exception as e:
             log.error(f"QM training refresh failed: {e}")
 
