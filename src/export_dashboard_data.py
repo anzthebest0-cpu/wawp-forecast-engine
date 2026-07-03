@@ -927,14 +927,8 @@ def export_all(db: ForecastDB, output_dir: str):
 
     # 5. Export Persistency (Last 5 Days of AWOS)
     try:
-        latest_obs_time = db.conn.execute("SELECT MAX(obs_time) FROM awos_observations").fetchone()[0]
-        anchor = pd.to_datetime(latest_obs_time) if latest_obs_time else datetime.now(timezone.utc)
-        seven_days_ago = (anchor - pd.Timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
-        obs_df = pd.read_sql(
-            "SELECT * FROM awos_observations WHERE obs_time >= ? ORDER BY obs_time ASC",
-            db.conn,
-            params=(seven_days_ago,),
-        )
+        five_days_ago = (datetime.now(timezone.utc) - timedelta(days=5)).strftime("%Y-%m-%d %H:%M:%S")
+        obs_df = pd.read_sql("SELECT * FROM awos_observations WHERE obs_time >= ? ORDER BY obs_time ASC", db.conn, params=(five_days_ago,))
         if not obs_df.empty:
             obs_df['Datetime'] = pd.to_datetime(obs_df['obs_time']).dt.strftime('%Y-%m-%d %H:00:00')
             persistency_payload = obs_df[['Datetime', 'temperature', 'dewpoint', 'wind_dir', 'wind_speed', 'rain_1h']].to_dict(orient='records')
