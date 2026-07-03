@@ -32,6 +32,8 @@ WITA_OFFSET_HOURS = 8
 WET_SEASON_MONTHS = [11, 12, 1, 2, 3, 4]
 DRY_SEASON_MONTHS = [5, 6, 7, 8, 9, 10]
 PARAMETERS = ["temperature", "dewpoint", "pressure", "humidity", "wind_speed", "wind_gust_max", "wind_dir", "rain_1h"]
+GUST_EVENT_THRESHOLD_KT = 15.0
+GUST_SPREAD_THRESHOLD_KT = 5.0
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("diurnal")
@@ -98,9 +100,24 @@ def compute_gust_diurnal_cycle(df: pd.DataFrame) -> dict:
     for h in range(24):
         subset = df[df["hour_wita"] == h]
         gust_values = subset["wind_gust_max"].dropna()
-        freq.append(float(len(gust_values) / len(subset) * 100) if len(subset) else 0.0)
-        intensity.append(float(gust_values.mean()) if len(gust_values) else 0.0)
-    return {"hours": list(range(24)), "frequency_pct": freq, "intensity_kt": intensity}
+        if subset.empty:
+            freq.append(0.0)
+            intensity.append(0.0)
+            continue
+        gust_spread = subset["wind_gust_max"] - subset["wind_speed"]
+        event_mask = (subset["wind_gust_max"] >= GUST_EVENT_THRESHOLD_KT) | (gust_spread >= GUST_SPREAD_THRESHOLD_KT)
+        event_values = subset.loc[event_mask, "wind_gust_max"].dropna()
+        freq.append(float(event_mask.fillna(False).mean() * 100.0))
+        intensity.append(float(event_values.mean()) if len(event_values) else 0.0)
+    return {
+        "hours": list(range(24)),
+        "frequency_pct": freq,
+        "intensity_kt": intensity,
+        "event_definition": {
+            "gust_threshold_kt": GUST_EVENT_THRESHOLD_KT,
+            "gust_minus_wind_threshold_kt": GUST_SPREAD_THRESHOLD_KT,
+        },
+    }
 
 
 def compute_t_td_spread_cycle(df: pd.DataFrame) -> dict:

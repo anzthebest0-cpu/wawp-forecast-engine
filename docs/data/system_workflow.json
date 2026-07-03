@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at": "2026-07-03 15:45:15",
+    "generated_at": "2026-07-03 16:08:49",
     "latest_forecast_scrape": "2026-07-03 15:42:01",
     "timezone": "UTC"
   },
@@ -57,7 +57,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.06,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -69,7 +69,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.06,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -81,7 +81,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.06,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -93,7 +93,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.06,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -105,7 +105,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.06,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -117,7 +117,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.06,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -129,7 +129,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.05,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -141,7 +141,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.05,
+      "age_hours": 0.45,
       "status": "fresh"
     }
   ],

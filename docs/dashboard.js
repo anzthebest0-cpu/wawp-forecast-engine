@@ -98,14 +98,14 @@ async function loadDashboard() {
         }
         startShiftCountdown();
         
-        // TS Probability logic
+        // Thunderstorm proxy risk display. TAF weather groups are generated separately in the backend.
         const tsProbVal = document.getElementById('ts-prob-val');
         const tsProbTime = document.getElementById('ts-prob-time');
         if (tsProbVal && tsProbTime && renderData && renderData.length > 0) {
             let maxProb = 0;
             let peakTime = "";
             renderData.forEach(d => {
-                let prob = d['Precip Probability'] || d['Prob Precip 1.0mm'] || 0;
+                let prob = d['Thunderstorm Risk'] ?? d['Precip Probability'] ?? d['Prob Precip 1.0mm'] ?? 0;
                 if(prob > maxProb) {
                     maxProb = prob;
                     peakTime = d.Datetime.substring(11, 16);
@@ -945,7 +945,7 @@ function setupDiurnalClimatology(clim) {
 
     const briefing = clim.operational_briefing?.bullets || [];
     document.getElementById('climatology-text').innerHTML = briefing.length
-        ? `<ul style="margin:0; padding-left:18px;">${briefing.map(b => `<li style="margin-bottom:8px;">${b}</li>`).join('')}</ul>`
+        ? `<ul class="climatology-briefing-list">${briefing.map(b => `<li>${b}</li>`).join('')}</ul>`
         : 'No climatology briefing is available.';
 
     const baseAxis = {
@@ -992,8 +992,8 @@ function setupDiurnalClimatology(clim) {
         ...baseAxis,
         series: [
             { name: 'Wind Speed kt', type: 'line', data: windMean },
-            { name: 'Gust Occurrence %', type: 'column', data: gustFreq },
-            { name: 'Mean Gust kt', type: 'line', data: gustIntensity }
+            { name: 'Gust Event %', type: 'column', data: gustFreq },
+            { name: 'Mean Event Gust kt', type: 'line', data: gustIntensity }
         ],
         chart: { ...baseAxis.chart, height: 320 },
         stroke: { width: [3, 0, 3], curve: 'smooth' },

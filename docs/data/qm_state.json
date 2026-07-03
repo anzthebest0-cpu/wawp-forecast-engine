@@ -3,7 +3,7 @@
   "vote_thr": 1.0,
   "n_quantiles": 20,
   "min_samples": 10,
-  "saved_at": "2026-07-03T15:45:13.739752+00:00",
+  "saved_at": "2026-07-03T16:08:48.626692+00:00",
   "models": {
     "GFS_GLOBAL": {
       "fc_quantiles": [
@@ -53,7 +53,7 @@
       "obs_max": 12.0,
       "source": "empirical",
       "n_pairs": 10,
-      "fitted_at": "2026-07-03T15:45:13.713520+00:00"
+      "fitted_at": "2026-07-03T16:08:48.612167+00:00"
     },
     "ICON_SEAMLESS": {
       "fc_quantiles": [
@@ -103,7 +103,7 @@
       "obs_max": 12.0,
       "source": "empirical",
       "n_pairs": 10,
-      "fitted_at": "2026-07-03T15:45:13.729841+00:00"
+      "fitted_at": "2026-07-03T16:08:48.612167+00:00"
     },
     "GEM_GLOBAL": {
       "fc_quantiles": [
@@ -153,7 +153,7 @@
       "obs_max": 12.0,
       "source": "empirical",
       "n_pairs": 16,
-      "fitted_at": "2026-07-03T15:45:13.733851+00:00"
+      "fitted_at": "2026-07-03T16:08:48.612167+00:00"
     },
     "CMA_GRAPES_GLOBAL": {
       "fc_quantiles": [
@@ -203,7 +203,7 @@
       "obs_max": 12.0,
       "source": "empirical",
       "n_pairs": 17,
-      "fitted_at": "2026-07-03T15:45:13.736478+00:00"
+      "fitted_at": "2026-07-03T16:08:48.612167+00:00"
     },
     "UKMO_GLOBAL_10KM": {
       "fc_quantiles": [
@@ -253,7 +253,7 @@
       "obs_max": 28.0,
       "source": "empirical",
       "n_pairs": 13,
-      "fitted_at": "2026-07-03T15:45:13.739752+00:00"
+      "fitted_at": "2026-07-03T16:08:48.626692+00:00"
     }
   }
 }

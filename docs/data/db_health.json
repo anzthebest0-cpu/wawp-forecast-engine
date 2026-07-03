@@ -6,7 +6,7 @@
   "openmeteo_records": 406488,
   "qm_cdfs_enabled": 39,
   "latest_model_run_init_utc": "2026-07-03 15:00:00",
-  "last_sync_utc": "2026-07-03 15:45:11",
+  "last_sync_utc": "2026-07-03 16:08:46",
   "model_freshness": [
     {
       "model": "CMA_GRAPES_GLOBAL",
@@ -17,7 +17,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.06,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -29,7 +29,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.06,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -41,7 +41,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.06,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -53,7 +53,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.06,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -65,7 +65,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.06,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -77,7 +77,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.06,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -89,7 +89,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.05,
+      "age_hours": 0.45,
       "status": "fresh"
     },
     {
@@ -101,7 +101,7 @@
       "last_forecast_time": "2026-07-19 22:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.05,
+      "age_hours": 0.45,
       "status": "fresh"
     }
   ],

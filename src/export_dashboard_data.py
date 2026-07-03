@@ -42,6 +42,111 @@ def _long_to_wide(df_long: pd.DataFrame, param: str) -> pd.DataFrame:
     # Merge observations back
     return pd.merge(wide_df, obs_df, on="Datetime", how="left")
 
+
+def _weights_effectively_equal(weights: dict[str, float]) -> bool:
+    vals = [float(v) for v in weights.values() if v is not None]
+    return bool(vals) and max(vals) - min(vals) < 1e-6
+
+
+def _skill_fallback_weights(df_long: pd.DataFrame, param: str, is_circular: bool) -> dict[str, float]:
+    """Dependency-free inverse-error weights from historical verification pairs."""
+    equal = {m: 1.0 / len(MODELS) for m in MODELS}
+    if df_long.empty:
+        return equal
+
+    scores = {}
+    for model in MODELS:
+        sub = df_long[df_long["Model"] == model][["forecast", "obs"]].dropna()
+        if len(sub) < 20:
+            scores[model] = 0.0
+            continue
+
+        fc = sub["forecast"].astype(float)
+        ob = sub["obs"].astype(float)
+        if is_circular:
+            err = ((fc - ob + 180.0) % 360.0) - 180.0
+            score = 1.0 / (float(err.abs().mean()) + 1.0)
+        elif param == "Rainfall":
+            mae = float((fc - ob).abs().mean())
+            fc_wet = fc > 0.1
+            ob_wet = ob > 0.1
+            occurrence_error = float((fc_wet != ob_wet).mean())
+            score = (0.65 / (mae + 0.1)) + (0.35 / (occurrence_error + 0.05))
+        else:
+            mae = float((fc - ob).abs().mean())
+            score = 1.0 / (mae + 0.05)
+
+        scores[model] = score * min(1.0, len(sub) / 200.0)
+
+    total = sum(v for v in scores.values() if v > 0)
+    if total <= 0:
+        return equal
+
+    weights = {m: max(0.0, scores.get(m, 0.0)) / total for m in MODELS}
+    weights = {m: max(0.02, min(0.35, w)) for m, w in weights.items()}
+    total = sum(weights.values())
+    return {m: weights[m] / total for m in MODELS}
+
+
+def _compute_ts_risk(row: pd.Series) -> float:
+    """Dashboard TS proxy; TAF phenomenon selection still uses taf_core/vis_cloud_proxy."""
+    def num(name, default=0.0):
+        value = row.get(name, default)
+        try:
+            if pd.isna(value):
+                return default
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    prob = max(0.0, min(100.0, num("Precip Probability", 0.0)))
+    rain = max(0.0, num("Rain", 0.0))
+    cape = num("CAPE", 0.0)
+    li = row.get("Lifted Index")
+    cin = row.get("Convective Inhibition")
+    weather_code = row.get("Weather Code")
+    hour = row.get("Datetime").hour if hasattr(row.get("Datetime"), "hour") else 0
+
+    score = prob * 0.35
+    if rain >= 0.1:
+        score += 8.0
+    if rain >= 1.0:
+        score += 10.0
+    if rain >= 5.0:
+        score += 15.0
+    if cape >= 500:
+        score += 12.0
+    if cape >= 1000:
+        score += 8.0
+    try:
+        li_val = float(li)
+        if li_val <= -2:
+            score += 10.0
+        if li_val <= -4:
+            score += 5.0
+    except (TypeError, ValueError):
+        pass
+    try:
+        cin_val = float(cin)
+        if cin_val <= 100:
+            score += 8.0
+        if cin_val <= 50:
+            score += 4.0
+        if cin_val > 200:
+            score -= 10.0
+    except (TypeError, ValueError):
+        pass
+    if 12 <= int(hour) <= 19:
+        score += 10.0
+    elif 10 <= int(hour) <= 21:
+        score += 5.0
+    try:
+        if int(weather_code) in {95, 96, 99}:
+            score = max(score, 85.0)
+    except (TypeError, ValueError):
+        pass
+    return float(max(0.0, min(100.0, score)))
+
 def calculate_advanced_metrics(weighter, df_long: pd.DataFrame, param: str, is_circular: bool):
     """Calculate standard metrics, lead-time metrics, and diurnal bias."""
     metrics_payload = {
@@ -419,7 +524,9 @@ def export_all(db: ForecastDB, output_dir: str):
                 w = weighter.calculate_weights_crps(df_crps, parameter=param, is_circular=is_circular)
             except Exception as e:
                 log.warning(f"CRPS weights failed for {param}: {e}")
-                w = {m: 1.0/len(MODELS) for m in MODELS}
+                w = _skill_fallback_weights(df_long_60d, param, is_circular)
+            if _weights_effectively_equal(w):
+                w = _skill_fallback_weights(df_long_60d, param, is_circular)
                 
             global_weights[param] = w
             
@@ -695,6 +802,10 @@ def export_all(db: ForecastDB, output_dir: str):
             )
     db.conn.commit()
 
+    if {"Temperature", "Dewpoint"}.issubset(consensus.columns):
+        both_valid = consensus["Temperature"].notna() & consensus["Dewpoint"].notna()
+        consensus.loc[both_valid, "Dewpoint"] = consensus.loc[both_valid, ["Temperature", "Dewpoint"]].min(axis=1)
+
     if qm_provenance["total_values"] > 0:
         qm_provenance["percent_by_layer"] = {
             k: round(100.0 * v / qm_provenance["total_values"], 2)
@@ -708,6 +819,7 @@ def export_all(db: ForecastDB, output_dir: str):
 
     consensus = consensus.reset_index()
     consensus = consensus.rename(columns={"Wind Speed": "Wind", "Rainfall": "Rain"})
+    consensus["Thunderstorm Risk"] = consensus.apply(_compute_ts_risk, axis=1)
     
     # Dynamically Determine Condition
     def get_condition(rain):
@@ -815,8 +927,14 @@ def export_all(db: ForecastDB, output_dir: str):
 
     # 5. Export Persistency (Last 5 Days of AWOS)
     try:
-        five_days_ago = (datetime.now(timezone.utc) - timedelta(days=5)).strftime("%Y-%m-%d %H:%M:%S")
-        obs_df = pd.read_sql("SELECT * FROM awos_observations WHERE obs_time >= ? ORDER BY obs_time ASC", db.conn, params=(five_days_ago,))
+        latest_obs_time = db.conn.execute("SELECT MAX(obs_time) FROM awos_observations").fetchone()[0]
+        anchor = pd.to_datetime(latest_obs_time) if latest_obs_time else datetime.now(timezone.utc)
+        seven_days_ago = (anchor - pd.Timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
+        obs_df = pd.read_sql(
+            "SELECT * FROM awos_observations WHERE obs_time >= ? ORDER BY obs_time ASC",
+            db.conn,
+            params=(seven_days_ago,),
+        )
         if not obs_df.empty:
             obs_df['Datetime'] = pd.to_datetime(obs_df['obs_time']).dt.strftime('%Y-%m-%d %H:00:00')
             persistency_payload = obs_df[['Datetime', 'temperature', 'dewpoint', 'wind_dir', 'wind_speed', 'rain_1h']].to_dict(orient='records')
