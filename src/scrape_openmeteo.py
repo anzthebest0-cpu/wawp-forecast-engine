@@ -25,10 +25,11 @@ TIMEZONE = "Asia/Makassar"
 WITA_OFFSET_HOURS = 8
 
 OPENMETEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
-OPENMETEO_RETRIES = int(os.environ.get("OPENMETEO_RETRIES", "2"))
-OPENMETEO_TIMEOUT_S = int(os.environ.get("OPENMETEO_TIMEOUT_S", "25"))
+OPENMETEO_RETRIES = int(os.environ.get("OPENMETEO_RETRIES", "1"))
+OPENMETEO_TIMEOUT_S = int(os.environ.get("OPENMETEO_TIMEOUT_S", "20"))
 OPENMETEO_BACKOFF_S = int(os.environ.get("OPENMETEO_BACKOFF_S", "10"))
 OPENMETEO_429_BACKOFF_S = int(os.environ.get("OPENMETEO_429_BACKOFF_S", "30"))
+OPENMETEO_NETWORK_FAILURE_LIMIT = int(os.environ.get("OPENMETEO_NETWORK_FAILURE_LIMIT", "2"))
 HOURLY_PARAMS = [
     "temperature_2m",
     "relative_humidity_2m",
@@ -67,6 +68,18 @@ MODELS_OPENMETEO = {
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("openmeteo")
+
+
+def _is_network_timeout(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return (
+        "timed out" in text
+        or "timeout" in text
+        or "ssl.c" in text
+        or "handshake operation" in text
+        or "temporary failure" in text
+        or "name resolution" in text
+    )
 
 
 def _get_json(url: str, retries: int = OPENMETEO_RETRIES, timeout: int = OPENMETEO_TIMEOUT_S) -> dict:
@@ -206,16 +219,29 @@ def main() -> tuple[dict, list[dict], list[dict]]:
     all_models_data = {}
     dashboard_rows = []
     openmeteo_rows = []
+    consecutive_network_failures = 0
     for model_name, model_id in MODELS_OPENMETEO.items():
         log.info(f"Fetching Open-Meteo model {model_name} ({model_id})")
         try:
             rows, om_rows = fetch_model(model_name, model_id)
         except Exception as e:
             log.error(f"Open-Meteo model {model_name} failed after retries: {e}")
+            if _is_network_timeout(e):
+                consecutive_network_failures += 1
+                if consecutive_network_failures >= OPENMETEO_NETWORK_FAILURE_LIMIT:
+                    log.error(
+                        "Open-Meteo network appears unavailable after "
+                        f"{consecutive_network_failures} consecutive timeout/TLS failures; "
+                        "aborting remaining model fetches and using archived forecasts."
+                    )
+                    break
+            else:
+                consecutive_network_failures = 0
             continue
         if not rows:
             log.warning(f"No Open-Meteo rows for {model_name}")
             continue
+        consecutive_network_failures = 0
         dashboard_rows.extend(rows)
         openmeteo_rows.extend(om_rows)
         all_models_data[model_name] = rows
