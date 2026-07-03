@@ -538,6 +538,43 @@ body {
   line-height: 1.2;
 }
 
+.clim-quicklook {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+}
+
+.clim-quicklook-card {
+  background: var(--col-surface-2);
+  border: 1px solid var(--col-border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  min-height: 82px;
+}
+
+.clim-quicklook-card .param-value {
+  font-size: var(--ts-md);
+}
+
+@media (max-width: 900px) {
+  .clim-quicklook {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .clim-quicklook {
+    grid-template-columns: 1fr;
+  }
+}
+
+#climatology-text {
+  word-break: normal;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .param-value.cavok { color: var(--green); text-shadow: var(--green-glow); }
 .param-value.warn  { color: var(--amber); text-shadow: var(--glow-amber); }
 .param-value.crit  { color: var(--crimson); text-shadow: var(--glow-crit); }

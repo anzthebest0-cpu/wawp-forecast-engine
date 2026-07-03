@@ -878,21 +878,41 @@ function setupDiurnalClimatology(clim) {
     if(!clim || !clim.metadata) return;
 
     const fmt = (v, d=1) => (v === null || v === undefined || Number.isNaN(Number(v))) ? '-' : Number(v).toFixed(d);
+    const roundValue = (v, d=1) => (v === null || v === undefined || Number.isNaN(Number(v))) ? null : Number(Number(v).toFixed(d));
+    const roundArray = (arr, d=1) => (arr || []).map(v => roundValue(v, d));
+    const peakHour = (arr) => {
+        if (!arr || !arr.length) return null;
+        let bestIdx = -1;
+        let bestVal = -Infinity;
+        arr.forEach((v, idx) => {
+            const n = Number(v);
+            if (!Number.isNaN(n) && n > bestVal) {
+                bestVal = n;
+                bestIdx = idx;
+            }
+        });
+        return bestIdx < 0 ? null : bestIdx;
+    };
+    const meanValid = (arr) => {
+        const vals = (arr || []).map(Number).filter(v => !Number.isNaN(v));
+        if (!vals.length) return null;
+        return vals.reduce((a, b) => a + b, 0) / vals.length;
+    };
     const hours = Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`);
     const tempStats = clim.climatology?.temperature?.stats || {};
     const dewStats = clim.climatology?.dewpoint?.stats || {};
     const humStats = clim.climatology?.humidity?.stats || {};
     const windStats = clim.climatology?.wind_speed?.stats || {};
-    const tempMean = Array.from({length: 24}, (_, h) => tempStats[String(h)]?.mean ?? null);
-    const dewMean = Array.from({length: 24}, (_, h) => dewStats[String(h)]?.mean ?? null);
-    const humMean = Array.from({length: 24}, (_, h) => humStats[String(h)]?.mean ?? null);
-    const windMean = Array.from({length: 24}, (_, h) => windStats[String(h)]?.mean ?? null);
-    const rainFreq = clim.rain_diurnal_cycle?.frequency_pct || [];
-    const rainIntensity = clim.rain_diurnal_cycle?.intensity_mmh || [];
-    const gustFreq = clim.gust_diurnal_cycle?.frequency_pct || [];
-    const gustIntensity = clim.gust_diurnal_cycle?.intensity_kt || [];
-    const fogScore = (clim.fog_low_cloud_proxy?.hourly || []).map(x => x.mean_score);
-    const fogFreq = (clim.fog_low_cloud_proxy?.hourly || []).map(x => x.high_risk_frequency_pct);
+    const tempMean = roundArray(Array.from({length: 24}, (_, h) => tempStats[String(h)]?.mean ?? null), 1);
+    const dewMean = roundArray(Array.from({length: 24}, (_, h) => dewStats[String(h)]?.mean ?? null), 1);
+    const humMean = roundArray(Array.from({length: 24}, (_, h) => humStats[String(h)]?.mean ?? null), 1);
+    const windMean = roundArray(Array.from({length: 24}, (_, h) => windStats[String(h)]?.mean ?? null), 1);
+    const rainFreq = roundArray(clim.rain_diurnal_cycle?.frequency_pct || [], 1);
+    const rainIntensity = roundArray(clim.rain_diurnal_cycle?.intensity_mmh || [], 2);
+    const gustFreq = roundArray(clim.gust_diurnal_cycle?.frequency_pct || [], 1);
+    const gustIntensity = roundArray(clim.gust_diurnal_cycle?.intensity_kt || [], 1);
+    const fogScore = roundArray((clim.fog_low_cloud_proxy?.hourly || []).map(x => x.mean_score), 2);
+    const fogFreq = roundArray((clim.fog_low_cloud_proxy?.hourly || []).map(x => x.high_risk_frequency_pct), 1);
 
     const totalEl = document.getElementById('clim-total-obs');
     if (totalEl) totalEl.innerText = Number(clim.metadata.total_observations || 0).toLocaleString();
@@ -905,6 +925,22 @@ function setupDiurnalClimatology(clim) {
     if (convEl) convEl.innerText = clim.operational_briefing?.convective_window_label || '--';
     const seaEl = document.getElementById('clim-seabreeze');
     if (seaEl) seaEl.innerText = clim.sea_breeze_regime?.confidence || '--';
+
+    const tempMin = Math.min(...tempMean.filter(v => v !== null));
+    const tempMax = Math.max(...tempMean.filter(v => v !== null));
+    const rainPeak = peakHour(rainFreq);
+    const gustPeak = peakHour(gustFreq);
+    const fogPeak = peakHour(fogScore);
+    const setText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = text;
+    };
+    setText('clim-temp-range', Number.isFinite(tempMin) && Number.isFinite(tempMax) ? `${fmt(tempMin)}-${fmt(tempMax)} C` : '--');
+    setText('clim-wet-freq', `${fmt(meanValid(rainFreq))}%`);
+    setText('clim-peak-rain', rainPeak === null ? '--' : `${String(rainPeak).padStart(2, '0')} WITA`);
+    setText('clim-mean-wind', `${fmt(meanValid(windMean))} kt`);
+    setText('clim-peak-gust', gustPeak === null ? '--' : `${String(gustPeak).padStart(2, '0')} WITA`);
+    setText('clim-fog-peak', fogPeak === null ? '--' : `${String(fogPeak).padStart(2, '0')} WITA`);
 
     const briefing = clim.operational_briefing?.bullets || [];
     document.getElementById('climatology-text').innerHTML = briefing.length
