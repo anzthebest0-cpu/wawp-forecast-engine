@@ -25,6 +25,10 @@ TIMEZONE = "Asia/Makassar"
 WITA_OFFSET_HOURS = 8
 
 OPENMETEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+OPENMETEO_RETRIES = int(os.environ.get("OPENMETEO_RETRIES", "2"))
+OPENMETEO_TIMEOUT_S = int(os.environ.get("OPENMETEO_TIMEOUT_S", "25"))
+OPENMETEO_BACKOFF_S = int(os.environ.get("OPENMETEO_BACKOFF_S", "10"))
+OPENMETEO_429_BACKOFF_S = int(os.environ.get("OPENMETEO_429_BACKOFF_S", "30"))
 HOURLY_PARAMS = [
     "temperature_2m",
     "relative_humidity_2m",
@@ -65,17 +69,21 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger("openmeteo")
 
 
-def _get_json(url: str, retries: int = 4, timeout: int = 90) -> dict:
+def _get_json(url: str, retries: int = OPENMETEO_RETRIES, timeout: int = OPENMETEO_TIMEOUT_S) -> dict:
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "wawp-forecast-engine/1.0 (+https://github.com/anzthebest0-cpu/wawp-forecast-engine)"},
+    )
     for attempt in range(retries):
         try:
-            with urllib.request.urlopen(url, timeout=timeout) as response:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
                 return json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code == 400:
                 log.warning(f"Open-Meteo 400 skipped: {url}")
                 return {}
             if e.code == 429 and attempt < retries - 1:
-                wait_s = min(60 * (attempt + 1), 180)
+                wait_s = min(OPENMETEO_429_BACKOFF_S * (attempt + 1), 90)
                 log.warning(f"Open-Meteo 429 rate limit; retrying in {wait_s}s ({attempt + 1}/{retries})")
                 time.sleep(wait_s)
                 continue
@@ -83,7 +91,7 @@ def _get_json(url: str, retries: int = 4, timeout: int = 90) -> dict:
         except Exception as e:
             if attempt == retries - 1:
                 raise
-            wait_s = min(15 * (attempt + 1), 60)
+            wait_s = min(OPENMETEO_BACKOFF_S * (attempt + 1), 30)
             log.warning(f"Open-Meteo request failed ({attempt + 1}/{retries}): {e}; retrying in {wait_s}s")
             time.sleep(wait_s)
     return {}

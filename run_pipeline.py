@@ -26,21 +26,27 @@ def run():
     log.info("Starting WAWP Open-Meteo Pipeline...")
     
     # 1. Scrape latest data
+    openmeteo_stale = False
+    openmeteo_error = None
+    all_models_data, stacked_rows, openmeteo_rows = {}, [], []
     try:
         all_models_data, stacked_rows, openmeteo_rows = scrape_openmeteo_models()
     except Exception as e:
-        log.error(f"Open-Meteo scraper failed: {e}")
-        sys.exit(1)
+        openmeteo_stale = True
+        openmeteo_error = str(e)
+        log.error(f"Open-Meteo scraper failed; continuing with existing forecast archive: {e}")
         
     # 2. Ingest into local DB (WAL mode, INSERT OR IGNORE)
     db = ForecastDB(DB_PATH)
     try:
         try:
-            new_count = db.ingest_rows(stacked_rows)
+            new_count = db.ingest_rows(stacked_rows) if stacked_rows else 0
             log.info(f"Database ingested {new_count} new rows (duplicates ignored).")
             if openmeteo_rows:
                 om_count = db.ingest_openmeteo_rows(openmeteo_rows)
                 log.info(f"Open-Meteo database ingested {om_count} new rows.")
+            elif openmeteo_stale:
+                log.warning("No new Open-Meteo rows ingested; exporter will use the latest archived model data.")
         except Exception as e:
             log.error(f"Database ingestion failed: {e}")
             sys.exit(1)
@@ -60,9 +66,13 @@ def run():
         os.makedirs(os.path.dirname(health_path), exist_ok=True)
         with open(health_path, "w", encoding="utf-8") as f:
             json.dump({
+                "openmeteo_stale": openmeteo_stale,
+                "openmeteo_models_fetched": sorted(all_models_data.keys()),
                 "awos_stale": awos_stale,
                 "last_run_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
-                "last_error": awos_error,
+                "last_error": openmeteo_error or awos_error,
+                "openmeteo_error": openmeteo_error,
+                "awos_error": awos_error,
             }, f, indent=2)
 
         try:
