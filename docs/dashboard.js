@@ -9,7 +9,9 @@ async function loadDashboard() {
             fetch('data/climatology.json' + cb).then(r => r.json()),
             fetch('data/individual_models.json' + cb).then(r => r.json()),
             fetch('data/db_health.json' + cb).then(r => r.json()),
-            fetch('data/persistency.json' + cb).then(r => r.json())
+            fetch('data/persistency.json' + cb).then(r => r.json()),
+            fetch('data/diurnal_climatology.json' + cb).then(r => r.json()),
+            fetch('data/system_workflow.json' + cb).then(r => r.json())
         ]);
         
         const intelData = results[0].status === 'fulfilled' ? results[0].value : {};
@@ -31,6 +33,8 @@ async function loadDashboard() {
 
         const clim_data = results[4].status === 'fulfilled' ? results[4].value : null;
         const modelsData = results[5].status === 'fulfilled' ? results[5].value : null;
+        const diurnalData = results[8].status === 'fulfilled' ? results[8].value : null;
+        const workflowData = results[9].status === 'fulfilled' ? results[9].value : null;
         
         const healthData = results[6].status === 'fulfilled' ? results[6].value : null;
         if (healthData) {
@@ -261,9 +265,8 @@ async function loadDashboard() {
         
         // 6. Regional & Climatology
         setupRegionalCharts();
-        if (clim_data && intel) {
-            setupClimatology(clim_data, intel.valid_start);
-        }
+        if (diurnalData) setupDiurnalClimatology(diurnalData);
+        if (workflowData) setupSystemWorkflow(workflowData);
         
         // 7. Verification & Persistency
         const persData = results[7].status === 'fulfilled' ? results[7].value : null;
@@ -331,7 +334,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
             const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
             const vals = [];
             for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
-                if (modelVals[t] !== undefined && modelVals[t] !== null && model !== 'Multi-Model') {
+                if (modelVals[t] !== undefined && modelVals[t] !== null) {
                     vals.push(modelVals[t]);
                 }
             }
@@ -351,7 +354,6 @@ function setupSpreadCharts(modelsData, timeLabels) {
     const createBarSeries = (param) => {
         const series = [];
         for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
-            if (model === 'Multi-Model') continue;
             const dataPts = [];
             for (const t of timeLabels) {
                 const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
@@ -391,7 +393,6 @@ function setupSpreadCharts(modelsData, timeLabels) {
             const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
             const vals = [];
             for (const [model, modelVals] of Object.entries(modelsData['Temperature'] || {})) {
-                if (model === 'Multi-Model') continue;
                 const temp = modelsData['Temperature'][model]?.[t];
                 const dew = modelsData['Dewpoint']?.[model]?.[t];
                 if (temp !== undefined && dew !== undefined) {
@@ -674,7 +675,7 @@ function renderVerification() {
         const ltData = lbMetrics[param]?.lead_time;
         if (ltData && Object.keys(ltData).length > 0) {
             const days = ["Day 1", "Day 2", "Day 3", "Day 4+"];
-            const models = Object.keys(lbMetrics[param].overall || {}).filter(m => m !== 'Multi-Model');
+            const models = Object.keys(lbMetrics[param].overall || {});
             
             const series = models.map(m => {
                 return {
@@ -703,7 +704,7 @@ function renderVerification() {
         const dData = lbMetrics[param]?.diurnal_bias;
         if (dData && Object.keys(dData).length > 0) {
             const hours = Array.from({length: 24}, (_, i) => i.toString());
-            const models = Object.keys(lbMetrics[param].overall || {}).filter(m => m !== 'Multi-Model');
+            const models = Object.keys(lbMetrics[param].overall || {});
             
             const series = models.map(m => {
                 return {
@@ -846,6 +847,213 @@ function setupClimatology(clim, valid_start_str) {
         const chart = new ApexCharts(document.querySelector("#chart-wind-rose"), options);
         chart.render();
     }
+}
+
+function setupDiurnalClimatology(clim) {
+    if(!clim || !clim.metadata) return;
+
+    const fmt = (v, d=1) => (v === null || v === undefined || Number.isNaN(Number(v))) ? '-' : Number(v).toFixed(d);
+    const hours = Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`);
+    const tempStats = clim.climatology?.temperature?.stats || {};
+    const dewStats = clim.climatology?.dewpoint?.stats || {};
+    const humStats = clim.climatology?.humidity?.stats || {};
+    const windStats = clim.climatology?.wind_speed?.stats || {};
+    const tempMean = Array.from({length: 24}, (_, h) => tempStats[String(h)]?.mean ?? null);
+    const dewMean = Array.from({length: 24}, (_, h) => dewStats[String(h)]?.mean ?? null);
+    const humMean = Array.from({length: 24}, (_, h) => humStats[String(h)]?.mean ?? null);
+    const windMean = Array.from({length: 24}, (_, h) => windStats[String(h)]?.mean ?? null);
+    const rainFreq = clim.rain_diurnal_cycle?.frequency_pct || [];
+    const rainIntensity = clim.rain_diurnal_cycle?.intensity_mmh || [];
+    const gustFreq = clim.gust_diurnal_cycle?.frequency_pct || [];
+    const gustIntensity = clim.gust_diurnal_cycle?.intensity_kt || [];
+    const fogScore = (clim.fog_low_cloud_proxy?.hourly || []).map(x => x.mean_score);
+    const fogFreq = (clim.fog_low_cloud_proxy?.hourly || []).map(x => x.high_risk_frequency_pct);
+
+    const totalEl = document.getElementById('clim-total-obs');
+    if (totalEl) totalEl.innerText = Number(clim.metadata.total_observations || 0).toLocaleString();
+    const periodEl = document.getElementById('clim-period');
+    if (periodEl) {
+        const p = clim.metadata.data_period || {};
+        periodEl.innerText = `${(p.start || '').substring(0,10)} to ${(p.end || '').substring(0,10)}`;
+    }
+    const convEl = document.getElementById('clim-convective-window');
+    if (convEl) convEl.innerText = clim.operational_briefing?.convective_window_label || '--';
+    const seaEl = document.getElementById('clim-seabreeze');
+    if (seaEl) seaEl.innerText = clim.sea_breeze_regime?.confidence || '--';
+
+    const briefing = clim.operational_briefing?.bullets || [];
+    document.getElementById('climatology-text').innerHTML = briefing.length
+        ? `<ul style="margin:0; padding-left:18px;">${briefing.map(b => `<li style="margin-bottom:8px;">${b}</li>`).join('')}</ul>`
+        : 'No climatology briefing is available.';
+
+    const baseAxis = {
+        chart: { background: 'transparent', toolbar: { show: false }, animations: { enabled: false } },
+        xaxis: { categories: hours, labels: { style: { colors: '#94a3b8' } } },
+        yaxis: { labels: { style: { colors: '#94a3b8' } } },
+        legend: { position: 'top', labels: { colors: '#94a3b8' } },
+        theme: { mode: 'dark' },
+        dataLabels: { enabled: false },
+        grid: { borderColor: 'rgba(148,163,184,0.15)' }
+    };
+
+    const renderChart = (selector, options) => {
+        const el = document.querySelector(selector);
+        if (!el) return;
+        el.innerHTML = '';
+        new ApexCharts(el, options).render();
+    };
+
+    renderChart('#clim-temp-rh-chart', {
+        ...baseAxis,
+        series: [
+            { name: 'Temp C', data: tempMean },
+            { name: 'Dewpoint C', data: dewMean },
+            { name: 'RH %', data: humMean }
+        ],
+        chart: { ...baseAxis.chart, type: 'line', height: 320 },
+        stroke: { width: 3, curve: 'smooth' },
+        colors: ['#ef4444', '#3b82f6', '#a855f7']
+    });
+
+    renderChart('#clim-rain-chart', {
+        ...baseAxis,
+        series: [
+            { name: 'Rain Frequency %', type: 'column', data: rainFreq },
+            { name: 'Wet-Hour Intensity mm', type: 'line', data: rainIntensity }
+        ],
+        chart: { ...baseAxis.chart, height: 320 },
+        stroke: { width: [0, 3], curve: 'smooth' },
+        colors: ['#0ea5e9', '#f59e0b']
+    });
+
+    renderChart('#clim-wind-chart', {
+        ...baseAxis,
+        series: [
+            { name: 'Wind Speed kt', type: 'line', data: windMean },
+            { name: 'Gust Occurrence %', type: 'column', data: gustFreq },
+            { name: 'Mean Gust kt', type: 'line', data: gustIntensity }
+        ],
+        chart: { ...baseAxis.chart, height: 320 },
+        stroke: { width: [3, 0, 3], curve: 'smooth' },
+        colors: ['#10b981', '#f59e0b', '#ef4444']
+    });
+
+    renderChart('#clim-fog-chart', {
+        ...baseAxis,
+        series: [
+            { name: 'Proxy Score', type: 'line', data: fogScore },
+            { name: 'High-Risk Frequency %', type: 'column', data: fogFreq }
+        ],
+        chart: { ...baseAxis.chart, height: 320 },
+        stroke: { width: [3, 0], curve: 'smooth' },
+        colors: ['#a855f7', '#64748b']
+    });
+
+    if(clim.wind_rose?.sectors) {
+        renderChart('#chart-wind-rose', {
+            series: [
+                { name: 'Wet', data: clim.wind_rose.wet.map(d => Number(fmt(d.freq_pct))) },
+                { name: 'Dry', data: clim.wind_rose.dry.map(d => Number(fmt(d.freq_pct))) }
+            ],
+            chart: { type: 'radar', height: 360, background: 'transparent', toolbar: { show: false } },
+            labels: clim.wind_rose.sectors,
+            stroke: { width: 2 },
+            fill: { opacity: 0.18 },
+            colors: ['#0ea5e9', '#f59e0b'],
+            theme: { mode: 'dark' },
+            legend: { position: 'top', labels: { colors: '#94a3b8' } }
+        });
+    }
+
+    const rainMatrix = clim.monthly_hourly_matrices?.rain_1h?.matrix;
+    if (rainMatrix) {
+        const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const series = rainMatrix.map((row, idx) => ({
+            name: monthLabels[idx],
+            data: row.map((v, h) => ({ x: `${String(h).padStart(2,'0')}`, y: v === null ? 0 : Number(Number(v).toFixed(2)) }))
+        }));
+        renderChart('#clim-rain-heatmap', {
+            chart: { type: 'heatmap', height: 360, background: 'transparent', toolbar: { show: false } },
+            series,
+            dataLabels: { enabled: false },
+            colors: ['#0ea5e9'],
+            xaxis: { labels: { style: { colors: '#94a3b8' } } },
+            yaxis: { labels: { style: { colors: '#94a3b8' } } },
+            theme: { mode: 'dark' }
+        });
+    }
+}
+
+function setupSystemWorkflow(workflow) {
+    if(!workflow || !workflow.summary) return;
+    const fmtInt = v => Number(v || 0).toLocaleString();
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = value;
+    };
+
+    setText('workflow-generated', `Generated ${workflow.metadata?.generated_at || '--'} UTC`);
+    setText('wf-current-rows', fmtInt(workflow.summary.current_forecast_rows));
+    setText('wf-openmeteo-rows', fmtInt(workflow.summary.openmeteo_rows_total));
+    setText('wf-awos-hourly', fmtInt(workflow.summary.awos_hourly_rows));
+    setText('wf-qm-cdfs', fmtInt(workflow.summary.qm_cdfs_enabled));
+
+    const stagesEl = document.getElementById('workflow-stages');
+    if (stagesEl) {
+        stagesEl.innerHTML = (workflow.pipeline_stages || []).map((s, idx) => `
+            <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:10px;">
+                <div style="font-family:var(--font-mono); color:var(--cyan); min-width:28px;">${String(idx + 1).padStart(2, '0')}</div>
+                <div><strong>${s.name}</strong><br><span style="color:var(--text-secondary);">${s.output}</span></div>
+            </div>
+        `).join('');
+    }
+
+    const tbody = document.querySelector('#workflow-freshness-table tbody');
+    if (tbody) {
+        tbody.innerHTML = '';
+        (workflow.model_freshness || []).forEach(row => {
+            const color = row.status === 'fresh' ? 'var(--green)' : (row.status === 'aging' ? 'var(--amber)' : 'var(--crimson)');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.model}</td>
+                <td>${row.latest_run_init_utc || '-'}</td>
+                <td>${row.latest_scraped_at || '-'}</td>
+                <td>${row.age_hours === null ? '-' : Number(row.age_hours).toFixed(1) + ' h'}</td>
+                <td>${fmtInt(row.row_count)}</td>
+                <td>${row.min_lead_hours ?? '-'}-${row.max_lead_hours ?? '-'} h</td>
+                <td style="color:${color}; font-weight:700;">${row.status}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    const renderChart = (selector, options) => {
+        const el = document.querySelector(selector);
+        if (!el) return;
+        el.innerHTML = '';
+        new ApexCharts(el, options).render();
+    };
+    const leadRows = workflow.lead_bucket_rows_current || [];
+    renderChart('#workflow-lead-chart', {
+        series: [{ name: 'Rows', data: leadRows.map(r => r.row_count) }],
+        chart: { type: 'bar', height: 320, background: 'transparent', toolbar: { show: false } },
+        xaxis: { categories: leadRows.map(r => r.lead_bucket), labels: { style: { colors: '#94a3b8' } } },
+        yaxis: { labels: { style: { colors: '#94a3b8' } } },
+        colors: ['#0ea5e9'],
+        dataLabels: { enabled: false },
+        theme: { mode: 'dark' }
+    });
+
+    const qmEntries = Object.entries(workflow.qm_calibration?.enabled_by_parameter || {});
+    renderChart('#workflow-qm-chart', {
+        series: [{ name: 'Enabled CDFs', data: qmEntries.map(([, v]) => v) }],
+        chart: { type: 'bar', height: 320, background: 'transparent', toolbar: { show: false } },
+        xaxis: { categories: qmEntries.map(([k]) => k), labels: { style: { colors: '#94a3b8' } } },
+        yaxis: { labels: { style: { colors: '#94a3b8' } } },
+        colors: ['#10b981'],
+        dataLabels: { enabled: true },
+        theme: { mode: 'dark' }
+    });
 }
 
 function setupIndividualModels(modelsData, timeLabels) {

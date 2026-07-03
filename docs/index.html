@@ -34,6 +34,7 @@
             <li data-tab="tab-models">Individual Models</li>
             <li data-tab="tab-regional">Regional Charts</li>
             <li data-tab="tab-climatology">Climatology Engine</li>
+            <li data-tab="tab-workflow">System Workflow</li>
             <li data-tab="tab-health" style="color: var(--amber); font-weight: 600;">System Health</li>
             <li data-tab="tab-verify">Live Verification</li>
             <li data-tab="tab-persistency">Persistency (Obs)</li>
@@ -184,13 +185,19 @@
             <div style="margin-bottom: 15px;">
                 <label for="model-select" style="color:var(--text-secondary); margin-right:10px;">Select Model:</label>
                 <select id="model-select" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px;">
-                    <option value="ECMWF">ECMWF</option>
-                    <option value="GFS">GFS</option>
-                    <option value="ICON">ICON</option>
-                    <option value="ACCESS-G3">ACCESS-G3</option>
-                    <option value="UKMO">UKMO</option>
-                    <option value="GEM">GEM</option>
-                    <option value="Multi-Model">Multi-Model</option>
+                    <option value="ECMWF_HRES">ECMWF_HRES</option>
+                    <option value="GFS_GLOBAL">GFS_GLOBAL</option>
+                    <option value="GFS_SEAMLESS">GFS_SEAMLESS</option>
+                    <option value="ICON_GLOBAL">ICON_GLOBAL</option>
+                    <option value="ICON_SEAMLESS">ICON_SEAMLESS</option>
+                    <option value="GEM_GLOBAL">GEM_GLOBAL</option>
+                    <option value="GEM_SEAMLESS">GEM_SEAMLESS</option>
+                    <option value="CMA_GRAPES_GLOBAL">CMA_GRAPES_GLOBAL</option>
+                    <option value="JMA_GSM">JMA_GSM</option>
+                    <option value="BOM_ACCESS_GLOBAL">BOM_ACCESS_GLOBAL</option>
+                    <option value="METEOFRANCE_ARPEGE_WORLD">METEOFRANCE_ARPEGE_WORLD</option>
+                    <option value="UKMO_GLOBAL_10KM">UKMO_GLOBAL_10KM</option>
+                    <option value="ERA5_SEAMLESS">ERA5_SEAMLESS</option>
                 </select>
                 <span id="model-init-badge" style="margin-left: 15px; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-glass);">Init: Unknown</span>
             </div>
@@ -283,20 +290,129 @@
         <!-- Tab 6: Climatology Engine -->
         <section id="tab-climatology" class="tab-pane">
             <div class="header-bar">
-                <h2>Seasonal Climatology</h2>
+                <h2>Diurnal Climatology</h2>
             </div>
-            
-            <div class="intel-grid">
-                <!-- Wind Rose Panel -->
-                <div class="panel chart-panel">
-                    <h3>Wind Rose (Current Season)</h3>
-                    <div id="chart-wind-rose"></div>
+
+            <div class="intel-grid" style="margin-bottom: 20px;">
+                <div class="panel">
+                    <h3>Observation Archive</h3>
+                    <div class="param-grid">
+                        <div class="param-card">
+                            <div class="param-label">Hourly Records</div>
+                            <div class="param-value" id="clim-total-obs">--</div>
+                        </div>
+                        <div class="param-card">
+                            <div class="param-label">Data Period</div>
+                            <div class="param-value" id="clim-period" style="font-size: 1rem;">--</div>
+                        </div>
+                        <div class="param-card">
+                            <div class="param-label">Convective Window</div>
+                            <div class="param-value" id="clim-convective-window">--</div>
+                        </div>
+                        <div class="param-card">
+                            <div class="param-label">Sea Breeze</div>
+                            <div class="param-value" id="clim-seabreeze">--</div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Climatology Prose Panel -->
                 <div class="panel taf-panel">
-                    <h3>Climatology Briefing</h3>
+                    <h3>Operational Briefing</h3>
                     <div class="taf-content" id="climatology-text">Loading climatology...</div>
+                </div>
+            </div>
+
+            <div class="intel-grid">
+                <div class="panel chart-panel">
+                    <h3>Temperature / Dewpoint / Humidity</h3>
+                    <div id="clim-temp-rh-chart"></div>
+                </div>
+                <div class="panel chart-panel">
+                    <h3>Rain Diurnal Cycle</h3>
+                    <div id="clim-rain-chart"></div>
+                </div>
+                <div class="panel chart-panel">
+                    <h3>Wind / Gust Diurnal Cycle</h3>
+                    <div id="clim-wind-chart"></div>
+                </div>
+                <div class="panel chart-panel">
+                    <h3>Fog / Low Cloud Proxy</h3>
+                    <div id="clim-fog-chart"></div>
+                </div>
+                <div class="panel chart-panel">
+                    <h3>Wind Rose</h3>
+                    <div id="chart-wind-rose"></div>
+                </div>
+                <div class="panel chart-panel">
+                    <h3>Monthly-Hourly Rain Heatmap</h3>
+                    <div id="clim-rain-heatmap"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 7: System Workflow -->
+        <section id="tab-workflow" class="tab-pane">
+            <div class="header-bar">
+                <h2>System Workflow</h2>
+                <span class="mme-badge" id="workflow-generated">Loading...</span>
+            </div>
+
+            <div class="intel-grid" style="margin-bottom: 20px;">
+                <div class="panel">
+                    <h3>Pipeline Totals</h3>
+                    <div class="param-grid">
+                        <div class="param-card">
+                            <div class="param-label">Current Forecast Rows</div>
+                            <div class="param-value" id="wf-current-rows">--</div>
+                        </div>
+                        <div class="param-card">
+                            <div class="param-label">Open-Meteo Rows</div>
+                            <div class="param-value" id="wf-openmeteo-rows">--</div>
+                        </div>
+                        <div class="param-card">
+                            <div class="param-label">AWOS Hourly</div>
+                            <div class="param-value" id="wf-awos-hourly">--</div>
+                        </div>
+                        <div class="param-card">
+                            <div class="param-label">QM CDFs</div>
+                            <div class="param-value" id="wf-qm-cdfs">--</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>Run Flow</h3>
+                    <div id="workflow-stages" class="taf-content">Loading workflow...</div>
+                </div>
+            </div>
+
+            <div class="panel" style="margin-bottom: 20px;">
+                <h3>Model Freshness</h3>
+                <div class="table-container">
+                    <table id="workflow-freshness-table">
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Run Init</th>
+                                <th>Scraped</th>
+                                <th>Age</th>
+                                <th>Rows</th>
+                                <th>Lead Range</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="intel-grid">
+                <div class="panel chart-panel">
+                    <h3>Current Lead-Bucket Coverage</h3>
+                    <div id="workflow-lead-chart"></div>
+                </div>
+                <div class="panel chart-panel">
+                    <h3>QM Coverage by Parameter</h3>
+                    <div id="workflow-qm-chart"></div>
                 </div>
             </div>
         </section>

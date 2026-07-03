@@ -6,11 +6,36 @@ using temperature, dewpoint, pressure, and rainfall, specifically tuned for
 aviation forecasts (TAF).
 """
 
+import json
 import math
+import os
+
+MONTHLY_V_DRY = None
+
+
+def load_monthly_v_dry(json_path=None):
+    global MONTHLY_V_DRY
+    if json_path is None:
+        json_path = os.path.join(os.path.dirname(__file__), "..", "docs", "data", "diurnal_climatology.json")
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        MONTHLY_V_DRY = data.get("monthly_v_dry", {}).get("v_dry_medians", [9999] * 12)
+    except Exception:
+        MONTHLY_V_DRY = [9999] * 12
+    return MONTHLY_V_DRY
+
+
+def get_v_dry_for_month(month: int | None) -> float:
+    if MONTHLY_V_DRY is None:
+        load_monthly_v_dry()
+    if month and 1 <= int(month) <= 12:
+        return float(MONTHLY_V_DRY[int(month) - 1])
+    return 9999.0
 
 def estimate_visibility(rain_mmh, rh_pct, temp_c, dewpoint_c,
                         wind_kt, pressure_hpa, pressure_trend_hpa_3h,
-                        baseline_dry_vis_m=9999):
+                        baseline_dry_vis_m=9999, current_month=None):
     """
     Estimate horizontal visibility [m] from meteorological parameters.
     Rain branch coefficients calibrated for tropical maritime convective rain.
@@ -32,7 +57,7 @@ def estimate_visibility(rain_mmh, rh_pct, temp_c, dewpoint_c,
             pressure_factor = 1.0
 
     # Rain branch - tropical convective DSD calibration (continuous 2-tier model)
-    if R >= 0.4:
+    if R >= 0.5:
         if R < 7.5:
             vis = 6500.0 * (R ** -0.55)
         else:
@@ -62,7 +87,7 @@ def estimate_visibility(rain_mmh, rh_pct, temp_c, dewpoint_c,
         return int(max(3000.0, min(vis, 8000.0)))
 
     # Dry/haze regime
-    vis = float(baseline_dry_vis_m)
+    vis = float(get_v_dry_for_month(current_month) if current_month else baseline_dry_vis_m)
     if wind_kt > 10.0:
         vis *= 1.2
     elif wind_kt < 3.0:
@@ -73,7 +98,58 @@ def estimate_visibility(rain_mmh, rh_pct, temp_c, dewpoint_c,
     return int(min(vis, 9999.0))
 
 
-def get_weather_phenomenon(rain_mmh, rh_pct, temp_c, dewpoint_c, vis_m, local_hour_wita):
+def detect_tsra(cape=None, lifted_index=None, cin=None, weather_code=None,
+                month=None, rain_mmh=0.0, rh_pct=0.0, local_hour_wita=None):
+    """
+    CAPE-aware TSRA proxy tuned for maritime tropics.
+    CIN threshold is 100 J/kg per the overhaul brief.
+    """
+    if weather_code is not None:
+        try:
+            if int(weather_code) in {95, 96, 99}:
+                return "TSRA"
+        except (TypeError, ValueError):
+            pass
+
+    wet_months = {11, 12, 1, 2, 3, 4}
+    cape_thr = 500 if month is None or int(month) in wet_months else 800
+    cin_thr = 100
+
+    if cape is not None and lifted_index is not None and cin is not None:
+        try:
+            if float(cape) >= cape_thr and float(lifted_index) <= -2 and float(cin) <= cin_thr:
+                if rain_mmh >= 5 or (local_hour_wita is not None and 11 <= int(local_hour_wita) <= 21):
+                    return "TSRA"
+        except (TypeError, ValueError):
+            pass
+
+    if local_hour_wita is not None and rain_mmh >= 7.5 and 11 <= int(local_hour_wita) <= 21 and rh_pct >= 85:
+        return "TSRA"
+    return None
+
+
+def classify_rain_type(rain_mmh, sunshine_min=None, low_cloud_pct=None, mid_cloud_pct=None, prev_rain_mmh=None):
+    onset_rate = float(rain_mmh or 0.0) - float(prev_rain_mmh or 0.0)
+    if (rain_mmh > 2.5 and sunshine_min is not None and sunshine_min < 30
+            and low_cloud_pct is not None and low_cloud_pct > 60 and onset_rate > 2.0):
+        return "convective"
+    if (rain_mmh > 0.5 and mid_cloud_pct is not None and mid_cloud_pct > 50
+            and onset_rate < 1.0):
+        return "stratiform"
+    return "convective"
+
+
+def estimate_visibility_rain_typed(rain_mmh, rain_type="convective", **kwargs):
+    if rain_type == "stratiform":
+        if rain_mmh < 0.5:
+            return 9999
+        vis = 4500.0 * (rain_mmh ** -0.65)
+        return int(max(200.0, min(vis, 9999.0)))
+    return estimate_visibility(rain_mmh=rain_mmh, **kwargs)
+
+
+def get_weather_phenomenon(rain_mmh, rh_pct, temp_c, dewpoint_c, vis_m, local_hour_wita,
+                           cape=None, lifted_index=None, cin=None, weather_code=None, month=None):
     """
     Returns the appropriate ICAO weather phenomenon code for the TAF change group.
     Ensures that if vis_m < 5000m, a weather phenomenon is provided (unless conditions fall through).
@@ -82,19 +158,28 @@ def get_weather_phenomenon(rain_mmh, rh_pct, temp_c, dewpoint_c, vis_m, local_ho
 
     # Precipitation
     if rain_mmh > 0.1:
+        tsra = detect_tsra(
+            cape=cape,
+            lifted_index=lifted_index,
+            cin=cin,
+            weather_code=weather_code,
+            month=month,
+            rain_mmh=rain_mmh,
+            rh_pct=rh_pct,
+            local_hour_wita=local_hour_wita,
+        )
+        if tsra:
+            return tsra
         if rain_mmh >= 10.0:
-            # TSRA proxy: daytime/afternoon + heavy rain + saturated air
-            if 11 <= local_hour_wita <= 21 and rh_pct >= 90.0:
-                return "TSRA"
-            else:
-                return "+RA"
+            return "+RA"
         elif rain_mmh >= 2.5:
             return "RA"
+        elif vis_m < 5000:
+            return "-RA"
         else:
-            # Light rain (-RA) is not a significant weather criteria for change groups
             return ""
 
-    # Fog / Mist / Haze
+    # Fog / Mist / Haze only when no active precipitation.
     if vis_m < 1000.0 and rh_pct >= 95.0 and dd <= 1.5:
         return "FG"
     if vis_m < 5000.0 and rh_pct >= 80.0:
@@ -193,7 +278,8 @@ def build_hourly_vis_cloud(consensus_hour, pressure_history):
     baseline_dry_vis = 9999
 
     vis_m = estimate_visibility(R, RH, T, Td, U, P, pressure_trend_3h,
-                                baseline_dry_vis_m=baseline_dry_vis)
+                                baseline_dry_vis_m=baseline_dry_vis,
+                                current_month=consensus_hour.get("month"))
 
     # Apply standard aviation visibility rounding
     if vis_m >= 9999:

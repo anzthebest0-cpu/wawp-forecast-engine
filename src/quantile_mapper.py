@@ -65,6 +65,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from scipy import stats as scipy_stats
 
 # ---------------------------------------------------------------------------
 # Paths — mirror config.py conventions (no config import to keep this module
@@ -79,7 +80,43 @@ VOTE_THR       = 1.0   # mm — rain / no-rain boundary (must match RainConfig)
 QM_N_QUANTILES = 20    # empirical quantile anchor points per model
 QM_MIN_SAMPLES = 10    # minimum rain-event pairs to fit a model empirically
 
-MODELS = ["ECMWF", "GFS", "ICON", "METEOBLUE", "ACCESS-G3"]
+MODELS = [
+    "ECMWF_HRES",
+    "GFS_GLOBAL",
+    "GFS_SEAMLESS",
+    "ICON_GLOBAL",
+    "ICON_SEAMLESS",
+    "GEM_GLOBAL",
+    "GEM_SEAMLESS",
+    "CMA_GRAPES_GLOBAL",
+    "JMA_GSM",
+    "BOM_ACCESS_GLOBAL",
+    "METEOFRANCE_ARPEGE_WORLD",
+    "UKMO_GLOBAL_10KM",
+    "ERA5_SEAMLESS",
+]
+
+MULTIPARAM_MODELS_OPENMETEO = MODELS
+LEAD_BUCKETS_DEFAULT = ["L1_0_6h", "L2_6_12h", "L3_12_24h", "L4_24_48h", "L5_48plus"]
+LEAD_BUCKETS_GUST = ["L1_0_6h", "L2_6_18h", "L3_18h_plus"]
+QM_MULTIPARAM_PARAMS = {
+    "temperature": {"type": "linear", "min_samples": 100},
+    "dewpoint": {"type": "linear", "min_samples": 100},
+    "pressure": {"type": "linear", "min_samples": 100},
+    "wind_speed": {"type": "nonneg", "min_samples": 100},
+    "wind_gust": {"type": "gamma_parametric", "min_samples": 50, "min_samples_stable": 200},
+    "wind_dir": {"type": "circular", "min_samples": 100},
+    "rain": {"type": "zero_inflated", "min_samples": 50},
+}
+PARAM_DB_MAP = {
+    "temperature": ("fcst_temperature", "obs_temperature"),
+    "dewpoint": ("fcst_dewpoint", "obs_dewpoint"),
+    "pressure": ("fcst_pressure", "obs_pressure"),
+    "wind_speed": ("fcst_wind_speed", "obs_wind_speed"),
+    "wind_gust": ("fcst_wind_gust", "obs_wind_gust"),
+    "wind_dir": ("fcst_wind_dir", "obs_wind_dir"),
+    "rain": ("fcst_rain", "obs_rain"),
+}
 
 # Seed values from the March 2026 diagnostic.
 # Used as hard fallback when data is too sparse for empirical fitting.
@@ -91,6 +128,11 @@ _SEED_ANCHORS: dict[str, list[tuple[float, float]]] = {
     "ICON":      [(1.4, 5.0), (1.7, 10.0), (1.9, 20.0)],
     "METEOBLUE": [(3.5, 5.0), (6.0, 10.0), (8.0, 20.0)],
     "ACCESS-G3": [(2.9, 5.0), (3.8, 10.0), (5.0, 20.0)],
+    "UKMO":      [(2.5, 5.0), (3.5, 10.0), (5.0, 20.0)],
+    "GEM":       [(2.5, 5.0), (3.5, 10.0), (5.0, 20.0)],
+    "Multi-Model": [(2.5, 5.0), (3.5, 10.0), (5.0, 20.0)],
+    "CMA":       [(2.5, 5.0), (3.5, 10.0), (5.0, 20.0)],
+    "METEOFRANCE": [(2.5, 5.0), (3.5, 10.0), (5.0, 20.0)],
 }
 
 
@@ -137,7 +179,7 @@ class QuantileMapper:
         obs_col   : observation column name (default "OBS_Rain")
         """
         if model not in MODELS:
-            log_fn(f"[qm] Unknown model '{model}' — skipped.")
+            log_fn(f"[qm] Unknown model '{model}' - skipped.")
             return
 
         # Filter to rain events on both sides
@@ -150,10 +192,8 @@ class QuantileMapper:
         n = len(rain_df)
 
         if n < QM_MIN_SAMPLES:
-            log_fn(
-                f"[qm] {model}: only {n} rain-event pairs "
-                f"(need {QM_MIN_SAMPLES}) — using seed anchors as fallback."
-            )
+            fallback = "using seed anchors as fallback" if model in _SEED_ANCHORS else "leaving raw values as pass-through"
+            log_fn(f"[qm] {model}: only {n} rain-event pairs (need {QM_MIN_SAMPLES}) - {fallback}.")
             self._set_seed_table(model)
             return
 
@@ -179,8 +219,8 @@ class QuantileMapper:
             "fitted_at":     datetime.now(timezone.utc).isoformat(),
         }
         log_fn(
-            f"[qm] {model}: fitted empirical mapper on {n} pairs — "
-            f"fc range [{fc_vals.min():.2f}, {fc_vals.max():.2f}] mm → "
+            f"[qm] {model}: fitted empirical mapper on {n} pairs - "
+            f"fc range [{fc_vals.min():.2f}, {fc_vals.max():.2f}] mm -> "
             f"obs range [{obs_vals.min():.2f}, {obs_vals.max():.2f}] mm"
         )
 
@@ -388,7 +428,7 @@ def fit_and_save_qm(
             return False, f"load_verification_data failed: {e}"
 
     if df_rain.empty:
-        return False, "No paired rainfall data available — QM not fitted."
+        return False, "No paired rainfall data available - QM not fitted."
 
     qm = QuantileMapper()
     qm.fit_all(df_rain, log_fn=log_fn)
@@ -399,12 +439,319 @@ def fit_and_save_qm(
     seed_only  = [m for m in MODELS if not qm.is_empirical(m)]
 
     msg = (
-        f"[qm] QM fitted and saved → {saved_path}\n"
+        f"[qm] QM fitted and saved -> {saved_path}\n"
         f"  Empirical: {', '.join(empirical) if empirical else 'none'}\n"
         f"  Seed fallback: {', '.join(seed_only) if seed_only else 'none'}"
     )
     log_fn(msg)
     return True, msg
+
+
+# ===========================================================================
+# Multi-parameter QM stored in SQLite qm_cdfs
+# ===========================================================================
+
+def _as_arrays(fcst, obs) -> tuple[np.ndarray, np.ndarray]:
+    fc = pd.to_numeric(pd.Series(fcst), errors="coerce").to_numpy(dtype=float)
+    ob = pd.to_numeric(pd.Series(obs), errors="coerce").to_numpy(dtype=float)
+    mask = ~np.isnan(fc) & ~np.isnan(ob)
+    return fc[mask], ob[mask]
+
+
+def _fit_empirical(fcst: np.ndarray, obs: np.ndarray, n_quantiles: int = 100) -> dict | None:
+    if len(fcst) < 2:
+        return None
+    probs = np.linspace(0.0, 1.0, n_quantiles)
+    fc_q = np.maximum.accumulate(np.quantile(fcst, probs))
+    obs_q = np.maximum.accumulate(np.quantile(obs, probs))
+    return {"fcst_quantiles": fc_q.tolist(), "obs_quantiles": obs_q.tolist(), "n_samples": int(len(fcst))}
+
+
+def _fit_qm_linear(fcst: np.ndarray, obs: np.ndarray) -> dict | None:
+    fc, ob = _as_arrays(fcst, obs)
+    result = _fit_empirical(fc, ob)
+    if result:
+        result["method"] = "linear"
+    return result
+
+
+def _fit_qm_nonneg(fcst: np.ndarray, obs: np.ndarray) -> dict | None:
+    fc, ob = _as_arrays(fcst, obs)
+    result = _fit_empirical(np.maximum(fc, 0.0), np.maximum(ob, 0.0))
+    if result:
+        result["method"] = "nonneg"
+    return result
+
+
+def _fit_qm_circular(fcst: np.ndarray, obs: np.ndarray) -> dict | None:
+    fc, ob = _as_arrays(fcst, obs)
+    if len(fc) < 2:
+        return None
+    diff = ((ob - fc + 180.0) % 360.0) - 180.0
+    result = _fit_empirical(fc, diff)
+    if result:
+        result["method"] = "circular_delta"
+    return result
+
+
+def _fit_qm_zero_inflated(fcst: np.ndarray, obs: np.ndarray) -> dict | None:
+    fc, ob = _as_arrays(fcst, obs)
+    wet_mask = (fc > 0.1) | (ob > 0.1)
+    fc_wet = np.maximum(fc[wet_mask], 0.0)
+    ob_wet = np.maximum(ob[wet_mask], 0.0)
+    result = _fit_empirical(fc_wet, ob_wet)
+    if result:
+        result["method"] = "zero_inflated"
+        result["obs_wet_fraction"] = float((ob > 0.1).mean()) if len(ob) else 0.0
+    return result
+
+
+def _fit_qm_gamma(fcst: np.ndarray, obs: np.ndarray) -> dict | None:
+    fc, ob = _as_arrays(fcst, obs)
+    mask = (fc > 0) & (ob > 0)
+    fc, ob = fc[mask], ob[mask]
+    if len(fc) < 50:
+        return None
+    try:
+        fc_shape, fc_loc, fc_scale = scipy_stats.gamma.fit(fc, floc=0)
+        ob_shape, ob_loc, ob_scale = scipy_stats.gamma.fit(ob, floc=0)
+        probs = np.linspace(0.01, 0.99, 100)
+        fc_q = np.maximum.accumulate(scipy_stats.gamma.ppf(probs, fc_shape, loc=fc_loc, scale=fc_scale))
+        ob_q = np.maximum.accumulate(scipy_stats.gamma.ppf(probs, ob_shape, loc=ob_loc, scale=ob_scale))
+        return {
+            "fcst_quantiles": fc_q.tolist(),
+            "obs_quantiles": ob_q.tolist(),
+            "n_samples": int(len(fc)),
+            "method": "gamma_parametric",
+            "low_confidence": bool(len(fc) < 200),
+            "fc_shape": float(fc_shape),
+            "fc_scale": float(fc_scale),
+            "obs_shape": float(ob_shape),
+            "obs_scale": float(ob_scale),
+        }
+    except Exception:
+        fallback = _fit_qm_nonneg(fc, ob)
+        if fallback:
+            fallback["method"] = "nonneg_gamma_fallback"
+        return fallback
+
+
+def _apply_quantile(value: float, fc_q, obs_q) -> float:
+    if value is None or pd.isna(value):
+        return value
+    fc_arr = np.asarray(fc_q, dtype=float)
+    obs_arr = np.asarray(obs_q, dtype=float)
+    if len(fc_arr) < 2:
+        return float(value)
+    return float(np.interp(float(value), fc_arr, obs_arr, left=obs_arr[0], right=obs_arr[-1]))
+
+
+def _apply_qm_linear(value: float, qm: dict) -> float:
+    return _apply_quantile(value, qm["fcst_quantiles"], qm["obs_quantiles"])
+
+
+def _apply_qm_nonneg(value: float, qm: dict) -> float:
+    return max(0.0, _apply_qm_linear(value, qm))
+
+
+def _apply_qm_circular(value: float, qm: dict) -> float:
+    if value is None or pd.isna(value):
+        return value
+    delta = _apply_quantile(value, qm["fcst_quantiles"], qm["obs_quantiles"])
+    return float((float(value) + delta) % 360.0)
+
+
+def _apply_qm_zero_inflated(value: float, qm: dict) -> float:
+    if value is None or pd.isna(value):
+        return value
+    if float(value) <= 0.1:
+        return max(0.0, float(value))
+    return max(0.0, _apply_qm_linear(value, qm))
+
+
+def _lead_bucket(lead_hours: float, parameter: str) -> str:
+    h = float(lead_hours or 0.0)
+    if parameter == "wind_gust":
+        if h <= 6:
+            return "L1_0_6h"
+        if h <= 18:
+            return "L2_6_18h"
+        return "L3_18h_plus"
+    if h <= 6:
+        return "L1_0_6h"
+    if h <= 12:
+        return "L2_6_12h"
+    if h <= 24:
+        return "L3_12_24h"
+    if h <= 48:
+        return "L4_24_48h"
+    return "L5_48plus"
+
+
+def _fit_param(parameter: str, fcst: np.ndarray, obs: np.ndarray) -> dict | None:
+    qm_type = QM_MULTIPARAM_PARAMS[parameter]["type"]
+    if qm_type == "linear":
+        return _fit_qm_linear(fcst, obs)
+    if qm_type == "nonneg":
+        return _fit_qm_nonneg(fcst, obs)
+    if qm_type == "circular":
+        return _fit_qm_circular(fcst, obs)
+    if qm_type == "zero_inflated":
+        return _fit_qm_zero_inflated(fcst, obs)
+    if qm_type == "gamma_parametric":
+        return _fit_qm_gamma(fcst, obs)
+    return None
+
+
+def _score_before_after(parameter: str, fcst: np.ndarray, obs: np.ndarray, qm: dict) -> dict:
+    fc, ob = _as_arrays(fcst, obs)
+    if len(fc) == 0:
+        return {"mae_before": None, "mae_after": None, "bias_before": None, "bias_after": None}
+    after = np.array([apply_qm_value(v, parameter, qm) for v in fc], dtype=float)
+    if parameter == "wind_dir":
+        before_err = ((fc - ob + 180.0) % 360.0) - 180.0
+        after_err = ((after - ob + 180.0) % 360.0) - 180.0
+    else:
+        before_err = fc - ob
+        after_err = after - ob
+    return {
+        "mae_before": float(np.mean(np.abs(before_err))),
+        "mae_after": float(np.mean(np.abs(after_err))),
+        "bias_before": float(np.mean(before_err)),
+        "bias_after": float(np.mean(after_err)),
+    }
+
+
+def apply_qm_value(value: float, parameter: str, qm: dict) -> float:
+    method = qm.get("method") or QM_MULTIPARAM_PARAMS.get(parameter, {}).get("type")
+    if method == "circular_delta":
+        return _apply_qm_circular(value, qm)
+    if method in {"nonneg", "gamma_parametric", "nonneg_gamma_fallback"}:
+        return _apply_qm_nonneg(value, qm)
+    if method == "zero_inflated":
+        return _apply_qm_zero_inflated(value, qm)
+    return _apply_qm_linear(value, qm)
+
+
+def fit_multiparam_qm_to_db(conn, log_fn=print) -> dict:
+    trained = {}
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS qm_cdfs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            model TEXT NOT NULL,
+            parameter TEXT NOT NULL,
+            lead_bucket TEXT NOT NULL,
+            fcst_quantiles TEXT NOT NULL,
+            obs_quantiles TEXT NOT NULL,
+            n_samples INTEGER NOT NULL,
+            crps_before REAL,
+            crps_after REAL,
+            bias_before REAL,
+            bias_after REAL,
+            trained_at TEXT NOT NULL,
+            enabled INTEGER DEFAULT 1,
+            method TEXT,
+            low_confidence INTEGER DEFAULT 0,
+            metadata TEXT,
+            UNIQUE(model, parameter, lead_bucket)
+        )
+    """)
+    for model in MULTIPARAM_MODELS_OPENMETEO:
+        trained[model] = {}
+        for parameter, (fc_col, obs_col) in PARAM_DB_MAP.items():
+            buckets = LEAD_BUCKETS_GUST if parameter == "wind_gust" else LEAD_BUCKETS_DEFAULT
+            bucket_col = "lead_bucket_gust" if parameter == "wind_gust" else "lead_bucket"
+            trained[model][parameter] = {}
+            for bucket in buckets:
+                df = pd.read_sql_query(
+                    f"""
+                    SELECT {fc_col} AS fcst, {obs_col} AS obs
+                    FROM qm_training_pairs
+                    WHERE model = ? AND {bucket_col} = ?
+                      AND {fc_col} IS NOT NULL AND {obs_col} IS NOT NULL
+                    """,
+                    conn,
+                    params=(model, bucket),
+                )
+                min_samples = QM_MULTIPARAM_PARAMS[parameter]["min_samples"]
+                if len(df) < min_samples:
+                    trained[model][parameter][bucket] = {"enabled": False, "n_samples": int(len(df))}
+                    continue
+                qm = _fit_param(parameter, df["fcst"].to_numpy(), df["obs"].to_numpy())
+                if not qm:
+                    trained[model][parameter][bucket] = {"enabled": False, "n_samples": int(len(df))}
+                    continue
+                scores = _score_before_after(parameter, df["fcst"].to_numpy(), df["obs"].to_numpy(), qm)
+                low_conf = bool(qm.get("low_confidence", False))
+                cur.execute("""
+                    INSERT INTO qm_cdfs (
+                        model, parameter, lead_bucket, fcst_quantiles, obs_quantiles,
+                        n_samples, crps_before, crps_after, bias_before, bias_after,
+                        trained_at, enabled, method, low_confidence, metadata
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(model, parameter, lead_bucket) DO UPDATE SET
+                        fcst_quantiles=excluded.fcst_quantiles,
+                        obs_quantiles=excluded.obs_quantiles,
+                        n_samples=excluded.n_samples,
+                        crps_before=excluded.crps_before,
+                        crps_after=excluded.crps_after,
+                        bias_before=excluded.bias_before,
+                        bias_after=excluded.bias_after,
+                        trained_at=excluded.trained_at,
+                        enabled=excluded.enabled,
+                        method=excluded.method,
+                        low_confidence=excluded.low_confidence,
+                        metadata=excluded.metadata
+                """, (
+                    model,
+                    parameter,
+                    bucket,
+                    json.dumps(qm["fcst_quantiles"]),
+                    json.dumps(qm["obs_quantiles"]),
+                    qm["n_samples"],
+                    scores["mae_before"],
+                    scores["mae_after"],
+                    scores["bias_before"],
+                    scores["bias_after"],
+                    datetime.now(timezone.utc).isoformat(),
+                    1,
+                    qm.get("method"),
+                    1 if low_conf else 0,
+                    json.dumps({k: v for k, v in qm.items() if k not in {"fcst_quantiles", "obs_quantiles"}}),
+                ))
+                trained[model][parameter][bucket] = {"enabled": True, "n_samples": qm["n_samples"], "low_confidence": low_conf}
+                if low_conf:
+                    log_fn(f"[LOW-CONF] {model}/{parameter}/{bucket}: {qm['n_samples']} samples")
+    conn.commit()
+    return trained
+
+
+def load_multiparam_qm(conn, model: str, parameter: str, lead_hours: float) -> dict | None:
+    bucket = _lead_bucket(lead_hours, parameter)
+    row = conn.execute("""
+        SELECT fcst_quantiles, obs_quantiles, method, metadata
+        FROM qm_cdfs
+        WHERE model=? AND parameter=? AND lead_bucket=? AND enabled=1
+    """, (model, parameter, bucket)).fetchone()
+    if not row:
+        return None
+    metadata = json.loads(row[3] or "{}")
+    metadata.update({
+        "fcst_quantiles": json.loads(row[0]),
+        "obs_quantiles": json.loads(row[1]),
+        "method": row[2],
+    })
+    return metadata
+
+
+def apply_multiparam_qm(value: float, model: str, parameter: str, lead_hours: float, conn=None) -> float:
+    if conn is None:
+        return value
+    qm = load_multiparam_qm(conn, model, parameter, lead_hours)
+    if not qm:
+        return value
+    return apply_qm_value(value, parameter, qm)
 
 
 # ===========================================================================
@@ -438,12 +785,12 @@ if __name__ == "__main__":
     print("\nTransform results (ECMWF):")
     for v in test_inputs:
         out = qm.transform(v, "ECMWF")
-        tag = "→ empirical" if v >= VOTE_THR else "→ pass-through"
+        tag = "-> empirical" if v >= VOTE_THR else "-> pass-through"
         print(f"  {v:.1f} mm {tag}: {out:.2f} mm")
 
     # 3. Seed fallback for a model with no data
     qm._set_seed_table("GFS")
-    print(f"\nGFS seed transform (3.7mm → should be ~10mm): "
+    print(f"\nGFS seed transform (3.7mm -> should be ~10mm): "
           f"{qm.transform(3.7, 'GFS'):.2f} mm")
 
     # 4. Save / load round-trip
@@ -455,7 +802,7 @@ if __name__ == "__main__":
     v_before = qm.transform(3.0, "ECMWF")
     v_after  = qm2.transform(3.0, "ECMWF")
     assert abs(v_before - v_after) < 0.01, "Round-trip mismatch"
-    print(f"\nRound-trip save/load: ECMWF 3.0 mm → {v_after:.2f} mm ✅")
+    print(f"\nRound-trip save/load: ECMWF 3.0 mm -> {v_after:.2f} mm OK")
 
     print("\nSummary:")
     for model, info in qm2.summary().items():

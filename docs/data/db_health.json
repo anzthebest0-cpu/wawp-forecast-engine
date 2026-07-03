@@ -1,6 +1,9 @@
 {
-  "size_mb": 1.97,
-  "forecast_records": 5708,
-  "observation_records": 705,
-  "last_sync_utc": "2026-07-02 03:57:39"
+  "size_mb": 748.53,
+  "forecast_records": 4992,
+  "observation_records": 42449,
+  "observation_1min_records": 2504680,
+  "openmeteo_records": 403416,
+  "qm_cdfs_enabled": 90,
+  "last_sync_utc": "2026-07-03 08:17:27"
 }
