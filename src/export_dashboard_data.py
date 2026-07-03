@@ -147,6 +147,90 @@ def _compute_ts_risk(row: pd.Series) -> float:
         pass
     return float(max(0.0, min(100.0, score)))
 
+
+def _blend_related_weights(global_weights: dict, related_params: list[str]) -> dict[str, float]:
+    usable = [global_weights[p] for p in related_params if p in global_weights and global_weights[p]]
+    if not usable:
+        return {m: 1.0 / len(MODELS) for m in MODELS}
+    blended = {m: 0.0 for m in MODELS}
+    for weights in usable:
+        for model in MODELS:
+            blended[model] += float(weights.get(model, 0.0) or 0.0)
+    total = sum(blended.values())
+    if total <= 0:
+        return {m: 1.0 / len(MODELS) for m in MODELS}
+    return {m: blended[m] / total for m in MODELS}
+
+
+def _weighted_quantile(values: list[float], weights: list[float], quantile: float) -> float:
+    pairs = sorted((float(v), float(w)) for v, w in zip(values, weights) if pd.notna(v) and float(w) > 0)
+    if not pairs:
+        return float("nan")
+    total = sum(w for _, w in pairs)
+    threshold = max(0.0, min(1.0, quantile)) * total
+    running = 0.0
+    for value, weight in pairs:
+        running += weight
+        if running >= threshold:
+            return value
+    return pairs[-1][0]
+
+
+def _aviation_visibility_consensus(row: pd.Series, weights: dict[str, float]) -> float:
+    valid = row.dropna()
+    if valid.empty:
+        return float("nan")
+    values = [max(50.0, min(9999.0, float(v))) for v in valid.values]
+    w = [float(weights.get(model, 1.0 / len(valid.index)) or 0.0) for model in valid.index]
+    if sum(w) <= 0:
+        w = [1.0 / len(values)] * len(values)
+    total = sum(w)
+    probs = {
+        800: sum(wi for v, wi in zip(values, w) if v < 800.0) / total,
+        1500: sum(wi for v, wi in zip(values, w) if v < 1500.0) / total,
+        3000: sum(wi for v, wi in zip(values, w) if v < 3000.0) / total,
+        5000: sum(wi for v, wi in zip(values, w) if v < 5000.0) / total,
+    }
+    def has_restricted_consensus(limit: float, probability_threshold: float) -> bool:
+        supporting_models = sum(1 for v in values if v < limit)
+        if supporting_models >= 2:
+            return True
+        return len(values) >= 5 and probs[int(limit)] >= probability_threshold
+
+    if has_restricted_consensus(800.0, 0.50):
+        return min(_weighted_quantile(values, w, 0.25), 800.0)
+    if has_restricted_consensus(1500.0, 0.50):
+        return min(_weighted_quantile(values, w, 0.30), 1500.0)
+    if has_restricted_consensus(3000.0, 0.55):
+        return min(_weighted_quantile(values, w, 0.35), 3000.0)
+    if has_restricted_consensus(5000.0, 0.55):
+        return min(_weighted_quantile(values, w, 0.40), 5000.0)
+    return min(9999.0, _weighted_quantile(values, w, 0.50))
+
+
+def _aviation_cloud_cover_consensus(row: pd.Series, weights: dict[str, float]) -> float:
+    valid = row.dropna()
+    if valid.empty:
+        return float("nan")
+    values = [max(0.0, min(100.0, float(v))) for v in valid.values]
+    w = [float(weights.get(model, 1.0 / len(valid.index)) or 0.0) for model in valid.index]
+    if sum(w) <= 0:
+        w = [1.0 / len(values)] * len(values)
+    total = sum(w)
+    p_few = sum(wi for v, wi in zip(values, w) if v >= 5.0) / total
+    p_sct = sum(wi for v, wi in zip(values, w) if v >= 26.0) / total
+    p_bkn = sum(wi for v, wi in zip(values, w) if v >= 51.0) / total
+    p_ovc = sum(wi for v, wi in zip(values, w) if v >= 88.0) / total
+    if p_ovc >= 0.45:
+        return 95.0
+    if p_bkn >= 0.45:
+        return 70.0
+    if p_sct >= 0.40:
+        return 38.0
+    if p_few >= 0.30:
+        return 15.0
+    return 0.0
+
 def calculate_advanced_metrics(weighter, df_long: pd.DataFrame, param: str, is_circular: bool):
     """Calculate standard metrics, lead-time metrics, and diurnal bias."""
     metrics_payload = {
@@ -638,16 +722,18 @@ def export_all(db: ForecastDB, output_dir: str):
         for _, row in df_fcst.iterrows():
             record_id_by_model_time[(row["model"], str(row["forecast_time"]))] = int(row["id"])
     
-    model_data = {param: {} for param in ["Temperature", "Dewpoint", "Pressure", "Rainfall", "Wind Speed", "Wind Dir.", "Wind Gust", "Precip Probability", "Sunshine", "Low Clouds", "Mid Clouds", "High Clouds", "Condition", "CAPE", "Lifted Index", "Convective Inhibition", "Weather Code"]}
+    model_data = {param: {} for param in ["Temperature", "Dewpoint", "Humidity", "Pressure", "Rainfall", "Wind Speed", "Wind Dir.", "Wind Gust", "Visibility", "Precip Probability", "Sunshine", "Low Clouds", "Mid Clouds", "High Clouds", "Condition", "CAPE", "Lifted Index", "Convective Inhibition", "Weather Code"]}
     
     param_map = {
         "Temperature": "temperature",
         "Dewpoint": "dewpoint",
+        "Humidity": "humidity",
         "Pressure": "pressure_msl",
         "Rainfall": "rain",
         "Wind Speed": "wind_speed",
         "Wind Dir.": "wind_dir",
         "Wind Gust": "wind_gust",
+        "Visibility": "visibility",
         "Precip Probability": "precipitation_probability",
         "Sunshine": "sunshine_duration",
         "Low Clouds": "cloud_cover_low",
@@ -675,6 +761,19 @@ def export_all(db: ForecastDB, output_dir: str):
     consensus = pd.DataFrame(index=pd.to_datetime(df_fcst["forecast_time"].unique()).sort_values())
     consensus.index.name = "Datetime"
     pipeline_run_id = latest_time or datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    related_weight_params = {
+        "Humidity": ["Dewpoint", "Temperature"],
+        "Visibility": ["Rainfall", "Dewpoint", "Wind Speed"],
+        "Precip Probability": ["Rainfall"],
+        "Sunshine": ["Rainfall"],
+        "Low Clouds": ["Dewpoint", "Rainfall", "Pressure"],
+        "Mid Clouds": ["Dewpoint", "Rainfall", "Pressure"],
+        "High Clouds": ["Dewpoint", "Rainfall", "Pressure"],
+        "CAPE": ["Rainfall"],
+        "Lifted Index": ["Rainfall"],
+        "Convective Inhibition": ["Rainfall"],
+        "Weather Code": ["Rainfall"],
+    }
     qm_provenance = {
         "total_values": 0,
         "by_layer": {"historical_prior": 0, "operational_residual": 0, "raw": 0},
@@ -687,7 +786,9 @@ def export_all(db: ForecastDB, output_dir: str):
         if param == "Condition":
             continue
             
-        weights = global_weights.get(param, {m: 1.0/len(MODELS) for m in MODELS})
+        weights = global_weights.get(param)
+        if not weights:
+            weights = _blend_related_weights(global_weights, related_weight_params.get(param, []))
         p_df = pd.DataFrame(model_data[param])
         if p_df.empty:
             continue
@@ -794,6 +895,10 @@ def export_all(db: ForecastDB, output_dir: str):
                         return r_mean * restoration
                 return r_mean
             consensus[param] = p_df.apply(apply_rain_consensus, axis=1)
+        elif param == "Visibility":
+            consensus[param] = p_df.apply(lambda row: _aviation_visibility_consensus(row, weights), axis=1)
+        elif param in {"Low Clouds", "Mid Clouds", "High Clouds"}:
+            consensus[param] = p_df.apply(lambda row: _aviation_cloud_cover_consensus(row, weights), axis=1)
         else:
             consensus[param] = p_df.apply(
                 lambda row: np.average(row.dropna(), weights=row_weights(row.dropna().index))

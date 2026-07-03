@@ -215,15 +215,20 @@ def estimate_cloud_group_with_pressure(rh_pct, temp_c, dewpoint_c,
         lcl_ft = estimate_lcl_ft_pressure(temp_c, dewpoint_c, pressure_hpa)
 
     lcl_ft = max(100.0, lcl_ft)
-    base_hundreds = int(round(lcl_ft / 100.0))
-    base_str = f"{base_hundreds:03d}"
 
     # Base amount from actual consensus percentages if available
     low_pct = consensus_hour.get('low_clouds', 0.0) if consensus_hour else 0.0
     mid_pct = consensus_hour.get('mid_clouds', 0.0) if consensus_hour else 0.0
+    high_pct = consensus_hour.get('high_clouds', 0.0) if consensus_hour else 0.0
     
-    # Decide which cloud layer is dominant for the ceiling
-    target_pct = low_pct if low_pct > 15.0 else max(low_pct, mid_pct)
+    # Decide which cloud layer is dominant. Only low cloud should use the LCL as
+    # a ceiling; mid/high layers need representative aviation bases.
+    layer_candidates = [("low", low_pct), ("mid", mid_pct), ("high", high_pct)]
+    dominant_layer, target_pct = max(layer_candidates, key=lambda item: item[1])
+    if low_pct >= 15.0:
+        dominant_layer, target_pct = "low", low_pct
+    elif max(mid_pct, high_pct) < 5.0:
+        dominant_layer, target_pct = "low", low_pct
     
     if target_pct > 0:
         if target_pct >= 88.0:
@@ -257,7 +262,25 @@ def estimate_cloud_group_with_pressure(rh_pct, temp_c, dewpoint_c,
 
     if amount == "NSC":
         return "NSC"
-        
+
+    if dominant_layer == "mid":
+        base_ft = max(6500.0, min(12000.0, lcl_ft))
+    elif dominant_layer == "high":
+        base_ft = max(18000.0, min(25000.0, lcl_ft))
+    else:
+        base_ft = lcl_ft
+        weak_low_cloud = (
+            amount == "FEW"
+            and low_pct < 26.0
+            and rain_mmh <= 0.1
+            and vis_m >= 9999.0
+            and rh_pct < 92.0
+        )
+        if weak_low_cloud:
+            base_ft = max(base_ft, 1000.0)
+
+    base_hundreds = int(round(max(100.0, base_ft) / 100.0))
+    base_str = f"{base_hundreds:03d}"
     return f"{amount}{base_str}"
 
 
@@ -267,7 +290,7 @@ def build_hourly_vis_cloud(consensus_hour, pressure_history):
     P  = consensus_hour.get("pressure_hpa", 1013.25)
     R  = consensus_hour.get("rain", 0.0)
     U  = consensus_hour.get("spd", 0.0)
-    RH = consensus_hour.get("relative_humidity_pct", 80.0)
+    RH = consensus_hour.get("relative_humidity_pct", 80.0) or 80.0
 
     if len(pressure_history) >= 3:
         pressure_trend_3h = P - pressure_history[-3]
@@ -277,9 +300,22 @@ def build_hourly_vis_cloud(consensus_hour, pressure_history):
     # WAWP baseline dry visibility
     baseline_dry_vis = 9999
 
-    vis_m = estimate_visibility(R, RH, T, Td, U, P, pressure_trend_3h,
-                                baseline_dry_vis_m=baseline_dry_vis,
-                                current_month=consensus_hour.get("month"))
+    proxy_vis_m = estimate_visibility(R, RH, T, Td, U, P, pressure_trend_3h,
+                                      baseline_dry_vis_m=baseline_dry_vis,
+                                      current_month=consensus_hour.get("month"))
+    model_vis_m = consensus_hour.get("model_visibility_m")
+    try:
+        model_vis_m = max(50.0, min(9999.0, float(model_vis_m)))
+    except (TypeError, ValueError):
+        model_vis_m = None
+
+    fog_or_rain_risk = R > 0.1 or (RH >= 90.0 and (T - Td) <= 3.0)
+    if model_vis_m is None:
+        vis_m = proxy_vis_m
+    elif fog_or_rain_risk:
+        vis_m = min(model_vis_m, proxy_vis_m)
+    else:
+        vis_m = model_vis_m
 
     # Apply standard aviation visibility rounding
     if vis_m >= 9999:

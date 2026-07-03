@@ -138,9 +138,11 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
             "prob_precip_10": row["Precip Probability"] if "Precip Probability" in row and pd.notna(row.get("Precip Probability")) else (
                 row["Prob Precip 1.0mm"] if "Prob Precip 1.0mm" in row and pd.notna(row.get("Prob Precip 1.0mm")) else 0.0
             ),
+            "model_visibility_m": row["Visibility"] if "Visibility" in row and pd.notna(row.get("Visibility")) else None,
             "Condition": row["Condition"] if pd.notna(row.get("Condition")) else "Clear",
             "low_clouds": row["Low Clouds"] if "Low Clouds" in row and pd.notna(row.get("Low Clouds")) else 0.0,
-            "mid_clouds": row["Mid Clouds"] if "Mid Clouds" in row and pd.notna(row.get("Mid Clouds")) else 0.0
+            "mid_clouds": row["Mid Clouds"] if "Mid Clouds" in row and pd.notna(row.get("Mid Clouds")) else 0.0,
+            "high_clouds": row["High Clouds"] if "High Clouds" in row and pd.notna(row.get("High Clouds")) else 0.0
         }
         dt = pd.to_datetime(row["Datetime"])
         hour_data["month"] = dt.month
