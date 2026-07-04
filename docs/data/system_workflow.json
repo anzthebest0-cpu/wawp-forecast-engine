@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at": "2026-07-04 08:27:52",
-    "latest_forecast_scrape": "2026-07-04 08:27:52",
+    "generated_at": "2026-07-04 08:53:46",
+    "latest_forecast_scrape": "2026-07-04 08:53:25",
     "timezone": "UTC"
   },
   "summary": {
@@ -51,85 +51,85 @@
     {
       "model": "CMA_GRAPES_GLOBAL",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 08:27:49",
+      "latest_scraped_at": "2026-07-04 08:53:23",
       "latest_run_init_utc": "2026-07-04 08:00:00",
       "first_forecast_time": "2026-07-04 16:00:00",
       "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.0,
+      "age_hours": 0.01,
       "status": "fresh"
     },
     {
       "model": "ECMWF_HRES",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 08:27:45",
+      "latest_scraped_at": "2026-07-04 08:53:19",
       "latest_run_init_utc": "2026-07-04 08:00:00",
       "first_forecast_time": "2026-07-04 16:00:00",
       "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.0,
+      "age_hours": 0.01,
       "status": "fresh"
     },
     {
       "model": "GEM_GLOBAL",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 08:27:48",
+      "latest_scraped_at": "2026-07-04 08:53:22",
       "latest_run_init_utc": "2026-07-04 08:00:00",
       "first_forecast_time": "2026-07-04 16:00:00",
       "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.0,
+      "age_hours": 0.01,
       "status": "fresh"
     },
     {
       "model": "GFS_GLOBAL",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 08:27:46",
+      "latest_scraped_at": "2026-07-04 08:53:20",
       "latest_run_init_utc": "2026-07-04 08:00:00",
       "first_forecast_time": "2026-07-04 16:00:00",
       "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.0,
+      "age_hours": 0.01,
       "status": "fresh"
     },
     {
       "model": "ICON_SEAMLESS",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 08:27:47",
+      "latest_scraped_at": "2026-07-04 08:53:21",
       "latest_run_init_utc": "2026-07-04 08:00:00",
       "first_forecast_time": "2026-07-04 16:00:00",
       "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.0,
+      "age_hours": 0.01,
       "status": "fresh"
     },
     {
       "model": "JMA_GSM",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 08:27:50",
+      "latest_scraped_at": "2026-07-04 08:53:24",
       "latest_run_init_utc": "2026-07-04 08:00:00",
       "first_forecast_time": "2026-07-04 16:00:00",
       "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.0,
+      "age_hours": 0.01,
       "status": "fresh"
     },
     {
       "model": "METEOFRANCE_ARPEGE_WORLD",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 08:27:51",
+      "latest_scraped_at": "2026-07-04 08:53:25",
       "latest_run_init_utc": "2026-07-04 08:00:00",
       "first_forecast_time": "2026-07-04 16:00:00",
       "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.0,
+      "age_hours": 0.01,
       "status": "fresh"
     },
     {
@@ -141,7 +141,7 @@
       "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.0,
+      "age_hours": 0.43,
       "status": "fresh"
     }
   ],
