@@ -1,13 +1,5 @@
 [
   {
-    "Datetime": "2026-06-29 09:00:00",
-    "temperature": 29.9,
-    "dewpoint": 23.5,
-    "wind_dir": 211.0,
-    "wind_speed": 5.0,
-    "rain_1h": 0.0
-  },
-  {
     "Datetime": "2026-06-29 10:00:00",
     "temperature": 29.0,
     "dewpoint": 23.4,

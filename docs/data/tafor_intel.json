@@ -96,26 +96,26 @@
     "warnings": []
   },
   "default": {
-    "valid_start": "2026-07-04 16:00:00",
-    "issued_utc": "0700",
+    "valid_start": "2026-07-04 17:00:00",
+    "issued_utc": "0800",
     "issued_day": 4,
     "base_group": {
-      "dir": "150",
+      "dir": "120",
       "spd": "04",
       "gust": "11",
       "vis": "9999",
       "wx": "",
-      "cloud": "FEW027",
-      "rain": 0.0957620350173046,
-      "rain_mmh": 0.0957620350173046,
+      "cloud": "FEW022",
+      "rain": 0.08435118219684874,
+      "rain_mmh": 0.08435118219684874,
       "trends": [],
-      "badge": "MME 0700Z Shift",
+      "badge": "MME 0800Z Shift",
       "metrics": {
         "leader_rmse": "N/A",
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 040700\nTAF WAWP 040700Z 0408/0508 15004KT 9999 FEW027=",
+    "taf_text": "FTID40 WAWP 040800\nTAF WAWP 040800Z 0409/0509 12004KT 9999 FEW022=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (4 KT).",
     "warnings": []
   }
