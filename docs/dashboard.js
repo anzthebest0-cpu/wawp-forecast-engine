@@ -53,7 +53,7 @@ async function loadDashboard() {
             if (fcElem) fcElem.innerText = healthData.forecast_records.toLocaleString();
             if (obsElem) obsElem.innerText = healthData.observation_records.toLocaleString();
             if (sizeElem) sizeElem.innerText = healthData.size_mb + ' MB';
-            if (syncElem) syncElem.innerText = (healthData.last_sync_utc || healthData.latest_model_run_init_utc) + ' UTC';
+            if (syncElem) syncElem.innerText = (healthData.latest_data_pull_utc || healthData.last_sync_utc || healthData.latest_model_run_init_utc) + ' UTC';
             setupHealthFreshness(healthData.model_freshness || []);
             setupQMProvenance(healthData.qm_provenance || null);
         }
@@ -1095,21 +1095,21 @@ function setupIndividualModels(modelsData, timeLabels) {
         if(!timeLabels) return;
         
         const initBadge = document.getElementById('model-init-badge');
-        if (initBadge && modelsData['Run_Init'] && modelsData['Run_Init'][modelName]) {
-            let initStr = modelsData['Run_Init'][modelName];
-            if (initStr === "Unknown") {
-                initBadge.innerText = "Run label: Unknown";
+        if (initBadge) {
+            let pullStr = modelsData['Data_Pull']?.[modelName] || "Unknown";
+            if (pullStr === "Unknown") {
+                initBadge.innerText = "Data pull: Unknown";
                 initBadge.style.color = "var(--text-secondary)";
                 initBadge.style.borderColor = "var(--border-glass)";
             } else {
-                // Ensure it has Z suffix
-                if (!initStr.endsWith('Z')) {
-                    initStr = initStr.replace(' ', 'T') + 'Z';
+                if (!pullStr.endsWith('Z')) {
+                    pullStr = pullStr.replace(' ', 'T') + 'Z';
                 }
-                const d = new Date(initStr);
+                const d = new Date(pullStr);
+                const day = String(d.getUTCDate()).padStart(2, '0');
                 const hrs = String(d.getUTCHours()).padStart(2, '0');
                 const mns = String(d.getUTCMinutes()).padStart(2, '0');
-                initBadge.innerText = `Run label: ${hrs}${mns}Z`;
+                initBadge.innerText = `Data pull: ${day} ${hrs}${mns}Z`;
                 initBadge.style.color = "var(--cyan)";
                 initBadge.style.borderColor = "rgba(0, 212, 255, 0.25)";
             }

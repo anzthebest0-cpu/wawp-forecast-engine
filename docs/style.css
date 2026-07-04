@@ -502,6 +502,76 @@ body {
   border-color: rgba(0, 212, 255, 0.08);
 }
 
+.windy-panel {
+  margin-top: 20px;
+  overflow: hidden;
+  border-color: rgba(14, 165, 233, 0.16);
+}
+
+.windy-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+
+.windy-panel-header h3 {
+  margin-bottom: 6px;
+}
+
+.windy-panel-subtitle {
+  max-width: 760px;
+  color: var(--text-secondary);
+  font-size: var(--ts-sm);
+  line-height: 1.45;
+}
+
+.windy-open-link {
+  flex: 0 0 auto;
+  color: var(--cyan);
+  background: var(--cyan-glow);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  border-radius: var(--r-sm);
+  padding: 6px 12px;
+  text-decoration: none;
+  font-size: var(--ts-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.windy-frame-wrap {
+  position: relative;
+  width: 100%;
+  height: clamp(360px, 54vh, 560px);
+  background: var(--col-void);
+  border: 1px solid var(--col-border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.windy-frame-wrap iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 700px) {
+  .windy-panel-header {
+    flex-direction: column;
+  }
+
+  .windy-open-link {
+    width: 100%;
+    text-align: center;
+  }
+
+  .windy-frame-wrap {
+    height: 420px;
+  }
+}
+
 .param-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -538,6 +538,10 @@ def export_all(db: ForecastDB, output_dir: str):
         f"SELECT MAX(run_init_utc) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api' AND lead_hours >= 0 AND model IN ({model_filter})",
         _model_params()
     ).fetchone()[0]
+    latest_data_pull_utc = db.conn.execute(
+        f"SELECT MAX(scraped_at) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api' AND lead_hours >= 0 AND model IN ({model_filter})",
+        _model_params()
+    ).fetchone()[0]
     db_health = {
         "size_mb": round(db_size_bytes / (1024 * 1024), 2),
         "forecast_records": forecast_count,
@@ -546,6 +550,7 @@ def export_all(db: ForecastDB, output_dir: str):
         "openmeteo_records": openmeteo_count,
         "qm_cdfs_enabled": qm_cdf_count,
         "latest_model_run_init_utc": latest_model_run_init,
+        "latest_data_pull_utc": latest_data_pull_utc,
         "last_sync_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     }
     with open(os.path.join(output_dir, "db_health.json"), "w") as f:
@@ -713,10 +718,13 @@ def export_all(db: ForecastDB, output_dir: str):
         json.dump(db_health, f, indent=2)
     active_models = sorted(df_fcst["model"].dropna().unique().tolist())
     run_init_by_model = {}
+    scraped_at_by_model = {}
     if 'run_init_utc' in df_fcst.columns:
         for m in active_models:
             m_df = df_fcst[df_fcst["model"] == m].dropna(subset=['run_init_utc'])
             run_init_by_model[m] = str(m_df['run_init_utc'].max()) if not m_df.empty else None
+            s_df = df_fcst[df_fcst["model"] == m].dropna(subset=['scraped_at'])
+            scraped_at_by_model[m] = str(s_df['scraped_at'].max()) if not s_df.empty else None
     record_id_by_model_time = {}
     if "id" in df_fcst.columns:
         for _, row in df_fcst.iterrows():
@@ -962,7 +970,7 @@ def export_all(db: ForecastDB, output_dir: str):
             "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
             "latest_data_pull_utc": latest_time,
             "latest_model_run_init_utc": latest_model_run_init,
-            "forecast_run_label_utc": latest_model_run_init,
+            "forecast_run_label_utc": latest_time,
             "version": "v200",
             "location": "Bandara_Sangia_Ni_Bandera",
             "qm_provenance": qm_provenance
@@ -986,10 +994,13 @@ def export_all(db: ForecastDB, output_dir: str):
             
     # Extract Run_Init_UTC — use the most recent init per model
     run_init = {}
+    data_pull = {}
     if 'run_init_utc' in df_fcst.columns:
         for m in active_models:
             run_init[m] = run_init_by_model.get(m) or "Unknown"
+            data_pull[m] = scraped_at_by_model.get(m) or "Unknown"
     model_data_str["Run_Init"] = run_init
+    model_data_str["Data_Pull"] = data_pull
             
     with open(os.path.join(output_dir, "individual_models.json"), 'w', encoding='utf-8') as f:
         json.dump(model_data_str, f, indent=2, default=str, allow_nan=False)

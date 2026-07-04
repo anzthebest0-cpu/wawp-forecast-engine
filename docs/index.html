@@ -103,6 +103,19 @@
                 <h3 style="margin-bottom: 10px;">Narasi Prakiraan Cuaca (AI Summary)</h3>
                 <div id="taf-narration" style="color: var(--text-secondary); line-height: 1.6;">Loading narrative...</div>
             </div>
+
+            <div class="panel windy-panel">
+                <div class="windy-panel-header">
+                    <div>
+                        <h3>Live Satellite Context</h3>
+                        <div class="windy-panel-subtitle">Windy satellite view centered near WAWP for quick mesoscale situational awareness.</div>
+                    </div>
+                    <a class="windy-open-link" href="https://www.windy.com/?satellite,-4.263,121.536,7" target="_blank" rel="noopener">Open Windy</a>
+                </div>
+                <div class="windy-frame-wrap">
+                    <iframe title="Windy satellite map near WAWP" src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=7&overlay=satellite&product=satellite&level=surface&lat=-4.263&lon=121.536&detailLat=-3.860192&detailLon=122.049126&marker=true" frameborder="0" loading="lazy"></iframe>
+                </div>
+            </div>
         </section>
 
         <!-- Tab 2: Weighter -->
@@ -192,7 +205,7 @@
                     <option value="METEOFRANCE_ARPEGE_WORLD">METEOFRANCE_ARPEGE_WORLD</option>
                     <option value="UKMO_GLOBAL_10KM">UKMO_GLOBAL_10KM</option>
                 </select>
-                <span id="model-init-badge" style="margin-left: 15px; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-glass);">Run label: Unknown</span>
+                <span id="model-init-badge" style="margin-left: 15px; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-glass);">Data pull: Unknown</span>
             </div>
             <div class="panel">
                 <div class="table-container">
