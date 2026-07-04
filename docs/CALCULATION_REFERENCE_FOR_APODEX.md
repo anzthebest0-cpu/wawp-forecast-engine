@@ -4,6 +4,24 @@ This document converts the main deterministic/proxy calculation code into a Mark
 
 The goal is not to replace the aviation logic with a black box. The goal is to identify which constants can be empirically tuned using historical forecast data, live operational forecasts, and AWOS observations while keeping the system explainable and operationally conservative.
 
+## Operational Safety Preconditions
+
+Any auto-tuning run must preserve these hard aviation constraints:
+
+- Never emit `CAVOK` when active precipitation is present above the rain/no-rain threshold.
+- Never emit visibility below 5000 m without an accompanying weather phenomenon.
+- Do not allow a ceiling-only TAF change group to crash or inherit uninitialized weather/rain metadata.
+- Apply parameter/model QM before dynamic ensemble weighting.
+- Keep continuous historical forecast corrections labeled as historical priors, not true lead-aware operational residuals.
+- Treat operational multi-init residuals as a separate correction layer and log the applied correction provenance.
+
+Current status:
+
+- The codebase has explicit `source_type`, `correction_layer`, and `qm_corrections_applied` provenance support.
+- The codebase applies historical prior QM first, then operational residual QM if available.
+- Rainfall amount correction is handled as a wet/wet conditional mapping for non-dry values. A separate occurrence model remains a future enhancement.
+- The visibility formula documented below reflects the current implemented code. A proposed four-tier tropical rain-extinction formula should be validated before replacing it.
+
 ## Source Files Covered
 
 - `src/export_dashboard_data.py`
@@ -1291,4 +1309,3 @@ Given the above deterministic logic and constants, what is the best conservative
 - separates physical constants from SOP constants,
 - works with historical continuous data now,
 - and gradually incorporates operational multi-init lead-aware residual data?
-

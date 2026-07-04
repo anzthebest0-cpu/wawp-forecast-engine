@@ -1036,10 +1036,10 @@ def _build_change_groups(
         D = end_h - i + 1
         new_vis = consensus_truth[i]["vis"] if vis_trigger else ""
         new_cloud = consensus_truth[i]["cloud"] if ceil_trigger else ""
+        hour_data = consensus_truth[i]
         
         wx_str = ""
         if new_vis and int(new_vis) < 5000:
-            hour_data = consensus_truth[i]
             local_hour_wita = (start_hour + i + 8) % 24
             wx_str = get_weather_phenomenon(
                 rain_mmh=hour_data.get("rain", 0.0),
@@ -1063,7 +1063,6 @@ def _build_change_groups(
                     continue
         elif vis_trigger and new_vis:
             # Check for light rain even if vis >= 5000
-            hour_data = consensus_truth[i]
             if hour_data.get("rain", 0.0) >= 0.4:
                 local_hour_wita = (start_hour + i + 8) % 24
                 wx_str = get_weather_phenomenon(

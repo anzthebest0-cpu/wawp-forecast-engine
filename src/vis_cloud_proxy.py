@@ -182,10 +182,12 @@ def get_weather_phenomenon(rain_mmh, rh_pct, temp_c, dewpoint_c, vis_m, local_ho
     # Fog / Mist / Haze only when no active precipitation.
     if vis_m < 1000.0 and rh_pct >= 95.0 and dd <= 1.5:
         return "FG"
-    if vis_m < 5000.0 and rh_pct >= 80.0:
+    if vis_m < 5000.0 and rh_pct >= 75.0:
         return "BR"
     if vis_m < 5000.0 and rh_pct < 75.0 and temp_c >= 28.0:
         return "HZ"
+    if vis_m < 5000.0:
+        return "BR"
 
     return ""
 

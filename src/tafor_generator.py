@@ -88,7 +88,14 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
 
 def _generate_narration(bg: dict, trends: list) -> str:
     vis = bg.get('vis', '9999')
-    vis_desc = 'baik' if vis == '9999' or int(vis) > 8000 else ('sedang' if int(vis) >= 5000 else 'terbatas')
+    if str(vis).upper() == 'CAVOK':
+        vis_desc = 'baik'
+    else:
+        try:
+            vis_int = int(vis)
+        except (TypeError, ValueError):
+            vis_int = 9999
+        vis_desc = 'baik' if vis_int > 8000 else ('sedang' if vis_int >= 5000 else 'terbatas')
     wind = int(bg.get('spd', 0))
     wind_desc = f'ringan hingga sedang ({wind} KT)' if wind < 10 else f'cukup kencang ({wind} KT)'
     cloud_raw = bg.get('cloud', 'SCT018')
@@ -254,25 +261,23 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
         d_str = "000"
 
     base_wx = ''
-    if first_row.get('vis') and first_row['vis'] != '9999':
-        try:
-            vis_int = int(first_row['vis'])
-            if vis_int < 5000:
-                base_wx = get_weather_phenomenon(
-                    rain_mmh=first_row.get("rain", 0.0),
-                    rh_pct=first_row.get("relative_humidity_pct", 80.0),
-                    temp_c=first_row.get("temp_c", 28.0),
-                    dewpoint_c=first_row.get("dewpoint_c", 24.0),
-                    vis_m=vis_int,
-                    local_hour_wita=valid_start.hour,
-                    cape=first_row.get("cape"),
-                    lifted_index=first_row.get("lifted_index"),
-                    cin=first_row.get("convective_inhib"),
-                    weather_code=first_row.get("weather_code"),
-                    month=first_row.get("month"),
-                )
-        except (ValueError, TypeError):
-            base_wx = ''
+    try:
+        vis_int = 9999 if str(first_row.get('vis', '9999')).upper() == 'CAVOK' else int(first_row.get('vis', '9999'))
+    except (ValueError, TypeError):
+        vis_int = 9999
+    base_wx = get_weather_phenomenon(
+        rain_mmh=first_row.get("rain", 0.0),
+        rh_pct=first_row.get("relative_humidity_pct", 80.0),
+        temp_c=first_row.get("temp_c", 28.0),
+        dewpoint_c=first_row.get("dewpoint_c", 24.0),
+        vis_m=vis_int,
+        local_hour_wita=valid_start.hour,
+        cape=first_row.get("cape"),
+        lifted_index=first_row.get("lifted_index"),
+        cin=first_row.get("convective_inhib"),
+        weather_code=first_row.get("weather_code"),
+        month=first_row.get("month"),
+    )
         
     best_guess = {
         'dir': d_str,
