@@ -1163,20 +1163,38 @@ function setupDiurnalClimatology(clim) {
 
 function setupHealthFreshness(freshnessRows) {
     const fmtInt = v => Number(v || 0).toLocaleString();
+    const parseUtc = value => {
+        if (!value) return null;
+        const dt = new Date(String(value).endsWith('Z') ? value : String(value).replace(' ', 'T') + 'Z');
+        return Number.isNaN(dt.getTime()) ? null : dt;
+    };
+    const liveAgeHours = row => {
+        const scraped = parseUtc(row.latest_scraped_at);
+        if (!scraped) return row.age_hours === null ? null : Number(row.age_hours);
+        return Math.max(0, (Date.now() - scraped.getTime()) / 36e5);
+    };
+    const liveStatus = age => {
+        if (age === null || Number.isNaN(age)) return "unknown";
+        if (age <= 6) return "fresh";
+        if (age <= 12) return "aging";
+        return "stale";
+    };
     const tbody = document.querySelector('#health-freshness-table tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
     (freshnessRows || []).forEach(row => {
-        const color = row.status === 'fresh' ? 'var(--green)' : (row.status === 'aging' ? 'var(--amber)' : 'var(--crimson)');
+        const age = liveAgeHours(row);
+        const status = liveStatus(age);
+        const color = status === 'fresh' ? 'var(--green)' : (status === 'aging' ? 'var(--amber)' : 'var(--crimson)');
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${row.model}</td>
             <td>${row.latest_run_init_utc || '-'}</td>
             <td>${row.latest_scraped_at || '-'}</td>
-            <td>${row.age_hours === null ? '-' : Number(row.age_hours).toFixed(1) + ' h'}</td>
+            <td>${age === null || Number.isNaN(age) ? '-' : Number(age).toFixed(1) + ' h'}</td>
             <td>${fmtInt(row.row_count)}</td>
             <td>${row.min_lead_hours ?? '-'}-${row.max_lead_hours ?? '-'} h</td>
-            <td style="color:${color}; font-weight:700;">${row.status}</td>
+            <td style="color:${color}; font-weight:700;">${status}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -1196,7 +1214,11 @@ function setupQMProvenance(prov) {
 
     const note = document.getElementById('qm-provenance-note');
     if (note && prov) {
-        note.innerText = `${Number(prov.lead_aware_pending || 0).toLocaleString()} values are using historical prior while lead-aware residual QM is still pending.`;
+        if (Number(prov.total_values || 0) === 0) {
+            note.innerText = 'No QM correction was applied in this runner export. Current consensus is using raw model values plus preserved dynamic weights; full QM provenance requires the historical QM tables to be available to the runner.';
+        } else {
+            note.innerText = `${Number(prov.lead_aware_pending || 0).toLocaleString()} values are using historical prior while lead-aware residual QM is still pending.`;
+        }
     }
 }
 
