@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at": "2026-07-04 08:19:36",
-    "latest_forecast_scrape": "2026-07-04 07:12:41",
+    "generated_at": "2026-07-04 08:27:52",
+    "latest_forecast_scrape": "2026-07-04 08:27:52",
     "timezone": "UTC"
   },
   "summary": {
@@ -11,7 +11,7 @@
     "awos_1min_rows": 2504680,
     "qm_cdfs_enabled": 39,
     "active_model_count": 8,
-    "historical_model_count": 8
+    "historical_model_count": 0
   },
   "pipeline_stages": [
     {
@@ -51,150 +51,101 @@
     {
       "model": "CMA_GRAPES_GLOBAL",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 07:12:38",
-      "latest_run_init_utc": "2026-07-04 07:00:00",
-      "first_forecast_time": "2026-07-04 15:00:00",
-      "last_forecast_time": "2026-07-20 14:00:00",
+      "latest_scraped_at": "2026-07-04 08:27:49",
+      "latest_run_init_utc": "2026-07-04 08:00:00",
+      "first_forecast_time": "2026-07-04 16:00:00",
+      "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 1.12,
+      "age_hours": 0.0,
       "status": "fresh"
     },
     {
       "model": "ECMWF_HRES",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 07:12:35",
-      "latest_run_init_utc": "2026-07-04 07:00:00",
-      "first_forecast_time": "2026-07-04 15:00:00",
-      "last_forecast_time": "2026-07-20 14:00:00",
+      "latest_scraped_at": "2026-07-04 08:27:45",
+      "latest_run_init_utc": "2026-07-04 08:00:00",
+      "first_forecast_time": "2026-07-04 16:00:00",
+      "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 1.12,
+      "age_hours": 0.0,
       "status": "fresh"
     },
     {
       "model": "GEM_GLOBAL",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 07:12:37",
-      "latest_run_init_utc": "2026-07-04 07:00:00",
-      "first_forecast_time": "2026-07-04 15:00:00",
-      "last_forecast_time": "2026-07-20 14:00:00",
+      "latest_scraped_at": "2026-07-04 08:27:48",
+      "latest_run_init_utc": "2026-07-04 08:00:00",
+      "first_forecast_time": "2026-07-04 16:00:00",
+      "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 1.12,
+      "age_hours": 0.0,
       "status": "fresh"
     },
     {
       "model": "GFS_GLOBAL",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 07:12:36",
-      "latest_run_init_utc": "2026-07-04 07:00:00",
-      "first_forecast_time": "2026-07-04 15:00:00",
-      "last_forecast_time": "2026-07-20 14:00:00",
+      "latest_scraped_at": "2026-07-04 08:27:46",
+      "latest_run_init_utc": "2026-07-04 08:00:00",
+      "first_forecast_time": "2026-07-04 16:00:00",
+      "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 1.12,
+      "age_hours": 0.0,
       "status": "fresh"
     },
     {
       "model": "ICON_SEAMLESS",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 07:12:37",
-      "latest_run_init_utc": "2026-07-04 07:00:00",
-      "first_forecast_time": "2026-07-04 15:00:00",
-      "last_forecast_time": "2026-07-20 14:00:00",
+      "latest_scraped_at": "2026-07-04 08:27:47",
+      "latest_run_init_utc": "2026-07-04 08:00:00",
+      "first_forecast_time": "2026-07-04 16:00:00",
+      "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 1.12,
+      "age_hours": 0.0,
       "status": "fresh"
     },
     {
       "model": "JMA_GSM",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 07:12:39",
-      "latest_run_init_utc": "2026-07-04 07:00:00",
-      "first_forecast_time": "2026-07-04 15:00:00",
-      "last_forecast_time": "2026-07-20 14:00:00",
+      "latest_scraped_at": "2026-07-04 08:27:50",
+      "latest_run_init_utc": "2026-07-04 08:00:00",
+      "first_forecast_time": "2026-07-04 16:00:00",
+      "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 1.12,
+      "age_hours": 0.0,
       "status": "fresh"
     },
     {
       "model": "METEOFRANCE_ARPEGE_WORLD",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 07:12:40",
-      "latest_run_init_utc": "2026-07-04 07:00:00",
-      "first_forecast_time": "2026-07-04 15:00:00",
-      "last_forecast_time": "2026-07-20 14:00:00",
+      "latest_scraped_at": "2026-07-04 08:27:51",
+      "latest_run_init_utc": "2026-07-04 08:00:00",
+      "first_forecast_time": "2026-07-04 16:00:00",
+      "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 1.12,
+      "age_hours": 0.0,
       "status": "fresh"
     },
     {
       "model": "UKMO_GLOBAL_10KM",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-04 07:12:41",
-      "latest_run_init_utc": "2026-07-04 07:00:00",
-      "first_forecast_time": "2026-07-04 15:00:00",
-      "last_forecast_time": "2026-07-20 14:00:00",
+      "latest_scraped_at": "2026-07-04 08:27:52",
+      "latest_run_init_utc": "2026-07-04 08:00:00",
+      "first_forecast_time": "2026-07-04 16:00:00",
+      "last_forecast_time": "2026-07-20 15:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 1.12,
+      "age_hours": 0.0,
       "status": "fresh"
     }
   ],
-  "historical_coverage": [
-    {
-      "model": "CMA_GRAPES_GLOBAL",
-      "row_count": 30648,
-      "first_time": "2023-01-01 00:00:00",
-      "last_time": "2026-06-30 23:00:00"
-    },
-    {
-      "model": "ECMWF_HRES",
-      "row_count": 30648,
-      "first_time": "2023-01-01 00:00:00",
-      "last_time": "2026-06-30 23:00:00"
-    },
-    {
-      "model": "GEM_GLOBAL",
-      "row_count": 30648,
-      "first_time": "2023-01-01 00:00:00",
-      "last_time": "2026-06-30 23:00:00"
-    },
-    {
-      "model": "GFS_GLOBAL",
-      "row_count": 30648,
-      "first_time": "2023-01-01 00:00:00",
-      "last_time": "2026-06-30 23:00:00"
-    },
-    {
-      "model": "ICON_SEAMLESS",
-      "row_count": 30648,
-      "first_time": "2023-01-01 00:00:00",
-      "last_time": "2026-06-30 23:00:00"
-    },
-    {
-      "model": "JMA_GSM",
-      "row_count": 30648,
-      "first_time": "2023-01-01 00:00:00",
-      "last_time": "2026-06-30 23:00:00"
-    },
-    {
-      "model": "METEOFRANCE_ARPEGE_WORLD",
-      "row_count": 30648,
-      "first_time": "2023-01-01 00:00:00",
-      "last_time": "2026-06-30 23:00:00"
-    },
-    {
-      "model": "UKMO_GLOBAL_10KM",
-      "row_count": 30648,
-      "first_time": "2023-01-01 00:00:00",
-      "last_time": "2026-06-30 23:00:00"
-    }
-  ],
+  "historical_coverage": [],
   "lead_bucket_rows_current": [
     {
       "lead_bucket": "L1_0_6h",
@@ -218,29 +169,10 @@
     }
   ],
   "qm_calibration": {
-    "enabled_by_parameter": {
-      "dewpoint": 7,
-      "pressure": 8,
-      "temperature": 8,
-      "wind_dir": 8,
-      "wind_speed": 8
-    },
-    "enabled_by_model": {
-      "CMA_GRAPES_GLOBAL": 5,
-      "ECMWF_HRES": 5,
-      "GEM_GLOBAL": 5,
-      "GFS_GLOBAL": 5,
-      "ICON_SEAMLESS": 5,
-      "JMA_GSM": 5,
-      "METEOFRANCE_ARPEGE_WORLD": 4,
-      "UKMO_GLOBAL_10KM": 5
-    },
-    "enabled_by_source": {
-      "continuous_historical": 39
-    },
-    "enabled_by_layer": {
-      "historical_prior": 39
-    },
+    "enabled_by_parameter": {},
+    "enabled_by_model": {},
+    "enabled_by_source": {},
+    "enabled_by_layer": {},
     "low_confidence": [],
     "note": "Historical Forecast API calibration is used as a non-lead-aware historical prior. Operational multi-init data trains lead residuals when enough verified pairs exist."
   }
