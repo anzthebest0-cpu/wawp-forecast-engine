@@ -3,6 +3,36 @@ let pendingSpreadModelsData = null;
 let pendingSpreadTimeLabels = [];
 let spreadChartsRendered = false;
 
+function updatePullStatus(timestamp) {
+    const statusEl = document.getElementById('pull-status');
+    if (!statusEl) return;
+
+    if (!timestamp || timestamp === "Unknown") {
+        statusEl.innerText = "No pull data";
+        statusEl.className = "pull-status stale";
+        return;
+    }
+
+    const normalized = timestamp.endsWith('Z')
+        ? timestamp
+        : timestamp.replace(' ', 'T') + 'Z';
+    const pulledAt = new Date(normalized);
+    if (Number.isNaN(pulledAt.getTime())) {
+        statusEl.innerText = "Pull time unknown";
+        statusEl.className = "pull-status stale";
+        return;
+    }
+
+    const ageHours = Math.max(0, (Date.now() - pulledAt.getTime()) / 36e5);
+    if (ageHours <= 3) {
+        statusEl.innerText = "Fresh";
+        statusEl.className = "pull-status fresh";
+    } else {
+        statusEl.innerText = `Stale archive ${ageHours.toFixed(1)}h`;
+        statusEl.className = "pull-status stale";
+    }
+}
+
 async function loadDashboard() {
     try {
         const cb = '?t=' + new Date().getTime();
@@ -124,6 +154,7 @@ async function loadDashboard() {
 
         // 1. Update Header
         document.getElementById('update-time').innerText = generatedAt + " UTC";
+        updatePullStatus(generatedAt);
         
         function renderIntel(intelObj) {
             document.getElementById('taf-text-display').innerText = intelObj.taf_text || "TAF Unavailable";
@@ -291,6 +322,7 @@ async function loadDashboard() {
     } catch (e) {
         console.error(e);
         document.getElementById('update-time').innerText = "Load failed: " + (e.message || e);
+        updatePullStatus("Unknown");
         const tafDisplay = document.getElementById('taf-text-display');
         if (tafDisplay) tafDisplay.innerText = e.stack || e;
     }

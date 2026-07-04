@@ -310,6 +310,33 @@ body {
   letter-spacing: 0.04em;
 }
 
+.pull-status {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 4px;
+  padding: 3px 7px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: var(--r-sm);
+  color: var(--text-muted);
+  background: rgba(148, 163, 184, 0.08);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pull-status.fresh {
+  color: var(--green);
+  border-color: rgba(16, 185, 129, 0.28);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.pull-status.stale {
+  color: var(--amber);
+  border-color: rgba(245, 158, 11, 0.32);
+  background: rgba(245, 158, 11, 0.1);
+}
+
 /* ── MAIN CONTENT ─────────────────────────────────────────── */
 .content {
   flex: 1;
