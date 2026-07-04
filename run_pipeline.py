@@ -62,12 +62,22 @@ def run():
             awos_stale = True
             awos_error = str(e)
 
+        operational_forecast_count = db.conn.execute("""
+            SELECT COUNT(*)
+            FROM openmeteo_forecasts
+            WHERE run_init_utc <> 'historical_forecast_api'
+              AND lead_hours >= 0
+        """).fetchone()[0]
+        dashboard_export_skipped = bool(openmeteo_stale and operational_forecast_count == 0)
+
         health_path = os.path.join(_HERE, "docs", "data", "pipeline_health.json")
         os.makedirs(os.path.dirname(health_path), exist_ok=True)
         with open(health_path, "w", encoding="utf-8") as f:
             json.dump({
                 "openmeteo_stale": openmeteo_stale,
                 "openmeteo_models_fetched": sorted(all_models_data.keys()),
+                "operational_forecast_rows": operational_forecast_count,
+                "dashboard_export_skipped": dashboard_export_skipped,
                 "awos_stale": awos_stale,
                 "last_run_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
                 "last_error": openmeteo_error or awos_error,
@@ -91,8 +101,14 @@ def run():
 
         # 3. Generate Consensus and Export to Dashboard
         try:
-            export_all(db, DOCS_DIR)
-            log.info("Dashboard data exported.")
+            if dashboard_export_skipped:
+                log.warning(
+                    "Dashboard export skipped: Open-Meteo is stale and no archived "
+                    "operational forecasts exist in the checked-out DB. Keeping existing docs/data forecast files."
+                )
+            else:
+                export_all(db, DOCS_DIR)
+                log.info("Dashboard data exported.")
         except Exception as e:
             log.error(f"Exporter failed: {e}")
             
