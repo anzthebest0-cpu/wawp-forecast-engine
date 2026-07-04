@@ -45,10 +45,18 @@ jobs:
           git stash push -m "runner-data"
           git pull --rebase origin main
           git stash pop || true
-          git checkout --theirs wawp_forecasts.db docs/data/ || true
+          if [ -n "$(git diff --name-only --diff-filter=U -- wawp_forecasts.db docs/data/)" ]; then
+            echo "Resolving generated-data conflicts with runner output"
+            git checkout --theirs -- wawp_forecasts.db docs/data/ || true
+            git stash drop || true
+          fi
           git add wawp_forecasts.db docs/data/
-          git commit -m "chore: auto-update forecast database and dashboard" || exit 0
-          git push
+          if git diff --cached --quiet; then
+            echo "No generated data changes to commit"
+          else
+            git commit -m "chore: auto-update forecast database and dashboard"
+            git push
+          fi
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
