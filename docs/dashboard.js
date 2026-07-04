@@ -237,6 +237,18 @@ async function loadDashboard() {
         // 3. Weighter Tab
         const wContainer = document.getElementById('weighter-container');
         let wHtml = '';
+        const weightGroups = Object.values(weights.weights || {});
+        const allWeightsEqual = weightGroups.length > 0 && weightGroups.every(group => {
+            const vals = Object.values(group || {}).map(Number).filter(v => !Number.isNaN(v));
+            return vals.length > 0 && Math.max(...vals) - Math.min(...vals) < 0.0001;
+        });
+        if (allWeightsEqual) {
+            wHtml += `
+                <div class="weight-status-card">
+                    Dynamic weights are using equal fallback because verified forecast-observation skill pairs are not available in this export.
+                </div>
+            `;
+        }
         for (const [param, modelWeights] of Object.entries(weights.weights)) {
             wHtml += `<div class="weight-card"><h3 style="color:var(--accent); margin-top:0;">${param} Weights</h3>`;
             const sortedModels = Object.entries(modelWeights).sort((a,b) => b[1] - a[1]);
@@ -308,16 +320,38 @@ async function loadDashboard() {
         }
         
         // 6. Regional & Climatology
-        setupRegionalCharts();
-        if (diurnalData) setupDiurnalClimatology(diurnalData);
-        if (workflowData && (!healthData || !(healthData.model_freshness || []).length)) {
-            setupHealthFreshness(workflowData.model_freshness || []);
+        try {
+            setupRegionalCharts();
+        } catch (sectionError) {
+            console.error("Regional charts failed", sectionError);
         }
-        
+        try {
+            if (diurnalData) setupDiurnalClimatology(diurnalData);
+        } catch (sectionError) {
+            console.error("Diurnal climatology failed", sectionError);
+            const el = document.getElementById('climatology-text');
+            if (el) el.innerText = 'Climatology data is temporarily unavailable.';
+        }
+        try {
+            if (workflowData && (!healthData || !(healthData.model_freshness || []).length)) {
+                setupHealthFreshness(workflowData.model_freshness || []);
+            }
+        } catch (sectionError) {
+            console.error("System workflow fallback failed", sectionError);
+        }
+
         // 7. Verification & Persistency
         const persData = results[7].status === 'fulfilled' ? results[7].value : null;
-        if (perf) setupVerification(perf);
-        if (persData) setupPersistency(persData);
+        try {
+            if (perf) setupVerification(perf);
+        } catch (sectionError) {
+            console.error("Live verification failed", sectionError);
+        }
+        try {
+            if (persData) setupPersistency(persData);
+        } catch (sectionError) {
+            console.error("Persistency failed", sectionError);
+        }
         
     } catch (e) {
         console.error(e);

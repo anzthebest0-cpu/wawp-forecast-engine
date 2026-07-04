@@ -709,6 +709,17 @@ body {
   gap: var(--sp-4);
 }
 
+.weight-status-card {
+  grid-column: 1 / -1;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: var(--r-md);
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--amber);
+  font-size: var(--ts-sm);
+  line-height: 1.5;
+}
+
 .weight-card {
   background: var(--col-surface-2);
   border: 1px solid var(--col-border);

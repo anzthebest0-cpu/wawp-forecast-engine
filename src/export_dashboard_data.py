@@ -24,6 +24,39 @@ def sanitize_for_json(obj):
             return None
     return obj
 
+def _load_json_file(path: str):
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def _metrics_have_skill(metrics: dict) -> bool:
+    for lookback in (metrics or {}).values():
+        for param_payload in (lookback or {}).values():
+            overall = (param_payload or {}).get("overall", {})
+            if overall and any(v for v in overall.values()):
+                return True
+    return False
+
+
+def _weights_have_signal(weights: dict) -> bool:
+    for model_weights in (weights or {}).values():
+        if model_weights and not _weights_effectively_equal(model_weights):
+            return True
+    return False
+
+
+def _diurnal_total_observations(path: str) -> int:
+    payload = _load_json_file(path) or {}
+    try:
+        return int(payload.get("metadata", {}).get("total_observations") or 0)
+    except (TypeError, ValueError):
+        return 0
+
 def _long_to_wide(df_long: pd.DataFrame, param: str) -> pd.DataFrame:
     """Convert long DB output to wide format for QuantileMapper and Consensus."""
     if df_long.empty:
@@ -553,6 +586,15 @@ def export_all(db: ForecastDB, output_dir: str):
         "latest_data_pull_utc": latest_data_pull_utc,
         "last_sync_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     }
+    existing_db_health = _load_json_file(os.path.join(output_dir, "db_health.json")) or {}
+    existing_obs_count = int(existing_db_health.get("observation_records") or 0)
+    if obs_count < 10000 and existing_obs_count > obs_count:
+        for field in ["size_mb", "observation_records", "observation_1min_records", "openmeteo_records", "qm_cdfs_enabled"]:
+            old_value = existing_db_health.get(field)
+            new_value = db_health.get(field)
+            if isinstance(old_value, (int, float)) and isinstance(new_value, (int, float)):
+                db_health[field] = max(old_value, new_value)
+        db_health["archive_status"] = "historical archive counters preserved from previous full export"
     with open(os.path.join(output_dir, "db_health.json"), "w") as f:
         json.dump(db_health, f, indent=2)
         
@@ -675,6 +717,25 @@ def export_all(db: ForecastDB, output_dir: str):
                         global_weights[param] = {m: v/tot for m,v in new_w.items()}
         except Exception as e:
             log.warning(f"Failed to load legacy guidance: {e}")
+
+    # If this runner has no forecast-observation overlap yet, reuse the last
+    # verified weights from the static dashboard export before generating
+    # consensus. This keeps sparse GitHub runners from reverting consensus to
+    # equal weighting while the full historical archive lives elsewhere.
+    existing_weights_payload = _load_json_file(os.path.join(output_dir, "latest_weights.json")) or {}
+    existing_weights_map = existing_weights_payload.get("weights", {})
+    for param, model_weights in list(global_weights.items()):
+        prior_weights = existing_weights_map.get(param, {})
+        if (
+            _weights_effectively_equal(model_weights)
+            and prior_weights
+            and not _weights_effectively_equal(prior_weights)
+        ):
+            prior = {m: float(prior_weights.get(m, 0.0) or 0.0) for m in MODELS}
+            total = sum(prior.values())
+            if total > 0:
+                global_weights[param] = {m: prior[m] / total for m in MODELS}
+                log.warning(f"Using preserved verified weights for {param}; current export has no skill pairs")
             
     # 2. Extract Forecast Data & Generate Consensus
     # Wait, guidance_generator expects model_data in memory. 
@@ -1006,13 +1067,23 @@ def export_all(db: ForecastDB, output_dir: str):
         json.dump(model_data_str, f, indent=2, default=str, allow_nan=False)
         
     weights_path = os.path.join(output_dir, "latest_weights.json")
+    weights_payload = {"metadata": {"updated_at": latest_time}, "weights": global_weights}
+    existing_weights = _load_json_file(weights_path)
+    if not _weights_have_signal(global_weights) and _weights_have_signal((existing_weights or {}).get("weights", {})):
+        log.warning("Preserving existing latest_weights.json because current verification produced equal fallback weights")
+        weights_payload = existing_weights
     with open(weights_path, 'w', encoding='utf-8') as f:
-        json.dump({"metadata": {"updated_at": latest_time}, "weights": global_weights}, f, indent=2)
+        json.dump(weights_payload, f, indent=2)
         
     perf_path = os.path.join(output_dir, "latest_performance.json")
+    perf_payload = {"metadata": {"period": "Lookback"}, "metrics": sanitize_for_json(global_metrics)}
+    existing_perf = _load_json_file(perf_path)
+    if not _metrics_have_skill(global_metrics) and _metrics_have_skill((existing_perf or {}).get("metrics", {})):
+        log.warning("Preserving existing latest_performance.json because current export has no forecast-observation skill pairs")
+        perf_payload = existing_perf
     with open(perf_path, 'w', encoding='utf-8') as f:
         # global_metrics is now nested: { "24 Hours": { "Temperature": { "overall": {}, ... } }, ... }
-        json.dump({"metadata": {"period": "Lookback"}, "metrics": sanitize_for_json(global_metrics)}, f, indent=2)
+        json.dump(perf_payload, f, indent=2)
         
     # Append to Weight History
     history_path = os.path.join(output_dir, "weight_history.jsonl")
@@ -1020,7 +1091,7 @@ def export_all(db: ForecastDB, output_dir: str):
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S"),
         "station": "Bandara_Sangia_Ni_Bandera",
         "method": "CRPS",
-        "weights": global_weights
+        "weights": weights_payload.get("weights", global_weights)
     }
     with open(history_path, 'a', encoding='utf-8') as f:
         f.write(json.dumps(snapshot) + "\n")
@@ -1028,7 +1099,14 @@ def export_all(db: ForecastDB, output_dir: str):
     # 4. Copy/Generate Climatology Data
     try:
         from src.diurnal_analysis import generate_diurnal_analysis
-        if obs_count > 0:
+        diurnal_path = os.path.join(output_dir, "diurnal_climatology.json")
+        existing_diurnal_obs = _diurnal_total_observations(diurnal_path)
+        if obs_count > 0 and obs_count < 10000 and existing_diurnal_obs > obs_count:
+            log.warning(
+                "Preserving existing diurnal_climatology.json because current DB has only "
+                f"{obs_count} observations versus existing {existing_diurnal_obs}"
+            )
+        elif obs_count > 0:
             generate_diurnal_analysis(db.conn.execute("PRAGMA database_list").fetchall()[0][2], output_dir)
     except Exception as e:
         log.warning(f"Diurnal analysis export failed: {e}")
