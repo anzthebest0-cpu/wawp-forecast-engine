@@ -204,7 +204,23 @@ def compute_fog_low_cloud_proxy(df: pd.DataFrame) -> dict:
 
 def compute_wind_rose_data(df: pd.DataFrame) -> dict:
     sectors = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
-    result = {"sectors": sectors, "wet": [], "dry": []}
+    result = {"sectors": sectors, "all": [], "wet": [], "dry": []}
+    all_valid = df.dropna(subset=["wind_dir"])
+    total_n = len(all_valid)
+    for i in range(16):
+        low = i * 22.5
+        high = low + 22.5
+        sector = all_valid[(all_valid["wind_dir"] >= low) & (all_valid["wind_dir"] < high)]
+        gust_spread = sector["wind_gust_max"] - sector["wind_speed"]
+        gust_event = (sector["wind_gust_max"] >= GUST_EVENT_THRESHOLD_KT) | (gust_spread >= GUST_SPREAD_THRESHOLD_KT)
+        result["all"].append({
+            "freq_pct": float(len(sector) / total_n * 100) if total_n else 0.0,
+            "mean_speed_kt": float(sector["wind_speed"].mean()) if len(sector) else 0.0,
+            "p90_speed_kt": float(sector["wind_speed"].quantile(0.90)) if len(sector) else 0.0,
+            "gust_event_pct": float(gust_event.fillna(False).mean() * 100.0) if len(sector) else 0.0,
+            "wet_pct": float((sector["rain_1h"].fillna(0) > 0.1).mean() * 100.0) if len(sector) else 0.0,
+            "n": int(len(sector)),
+        })
     for season in ["wet", "dry"]:
         season_df = df[df["season"] == season]
         for i in range(16):
@@ -217,6 +233,66 @@ def compute_wind_rose_data(df: pd.DataFrame) -> dict:
                 "n": int(len(sector)),
             })
     return result
+
+
+def compute_extreme_event_summary(df: pd.DataFrame) -> dict:
+    def pct(series: pd.Series, q: float):
+        values = series.dropna()
+        return float(values.quantile(q)) if len(values) else None
+
+    def event_pct(mask: pd.Series) -> float:
+        return float(mask.fillna(False).mean() * 100.0) if len(mask) else 0.0
+
+    rain = df["rain_1h"].fillna(0.0)
+    wet_rain = df.loc[df["rain_1h"] > 0.1, "rain_1h"].dropna()
+    positive_gust = df.loc[df["wind_gust_max"] > 0, "wind_gust_max"].dropna()
+    gust_spread = df["wind_gust_max"] - df["wind_speed"]
+    gust_event = (df["wind_gust_max"] >= GUST_EVENT_THRESHOLD_KT) | (gust_spread >= GUST_SPREAD_THRESHOLD_KT)
+    low_spread = (df["temperature"] - df["dewpoint"]).clip(lower=0) <= 2.0
+    wind_rose = compute_wind_rose_data(df)
+    dominant = max(
+        zip(wind_rose["sectors"], wind_rose["all"]),
+        key=lambda item: item[1]["freq_pct"],
+        default=(None, {"freq_pct": 0.0, "mean_speed_kt": 0.0}),
+    )
+
+    by_hour = {}
+    for label, mask in {
+        "heavy_rain_10mm": rain >= 10.0,
+        "gust_event": gust_event,
+        "low_spread_2c": low_spread,
+    }.items():
+        hourly = []
+        for h in range(24):
+            subset = df[df["hour_wita"] == h]
+            hourly.append(event_pct(mask.loc[subset.index]) if len(subset) else 0.0)
+        peak = int(np.argmax(hourly)) if hourly else None
+        by_hour[label] = {"frequency_pct": hourly, "peak_hour_wita": peak}
+
+    return {
+        "percentiles": {
+            "temperature_c": {"p05": pct(df["temperature"], 0.05), "p50": pct(df["temperature"], 0.50), "p95": pct(df["temperature"], 0.95)},
+            "dewpoint_c": {"p05": pct(df["dewpoint"], 0.05), "p50": pct(df["dewpoint"], 0.50), "p95": pct(df["dewpoint"], 0.95)},
+            "wind_speed_kt": {"p50": pct(df["wind_speed"], 0.50), "p90": pct(df["wind_speed"], 0.90), "p95": pct(df["wind_speed"], 0.95)},
+            "wind_gust_kt": {"p50": pct(positive_gust, 0.50), "p90": pct(positive_gust, 0.90), "p95": pct(positive_gust, 0.95)},
+            "rain_wet_hour_mm": {"p50": pct(wet_rain, 0.50), "p90": pct(wet_rain, 0.90), "p95": pct(wet_rain, 0.95)},
+        },
+        "events": {
+            "wet_hour_pct": event_pct(rain > 0.1),
+            "rain_ge_5mm_pct": event_pct(rain >= 5.0),
+            "rain_ge_10mm_pct": event_pct(rain >= 10.0),
+            "gust_event_pct": event_pct(gust_event),
+            "wind_speed_ge_15kt_pct": event_pct(df["wind_speed"] >= 15.0),
+            "low_spread_le_2c_pct": event_pct(low_spread),
+            "humidity_ge_95pct": event_pct(df["humidity"] >= 95.0),
+        },
+        "dominant_wind": {
+            "sector": dominant[0],
+            "frequency_pct": dominant[1]["freq_pct"],
+            "mean_speed_kt": dominant[1]["mean_speed_kt"],
+        },
+        "hourly_peaks": by_hour,
+    }
 
 
 def _circular_mean(series: pd.Series):
@@ -457,6 +533,7 @@ def generate_diurnal_analysis(db_path: str, output_dir: str) -> dict:
         "gust_diurnal_cycle": gust_cycle,
         "t_td_spread_cycle": compute_t_td_spread_cycle(df),
         "wind_rose": compute_wind_rose_data(df),
+        "extreme_event_summary": compute_extreme_event_summary(df),
         "sea_breeze_regime": sea_breeze,
         "statistical_tests": statistical_tests(df),
         "convective_window": convective_window,

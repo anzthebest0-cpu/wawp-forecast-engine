@@ -998,6 +998,9 @@ function setupDiurnalClimatology(clim) {
     const rainPeak = peakHour(rainFreq);
     const gustPeak = peakHour(gustFreq);
     const fogPeak = peakHour(fogScore);
+    const extremes = clim.extreme_event_summary || {};
+    const pct = extremes.percentiles || {};
+    const events = extremes.events || {};
     const setText = (id, text) => {
         const el = document.getElementById(id);
         if (el) el.innerText = text;
@@ -1008,6 +1011,14 @@ function setupDiurnalClimatology(clim) {
     setText('clim-mean-wind', `${fmt(meanValid(windMean))} kt`);
     setText('clim-peak-gust', gustPeak === null ? '--' : `${String(gustPeak).padStart(2, '0')} WITA`);
     setText('clim-fog-peak', fogPeak === null ? '--' : `${String(fogPeak).padStart(2, '0')} WITA`);
+    setText('clim-p95-temp', `${fmt(pct.temperature_c?.p95)} C`);
+    setText('clim-p95-gust', `${fmt(pct.wind_gust_kt?.p95)} kt`);
+    setText('clim-p95-rain', `${fmt(pct.rain_wet_hour_mm?.p95, 2)} mm`);
+    setText('clim-heavy-rain', `${fmt(events.rain_ge_10mm_pct, 2)}%`);
+    setText('clim-gust-event', `${fmt(events.gust_event_pct, 1)}%`);
+    setText('clim-dominant-wind', extremes.dominant_wind?.sector
+        ? `${extremes.dominant_wind.sector} ${fmt(extremes.dominant_wind.frequency_pct, 1)}%`
+        : '--');
 
     const briefing = clim.operational_briefing?.bullets || [];
     document.getElementById('climatology-text').innerHTML = briefing.length
@@ -1078,18 +1089,40 @@ function setupDiurnalClimatology(clim) {
     });
 
     if(clim.wind_rose?.sectors) {
+        const roseAll = clim.wind_rose.all || [];
+        const roseFreq = roseAll.length
+            ? roseAll.map(d => Number(fmt(d.freq_pct, 2)))
+            : (clim.wind_rose.wet || []).map(d => Number(fmt(d.freq_pct, 2)));
+        const roseColors = [
+            '#38bdf8', '#22d3ee', '#2dd4bf', '#34d399',
+            '#a3e635', '#facc15', '#fb923c', '#f97316',
+            '#ef4444', '#f43f5e', '#e879f9', '#c084fc',
+            '#818cf8', '#60a5fa', '#0ea5e9', '#06b6d4'
+        ];
         renderChart('#chart-wind-rose', {
-            series: [
-                { name: 'Wet', data: clim.wind_rose.wet.map(d => Number(fmt(d.freq_pct))) },
-                { name: 'Dry', data: clim.wind_rose.dry.map(d => Number(fmt(d.freq_pct))) }
-            ],
-            chart: { type: 'radar', height: 360, background: 'transparent', toolbar: { show: false } },
+            series: roseFreq,
+            chart: { type: 'polarArea', height: 390, background: 'transparent', toolbar: { show: false } },
             labels: clim.wind_rose.sectors,
-            stroke: { width: 2 },
-            fill: { opacity: 0.18 },
-            colors: ['#0ea5e9', '#f59e0b'],
+            stroke: { colors: ['rgba(15,23,42,0.75)'], width: 1 },
+            fill: { opacity: 0.86 },
+            colors: roseColors,
             theme: { mode: 'dark' },
-            legend: { position: 'top', labels: { colors: '#94a3b8' } }
+            legend: { position: 'right', labels: { colors: '#94a3b8' } },
+            yaxis: { labels: { formatter: value => `${Number(value).toFixed(1)}%` } },
+            plotOptions: {
+                polarArea: {
+                    rings: { strokeWidth: 1, strokeColor: 'rgba(148,163,184,0.22)' },
+                    spokes: { strokeWidth: 1, connectorColors: 'rgba(148,163,184,0.22)' }
+                }
+            },
+            tooltip: {
+                y: {
+                    formatter: (value, opts) => {
+                        const detail = roseAll[opts.seriesIndex] || {};
+                        return `${Number(value).toFixed(2)}% | mean ${fmt(detail.mean_speed_kt)} kt | gust ${fmt(detail.gust_event_pct)}%`;
+                    }
+                }
+            }
         });
     }
 
@@ -1104,7 +1137,23 @@ function setupDiurnalClimatology(clim) {
             chart: { type: 'heatmap', height: 360, background: 'transparent', toolbar: { show: false } },
             series,
             dataLabels: { enabled: false },
-            colors: ['#0ea5e9'],
+            plotOptions: {
+                heatmap: {
+                    shadeIntensity: 0.75,
+                    radius: 2,
+                    enableShades: false,
+                    colorScale: {
+                        ranges: [
+                            { from: 0, to: 0.05, color: '#111827', name: 'Dry' },
+                            { from: 0.06, to: 0.5, color: '#0ea5e9', name: 'Light' },
+                            { from: 0.51, to: 1.5, color: '#22c55e', name: 'Wet' },
+                            { from: 1.51, to: 3, color: '#facc15', name: 'Mod' },
+                            { from: 3.01, to: 7, color: '#f97316', name: 'Heavy' },
+                            { from: 7.01, to: 999, color: '#ef4444', name: 'Extreme' }
+                        ]
+                    }
+                }
+            },
             xaxis: { labels: { style: { colors: '#94a3b8' } } },
             yaxis: { labels: { style: { colors: '#94a3b8' } } },
             theme: { mode: 'dark' }

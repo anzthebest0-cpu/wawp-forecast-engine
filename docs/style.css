@@ -654,6 +654,21 @@ body {
   font-size: var(--ts-md);
 }
 
+.clim-extreme-panel {
+  margin-bottom: var(--sp-5);
+  border-color: rgba(245, 158, 11, 0.18);
+}
+
+.clim-extreme-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+.clim-extreme-grid .clim-quicklook-card {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.08), rgba(15, 23, 42, 0.22));
+}
+
 .climatology-chart-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -678,7 +693,8 @@ body {
 }
 
 @media (max-width: 900px) {
-  .clim-quicklook {
+  .clim-quicklook,
+  .clim-extreme-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .climatology-chart-grid {
@@ -687,7 +703,8 @@ body {
 }
 
 @media (max-width: 560px) {
-  .clim-quicklook {
+  .clim-quicklook,
+  .clim-extreme-grid {
     grid-template-columns: 1fr;
   }
 }
