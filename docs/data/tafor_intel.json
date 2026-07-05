@@ -4,7 +4,7 @@
     "issued_utc": "2300",
     "issued_day": 5,
     "base_group": {
-      "dir": "090",
+      "dir": "080",
       "spd": "05",
       "gust": "13",
       "vis": "9999",
@@ -19,7 +19,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 052300\nTAF WAWP 052300Z 0600/0700 09005KT CAVOK=",
+    "taf_text": "FTID40 WAWP 052300\nTAF WAWP 052300Z 0600/0700 08005KT CAVOK=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (5 KT).",
     "warnings": []
   },
@@ -28,12 +28,12 @@
     "issued_utc": "0500",
     "issued_day": 6,
     "base_group": {
-      "dir": "140",
+      "dir": "130",
       "spd": "04",
       "gust": "10",
       "vis": "9999",
       "wx": "",
-      "cloud": "NSC",
+      "cloud": "FEW045",
       "rain": 0.0,
       "rain_mmh": 0.0,
       "trends": [],
@@ -43,21 +43,21 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 060500\nTAF WAWP 060500Z 0606/0706 14004KT CAVOK=",
-    "narration": "Secara umum cuaca berawan tebal dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (4 KT).",
+    "taf_text": "FTID40 WAWP 060500\nTAF WAWP 060500Z 0606/0706 13004KT 9999 FEW045=",
+    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (4 KT).",
     "warnings": []
   },
   "1100": {
-    "valid_start": "2026-07-05 20:00:00",
+    "valid_start": "2026-07-06 20:00:00",
     "issued_utc": "1100",
-    "issued_day": 5,
+    "issued_day": 6,
     "base_group": {
-      "dir": "090",
-      "spd": "06",
-      "gust": "10",
+      "dir": "080",
+      "spd": "04",
+      "gust": "08",
       "vis": "9999",
       "wx": "",
-      "cloud": "FEW180",
+      "cloud": "FEW020",
       "rain": 0.0,
       "rain_mmh": 0.0,
       "trends": [],
@@ -67,21 +67,21 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 051100\nTAF WAWP 051100Z 0512/0612 09006KT CAVOK=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
+    "taf_text": "FTID40 WAWP 061100\nTAF WAWP 061100Z 0612/0712 08004KT 9999 FEW020=",
+    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (4 KT).",
     "warnings": []
   },
   "1700": {
-    "valid_start": "2026-07-06 02:00:00",
+    "valid_start": "2026-07-07 02:00:00",
     "issued_utc": "1700",
-    "issued_day": 5,
+    "issued_day": 6,
     "base_group": {
-      "dir": "100",
-      "spd": "05",
-      "gust": "12",
+      "dir": "090",
+      "spd": "04",
+      "gust": "10",
       "vis": "9999",
       "wx": "",
-      "cloud": "FEW011",
+      "cloud": "SCT009",
       "rain": 0.0,
       "rain_mmh": 0.0,
       "trends": [],
@@ -91,32 +91,32 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 051700\nTAF WAWP 051700Z 0518/0618 10005KT 9999 FEW011=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (5 KT).",
+    "taf_text": "FTID40 WAWP 061700\nTAF WAWP 061700Z 0618/0718 09004KT 9999 SCT009=",
+    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (4 KT).",
     "warnings": []
   },
   "default": {
-    "valid_start": "2026-07-05 17:00:00",
-    "issued_utc": "0800",
+    "valid_start": "2026-07-06 03:00:00",
+    "issued_utc": "1800",
     "issued_day": 5,
     "base_group": {
-      "dir": "100",
-      "spd": "06",
-      "gust": "11",
+      "dir": "090",
+      "spd": "05",
+      "gust": "10",
       "vis": "9999",
       "wx": "",
-      "cloud": "NSC",
+      "cloud": "FEW180",
       "rain": 0.0,
       "rain_mmh": 0.0,
       "trends": [],
-      "badge": "MME 0800Z Shift",
+      "badge": "MME 1800Z Shift",
       "metrics": {
         "leader_rmse": "N/A",
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 050800\nTAF WAWP 050800Z 0509/0609 10006KT CAVOK=",
-    "narration": "Secara umum cuaca berawan tebal dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
+    "taf_text": "FTID40 WAWP 051800\nTAF WAWP 051800Z 0519/0619 09005KT CAVOK=",
+    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (5 KT).",
     "warnings": []
   }
 }
