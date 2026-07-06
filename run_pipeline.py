@@ -10,6 +10,7 @@ from src.export_dashboard_data import export_all
 from src.ingest_awos import ingest_latest_awos
 from src.build_qm_training_pairs import build_training_pairs
 from src.train_qm_multiparam import train_all as train_multiparam_qm
+from src.qm_runtime_artifact import import_qm_runtime_artifact, runtime_db_path
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,6 +23,7 @@ def run():
     _HERE = os.path.dirname(os.path.abspath(__file__))
     DB_PATH = os.path.join(_HERE, "wawp_forecasts.db")
     DOCS_DIR = os.path.join(_HERE, "docs", "data")
+    QM_RUNTIME_PATH = runtime_db_path(_HERE)
     
     log.info("Starting WAWP Open-Meteo Pipeline...")
     
@@ -39,6 +41,31 @@ def run():
     # 2. Ingest into local DB (WAL mode, INSERT OR IGNORE)
     db = ForecastDB(DB_PATH)
     try:
+        try:
+            existing_qm_count = db.conn.execute(
+                "SELECT COUNT(*) FROM qm_cdfs WHERE enabled=1 AND COALESCE(deprecated,0)=0"
+            ).fetchone()[0]
+        except Exception:
+            existing_qm_count = 0
+
+        qm_artifact_status = import_qm_runtime_artifact(db.conn, QM_RUNTIME_PATH)
+        if qm_artifact_status.get("imported"):
+            log.info(
+                "Imported QM runtime artifact: %s CDF rows from %s",
+                qm_artifact_status.get("imported_cdfs"),
+                qm_artifact_status.get("runtime_db"),
+            )
+        elif existing_qm_count > 0:
+            qm_artifact_status.update({
+                "available": False,
+                "degraded": False,
+                "reason": "runtime artifact not found; using qm_cdfs already present in database",
+                "enabled_cdfs": existing_qm_count,
+            })
+            log.info("QM runtime artifact not found; using %s enabled CDFs already in database.", existing_qm_count)
+        else:
+            log.warning("QM runtime artifact unavailable: %s", qm_artifact_status.get("reason"))
+
         try:
             new_count = db.ingest_rows(stacked_rows) if stacked_rows else 0
             log.info(f"Database ingested {new_count} new rows (duplicates ignored).")
@@ -83,6 +110,7 @@ def run():
                 "last_error": openmeteo_error or awos_error,
                 "openmeteo_error": openmeteo_error,
                 "awos_error": awos_error,
+                "qm_artifact_status": qm_artifact_status,
             }, f, indent=2)
 
         try:
@@ -107,7 +135,7 @@ def run():
                     "operational forecasts exist in the checked-out DB. Keeping existing docs/data forecast files."
                 )
             else:
-                export_all(db, DOCS_DIR)
+                export_all(db, DOCS_DIR, qm_artifact_status=qm_artifact_status)
                 log.info("Dashboard data exported.")
         except Exception as e:
             log.error(f"Exporter failed: {e}")

@@ -1,0 +1,51 @@
+{
+  "artifact_id": "201be868-c132-421a-9477-ef4cd3cdf772",
+  "generated_at": "2026-07-06 01:06:57",
+  "runtime_db": "qm_runtime.sqlite",
+  "sha256_runtime_db": "dfcecee8076382a6a48e80247e39b8851673959c6fdbf6cf94be4e03cf175e0f",
+  "artifact_size_mb": 0.3047,
+  "source_db": "wawp_forecasts.db",
+  "source_db_size_mb": 697.27,
+  "training_window_start": "2023-01-01 00:00:00",
+  "training_window_end": "2026-06-30 10:00:00",
+  "total_cdfs": 145,
+  "enabled_cdfs": 39,
+  "low_confidence_cdfs": 0,
+  "disabled_or_deprecated_cdfs": 106,
+  "model_list": [
+    "BOM_ACCESS_GLOBAL",
+    "CMA_GRAPES_GLOBAL",
+    "ECMWF_HRES",
+    "ERA5_SEAMLESS",
+    "GEM_GLOBAL",
+    "GEM_SEAMLESS",
+    "GFS_GLOBAL",
+    "GFS_SEAMLESS",
+    "ICON_GLOBAL",
+    "ICON_SEAMLESS",
+    "JMA_GSM",
+    "METEOFRANCE_ARPEGE_WORLD",
+    "UKMO_GLOBAL_10KM"
+  ],
+  "parameter_list": [
+    "dewpoint",
+    "pressure",
+    "rain",
+    "temperature",
+    "wind_dir",
+    "wind_gust",
+    "wind_speed"
+  ],
+  "enabled_by_layer": {
+    "historical_prior": 39
+  },
+  "enabled_by_parameter": {
+    "dewpoint": 7,
+    "pressure": 8,
+    "temperature": 8,
+    "wind_dir": 8,
+    "wind_speed": 8
+  },
+  "runtime_label": "historical_prior_global_not_lead_aware",
+  "rainfall_amount_qm": "disabled_or_low_confidence_until_strict_wet_wet_validation"
+}

@@ -527,7 +527,7 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
         json.dump(sanitize_for_json(workflow), f, indent=2, default=str, allow_nan=False)
     return workflow
 
-def export_all(db: ForecastDB, output_dir: str):
+def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None = None):
     """
     Exports JSON payloads for the HTML dashboard:
     1. tafor_intel.json (Consensus timeline + TAF)
@@ -537,7 +537,8 @@ def export_all(db: ForecastDB, output_dir: str):
     os.makedirs(output_dir, exist_ok=True)
     
     # 0. Database Health Checker
-    db_size_bytes = os.path.getsize(db.conn.execute("PRAGMA database_list").fetchall()[0][2]) if os.path.exists('wawp_forecasts.db') else 0
+    db_path = db.conn.execute("PRAGMA database_list").fetchall()[0][2]
+    db_size_bytes = os.path.getsize(db_path) if db_path and os.path.exists(db_path) else 0
     model_filter = _model_placeholders()
     forecast_count = db.conn.execute(
         f"""
@@ -563,6 +564,19 @@ def export_all(db: ForecastDB, output_dir: str):
     obs_count = db.conn.execute("SELECT COUNT(*) FROM awos_observations").fetchone()[0]
     obs_1min_count = db.conn.execute("SELECT COUNT(*) FROM awos_observations_1min").fetchone()[0]
     openmeteo_count = db.conn.execute("SELECT COUNT(*) FROM openmeteo_forecasts").fetchone()[0]
+    historical_openmeteo_count = db.conn.execute(
+        "SELECT COUNT(*) FROM openmeteo_forecasts WHERE run_init_utc = 'historical_forecast_api'"
+    ).fetchone()[0]
+    operational_openmeteo_count = db.conn.execute(
+        f"""
+        SELECT COUNT(*)
+        FROM openmeteo_forecasts
+        WHERE run_init_utc <> 'historical_forecast_api'
+          AND lead_hours >= 0
+          AND model IN ({model_filter})
+        """,
+        _model_params()
+    ).fetchone()[0]
     qm_cdf_count = db.conn.execute(
         f"SELECT COUNT(*) FROM qm_cdfs WHERE enabled=1 AND COALESCE(deprecated,0)=0 AND model IN ({model_filter})",
         _model_params()
@@ -577,11 +591,16 @@ def export_all(db: ForecastDB, output_dir: str):
     ).fetchone()[0]
     db_health = {
         "size_mb": round(db_size_bytes / (1024 * 1024), 2),
+        "current_forecast_records": forecast_count,
         "forecast_records": forecast_count,
+        "operational_forecast_records": operational_openmeteo_count,
+        "historical_forecast_records": historical_openmeteo_count,
         "observation_records": obs_count,
         "observation_1min_records": obs_1min_count,
         "openmeteo_records": openmeteo_count,
+        "runtime_qm_cdfs_enabled": qm_cdf_count,
         "qm_cdfs_enabled": qm_cdf_count,
+        "qm_artifact_status": qm_artifact_status or {},
         "latest_model_run_init_utc": latest_model_run_init,
         "latest_data_pull_utc": latest_data_pull_utc,
         "last_sync_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
@@ -589,7 +608,7 @@ def export_all(db: ForecastDB, output_dir: str):
     existing_db_health = _load_json_file(os.path.join(output_dir, "db_health.json")) or {}
     existing_obs_count = int(existing_db_health.get("observation_records") or 0)
     if obs_count < 10000 and existing_obs_count > obs_count:
-        for field in ["size_mb", "observation_records", "observation_1min_records", "openmeteo_records", "qm_cdfs_enabled"]:
+        for field in ["size_mb", "observation_records", "observation_1min_records", "openmeteo_records", "historical_forecast_records", "qm_cdfs_enabled"]:
             old_value = existing_db_health.get(field)
             new_value = db_health.get(field)
             if isinstance(old_value, (int, float)) and isinstance(new_value, (int, float)):
@@ -849,6 +868,9 @@ def export_all(db: ForecastDB, output_dir: str):
         "by_parameter": {},
         "low_confidence": 0,
         "lead_aware_pending": 0,
+        "artifact_status": qm_artifact_status or {},
+        "historical_prior_label": "Bias-corrected: historical prior, global, not lead-aware",
+        "rainfall_note": "Rain occurrence prior may inform risk; rainfall amount correction remains strict/pending.",
     }
     
     for param in model_data.keys():

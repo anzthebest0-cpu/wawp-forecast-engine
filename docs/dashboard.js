@@ -76,12 +76,18 @@ async function loadDashboard() {
         const healthData = results[6].status === 'fulfilled' ? results[6].value : null;
         if (healthData) {
             const fcElem = document.getElementById('db-forecast-count');
+            const histFcElem = document.getElementById('db-historical-forecast-count');
             const obsElem = document.getElementById('db-obs-count');
+            const obs1mElem = document.getElementById('db-obs-1min-count');
+            const qmRuntimeElem = document.getElementById('db-runtime-qm-count');
             const sizeElem = document.getElementById('db-size');
             const syncElem = document.getElementById('db-last-sync');
             
-            if (fcElem) fcElem.innerText = healthData.forecast_records.toLocaleString();
-            if (obsElem) obsElem.innerText = healthData.observation_records.toLocaleString();
+            if (fcElem) fcElem.innerText = Number(healthData.current_forecast_records ?? healthData.forecast_records ?? 0).toLocaleString();
+            if (histFcElem) histFcElem.innerText = Number(healthData.historical_forecast_records ?? healthData.openmeteo_records ?? 0).toLocaleString();
+            if (obsElem) obsElem.innerText = Number(healthData.observation_records || 0).toLocaleString();
+            if (obs1mElem) obs1mElem.innerText = Number(healthData.observation_1min_records || 0).toLocaleString();
+            if (qmRuntimeElem) qmRuntimeElem.innerText = Number(healthData.runtime_qm_cdfs_enabled ?? healthData.qm_cdfs_enabled ?? 0).toLocaleString();
             if (sizeElem) sizeElem.innerText = healthData.size_mb + ' MB';
             if (syncElem) syncElem.innerText = (healthData.latest_data_pull_utc || healthData.last_sync_utc || healthData.latest_model_run_init_utc) + ' UTC';
             setupHealthFreshness(healthData.model_freshness || []);
@@ -1202,6 +1208,7 @@ function setupHealthFreshness(freshnessRows) {
 
 function setupQMProvenance(prov) {
     const pct = prov?.percent_by_layer || {};
+    const artifact = prov?.artifact_status || {};
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.innerText = value;
@@ -1215,9 +1222,16 @@ function setupQMProvenance(prov) {
     const note = document.getElementById('qm-provenance-note');
     if (note && prov) {
         if (Number(prov.total_values || 0) === 0) {
-            note.innerText = 'No QM correction was applied in this runner export. Current consensus is using raw model values plus preserved dynamic weights; full QM provenance requires the historical QM tables to be available to the runner.';
+            if (artifact.reason) {
+                note.innerText = `No QM correction was applied in this runner export. ${artifact.reason}. Current consensus is using raw model values plus preserved dynamic weights.`;
+            } else {
+                note.innerText = 'No QM correction was applied in this runner export. Current consensus is using raw model values plus preserved dynamic weights; full QM provenance requires the historical QM runtime artifact or local qm_cdfs table.';
+            }
         } else {
-            note.innerText = `${Number(prov.lead_aware_pending || 0).toLocaleString()} values are using historical prior while lead-aware residual QM is still pending.`;
+            const artifactText = artifact.imported
+                ? ` Runtime artifact loaded (${Number(artifact.imported_cdfs || 0).toLocaleString()} CDF rows).`
+                : '';
+            note.innerText = `${Number(prov.lead_aware_pending || 0).toLocaleString()} values are using historical prior while lead-aware residual QM is still pending.${artifactText} Rain amount correction remains strict/pending; occurrence risk is handled separately.`;
         }
     }
 }
