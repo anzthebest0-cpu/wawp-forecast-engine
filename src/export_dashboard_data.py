@@ -10,6 +10,7 @@ from src.db_manager import ForecastDB
 from src.advanced_ensemble_weighter import AdvancedEnsembleWeighter, MODELS, PARAMETERS
 from src.guidance_generator import generate_consensus
 from src.quantile_mapper import QuantileMapper, apply_qm_with_layers
+from src.model_registry import freshness_status, model_metadata_dict, registry_payload
 from src.tafor_generator import generate_tafor
 
 log = logging.getLogger("exporter")
@@ -381,22 +382,66 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
         ORDER BY f.model
     """, db.conn, params=_model_params(2))
 
+    try:
+        audit_rows = pd.read_sql_query(f"""
+            WITH latest AS (
+                SELECT model, MAX(scraped_at) AS max_scraped
+                FROM openmeteo_model_runs
+                WHERE model IN ({model_filter})
+                GROUP BY model
+            )
+            SELECT r.*
+            FROM openmeteo_model_runs r
+            INNER JOIN latest
+                ON r.model = latest.model
+               AND r.scraped_at = latest.max_scraped
+            WHERE r.model IN ({model_filter})
+            ORDER BY r.model
+        """, db.conn, params=_model_params(2))
+    except Exception:
+        audit_rows = pd.DataFrame()
+
+    audit_by_model = {}
+    if not audit_rows.empty:
+        for _, audit in audit_rows.iterrows():
+            missing = []
+            null_ratios = {}
+            try:
+                missing = json.loads(audit.get("missing_parameters_json") or "[]")
+            except Exception:
+                missing = []
+            try:
+                null_ratios = json.loads(audit.get("null_ratio_json") or "{}")
+            except Exception:
+                null_ratios = {}
+            audit_by_model[audit["model"]] = {
+                "openmeteo_model_id": audit.get("openmeteo_model_id"),
+                "provider": audit.get("provider"),
+                "detected_interval_hours": audit.get("detected_interval_hours"),
+                "expected_output_interval_hours": audit.get("expected_output_interval_hours"),
+                "provider_update_frequency_hours": audit.get("provider_update_frequency_hours"),
+                "forecast_horizon_hours": audit.get("forecast_horizon_hours"),
+                "missing_parameters": missing,
+                "null_ratio": null_ratios,
+                "quality_status": audit.get("quality_status") or "unknown",
+                "quality_notes": audit.get("quality_notes") or "",
+                "hourly_output_note": audit.get("hourly_output_note") or "",
+            }
+
     freshness = []
     for _, row in current_rows.iterrows():
+        model = row["model"]
+        meta = model_metadata_dict(model)
+        audit = audit_by_model.get(model, {})
         scraped_dt = _safe_dt(row["latest_scraped_at"])
         age_hours = None
         if scraped_dt:
             age_hours = max(0.0, (now - scraped_dt).total_seconds() / 3600.0)
-        status = "missing"
-        if age_hours is not None:
-            if age_hours <= 6:
-                status = "fresh"
-            elif age_hours <= 12:
-                status = "aging"
-            else:
-                status = "stale"
+        status = freshness_status(age_hours, audit.get("provider_update_frequency_hours") or meta.get("provider_update_frequency_hours"))
         freshness.append({
-            "model": row["model"],
+            "model": model,
+            "openmeteo_model_id": audit.get("openmeteo_model_id") or meta.get("openmeteo_id"),
+            "provider": audit.get("provider") or meta.get("provider"),
             "row_count": int(row["row_count"]),
             "latest_scraped_at": row["latest_scraped_at"],
             "latest_run_init_utc": row["latest_run_init_utc"],
@@ -406,6 +451,15 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
             "max_lead_hours": None if pd.isna(row["max_lead_hours"]) else float(row["max_lead_hours"]),
             "age_hours": None if age_hours is None else round(age_hours, 2),
             "status": status,
+            "detected_interval_hours": audit.get("detected_interval_hours"),
+            "expected_output_interval_hours": audit.get("expected_output_interval_hours") or meta.get("expected_output_interval_hours"),
+            "provider_update_frequency_hours": audit.get("provider_update_frequency_hours") or meta.get("provider_update_frequency_hours"),
+            "forecast_horizon_hours": audit.get("forecast_horizon_hours") or meta.get("forecast_horizon_hours"),
+            "quality_status": audit.get("quality_status") or "unknown",
+            "quality_notes": audit.get("quality_notes") or "",
+            "missing_parameters": audit.get("missing_parameters", []),
+            "temporal_confidence": meta.get("temporal_confidence"),
+            "hourly_output_note": audit.get("hourly_output_note") or meta.get("hourly_output_note"),
         })
 
     historical_rows = pd.read_sql_query(f"""
@@ -511,6 +565,7 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
             {"name": "Dashboard export", "output": "static JSON under docs/data"},
         ],
         "model_freshness": freshness,
+        "model_registry": registry_payload(),
         "historical_coverage": historical_coverage,
         "lead_bucket_rows_current": lead_bucket_rows,
         "qm_calibration": {
@@ -525,6 +580,18 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
 
     with open(os.path.join(output_dir, "system_workflow.json"), "w", encoding="utf-8") as f:
         json.dump(sanitize_for_json(workflow), f, indent=2, default=str, allow_nan=False)
+    model_audit = {
+        "metadata": workflow["metadata"],
+        "registry": registry_payload(),
+        "latest_runs": freshness,
+        "notes": [
+            "Forecast values are exported on Open-Meteo's hourly output grid.",
+            "Provider update frequency is tracked separately and should guide freshness, weighting confidence, and event verification.",
+            "Rainfall and gust should be verified with event windows, not strict hourly-only scores.",
+        ],
+    }
+    with open(os.path.join(output_dir, "model_audit.json"), "w", encoding="utf-8") as f:
+        json.dump(sanitize_for_json(model_audit), f, indent=2, default=str, allow_nan=False)
     return workflow
 
 def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None = None):
@@ -1084,6 +1151,16 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
             data_pull[m] = scraped_at_by_model.get(m) or "Unknown"
     model_data_str["Run_Init"] = run_init
     model_data_str["Data_Pull"] = data_pull
+    model_data_str["Model_Metadata"] = {
+        m: {
+            **model_metadata_dict(m),
+            **{
+                "latest_run_init_utc": run_init.get(m),
+                "latest_data_pull_utc": data_pull.get(m),
+            },
+        }
+        for m in active_models
+    }
             
     with open(os.path.join(output_dir, "individual_models.json"), 'w', encoding='utf-8') as f:
         json.dump(model_data_str, f, indent=2, default=str, allow_nan=False)

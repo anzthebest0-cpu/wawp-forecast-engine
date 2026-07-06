@@ -1169,6 +1169,7 @@ function setupDiurnalClimatology(clim) {
 
 function setupHealthFreshness(freshnessRows) {
     const fmtInt = v => Number(v || 0).toLocaleString();
+    const fmtHours = v => (v === null || v === undefined || Number.isNaN(Number(v))) ? '-' : `${Number(v).toFixed(Number(v) % 1 === 0 ? 0 : 1)} h`;
     const parseUtc = value => {
         if (!value) return null;
         const dt = new Date(String(value).endsWith('Z') ? value : String(value).replace(' ', 'T') + 'Z');
@@ -1179,27 +1180,29 @@ function setupHealthFreshness(freshnessRows) {
         if (!scraped) return row.age_hours === null ? null : Number(row.age_hours);
         return Math.max(0, (Date.now() - scraped.getTime()) / 36e5);
     };
-    const liveStatus = age => {
-        if (age === null || Number.isNaN(age)) return "unknown";
-        if (age <= 6) return "fresh";
-        if (age <= 12) return "aging";
-        return "stale";
-    };
     const tbody = document.querySelector('#health-freshness-table tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
     (freshnessRows || []).forEach(row => {
         const age = liveAgeHours(row);
-        const status = liveStatus(age);
+        const cadence = Number(row.provider_update_frequency_hours || 6);
+        const status = age === null || Number.isNaN(age)
+            ? "unknown"
+            : (age <= cadence * 1.25 ? "fresh" : (age <= cadence * 2.0 ? "aging" : "stale"));
         const color = status === 'fresh' ? 'var(--green)' : (status === 'aging' ? 'var(--amber)' : 'var(--crimson)');
+        const quality = row.quality_status || 'unknown';
+        const qualityColor = quality === 'ok' ? 'var(--green)' : (quality === 'unknown' ? 'var(--text-secondary)' : 'var(--amber)');
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${row.model}</td>
             <td>${row.latest_run_init_utc || '-'}</td>
             <td>${row.latest_scraped_at || '-'}</td>
             <td>${age === null || Number.isNaN(age) ? '-' : Number(age).toFixed(1) + ' h'}</td>
+            <td>${fmtHours(row.detected_interval_hours ?? row.expected_output_interval_hours)}</td>
+            <td>${fmtHours(row.provider_update_frequency_hours)}</td>
             <td>${fmtInt(row.row_count)}</td>
             <td>${row.min_lead_hours ?? '-'}-${row.max_lead_hours ?? '-'} h</td>
+            <td title="${row.quality_notes || row.hourly_output_note || ''}" style="color:${qualityColor}; font-weight:700;">${quality}</td>
             <td style="color:${color}; font-weight:700;">${status}</td>
         `;
         tbody.appendChild(tr);
@@ -1246,6 +1249,8 @@ function setupIndividualModels(modelsData, timeLabels) {
         if(!timeLabels) return;
         
         const initBadge = document.getElementById('model-init-badge');
+        const cadenceBadge = document.getElementById('model-cadence-badge');
+        const meta = modelsData['Model_Metadata']?.[modelName] || {};
         if (initBadge) {
             let pullStr = modelsData['Data_Pull']?.[modelName] || "Unknown";
             if (pullStr === "Unknown") {
@@ -1264,6 +1269,13 @@ function setupIndividualModels(modelsData, timeLabels) {
                 initBadge.style.color = "var(--cyan)";
                 initBadge.style.borderColor = "rgba(0, 212, 255, 0.25)";
             }
+        }
+        if (cadenceBadge) {
+            const output = meta.expected_output_interval_hours ?? 1;
+            const update = meta.provider_update_frequency_hours ?? '-';
+            const provider = meta.provider || 'Unknown provider';
+            const note = meta.hourly_output_note || 'Open-Meteo hourly output grid; provider update frequency may differ.';
+            cadenceBadge.innerText = `${provider} | Output grid: ${output}h | Provider update: ${update}h | ${note}`;
         }
         
         timeLabels.forEach(dt => {

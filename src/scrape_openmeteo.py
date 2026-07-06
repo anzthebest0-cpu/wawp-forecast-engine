@@ -17,6 +17,7 @@ import urllib.request
 from datetime import datetime, timezone
 
 import pandas as pd
+from src.model_registry import MODEL_REGISTRY
 
 LOCATION_NAME = "Bandara_Sangia_Ni_Bandera"
 LATITUDE = -4.338158
@@ -55,16 +56,7 @@ HOURLY_PARAMS = [
     "boundary_layer_height",
 ]
 
-MODELS_OPENMETEO = {
-    "ECMWF_HRES": "ecmwf_ifs025",
-    "GFS_GLOBAL": "gfs_global",
-    "ICON_SEAMLESS": "icon_seamless",
-    "GEM_GLOBAL": "gem_global",
-    "CMA_GRAPES_GLOBAL": "cma_grapes_global",
-    "JMA_GSM": "jma_gsm",
-    "METEOFRANCE_ARPEGE_WORLD": "meteofrance_arpege_world",
-    "UKMO_GLOBAL_10KM": "ukmo_global_deterministic_10km",
-}
+MODELS_OPENMETEO = {name: meta.openmeteo_id for name, meta in MODEL_REGISTRY.items()}
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("openmeteo")

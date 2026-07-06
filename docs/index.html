@@ -208,6 +208,9 @@
                 </select>
                 <span id="model-init-badge" style="margin-left: 15px; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-glass);">Data pull: Unknown</span>
             </div>
+            <div id="model-cadence-badge" style="margin-bottom: 15px; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem; color: var(--text-secondary); background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass);">
+                Output grid and provider update metadata loading...
+            </div>
             <div class="panel">
                 <div class="table-container">
                     <table id="model-table">
@@ -496,8 +499,11 @@
                                 <th>Run Label</th>
                                 <th>Scraped</th>
                                 <th>Age</th>
+                                <th>Output</th>
+                                <th>Provider Update</th>
                                 <th>Rows</th>
                                 <th>Lead Range</th>
+                                <th>Quality</th>
                                 <th>Status</th>
                             </tr>
                         </thead>

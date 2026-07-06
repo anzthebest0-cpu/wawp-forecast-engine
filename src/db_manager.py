@@ -1,5 +1,6 @@
 import sqlite3
 import pandas as pd
+import json
 from datetime import datetime
 from src.awos_hourly_parser import read_hourly_awos
 
@@ -172,6 +173,33 @@ class ForecastDB:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_om_run ON openmeteo_forecasts(model, run_init_utc);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_om_valid ON openmeteo_forecasts(forecast_time);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_om_lead ON openmeteo_forecasts(model, lead_hours);")
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS openmeteo_model_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                location TEXT NOT NULL,
+                model TEXT NOT NULL,
+                openmeteo_model_id TEXT,
+                provider TEXT,
+                run_init_utc TEXT NOT NULL,
+                scraped_at TEXT NOT NULL,
+                first_forecast_time TEXT,
+                last_forecast_time TEXT,
+                row_count INTEGER DEFAULT 0,
+                detected_interval_hours REAL,
+                expected_output_interval_hours REAL,
+                provider_update_frequency_hours REAL,
+                forecast_horizon_hours REAL,
+                missing_parameters_json TEXT,
+                null_ratio_json TEXT,
+                quality_status TEXT,
+                quality_notes TEXT,
+                hourly_output_note TEXT,
+                created_at TEXT NOT NULL,
+                UNIQUE(location, model, run_init_utc, scraped_at)
+            );
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_om_model_runs_latest ON openmeteo_model_runs(model, scraped_at);")
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS qm_cdfs (
@@ -407,8 +435,143 @@ class ForecastDB:
             )
 
         cursor.executemany(sql, clean_rows)
+        self._upsert_openmeteo_run_audits(cursor, clean_rows)
         self.conn.commit()
         return cursor.rowcount
+
+    def _upsert_openmeteo_run_audits(self, cursor, rows: list[dict]) -> None:
+        from src.model_registry import freshness_status, model_metadata_dict
+
+        if not rows:
+            return
+
+        grouped: dict[tuple[str, str, str, str], list[dict]] = {}
+        for row in rows:
+            key = (
+                row.get("location") or LOCATION_NAME,
+                row.get("model"),
+                row.get("run_init_utc"),
+                row.get("scraped_at"),
+            )
+            if all(key):
+                grouped.setdefault(key, []).append(row)
+
+        param_columns = {
+            "temperature_2m": "temperature",
+            "relative_humidity_2m": "humidity",
+            "dew_point_2m": "dewpoint",
+            "pressure_msl": "pressure_msl",
+            "precipitation_probability": "precipitation_probability",
+            "precipitation": "precipitation",
+            "rain": "rain",
+            "showers": "showers",
+            "snowfall": "snowfall",
+            "wind_speed_10m": "wind_speed",
+            "wind_gusts_10m": "wind_gust",
+            "wind_direction_10m": "wind_dir",
+            "cloud_cover": "cloud_cover",
+            "cloud_cover_low": "cloud_cover_low",
+            "cloud_cover_mid": "cloud_cover_mid",
+            "cloud_cover_high": "cloud_cover_high",
+            "weather_code": "weather_code",
+            "visibility": "visibility",
+            "cape": "cape",
+            "lifted_index": "lifted_index",
+            "convective_inhibition": "convective_inhib",
+            "boundary_layer_height": "boundary_layer_h",
+        }
+        now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+        for (location, model, run_init, scraped_at), group in grouped.items():
+            meta = model_metadata_dict(model)
+            raw_times = pd.to_datetime([r.get("forecast_time") for r in group], errors="coerce")
+            times = sorted([t for t in raw_times if not pd.isna(t)])
+            detected_interval = None
+            if len(times) >= 2:
+                gaps = [
+                    (times[i] - times[i - 1]).total_seconds() / 3600.0
+                    for i in range(1, len(times))
+                ]
+                if gaps:
+                    detected_interval = round(float(pd.Series(gaps).mode().iloc[0]), 2)
+
+            missing = []
+            null_ratios = {}
+            for api_name, col in param_columns.items():
+                values = [r.get(col) for r in group]
+                if not values or all(v is None or pd.isna(v) for v in values):
+                    missing.append(api_name)
+                    null_ratios[api_name] = 1.0
+                else:
+                    null_ratios[api_name] = round(
+                        sum(1 for v in values if v is None or pd.isna(v)) / len(values),
+                        4,
+                    )
+
+            notes = []
+            status = "ok"
+            expected_rows = int(meta.get("forecast_horizon_hours") or 0)
+            if expected_rows and len(group) < expected_rows * 0.95:
+                status = "partial"
+                notes.append(f"row_count {len(group)} below expected {expected_rows}")
+            expected_interval = meta.get("expected_output_interval_hours")
+            if detected_interval is not None and expected_interval and abs(detected_interval - float(expected_interval)) > 0.01:
+                status = "interval_mismatch"
+                notes.append(f"detected interval {detected_interval}h differs from expected {expected_interval}h")
+            if missing:
+                notes.append(f"missing/all-null parameters: {', '.join(missing[:8])}" + ("..." if len(missing) > 8 else ""))
+
+            age = None
+            scraped_dt = pd.to_datetime(scraped_at, errors="coerce", utc=True)
+            if not pd.isna(scraped_dt):
+                age = max(0.0, (pd.Timestamp.utcnow() - scraped_dt).total_seconds() / 3600.0)
+            stale_status = freshness_status(age, meta.get("provider_update_frequency_hours"))
+            if stale_status == "stale" and status == "ok":
+                status = "stale"
+
+            cursor.execute("""
+                INSERT INTO openmeteo_model_runs (
+                    location, model, openmeteo_model_id, provider, run_init_utc, scraped_at,
+                    first_forecast_time, last_forecast_time, row_count,
+                    detected_interval_hours, expected_output_interval_hours,
+                    provider_update_frequency_hours, forecast_horizon_hours,
+                    missing_parameters_json, null_ratio_json, quality_status,
+                    quality_notes, hourly_output_note, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(location, model, run_init_utc, scraped_at) DO UPDATE SET
+                    first_forecast_time=excluded.first_forecast_time,
+                    last_forecast_time=excluded.last_forecast_time,
+                    row_count=excluded.row_count,
+                    detected_interval_hours=excluded.detected_interval_hours,
+                    expected_output_interval_hours=excluded.expected_output_interval_hours,
+                    provider_update_frequency_hours=excluded.provider_update_frequency_hours,
+                    forecast_horizon_hours=excluded.forecast_horizon_hours,
+                    missing_parameters_json=excluded.missing_parameters_json,
+                    null_ratio_json=excluded.null_ratio_json,
+                    quality_status=excluded.quality_status,
+                    quality_notes=excluded.quality_notes,
+                    hourly_output_note=excluded.hourly_output_note
+            """, (
+                location,
+                model,
+                meta.get("openmeteo_id"),
+                meta.get("provider"),
+                run_init,
+                scraped_at,
+                times[0].strftime("%Y-%m-%d %H:%M:%S") if times else None,
+                times[-1].strftime("%Y-%m-%d %H:%M:%S") if times else None,
+                len(group),
+                detected_interval,
+                meta.get("expected_output_interval_hours"),
+                meta.get("provider_update_frequency_hours"),
+                meta.get("forecast_horizon_hours"),
+                json.dumps(missing, ensure_ascii=True),
+                json.dumps(null_ratios, ensure_ascii=True),
+                status,
+                "; ".join(notes),
+                meta.get("hourly_output_note"),
+                now,
+            ))
 
     def get_latest_forecasts(self, location: str) -> pd.DataFrame:
         """
