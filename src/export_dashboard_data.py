@@ -12,6 +12,7 @@ from src.guidance_generator import generate_consensus
 from src.quantile_mapper import QuantileMapper, apply_qm_with_layers
 from src.model_registry import freshness_status, model_metadata_dict, registry_payload
 from src.event_window_verification import event_window_metrics, event_window_weight_scores
+from src.operational_residuals import build_operational_residual_state
 from src.tafor_generator import generate_tafor
 
 log = logging.getLogger("exporter")
@@ -58,6 +59,13 @@ def _event_diagnostics_have_signal(diagnostics: dict) -> bool:
         if diag.get("applied") and diag.get("event_weights"):
             return True
     return False
+
+
+def _residual_state_sample_count(payload: dict) -> int:
+    try:
+        return int((payload or {}).get("metadata", {}).get("total_pairs") or 0)
+    except (TypeError, ValueError):
+        return 0
 
 
 def _diurnal_total_observations(path: str) -> int:
@@ -893,6 +901,18 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
     ):
         event_weight_diagnostics = existing_event_diagnostics
         log.warning("Using preserved event-window diagnostics; current export has no event skill pairs")
+
+    residuals_path = os.path.join(output_dir, "operational_residuals.json")
+    residual_state = build_operational_residual_state(db.conn, start_str, end_str, list(MODELS))
+    existing_residual_state = _load_json_file(residuals_path) or {}
+    if _residual_state_sample_count(existing_residual_state) > _residual_state_sample_count(residual_state):
+        residual_state = existing_residual_state
+        log.warning("Preserving existing operational_residuals.json because current export has fewer operational pairs")
+    with open(residuals_path, "w", encoding="utf-8") as f:
+        json.dump(sanitize_for_json(residual_state), f, indent=2)
+    db_health["operational_residuals"] = residual_state.get("metadata", {})
+    with open(os.path.join(output_dir, "db_health.json"), "w") as f:
+        json.dump(db_health, f, indent=2)
             
     # 2. Extract Forecast Data & Generate Consensus
     # Wait, guidance_generator expects model_data in memory. 

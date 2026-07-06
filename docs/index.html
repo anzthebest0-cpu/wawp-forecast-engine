@@ -536,6 +536,47 @@
                     Historical prior is not lead-aware. Operational residuals will appear after verified multi-init pairs accumulate.
                 </p>
             </div>
+
+            <div class="panel" style="margin-top: 20px;">
+                <h3>Operational Lead Residuals</h3>
+                <div class="param-grid">
+                    <div class="param-card">
+                        <div class="param-label">Mode</div>
+                        <div class="param-value" id="residual-mode">--</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Total Pairs</div>
+                        <div class="param-value" id="residual-total-pairs">--</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Ready Rows</div>
+                        <div class="param-value" id="residual-ready-rows">--</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Enabled Rows</div>
+                        <div class="param-value" id="residual-enabled-rows">--</div>
+                    </div>
+                </div>
+                <p id="residual-note" style="color: var(--text-secondary); margin-top: 15px; font-size: 0.9em;">
+                    Operational residuals are observe-only and do not change live forecasts yet.
+                </p>
+                <div class="table-container" style="margin-top: 15px;">
+                    <table id="residual-summary-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Total Pairs</th>
+                                <th>Ready</th>
+                                <th>Pending</th>
+                                <th>Disabled</th>
+                                <th>Best Skill</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <!-- Tab 9: Live Verification -->

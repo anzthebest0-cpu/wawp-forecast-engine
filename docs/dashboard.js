@@ -46,7 +46,8 @@ async function loadDashboard() {
             fetch('data/db_health.json' + cb).then(r => r.json()),
             fetch('data/persistency.json' + cb).then(r => r.json()),
             fetch('data/diurnal_climatology.json' + cb).then(r => r.json()),
-            fetch('data/system_workflow.json' + cb).then(r => r.json())
+            fetch('data/system_workflow.json' + cb).then(r => r.json()),
+            fetch('data/operational_residuals.json' + cb).then(r => r.json())
         ]);
         
         const intelData = results[0].status === 'fulfilled' ? results[0].value : {};
@@ -72,6 +73,7 @@ async function loadDashboard() {
         const modelsData = results[5].status === 'fulfilled' ? results[5].value : null;
         const diurnalData = results[8].status === 'fulfilled' ? results[8].value : null;
         const workflowData = results[9].status === 'fulfilled' ? results[9].value : null;
+        const residualData = results[10].status === 'fulfilled' ? results[10].value : null;
         
         const healthData = results[6].status === 'fulfilled' ? results[6].value : null;
         if (healthData) {
@@ -92,6 +94,7 @@ async function loadDashboard() {
             if (syncElem) syncElem.innerText = (healthData.latest_data_pull_utc || healthData.last_sync_utc || healthData.latest_model_run_init_utc) + ' UTC';
             setupHealthFreshness(healthData.model_freshness || []);
             setupQMProvenance(healthData.qm_provenance || null);
+            setupOperationalResiduals(residualData || {metadata: healthData.operational_residuals || {}});
         }
 
         function startShiftCountdown() {
@@ -1340,6 +1343,51 @@ function setupQMProvenance(prov) {
             note.innerText = `${Number(prov.lead_aware_pending || 0).toLocaleString()} values are using historical prior while lead-aware residual QM is still pending.${artifactText} Rain amount correction remains strict/pending; occurrence risk is handled separately.`;
         }
     }
+}
+
+function setupOperationalResiduals(payload) {
+    const metadata = payload?.metadata || {};
+    const parameters = payload?.parameters || {};
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = value;
+    };
+    const fmtInt = value => Number(value || 0).toLocaleString();
+    const fmtSkill = value => (value === null || value === undefined || Number.isNaN(Number(value))) ? '-' : Number(value).toFixed(3);
+
+    setText('residual-mode', (metadata.mode || 'observe_only').replace('_', ' '));
+    setText('residual-total-pairs', fmtInt(metadata.total_pairs));
+    setText('residual-ready-rows', fmtInt(metadata.ready_rows));
+    setText('residual-enabled-rows', fmtInt(metadata.enabled_rows));
+
+    const note = document.getElementById('residual-note');
+    if (note) {
+        const generated = metadata.generated_at ? ` Generated ${metadata.generated_at} UTC.` : '';
+        note.innerText = `${metadata.note || 'Operational residuals are observe-only and do not change live forecasts yet.'}${generated}`;
+    }
+
+    const tbody = document.querySelector('#residual-summary-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    const names = ['Temperature', 'Dewpoint', 'Pressure', 'Rainfall', 'Wind Speed', 'Wind Dir.', 'Wind Gust'];
+    names.forEach(name => {
+        const row = parameters[name] || {};
+        const status = row.status || 'pending';
+        const color = status === 'ready_observe_only'
+            ? 'var(--green)'
+            : (status === 'disabled_observe_only' ? 'var(--amber)' : 'var(--text-secondary)');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${name}</td>
+            <td>${fmtInt(row.total_pairs)}</td>
+            <td>${fmtInt(row.ready_rows)}</td>
+            <td>${fmtInt(row.pending_rows)}</td>
+            <td>${fmtInt(row.disabled_rows)}</td>
+            <td>${fmtSkill(row.best_skill_score)}</td>
+            <td style="color:${color}; font-weight:700;">${status.replaceAll('_', ' ')}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
 function setupIndividualModels(modelsData, timeLabels) {
