@@ -21,7 +21,29 @@
     },
     "taf_text": "FTID40 WAWP 062300\nTAF WAWP 062300Z 0700/0800 11005KT 9999 FEW012=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (5 KT).",
-    "warnings": []
+    "warnings": [],
+    "event_skill_context": {
+      "Rainfall": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      },
+      "Wind Gust": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      }
+    }
   },
   "0500": {
     "valid_start": "2026-07-07 14:00:00",
@@ -33,7 +55,7 @@
       "gust": "10",
       "vis": "9999",
       "wx": "",
-      "cloud": "SCT042",
+      "cloud": "SCT041",
       "rain": 0.0,
       "rain_mmh": 0.0,
       "trends": [],
@@ -43,9 +65,31 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 070500\nTAF WAWP 070500Z 0706/0806 19004KT 9999 SCT042=",
+    "taf_text": "FTID40 WAWP 070500\nTAF WAWP 070500Z 0706/0806 19004KT 9999 SCT041=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (4 KT).",
-    "warnings": []
+    "warnings": [],
+    "event_skill_context": {
+      "Rainfall": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      },
+      "Wind Gust": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      }
+    }
   },
   "1100": {
     "valid_start": "2026-07-06 20:00:00",
@@ -69,7 +113,29 @@
     },
     "taf_text": "FTID40 WAWP 061100\nTAF WAWP 061100Z 0612/0712 10003KT 9999 FEW018=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (3 KT).",
-    "warnings": []
+    "warnings": [],
+    "event_skill_context": {
+      "Rainfall": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      },
+      "Wind Gust": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      }
+    }
   },
   "1700": {
     "valid_start": "2026-07-07 02:00:00",
@@ -93,30 +159,74 @@
     },
     "taf_text": "FTID40 WAWP 061700\nTAF WAWP 061700Z 0618/0718 11004KT 9999 SCT001=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (4 KT).",
-    "warnings": []
+    "warnings": [],
+    "event_skill_context": {
+      "Rainfall": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      },
+      "Wind Gust": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      }
+    }
   },
   "default": {
-    "valid_start": "2026-07-06 17:00:00",
-    "issued_utc": "0800",
+    "valid_start": "2026-07-06 18:00:00",
+    "issued_utc": "0900",
     "issued_day": 6,
     "base_group": {
-      "dir": "130",
+      "dir": "090",
       "spd": "02",
-      "gust": "11",
+      "gust": "09",
       "vis": "9999",
       "wx": "",
-      "cloud": "FEW038",
+      "cloud": "NSC",
       "rain": 0.0,
       "rain_mmh": 0.0,
       "trends": [],
-      "badge": "MME 0800Z Shift",
+      "badge": "MME 0900Z Shift",
       "metrics": {
         "leader_rmse": "N/A",
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 060800\nTAF WAWP 060800Z 0609/0709 13002KT 9999 FEW038=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (2 KT).",
-    "warnings": []
+    "taf_text": "FTID40 WAWP 060900\nTAF WAWP 060900Z 0610/0710 09002KT CAVOK=",
+    "narration": "Secara umum cuaca berawan tebal dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (2 KT).",
+    "warnings": [],
+    "event_skill_context": {
+      "Rainfall": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      },
+      "Wind Gust": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      }
+    }
   }
 }
