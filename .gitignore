@@ -12,6 +12,7 @@ docs/data/diurnal_plots/
 docs/data/qm_status.json
 docs/data/health.json
 artifacts/qm/*.sqlite
+!artifacts/qm/qm_runtime.sqlite
 artifacts/qm/*.sqlite-shm
 artifacts/qm/*.sqlite-wal
 artifacts/qm/*.json
