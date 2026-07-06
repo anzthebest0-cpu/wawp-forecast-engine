@@ -55,7 +55,7 @@
       "gust": "11",
       "vis": "9999",
       "wx": "",
-      "cloud": "SCT041",
+      "cloud": "FEW041",
       "rain": 0.0,
       "rain_mmh": 0.0,
       "trends": [],
@@ -65,7 +65,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 070500\nTAF WAWP 070500Z 0706/0806 19004KT 9999 SCT041=",
+    "taf_text": "FTID40 WAWP 070500\nTAF WAWP 070500Z 0706/0806 19004KT 9999 FEW041=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (4 KT).",
     "warnings": [],
     "event_skill_context": {

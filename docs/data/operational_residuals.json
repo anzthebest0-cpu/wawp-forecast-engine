@@ -1,0 +1,80 @@
+{
+  "metadata": {
+    "generated_at": "2026-07-06 12:10:13",
+    "start_date": "2026-05-07 12:10:13",
+    "end_date": "2026-07-06 12:10:13",
+    "mode": "observe_only",
+    "enabled_rows": 0,
+    "total_pairs": 0,
+    "ready_rows": 0,
+    "pending_rows": 0,
+    "disabled_rows": 0,
+    "lead_buckets": [
+      "L1_0_6h",
+      "L2_6_12h",
+      "L3_12_24h",
+      "L4_24_48h",
+      "L5_48plus"
+    ],
+    "note": "Operational residuals are measured only; no live forecast correction is applied in this phase."
+  },
+  "parameters": {
+    "Temperature": {
+      "total_pairs": 0,
+      "ready_rows": 0,
+      "pending_rows": 0,
+      "disabled_rows": 0,
+      "best_skill_score": null,
+      "status": "pending"
+    },
+    "Dewpoint": {
+      "total_pairs": 0,
+      "ready_rows": 0,
+      "pending_rows": 0,
+      "disabled_rows": 0,
+      "best_skill_score": null,
+      "status": "pending"
+    },
+    "Pressure": {
+      "total_pairs": 0,
+      "ready_rows": 0,
+      "pending_rows": 0,
+      "disabled_rows": 0,
+      "best_skill_score": null,
+      "status": "pending"
+    },
+    "Rainfall": {
+      "total_pairs": 0,
+      "ready_rows": 0,
+      "pending_rows": 0,
+      "disabled_rows": 0,
+      "best_skill_score": null,
+      "status": "pending"
+    },
+    "Wind Speed": {
+      "total_pairs": 0,
+      "ready_rows": 0,
+      "pending_rows": 0,
+      "disabled_rows": 0,
+      "best_skill_score": null,
+      "status": "pending"
+    },
+    "Wind Dir.": {
+      "total_pairs": 0,
+      "ready_rows": 0,
+      "pending_rows": 0,
+      "disabled_rows": 0,
+      "best_skill_score": null,
+      "status": "pending"
+    },
+    "Wind Gust": {
+      "total_pairs": 0,
+      "ready_rows": 0,
+      "pending_rows": 0,
+      "disabled_rows": 0,
+      "best_skill_score": null,
+      "status": "pending"
+    }
+  },
+  "rows": []
+}
