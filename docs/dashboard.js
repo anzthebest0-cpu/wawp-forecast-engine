@@ -255,6 +255,25 @@ async function loadDashboard() {
                 </div>
             `;
         }
+        const eventDiagnostics = weights.metadata?.event_weight_diagnostics || {};
+        const eventWeightNotes = ['Rainfall', 'Wind Gust']
+            .map(param => {
+                const diag = eventDiagnostics[param];
+                if (!diag) return '';
+                const status = diag.applied ? 'event-window blend active' : 'event-window blend pending';
+                const reason = diag.reason || 'waiting for enough verified events';
+                const blend = diag.blend_factor !== undefined ? ` (${(Number(diag.blend_factor) * 100).toFixed(0)}% event nudge)` : '';
+                return `<div><strong>${param}:</strong> ${status}${blend}. ${reason}</div>`;
+            })
+            .filter(Boolean)
+            .join('');
+        if (eventWeightNotes) {
+            wHtml += `
+                <div class="weight-status-card">
+                    ${eventWeightNotes}
+                </div>
+            `;
+        }
         for (const [param, modelWeights] of Object.entries(weights.weights)) {
             wHtml += `<div class="weight-card"><h3 style="color:var(--accent); margin-top:0;">${param} Weights</h3>`;
             const sortedModels = Object.entries(modelWeights).sort((a,b) => b[1] - a[1]);

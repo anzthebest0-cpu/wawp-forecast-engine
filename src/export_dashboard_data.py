@@ -11,7 +11,7 @@ from src.advanced_ensemble_weighter import AdvancedEnsembleWeighter, MODELS, PAR
 from src.guidance_generator import generate_consensus
 from src.quantile_mapper import QuantileMapper, apply_qm_with_layers
 from src.model_registry import freshness_status, model_metadata_dict, registry_payload
-from src.event_window_verification import event_window_metrics
+from src.event_window_verification import event_window_metrics, event_window_weight_scores
 from src.tafor_generator import generate_tafor
 
 log = logging.getLogger("exporter")
@@ -121,6 +121,27 @@ def _skill_fallback_weights(df_long: pd.DataFrame, param: str, is_circular: bool
     weights = {m: max(0.02, min(0.35, w)) for m, w in weights.items()}
     total = sum(weights.values())
     return {m: weights[m] / total for m in MODELS}
+
+
+def _blend_event_window_weights(
+    base_weights: dict[str, float],
+    event_weights: dict[str, float],
+    blend_factor: float = 0.30,
+) -> dict[str, float]:
+    """Nudge rain/gust weights with event timing skill while preserving baseline skill."""
+    base = {m: max(0.0, float(base_weights.get(m, 0.0) or 0.0)) for m in MODELS}
+    event = {m: max(0.0, float(event_weights.get(m, 0.0) or 0.0)) for m in MODELS}
+    base_total = sum(base.values())
+    event_total = sum(event.values())
+    if base_total <= 0 or event_total <= 0:
+        return base_weights
+
+    base = {m: base[m] / base_total for m in MODELS}
+    event = {m: event[m] / event_total for m in MODELS}
+    blend_factor = max(0.0, min(1.0, float(blend_factor)))
+    blended = {m: ((1.0 - blend_factor) * base[m]) + (blend_factor * event[m]) for m in MODELS}
+    total = sum(blended.values())
+    return {m: blended[m] / total for m in MODELS}
 
 
 def _compute_ts_risk(row: pd.Series) -> float:
@@ -706,6 +727,7 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
     global_metrics = {
         "24 Hours": {}, "3 Days": {}, "7 Days": {}, "Month": {}
     }
+    event_weight_diagnostics = {}
     
     # Use last 60 days of overlap for the baseline pull
     end_date = datetime.now(timezone.utc)
@@ -759,6 +781,16 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
                 w = _skill_fallback_weights(df_long_60d, param, is_circular)
             if _weights_effectively_equal(w):
                 w = _skill_fallback_weights(df_long_60d, param, is_circular)
+
+            if param in {"Rainfall", "Wind Gust"}:
+                threshold = 1.5 if param == "Rainfall" else 15.0
+                event_metrics_60d = event_window_metrics(df_crps, threshold=threshold, windows=(0, 1, 2), block_hours=3)
+                event_diag = event_window_weight_scores(event_metrics_60d, parameter=param, models=MODELS, min_events=10)
+                event_diag["blend_factor"] = 0.30
+                event_diag["threshold"] = threshold
+                event_weight_diagnostics[param] = event_diag
+                if event_diag.get("applied") and event_diag.get("event_weights"):
+                    w = _blend_event_window_weights(w, event_diag["event_weights"], blend_factor=0.30)
                 
             global_weights[param] = w
             
@@ -787,6 +819,15 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         elif not df_wide.empty:
             p_df = df_wide.copy().set_index("Datetime")
             model_data[param] = {m: p_df[m].dropna() for m in p_df.columns if m in MODELS}
+        elif param in {"Rainfall", "Wind Gust"}:
+            event_weight_diagnostics[param] = {
+                "applied": False,
+                "reason": "event-window weighting pending because no forecast-observation pairs were available",
+                "blend_factor": 0.30,
+                "min_events": 10,
+                "event_weights": {},
+                "model_scores": {},
+            }
             
     # --- RESTORE LEGACY INTELLIGENCE ---
     # Since DB is new, we fallback to the trained weights and diurnal biases from New_CODE
@@ -1181,7 +1222,13 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         json.dump(model_data_str, f, indent=2, default=str, allow_nan=False)
         
     weights_path = os.path.join(output_dir, "latest_weights.json")
-    weights_payload = {"metadata": {"updated_at": latest_time}, "weights": global_weights}
+    weights_payload = {
+        "metadata": {
+            "updated_at": latest_time,
+            "event_weight_diagnostics": sanitize_for_json(event_weight_diagnostics),
+        },
+        "weights": global_weights,
+    }
     existing_weights = _load_json_file(weights_path)
     if not _weights_have_signal(global_weights) and _weights_have_signal((existing_weights or {}).get("weights", {})):
         log.warning("Preserving existing latest_weights.json because current verification produced equal fallback weights")
@@ -1205,7 +1252,8 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S"),
         "station": "Bandara_Sangia_Ni_Bandera",
         "method": "CRPS",
-        "weights": weights_payload.get("weights", global_weights)
+        "weights": weights_payload.get("weights", global_weights),
+        "event_weight_diagnostics": weights_payload.get("metadata", {}).get("event_weight_diagnostics", {})
     }
     with open(history_path, 'a', encoding='utf-8') as f:
         f.write(json.dumps(snapshot) + "\n")
