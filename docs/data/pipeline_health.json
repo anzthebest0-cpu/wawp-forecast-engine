@@ -7,23 +7,23 @@
     "GFS_GLOBAL",
     "ICON_SEAMLESS",
     "JMA_GSM",
-    "METEOFRANCE_ARPEGE_WORLD",
-    "UKMO_GLOBAL_10KM"
+    "METEOFRANCE_ARPEGE_WORLD"
   ],
   "operational_forecast_rows": 35328,
   "dashboard_export_skipped": false,
   "awos_stale": false,
-  "last_run_utc": "2026-07-06 02:10:44",
+  "last_run_utc": "2026-07-06 02:42:22",
   "last_error": null,
   "openmeteo_error": null,
   "awos_error": null,
   "qm_artifact_status": {
-    "available": false,
-    "imported": false,
+    "available": true,
+    "imported": true,
     "runtime_db": "/home/runner/work/wawp-forecast-engine/wawp-forecast-engine/artifacts/qm/qm_runtime.sqlite",
-    "imported_cdfs": 0,
-    "enabled_cdfs": 0,
-    "degraded": true,
-    "reason": "QM runtime artifact not found"
+    "imported_cdfs": 145,
+    "enabled_cdfs": 39,
+    "degraded": false,
+    "reason": null,
+    "replaced_existing_cdfs": 0
   }
 }
