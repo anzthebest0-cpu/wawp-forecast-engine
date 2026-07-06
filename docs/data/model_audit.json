@@ -4,50 +4,186 @@
     "latest_forecast_scrape": "2026-07-06 09:04:30",
     "timezone": "UTC"
   },
-  "summary": {
-    "current_forecast_rows": 3072,
-    "openmeteo_rows_total": 409560,
-    "awos_hourly_rows": 42449,
-    "awos_1min_rows": 2504680,
-    "qm_cdfs_enabled": 39,
-    "active_model_count": 8,
-    "historical_model_count": 0
-  },
-  "pipeline_stages": [
-    {
-      "name": "Open-Meteo fetch",
-      "output": "current 16-day model forecasts"
+  "registry": {
+    "models": {
+      "ECMWF_HRES": {
+        "name": "ECMWF_HRES",
+        "openmeteo_id": "ecmwf_ifs025",
+        "provider": "ECMWF IFS HRES",
+        "expected_output_interval_hours": 1.0,
+        "provider_update_frequency_hours": 6.0,
+        "forecast_horizon_hours": 384,
+        "temporal_confidence": "medium",
+        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
+      },
+      "GFS_GLOBAL": {
+        "name": "GFS_GLOBAL",
+        "openmeteo_id": "gfs_global",
+        "provider": "NOAA GFS",
+        "expected_output_interval_hours": 1.0,
+        "provider_update_frequency_hours": 1.0,
+        "forecast_horizon_hours": 384,
+        "temporal_confidence": "high",
+        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
+      },
+      "ICON_SEAMLESS": {
+        "name": "ICON_SEAMLESS",
+        "openmeteo_id": "icon_seamless",
+        "provider": "DWD ICON seamless",
+        "expected_output_interval_hours": 1.0,
+        "provider_update_frequency_hours": 3.0,
+        "forecast_horizon_hours": 384,
+        "temporal_confidence": "medium",
+        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
+      },
+      "GEM_GLOBAL": {
+        "name": "GEM_GLOBAL",
+        "openmeteo_id": "gem_global",
+        "provider": "CMC GEM",
+        "expected_output_interval_hours": 1.0,
+        "provider_update_frequency_hours": 6.0,
+        "forecast_horizon_hours": 384,
+        "temporal_confidence": "medium",
+        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
+      },
+      "CMA_GRAPES_GLOBAL": {
+        "name": "CMA_GRAPES_GLOBAL",
+        "openmeteo_id": "cma_grapes_global",
+        "provider": "CMA GRAPES",
+        "expected_output_interval_hours": 1.0,
+        "provider_update_frequency_hours": 6.0,
+        "forecast_horizon_hours": 384,
+        "temporal_confidence": "medium",
+        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
+      },
+      "JMA_GSM": {
+        "name": "JMA_GSM",
+        "openmeteo_id": "jma_gsm",
+        "provider": "JMA GSM",
+        "expected_output_interval_hours": 1.0,
+        "provider_update_frequency_hours": 3.0,
+        "forecast_horizon_hours": 384,
+        "temporal_confidence": "medium",
+        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
+      },
+      "METEOFRANCE_ARPEGE_WORLD": {
+        "name": "METEOFRANCE_ARPEGE_WORLD",
+        "openmeteo_id": "meteofrance_arpege_world",
+        "provider": "Meteo-France ARPEGE World",
+        "expected_output_interval_hours": 1.0,
+        "provider_update_frequency_hours": 1.0,
+        "forecast_horizon_hours": 384,
+        "temporal_confidence": "high",
+        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
+      },
+      "UKMO_GLOBAL_10KM": {
+        "name": "UKMO_GLOBAL_10KM",
+        "openmeteo_id": "ukmo_global_deterministic_10km",
+        "provider": "UK Met Office Global 10 km",
+        "expected_output_interval_hours": 1.0,
+        "provider_update_frequency_hours": 1.0,
+        "forecast_horizon_hours": 384,
+        "temporal_confidence": "high",
+        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
+      }
     },
-    {
-      "name": "SQLite archive",
-      "output": "run_init_utc, forecast_time, lead_hours, scraped_at"
+    "parameters": {
+      "temperature_2m": {
+        "dashboard": "Temperature",
+        "verification_interval": "hourly"
+      },
+      "dew_point_2m": {
+        "dashboard": "Dewpoint",
+        "verification_interval": "hourly"
+      },
+      "relative_humidity_2m": {
+        "dashboard": "Humidity",
+        "verification_interval": "hourly"
+      },
+      "pressure_msl": {
+        "dashboard": "Pressure",
+        "verification_interval": "hourly"
+      },
+      "precipitation_probability": {
+        "dashboard": "Precip Probability",
+        "verification_interval": "event_window"
+      },
+      "precipitation": {
+        "dashboard": "Rainfall",
+        "verification_interval": "event_window"
+      },
+      "rain": {
+        "dashboard": "Rainfall",
+        "verification_interval": "event_window"
+      },
+      "showers": {
+        "dashboard": "Rainfall",
+        "verification_interval": "event_window"
+      },
+      "snowfall": {
+        "dashboard": "Rainfall",
+        "verification_interval": "event_window"
+      },
+      "wind_speed_10m": {
+        "dashboard": "Wind Speed",
+        "verification_interval": "hourly"
+      },
+      "wind_gusts_10m": {
+        "dashboard": "Wind Gust",
+        "verification_interval": "event_window"
+      },
+      "wind_direction_10m": {
+        "dashboard": "Wind Dir.",
+        "verification_interval": "hourly_circular"
+      },
+      "cloud_cover": {
+        "dashboard": "Cloud Cover",
+        "verification_interval": "proxy"
+      },
+      "cloud_cover_low": {
+        "dashboard": "Low Clouds",
+        "verification_interval": "proxy"
+      },
+      "cloud_cover_mid": {
+        "dashboard": "Mid Clouds",
+        "verification_interval": "proxy"
+      },
+      "cloud_cover_high": {
+        "dashboard": "High Clouds",
+        "verification_interval": "proxy"
+      },
+      "weather_code": {
+        "dashboard": "Weather Code",
+        "verification_interval": "categorical_proxy"
+      },
+      "visibility": {
+        "dashboard": "Visibility",
+        "verification_interval": "proxy"
+      },
+      "cape": {
+        "dashboard": "CAPE",
+        "verification_interval": "convective_proxy"
+      },
+      "lifted_index": {
+        "dashboard": "Lifted Index",
+        "verification_interval": "convective_proxy"
+      },
+      "convective_inhibition": {
+        "dashboard": "Convective Inhibition",
+        "verification_interval": "convective_proxy"
+      },
+      "boundary_layer_height": {
+        "dashboard": "Boundary Layer Height",
+        "verification_interval": "proxy"
+      }
     },
-    {
-      "name": "AWOS ingestion",
-      "output": "hourly and 1-minute observations"
-    },
-    {
-      "name": "Training pairs",
-      "output": "forecast-observation joins"
-    },
-    {
-      "name": "QM calibration",
-      "output": "parameter/model correction CDFs"
-    },
-    {
-      "name": "Dynamic weights",
-      "output": "recent skill-weighted ensemble"
-    },
-    {
-      "name": "TAF engine",
-      "output": "base group, change groups, warnings"
-    },
-    {
-      "name": "Dashboard export",
-      "output": "static JSON under docs/data"
+    "notes": {
+      "output_interval": "Interval between timestamps returned to WAWP after Open-Meteo processing.",
+      "provider_update_frequency": "Expected cadence at which provider model guidance is refreshed.",
+      "event_window_parameters": "Rain and gust verification should use event/timing windows, not strict hourly-only scoring."
     }
-  ],
-  "model_freshness": [
+  },
+  "latest_runs": [
     {
       "model": "CMA_GRAPES_GLOBAL",
       "openmeteo_model_id": "cma_grapes_global",
@@ -269,233 +405,9 @@
       "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
     }
   ],
-  "model_registry": {
-    "models": {
-      "ECMWF_HRES": {
-        "name": "ECMWF_HRES",
-        "openmeteo_id": "ecmwf_ifs025",
-        "provider": "ECMWF IFS HRES",
-        "expected_output_interval_hours": 1.0,
-        "provider_update_frequency_hours": 6.0,
-        "forecast_horizon_hours": 384,
-        "temporal_confidence": "medium",
-        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
-      },
-      "GFS_GLOBAL": {
-        "name": "GFS_GLOBAL",
-        "openmeteo_id": "gfs_global",
-        "provider": "NOAA GFS",
-        "expected_output_interval_hours": 1.0,
-        "provider_update_frequency_hours": 1.0,
-        "forecast_horizon_hours": 384,
-        "temporal_confidence": "high",
-        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
-      },
-      "ICON_SEAMLESS": {
-        "name": "ICON_SEAMLESS",
-        "openmeteo_id": "icon_seamless",
-        "provider": "DWD ICON seamless",
-        "expected_output_interval_hours": 1.0,
-        "provider_update_frequency_hours": 3.0,
-        "forecast_horizon_hours": 384,
-        "temporal_confidence": "medium",
-        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
-      },
-      "GEM_GLOBAL": {
-        "name": "GEM_GLOBAL",
-        "openmeteo_id": "gem_global",
-        "provider": "CMC GEM",
-        "expected_output_interval_hours": 1.0,
-        "provider_update_frequency_hours": 6.0,
-        "forecast_horizon_hours": 384,
-        "temporal_confidence": "medium",
-        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
-      },
-      "CMA_GRAPES_GLOBAL": {
-        "name": "CMA_GRAPES_GLOBAL",
-        "openmeteo_id": "cma_grapes_global",
-        "provider": "CMA GRAPES",
-        "expected_output_interval_hours": 1.0,
-        "provider_update_frequency_hours": 6.0,
-        "forecast_horizon_hours": 384,
-        "temporal_confidence": "medium",
-        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
-      },
-      "JMA_GSM": {
-        "name": "JMA_GSM",
-        "openmeteo_id": "jma_gsm",
-        "provider": "JMA GSM",
-        "expected_output_interval_hours": 1.0,
-        "provider_update_frequency_hours": 3.0,
-        "forecast_horizon_hours": 384,
-        "temporal_confidence": "medium",
-        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
-      },
-      "METEOFRANCE_ARPEGE_WORLD": {
-        "name": "METEOFRANCE_ARPEGE_WORLD",
-        "openmeteo_id": "meteofrance_arpege_world",
-        "provider": "Meteo-France ARPEGE World",
-        "expected_output_interval_hours": 1.0,
-        "provider_update_frequency_hours": 1.0,
-        "forecast_horizon_hours": 384,
-        "temporal_confidence": "high",
-        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
-      },
-      "UKMO_GLOBAL_10KM": {
-        "name": "UKMO_GLOBAL_10KM",
-        "openmeteo_id": "ukmo_global_deterministic_10km",
-        "provider": "UK Met Office Global 10 km",
-        "expected_output_interval_hours": 1.0,
-        "provider_update_frequency_hours": 1.0,
-        "forecast_horizon_hours": 384,
-        "temporal_confidence": "high",
-        "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ."
-      }
-    },
-    "parameters": {
-      "temperature_2m": {
-        "dashboard": "Temperature",
-        "verification_interval": "hourly"
-      },
-      "dew_point_2m": {
-        "dashboard": "Dewpoint",
-        "verification_interval": "hourly"
-      },
-      "relative_humidity_2m": {
-        "dashboard": "Humidity",
-        "verification_interval": "hourly"
-      },
-      "pressure_msl": {
-        "dashboard": "Pressure",
-        "verification_interval": "hourly"
-      },
-      "precipitation_probability": {
-        "dashboard": "Precip Probability",
-        "verification_interval": "event_window"
-      },
-      "precipitation": {
-        "dashboard": "Rainfall",
-        "verification_interval": "event_window"
-      },
-      "rain": {
-        "dashboard": "Rainfall",
-        "verification_interval": "event_window"
-      },
-      "showers": {
-        "dashboard": "Rainfall",
-        "verification_interval": "event_window"
-      },
-      "snowfall": {
-        "dashboard": "Rainfall",
-        "verification_interval": "event_window"
-      },
-      "wind_speed_10m": {
-        "dashboard": "Wind Speed",
-        "verification_interval": "hourly"
-      },
-      "wind_gusts_10m": {
-        "dashboard": "Wind Gust",
-        "verification_interval": "event_window"
-      },
-      "wind_direction_10m": {
-        "dashboard": "Wind Dir.",
-        "verification_interval": "hourly_circular"
-      },
-      "cloud_cover": {
-        "dashboard": "Cloud Cover",
-        "verification_interval": "proxy"
-      },
-      "cloud_cover_low": {
-        "dashboard": "Low Clouds",
-        "verification_interval": "proxy"
-      },
-      "cloud_cover_mid": {
-        "dashboard": "Mid Clouds",
-        "verification_interval": "proxy"
-      },
-      "cloud_cover_high": {
-        "dashboard": "High Clouds",
-        "verification_interval": "proxy"
-      },
-      "weather_code": {
-        "dashboard": "Weather Code",
-        "verification_interval": "categorical_proxy"
-      },
-      "visibility": {
-        "dashboard": "Visibility",
-        "verification_interval": "proxy"
-      },
-      "cape": {
-        "dashboard": "CAPE",
-        "verification_interval": "convective_proxy"
-      },
-      "lifted_index": {
-        "dashboard": "Lifted Index",
-        "verification_interval": "convective_proxy"
-      },
-      "convective_inhibition": {
-        "dashboard": "Convective Inhibition",
-        "verification_interval": "convective_proxy"
-      },
-      "boundary_layer_height": {
-        "dashboard": "Boundary Layer Height",
-        "verification_interval": "proxy"
-      }
-    },
-    "notes": {
-      "output_interval": "Interval between timestamps returned to WAWP after Open-Meteo processing.",
-      "provider_update_frequency": "Expected cadence at which provider model guidance is refreshed.",
-      "event_window_parameters": "Rain and gust verification should use event/timing windows, not strict hourly-only scoring."
-    }
-  },
-  "historical_coverage": [],
-  "lead_bucket_rows_current": [
-    {
-      "lead_bucket": "L1_0_6h",
-      "row_count": 56
-    },
-    {
-      "lead_bucket": "L2_6_12h",
-      "row_count": 48
-    },
-    {
-      "lead_bucket": "L3_12_24h",
-      "row_count": 96
-    },
-    {
-      "lead_bucket": "L4_24_48h",
-      "row_count": 192
-    },
-    {
-      "lead_bucket": "L5_48plus",
-      "row_count": 2680
-    }
-  ],
-  "qm_calibration": {
-    "enabled_by_parameter": {
-      "dewpoint": 7,
-      "pressure": 8,
-      "temperature": 8,
-      "wind_dir": 8,
-      "wind_speed": 8
-    },
-    "enabled_by_model": {
-      "CMA_GRAPES_GLOBAL": 5,
-      "ECMWF_HRES": 5,
-      "GEM_GLOBAL": 5,
-      "GFS_GLOBAL": 5,
-      "ICON_SEAMLESS": 5,
-      "JMA_GSM": 5,
-      "METEOFRANCE_ARPEGE_WORLD": 4,
-      "UKMO_GLOBAL_10KM": 5
-    },
-    "enabled_by_source": {
-      "continuous_historical": 39
-    },
-    "enabled_by_layer": {
-      "historical_prior": 39
-    },
-    "low_confidence": [],
-    "note": "Historical Forecast API calibration is used as a non-lead-aware historical prior. Operational multi-init data trains lead residuals when enough verified pairs exist."
-  }
+  "notes": [
+    "Forecast values are exported on Open-Meteo's hourly output grid.",
+    "Provider update frequency is tracked separately and should guide freshness, weighting confidence, and event verification.",
+    "Rainfall and gust should be verified with event windows, not strict hourly-only scores."
+  ]
 }
