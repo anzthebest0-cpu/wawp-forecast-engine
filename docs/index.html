@@ -426,23 +426,35 @@
                 <div class="panel">
                     <h3>Database Status</h3>
                     <p style="color: var(--text-secondary); margin-top: 5px; font-size: 0.9em; line-height: 1.4;">
-                        The backend SQLite database continuously archives the operational Open-Meteo model feeds. Once AWOS observations are ingested, the system compares the historical forecasts against the actual weather to mathematically calculate which model performs best.
+                        Current forecast rows are the latest operational model batch. Archive counters describe the preserved historical Open-Meteo and AWOS record used for verification, weighting, climatology, and QM prior training.
                     </p>
                     <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
                         <div class="param-card">
-                            <div class="param-label">Forecast Records</div>
+                            <div class="param-label">Current Forecast Rows</div>
                             <div class="param-value" id="db-forecast-count">Loading...</div>
                         </div>
                         <div class="param-card">
-                            <div class="param-label">Observation Records</div>
+                            <div class="param-label">Historical Forecast Archive</div>
+                            <div class="param-value" id="db-historical-forecast-count">Loading...</div>
+                        </div>
+                        <div class="param-card">
+                            <div class="param-label">Hourly AWOS Archive</div>
                             <div class="param-value" id="db-obs-count">Loading...</div>
                         </div>
                         <div class="param-card">
-                            <div class="param-label">Database Size</div>
+                            <div class="param-label">1-Min AWOS Archive</div>
+                            <div class="param-value" id="db-obs-1min-count">Loading...</div>
+                        </div>
+                        <div class="param-card">
+                            <div class="param-label">Runtime QM CDFs</div>
+                            <div class="param-value" id="db-runtime-qm-count">Loading...</div>
+                        </div>
+                        <div class="param-card">
+                            <div class="param-label">Archive Size</div>
                             <div class="param-value" id="db-size">Loading...</div>
                         </div>
                         <div class="param-card">
-                            <div class="param-label">Last Synchronization</div>
+                            <div class="param-label">Last Data Pull</div>
                             <div class="param-value" id="db-last-sync" style="font-size: 1.1em;">Loading...</div>
                         </div>
                     </div>
