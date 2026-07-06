@@ -767,6 +767,7 @@ function renderVerification() {
             document.getElementById('verify-wind-chart').innerText = 'No sufficient verification data yet.';
         }
 
+        renderEventWindowVerification(lbMetrics);
     }
     else if (window.currentVerifySub === 'verify-leadtime') {
         const param = document.getElementById('leadtime-param-select').value;
@@ -848,6 +849,89 @@ function renderVerification() {
             document.getElementById('verify-significancy-content').innerText = 'No significancy test data available.';
         }
     }
+}
+
+function renderEventWindowVerification(lbMetrics) {
+    const el = document.getElementById('verify-event-window-table');
+    if (!el) return;
+    const rows = [];
+    const collect = (param, label) => {
+        const models = lbMetrics[param]?.event_windows?.models || {};
+        Object.entries(models).forEach(([model, metrics]) => {
+            ['pm0h', 'pm1h', 'pm2h', '3h_block'].forEach(key => {
+                const metric = metrics?.[key];
+                if (!metric || Number(metric.sample_size || 0) <= 0) return;
+                rows.push({
+                    parameter: label,
+                    model,
+                    window: key === 'pm0h' ? 'Exact' : (key === 'pm1h' ? '+/-1h' : (key === 'pm2h' ? '+/-2h' : '3h block')),
+                    hss: metric.HSS,
+                    csi: metric.CSI,
+                    pod: metric.POD,
+                    far: metric.FAR,
+                    timing: metric.mean_abs_timing_error_h,
+                    events: metric.observed_events,
+                    hits: metric.hits,
+                    falseAlarms: metric.false_alarms
+                });
+            });
+        });
+    };
+    collect('Rainfall', 'Rain');
+    collect('Wind Gust', 'Gust');
+
+    if (!rows.length) {
+        el.innerText = 'No event-window verification data yet.';
+        return;
+    }
+
+    const windowOrder = {'Exact': 0, '+/-1h': 1, '+/-2h': 2, '3h block': 3};
+    rows.sort((a, b) => {
+        if (a.parameter !== b.parameter) return a.parameter.localeCompare(b.parameter);
+        if (a.window !== b.window) return windowOrder[a.window] - windowOrder[b.window];
+        return Number(b.hss || 0) - Number(a.hss || 0);
+    });
+
+    const fmt = value => (value === null || value === undefined || Number.isNaN(Number(value))) ? '-' : Number(value).toFixed(3);
+    const fmtTiming = value => (value === null || value === undefined || Number.isNaN(Number(value))) ? '-' : `${Number(value).toFixed(2)} h`;
+    el.innerHTML = `
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Param</th>
+                        <th>Model</th>
+                        <th>Window</th>
+                        <th>HSS</th>
+                        <th>CSI</th>
+                        <th>POD</th>
+                        <th>FAR</th>
+                        <th>Timing Err</th>
+                        <th>Obs Events</th>
+                        <th>Hits</th>
+                        <th>False Alarms</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.map(row => `
+                        <tr>
+                            <td>${row.parameter}</td>
+                            <td>${row.model}</td>
+                            <td>${row.window}</td>
+                            <td>${fmt(row.hss)}</td>
+                            <td>${fmt(row.csi)}</td>
+                            <td>${fmt(row.pod)}</td>
+                            <td>${fmt(row.far)}</td>
+                            <td>${fmtTiming(row.timing)}</td>
+                            <td>${Number(row.events || 0).toLocaleString()}</td>
+                            <td>${Number(row.hits || 0).toLocaleString()}</td>
+                            <td>${Number(row.falseAlarms || 0).toLocaleString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
 function setupPersistency(persData) {

@@ -11,6 +11,7 @@ from src.advanced_ensemble_weighter import AdvancedEnsembleWeighter, MODELS, PAR
 from src.guidance_generator import generate_consensus
 from src.quantile_mapper import QuantileMapper, apply_qm_with_layers
 from src.model_registry import freshness_status, model_metadata_dict, registry_payload
+from src.event_window_verification import event_window_metrics
 from src.tafor_generator import generate_tafor
 
 log = logging.getLogger("exporter")
@@ -271,7 +272,8 @@ def calculate_advanced_metrics(weighter, df_long: pd.DataFrame, param: str, is_c
         "overall": {},
         "lead_time": {},
         "diurnal_bias": {},
-        "significance": {}
+        "significance": {},
+        "event_windows": {}
     }
     
     if df_long.empty:
@@ -329,6 +331,19 @@ def calculate_advanced_metrics(weighter, df_long: pd.DataFrame, param: str, is_c
     # Extract Significancy from weighter if it exists
     if hasattr(weighter, 'significance') and param == "Rainfall":
         metrics_payload["significance"] = weighter.significance
+
+    if param == "Rainfall":
+        metrics_payload["event_windows"] = {
+            "description": "Rain event verification with exact, +/-1h, +/-2h, and 3h block tolerance. Used to separate timing displacement from true misses/false alarms.",
+            "threshold": 1.5,
+            "models": event_window_metrics(df_w, threshold=1.5, windows=(0, 1, 2), block_hours=3),
+        }
+    elif param == "Wind Gust":
+        metrics_payload["event_windows"] = {
+            "description": "Gust event verification with exact, +/-1h, +/-2h, and 3h block tolerance. Peak error uses the strongest forecast gust inside +/-2h around observed gust events.",
+            "threshold": 15.0,
+            "models": event_window_metrics(df_w, threshold=15.0, windows=(0, 1, 2), block_hours=3),
+        }
 
     return metrics_payload
 
