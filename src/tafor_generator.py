@@ -2,8 +2,83 @@ import os
 import json
 from datetime import datetime, timedelta
 import pandas as pd
-from src.taf_core import _build_change_groups
+from src.taf_core import RainConfig, _build_change_groups
 from src.vis_cloud_proxy import build_hourly_vis_cloud, get_weather_phenomenon
+
+
+def _event_skill_context(event_weight_diagnostics: dict | None) -> dict:
+    diagnostics = event_weight_diagnostics or {}
+
+    def summarize(param: str) -> dict:
+        diag = diagnostics.get(param) or {}
+        event_weights = diag.get("event_weights") or {}
+        model_scores = diag.get("model_scores") or {}
+        weighted_score = 0.0
+        weighted_far = 0.0
+        far_weight = 0.0
+        top_models = []
+
+        for model, weight in event_weights.items():
+            try:
+                w = float(weight or 0.0)
+            except (TypeError, ValueError):
+                w = 0.0
+            score_payload = model_scores.get(model) or {}
+            try:
+                score = float(score_payload.get("score") or 0.0)
+            except (TypeError, ValueError):
+                score = 0.0
+            weighted_score += w * score
+            if score_payload.get("pm2h_far") is not None:
+                try:
+                    weighted_far += w * float(score_payload.get("pm2h_far"))
+                    far_weight += w
+                except (TypeError, ValueError):
+                    pass
+            if score_payload.get("eligible") and w > 0:
+                top_models.append((model, w, score))
+
+        top_models.sort(key=lambda item: item[1], reverse=True)
+        strength = max(0.0, min(1.0, weighted_score / 0.35)) if weighted_score > 0 else 0.0
+        return {
+            "applied": bool(diag.get("applied")),
+            "reason": diag.get("reason") or "event-window diagnostics unavailable",
+            "weighted_score": round(weighted_score, 4),
+            "weighted_far": round(weighted_far / far_weight, 4) if far_weight > 0 else None,
+            "strength": round(strength, 4),
+            "top_models": [m for m, _, _ in top_models[:3]],
+            "min_events": diag.get("min_events"),
+            "threshold": diag.get("threshold"),
+        }
+
+    return {
+        "Rainfall": summarize("Rainfall"),
+        "Wind Gust": summarize("Wind Gust"),
+    }
+
+
+def _event_aware_config(event_context: dict):
+    rain = event_context.get("Rainfall", {})
+    gust = event_context.get("Wind Gust", {})
+    rain_strength = float(rain.get("strength") or 0.0) if rain.get("applied") else 0.0
+    gust_strength = float(gust.get("strength") or 0.0) if gust.get("applied") else 0.0
+
+    class EventAwareRainConfig(RainConfig):
+        pass
+
+    if rain_strength > 0:
+        threshold_relax = min(0.15, 0.05 + (0.10 * rain_strength))
+        confidence_relax = min(0.20, 0.08 + (0.12 * rain_strength))
+        EventAwareRainConfig.CONSENSUS_THR = max(0.75, RainConfig.CONSENSUS_THR * (1.0 - threshold_relax))
+        EventAwareRainConfig.VOTE_THR = max(0.75, RainConfig.VOTE_THR * (1.0 - threshold_relax))
+        EventAwareRainConfig.TEMPO_CUT = max(0.12, RainConfig.TEMPO_CUT * (1.0 - confidence_relax))
+        EventAwareRainConfig.PROB40_CUT = max(0.07, RainConfig.PROB40_CUT * (1.0 - confidence_relax))
+        EventAwareRainConfig.PROB30_CUT = max(0.02, RainConfig.PROB30_CUT)
+
+    EventAwareRainConfig.GUST_EVENT_ENABLED = gust_strength > 0
+    EventAwareRainConfig.GUST_TRIGGER_DELTA = max(6.0, 8.0 - (2.0 * gust_strength))
+    EventAwareRainConfig.GUST_MIN_EXCESS = 10.0
+    return EventAwareRainConfig
 
 def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
     issued_hh  = iss_utc[:2]
@@ -120,7 +195,14 @@ def _generate_narration(bg: dict, trends: list) -> str:
         
     return ' '.join(parts)
 
-def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: dict, model_weights: dict, target_issuance: str = None) -> dict:
+def generate_tafor(
+    consensus_df: pd.DataFrame,
+    model_data: dict,
+    qm_rain_data: dict,
+    model_weights: dict,
+    target_issuance: str = None,
+    event_weight_diagnostics: dict | None = None,
+) -> dict:
     """
     Core TAF generator. Takes the consensus DataFrame and raw/QM model data 
     and returns a structured intel dictionary with the final TAF text.
@@ -237,6 +319,9 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
         sliced_values = [d_dict[i] for i in sorted(d_dict.keys())][start_idx:start_idx+24]
         qm_rain_local[m] = {i: v for i, v in enumerate(sliced_values)}
             
+    event_context = _event_skill_context(event_weight_diagnostics)
+    taf_config = _event_aware_config(event_context)
+
     # Generate change groups
     change_group_weights = model_weights.get("Rainfall", model_weights) if isinstance(model_weights, dict) else model_weights
     trends, warnings = _build_change_groups(
@@ -246,8 +331,25 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
         meteo_data_local=meteo_data_local,
         corrected_rain_data=qm_rain_local,
         rain_timing_offset=0, 
-        model_weights=change_group_weights
+        model_weights=change_group_weights,
+        config=taf_config,
     )
+    taf_notes = []
+    if event_context["Rainfall"].get("applied"):
+        models = ", ".join(event_context["Rainfall"].get("top_models") or [])
+        taf_notes.append(
+            "Rain/TS confidence adjusted with event-window skill"
+            + (f" from {models}" if models else "")
+            + f" (strength {event_context['Rainfall'].get('strength', 0):.2f})."
+        )
+    if event_context["Wind Gust"].get("applied"):
+        models = ", ".join(event_context["Wind Gust"].get("top_models") or [])
+        taf_notes.append(
+            "Gust groups allowed by event-window skill"
+            + (f" from {models}" if models else "")
+            + f" (strength {event_context['Wind Gust'].get('strength', 0):.2f})."
+        )
+    warnings = list(warnings or []) + taf_notes
     
     # Define Base Group
     first_row = consensus_truth[0]
@@ -305,5 +407,6 @@ def generate_tafor(consensus_df: pd.DataFrame, model_data: dict, qm_rain_data: d
         "base_group": best_guess,
         "taf_text": taf_text,
         "narration": narration_text,
-        "warnings": warnings
+        "warnings": warnings,
+        "event_skill_context": event_context,
     }

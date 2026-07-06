@@ -345,6 +345,7 @@ def _build_change_groups(
 
     base_spd      = consensus_truth[0]["spd"]
     base_dir_num  = consensus_truth[0]["dir_num"]
+    base_gust     = float(consensus_truth[0].get("gust", 0.0) or 0.0)
 
     # -- helpers --------------------------------------------------------------─
 
@@ -881,18 +882,25 @@ def _build_change_groups(
 
     prev_spd     = base_spd
     prev_dir_num = base_dir_num
+    prev_gust    = base_gust
     i            = 1
 
     while i < N:
         curr = consensus_truth[i]
         spd_delta = abs(curr["spd"] - prev_spd)
         dir_delta = circ_diff(curr["dir_num"], prev_dir_num)
+        curr_gust = float(curr.get("gust", 0.0) or 0.0)
 
         # SOP Sec 12.i wind trigger criteria
         spd_trigger = spd_delta >= 10
         dir_trigger = dir_delta >= 60 and (curr["spd"] >= 10 or prev_spd >= 10)
+        gust_trigger = (
+            bool(getattr(_RC, "GUST_EVENT_ENABLED", False))
+            and curr_gust >= (float(curr["spd"]) + float(getattr(_RC, "GUST_MIN_EXCESS", 10.0)))
+            and (curr_gust - prev_gust) >= float(getattr(_RC, "GUST_TRIGGER_DELTA", 8.0))
+        )
 
-        if not (spd_trigger or dir_trigger):
+        if not (spd_trigger or dir_trigger or gust_trigger):
             i += 1
             continue
 
@@ -901,7 +909,13 @@ def _build_change_groups(
         while end_h < N:
             fsd = abs(consensus_truth[end_h]["spd"] - prev_spd)
             fdd = circ_diff(consensus_truth[end_h]["dir_num"], prev_dir_num)
-            if not (fsd >= 10 or (fdd >= 60 and consensus_truth[end_h]["spd"] >= 10)):
+            fgust = float(consensus_truth[end_h].get("gust", 0.0) or 0.0)
+            fgust_trigger = (
+                bool(getattr(_RC, "GUST_EVENT_ENABLED", False))
+                and fgust >= (float(consensus_truth[end_h]["spd"]) + float(getattr(_RC, "GUST_MIN_EXCESS", 10.0)))
+                and (fgust - prev_gust) >= float(getattr(_RC, "GUST_TRIGGER_DELTA", 8.0))
+            )
+            if not (fsd >= 10 or (fdd >= 60 and consensus_truth[end_h]["spd"] >= 10) or fgust_trigger):
                 break
             end_h += 1
         D_wind = max(1, end_h - i)
@@ -913,12 +927,19 @@ def _build_change_groups(
             if abs(consensus_truth[fh]["spd"] - prev_spd) >= 10
             or (circ_diff(consensus_truth[fh]["dir_num"], prev_dir_num) >= 60
                 and consensus_truth[fh]["spd"] >= 10)
+            or (
+                bool(getattr(_RC, "GUST_EVENT_ENABLED", False))
+                and float(consensus_truth[fh].get("gust", 0.0) or 0.0) >= (
+                    float(consensus_truth[fh]["spd"]) + float(getattr(_RC, "GUST_MIN_EXCESS", 10.0))
+                )
+                and (float(consensus_truth[fh].get("gust", 0.0) or 0.0) - prev_gust) >= float(getattr(_RC, "GUST_TRIGGER_DELTA", 8.0))
+            )
         )
         fraction = persist / (look_end - i) if look_end > i else 0.0
 
         new_dir = curr["dir"]
-        new_spd = str(curr["spd"]).zfill(2)
-        new_gst = str(int(curr.get("gust", 0))).zfill(2)
+        new_spd = str(int(round(float(curr["spd"])))).zfill(2)
+        new_gst = str(int(round(float(curr.get("gust", 0) or 0.0)))).zfill(2)
 
         MIN_LOOKAHEAD = 3
         if fraction >= 0.5 and (look_end - i) >= MIN_LOOKAHEAD:
@@ -945,6 +966,7 @@ def _build_change_groups(
             })
             prev_spd     = curr["spd"]
             prev_dir_num = curr["dir_num"]
+            prev_gust    = curr_gust
             i            = te + 1
 
         else:
@@ -978,6 +1000,7 @@ def _build_change_groups(
                     })
                     prev_spd     = curr["spd"]
                     prev_dir_num = curr["dir_num"]
+                    prev_gust    = curr_gust
                     i            = te + 1
                 else:
                     i = end_h + 1

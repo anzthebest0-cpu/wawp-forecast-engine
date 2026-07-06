@@ -52,6 +52,14 @@ def _weights_have_signal(weights: dict) -> bool:
     return False
 
 
+def _event_diagnostics_have_signal(diagnostics: dict) -> bool:
+    for param in ("Rainfall", "Wind Gust"):
+        diag = (diagnostics or {}).get(param) or {}
+        if diag.get("applied") and diag.get("event_weights"):
+            return True
+    return False
+
+
 def _diurnal_total_observations(path: str) -> int:
     payload = _load_json_file(path) or {}
     try:
@@ -878,6 +886,13 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
             if total > 0:
                 global_weights[param] = {m: prior[m] / total for m in MODELS}
                 log.warning(f"Using preserved verified weights for {param}; current export has no skill pairs")
+    existing_event_diagnostics = (existing_weights_payload.get("metadata") or {}).get("event_weight_diagnostics", {})
+    if (
+        not _event_diagnostics_have_signal(event_weight_diagnostics)
+        and _event_diagnostics_have_signal(existing_event_diagnostics)
+    ):
+        event_weight_diagnostics = existing_event_diagnostics
+        log.warning("Using preserved event-window diagnostics; current export has no event skill pairs")
             
     # 2. Extract Forecast Data & Generate Consensus
     # Wait, guidance_generator expects model_data in memory. 
@@ -1159,9 +1174,22 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
     
     taf_intel = {}
     for iss in ["2300", "0500", "1100", "1700"]:
-        taf_intel[iss] = generate_tafor(consensus, model_data, qm_rain_data, global_weights, target_issuance=iss)
+        taf_intel[iss] = generate_tafor(
+            consensus,
+            model_data,
+            qm_rain_data,
+            global_weights,
+            target_issuance=iss,
+            event_weight_diagnostics=event_weight_diagnostics,
+        )
     
-    taf_intel["default"] = generate_tafor(consensus, model_data, qm_rain_data, global_weights)
+    taf_intel["default"] = generate_tafor(
+        consensus,
+        model_data,
+        qm_rain_data,
+        global_weights,
+        event_weight_diagnostics=event_weight_diagnostics,
+    )
     
     # Output Payloads
     out_path = os.path.join(output_dir, "tafor_intel.json")
