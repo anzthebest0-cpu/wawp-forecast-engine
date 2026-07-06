@@ -2,7 +2,7 @@
   "size_mb": 805.0,
   "current_forecast_records": 3072,
   "forecast_records": 3072,
-  "operational_forecast_records": 35328,
+  "operational_forecast_records": 38016,
   "historical_forecast_records": 0,
   "observation_records": 42449,
   "observation_1min_records": 2504680,
@@ -17,20 +17,20 @@
     "enabled_cdfs": 39,
     "degraded": false,
     "reason": null,
-    "replaced_existing_cdfs": 0
+    "replaced_existing_cdfs": 145
   },
-  "latest_model_run_init_utc": "2026-07-06 02:00:00",
-  "latest_data_pull_utc": "2026-07-06 02:42:01",
-  "last_sync_utc": "2026-07-06 02:42:22",
+  "latest_model_run_init_utc": "2026-07-06 04:00:00",
+  "latest_data_pull_utc": "2026-07-06 04:50:36",
+  "last_sync_utc": "2026-07-06 04:50:37",
   "archive_status": "historical archive counters preserved from previous full export",
   "model_freshness": [
     {
       "model": "CMA_GRAPES_GLOBAL",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-06 02:41:59",
-      "latest_run_init_utc": "2026-07-06 02:00:00",
-      "first_forecast_time": "2026-07-06 10:00:00",
-      "last_forecast_time": "2026-07-22 09:00:00",
+      "latest_scraped_at": "2026-07-06 04:50:13",
+      "latest_run_init_utc": "2026-07-06 04:00:00",
+      "first_forecast_time": "2026-07-06 12:00:00",
+      "last_forecast_time": "2026-07-22 11:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.01,
@@ -39,10 +39,10 @@
     {
       "model": "ECMWF_HRES",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-06 02:41:53",
-      "latest_run_init_utc": "2026-07-06 02:00:00",
-      "first_forecast_time": "2026-07-06 10:00:00",
-      "last_forecast_time": "2026-07-22 09:00:00",
+      "latest_scraped_at": "2026-07-06 04:50:08",
+      "latest_run_init_utc": "2026-07-06 04:00:00",
+      "first_forecast_time": "2026-07-06 12:00:00",
+      "last_forecast_time": "2026-07-22 11:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.01,
@@ -51,10 +51,10 @@
     {
       "model": "GEM_GLOBAL",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-06 02:41:57",
-      "latest_run_init_utc": "2026-07-06 02:00:00",
-      "first_forecast_time": "2026-07-06 10:00:00",
-      "last_forecast_time": "2026-07-22 09:00:00",
+      "latest_scraped_at": "2026-07-06 04:50:12",
+      "latest_run_init_utc": "2026-07-06 04:00:00",
+      "first_forecast_time": "2026-07-06 12:00:00",
+      "last_forecast_time": "2026-07-22 11:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.01,
@@ -63,10 +63,10 @@
     {
       "model": "GFS_GLOBAL",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-06 02:41:55",
-      "latest_run_init_utc": "2026-07-06 02:00:00",
-      "first_forecast_time": "2026-07-06 10:00:00",
-      "last_forecast_time": "2026-07-22 09:00:00",
+      "latest_scraped_at": "2026-07-06 04:50:10",
+      "latest_run_init_utc": "2026-07-06 04:00:00",
+      "first_forecast_time": "2026-07-06 12:00:00",
+      "last_forecast_time": "2026-07-22 11:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.01,
@@ -75,10 +75,10 @@
     {
       "model": "ICON_SEAMLESS",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-06 02:41:56",
-      "latest_run_init_utc": "2026-07-06 02:00:00",
-      "first_forecast_time": "2026-07-06 10:00:00",
-      "last_forecast_time": "2026-07-22 09:00:00",
+      "latest_scraped_at": "2026-07-06 04:50:11",
+      "latest_run_init_utc": "2026-07-06 04:00:00",
+      "first_forecast_time": "2026-07-06 12:00:00",
+      "last_forecast_time": "2026-07-22 11:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.01,
@@ -87,10 +87,10 @@
     {
       "model": "JMA_GSM",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-06 02:42:00",
-      "latest_run_init_utc": "2026-07-06 02:00:00",
-      "first_forecast_time": "2026-07-06 10:00:00",
-      "last_forecast_time": "2026-07-22 09:00:00",
+      "latest_scraped_at": "2026-07-06 04:50:14",
+      "latest_run_init_utc": "2026-07-06 04:00:00",
+      "first_forecast_time": "2026-07-06 12:00:00",
+      "last_forecast_time": "2026-07-22 11:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.01,
@@ -105,68 +105,68 @@
       "last_forecast_time": "2026-07-22 09:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.01,
+      "age_hours": 2.14,
       "status": "fresh"
     },
     {
       "model": "UKMO_GLOBAL_10KM",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-06 02:10:44",
-      "latest_run_init_utc": "2026-07-06 02:00:00",
-      "first_forecast_time": "2026-07-06 10:00:00",
-      "last_forecast_time": "2026-07-22 09:00:00",
+      "latest_scraped_at": "2026-07-06 04:50:36",
+      "latest_run_init_utc": "2026-07-06 04:00:00",
+      "first_forecast_time": "2026-07-06 12:00:00",
+      "last_forecast_time": "2026-07-22 11:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.53,
+      "age_hours": 0.0,
       "status": "fresh"
     }
   ],
   "qm_provenance": {
-    "total_values": 21504,
+    "total_values": 21616,
     "by_layer": {
-      "historical_prior": 8610,
+      "historical_prior": 8600,
       "operational_residual": 0,
-      "raw": 12894
+      "raw": 13016
     },
     "by_parameter": {
       "Temperature": {
-        "historical_prior": 1741,
+        "historical_prior": 1739,
         "operational_residual": 0,
-        "raw": 1331
+        "raw": 1349
       },
       "Dewpoint": {
-        "historical_prior": 1646,
+        "historical_prior": 1644,
         "operational_residual": 0,
-        "raw": 1426
+        "raw": 1444
       },
       "Pressure": {
-        "historical_prior": 1741,
+        "historical_prior": 1739,
         "operational_residual": 0,
-        "raw": 1331
+        "raw": 1349
       },
       "Rainfall": {
         "historical_prior": 0,
         "operational_residual": 0,
-        "raw": 3072
+        "raw": 3088
       },
       "Wind Speed": {
-        "historical_prior": 1741,
+        "historical_prior": 1739,
         "operational_residual": 0,
-        "raw": 1331
+        "raw": 1349
       },
       "Wind Dir.": {
-        "historical_prior": 1741,
+        "historical_prior": 1739,
         "operational_residual": 0,
-        "raw": 1331
+        "raw": 1349
       },
       "Wind Gust": {
         "historical_prior": 0,
         "operational_residual": 0,
-        "raw": 3072
+        "raw": 3088
       }
     },
     "low_confidence": 0,
-    "lead_aware_pending": 8337,
+    "lead_aware_pending": 8327,
     "artifact_status": {
       "available": true,
       "imported": true,
@@ -175,14 +175,14 @@
       "enabled_cdfs": 39,
       "degraded": false,
       "reason": null,
-      "replaced_existing_cdfs": 0
+      "replaced_existing_cdfs": 145
     },
     "historical_prior_label": "Bias-corrected: historical prior, global, not lead-aware",
     "rainfall_note": "Rain occurrence prior may inform risk; rainfall amount correction remains strict/pending.",
     "percent_by_layer": {
-      "historical_prior": 40.04,
+      "historical_prior": 39.79,
       "operational_residual": 0.0,
-      "raw": 59.96
+      "raw": 60.21
     }
   }
 }
