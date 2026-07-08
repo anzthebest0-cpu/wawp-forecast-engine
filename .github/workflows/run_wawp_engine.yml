@@ -68,7 +68,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload latest-db wawp_forecasts.db --clobber
+          gh release upload latest-db wawp_forecasts.db --clobber || gh release create latest-db wawp_forecasts.db -t "Latest Forecast Database" -n "Rolling release asset"
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
