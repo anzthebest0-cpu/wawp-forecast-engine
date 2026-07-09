@@ -7,11 +7,11 @@
       "dir": "120",
       "spd": "03",
       "gust": "10",
-      "vis": "9999",
-      "wx": "",
-      "cloud": "FEW010",
-      "rain": 0.013504594126547082,
-      "rain_mmh": 0.013504594126547082,
+      "vis": "1100",
+      "wx": "BR",
+      "cloud": "BKN180",
+      "rain": 0.0,
+      "rain_mmh": 0.0,
       "trends": [],
       "badge": "MME 2300Z Shift",
       "metrics": {
@@ -19,8 +19,8 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 092300\nTAF WAWP 092300Z 1000/1100 12003KT 9999 FEW010=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (3 KT).",
+    "taf_text": "FTID40 WAWP 092300\nTAF WAWP 092300Z 1000/1100 12003KT 1100 BR BKN180=",
+    "narration": "Secara umum cuaca berawan tebal dengan jarak pandang terbatas. Angin dominan bertiup dengan kecepatan ringan hingga sedang (3 KT).",
     "warnings": [],
     "event_skill_context": {
       "Rainfall": {
@@ -50,23 +50,37 @@
     "issued_utc": "0500",
     "issued_day": 10,
     "base_group": {
-      "dir": "170",
-      "spd": "03",
-      "gust": "09",
+      "dir": "160",
+      "spd": "02",
+      "gust": "08",
       "vis": "9999",
       "wx": "",
-      "cloud": "SCT041",
+      "cloud": "SCT045",
       "rain": 0.0,
       "rain_mmh": 0.0,
-      "trends": [],
+      "trends": [
+        {
+          "type": "BECMG",
+          "time_str": "1014/1015",
+          "time_h_start": 14,
+          "time_h_end": 15,
+          "wx": "BR",
+          "vis": "0750",
+          "cloud": "",
+          "dir": "",
+          "spd": "",
+          "gust": "",
+          "rain_mmh": 0.0
+        }
+      ],
       "badge": "MME 0500Z Shift",
       "metrics": {
         "leader_rmse": "N/A",
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 100500\nTAF WAWP 100500Z 1006/1106 17003KT 9999 SCT041=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (3 KT).",
+    "taf_text": "FTID40 WAWP 100500\nTAF WAWP 100500Z 1006/1106 16002KT 9999 SCT045\nBECMG 1014/1015 0750 BR=",
+    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (2 KT).",
     "warnings": [],
     "event_skill_context": {
       "Rainfall": {
@@ -92,27 +106,41 @@
     }
   },
   "1100": {
-    "valid_start": "2026-07-09 20:00:00",
+    "valid_start": "2026-07-10 20:00:00",
     "issued_utc": "1100",
-    "issued_day": 9,
+    "issued_day": 10,
     "base_group": {
-      "dir": "120",
+      "dir": "090",
       "spd": "03",
       "gust": "07",
       "vis": "9999",
       "wx": "",
-      "cloud": "BKN012",
-      "rain": 0.013504594126547082,
-      "rain_mmh": 0.013504594126547082,
-      "trends": [],
+      "cloud": "FEW014",
+      "rain": 0.0,
+      "rain_mmh": 0.0,
+      "trends": [
+        {
+          "type": "BECMG",
+          "time_str": "1014/1015",
+          "time_h_start": 14,
+          "time_h_end": 15,
+          "wx": "BR",
+          "vis": "0750",
+          "cloud": "",
+          "dir": "",
+          "spd": "",
+          "gust": "",
+          "rain_mmh": 0.0
+        }
+      ],
       "badge": "MME 1100Z Shift",
       "metrics": {
         "leader_rmse": "N/A",
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 091100\nTAF WAWP 091100Z 0912/1012 12003KT 9999 BKN012=",
-    "narration": "Secara umum cuaca berawan tebal dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (3 KT).",
+    "taf_text": "FTID40 WAWP 101100\nTAF WAWP 101100Z 1012/1112 09003KT 9999 FEW014\nBECMG 1014/1015 0750 BR=",
+    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (3 KT).",
     "warnings": [],
     "event_skill_context": {
       "Rainfall": {
@@ -144,12 +172,12 @@
     "base_group": {
       "dir": "110",
       "spd": "02",
-      "gust": "07",
-      "vis": "9999",
-      "wx": "",
-      "cloud": "FEW010",
-      "rain": 0.042216297607113325,
-      "rain_mmh": 0.042216297607113325,
+      "gust": "08",
+      "vis": "0400",
+      "wx": "BR",
+      "cloud": "FEW004",
+      "rain": 0.02622897751253491,
+      "rain_mmh": 0.02622897751253491,
       "trends": [],
       "badge": "MME 1700Z Shift",
       "metrics": {
@@ -157,8 +185,8 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 091700\nTAF WAWP 091700Z 0918/1018 11002KT 9999 FEW010=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (2 KT).",
+    "taf_text": "FTID40 WAWP 091700\nTAF WAWP 091700Z 0918/1018 11002KT 0400 BR FEW004=",
+    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang terbatas. Angin dominan bertiup dengan kecepatan ringan hingga sedang (2 KT).",
     "warnings": [],
     "event_skill_context": {
       "Rainfall": {
@@ -184,41 +212,40 @@
     }
   },
   "default": {
-    "valid_start": "2026-07-09 18:00:00",
-    "issued_utc": "0900",
+    "valid_start": "2026-07-09 23:00:00",
+    "issued_utc": "1400",
     "issued_day": 9,
     "base_group": {
-      "dir": "170",
-      "spd": "02",
-      "gust": "08",
-      "vis": "9999",
-      "wx": "",
-      "cloud": "BKN021",
-      "rain": 0.013504594126547082,
-      "rain_mmh": 0.013504594126547082,
+      "dir": "120",
+      "spd": "03",
+      "gust": "09",
+      "vis": "0500",
+      "wx": "BR",
+      "cloud": "SCT005",
+      "rain": 0.08140304899020578,
+      "rain_mmh": 0.08140304899020578,
       "trends": [
         {
-          "type": "TEMPO",
-          "time_str": "0912/0915",
-          "time_h_start": 12,
-          "time_h_end": 15,
-          "wx": "",
-          "vis": "",
-          "cloud": "BKN012",
+          "type": "BECMG",
+          "time_str": "0917/0918",
+          "time_h_start": 17,
+          "time_h_end": 18,
+          "wx": "NSW",
+          "vis": "9999",
+          "cloud": "SCT018",
           "dir": "",
           "spd": "",
-          "gust": "",
-          "rain_mmh": 0.013504594126547082
+          "rain_mmh": 0.0
         }
       ],
-      "badge": "MME 0900Z Shift",
+      "badge": "MME 1400Z Shift",
       "metrics": {
         "leader_rmse": "N/A",
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 090900\nTAF WAWP 090900Z 0910/1010 17002KT 9999 BKN021\nTEMPO 0912/0915 BKN012=",
-    "narration": "Secara umum cuaca berawan tebal dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (2 KT).",
+    "taf_text": "FTID40 WAWP 091400\nTAF WAWP 091400Z 0915/1015 12003KT 0500 BR SCT005\nBECMG 0917/0918 9999 NSW SCT018=",
+    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang terbatas. Angin dominan bertiup dengan kecepatan ringan hingga sedang (3 KT).",
     "warnings": [],
     "event_skill_context": {
       "Rainfall": {
