@@ -84,6 +84,8 @@ async function loadDashboard() {
             const qmRuntimeElem = document.getElementById('db-runtime-qm-count');
             const sizeElem = document.getElementById('db-size');
             const syncElem = document.getElementById('db-last-sync');
+            const obsFreshnessElem = document.getElementById('db-obs-freshness');
+            const verificationElem = document.getElementById('db-verification-status');
             
             if (fcElem) fcElem.innerText = Number(healthData.current_forecast_records ?? healthData.forecast_records ?? 0).toLocaleString();
             if (histFcElem) histFcElem.innerText = Number(healthData.historical_forecast_records ?? healthData.openmeteo_records ?? 0).toLocaleString();
@@ -92,6 +94,21 @@ async function loadDashboard() {
             if (qmRuntimeElem) qmRuntimeElem.innerText = Number(healthData.runtime_qm_cdfs_enabled ?? healthData.qm_cdfs_enabled ?? 0).toLocaleString();
             if (sizeElem) sizeElem.innerText = healthData.size_mb + ' MB';
             if (syncElem) syncElem.innerText = (healthData.latest_data_pull_utc || healthData.last_sync_utc || healthData.latest_model_run_init_utc) + ' UTC';
+            const observationFreshness = healthData.observation_freshness || {};
+            const hourlyObservation = observationFreshness.hourly || {};
+            if (obsFreshnessElem) {
+                const age = hourlyObservation.age_hours;
+                obsFreshnessElem.innerText = hourlyObservation.status
+                    ? `${hourlyObservation.status}${age !== null && age !== undefined ? ` (${age.toFixed(1)} h)` : ''}`
+                    : 'Unknown';
+                obsFreshnessElem.style.color = hourlyObservation.status === 'fresh'
+                    ? 'var(--green)' : (hourlyObservation.status === 'stale' ? 'var(--red)' : 'var(--amber)');
+            }
+            if (verificationElem) {
+                const frozen = observationFreshness.verification_status === 'frozen';
+                verificationElem.innerText = frozen ? 'Frozen: stale AWOS' : 'Active';
+                verificationElem.style.color = frozen ? 'var(--amber)' : 'var(--green)';
+            }
             setupHealthFreshness(healthData.model_freshness || []);
             setupQMProvenance(healthData.qm_provenance || null);
             setupOperationalResiduals(residualData || {metadata: healthData.operational_residuals || {}});
@@ -169,7 +186,18 @@ async function loadDashboard() {
             document.getElementById('taf-text-display').innerText = intelObj.taf_text || "TAF Unavailable";
             
             const bg = intelObj.base_group;
-            if(!bg) return;
+            const provenance = intelObj.provenance || {};
+            const provenanceNote = provenance.fresh_model_count !== undefined
+                ? `TAF provenance: ${provenance.fresh_model_count} fresh models over ${provenance.coverage_hours} h; ${provenance.direct_visibility_model_count || 0} direct visibility sources; cloud base is proxy-derived.`
+                : '';
+            const warnings = [...(intelObj.warnings || [])];
+            if (provenanceNote) warnings.unshift(provenanceNote);
+            if(!bg) {
+                document.getElementById('taf-warnings').innerHTML = warnings.map(w => `<div style="color:var(--amber); margin-top:10px;">${w}</div>`).join('');
+                const narrationBox = document.getElementById('taf-narration');
+                if (narrationBox) narrationBox.innerText = intelObj.narration || "Narasi tidak tersedia untuk saat ini.";
+                return;
+            }
             const bgHtml = `
                 <div class="param-card">
                     <div class="param-label">Wind Direction</div>
@@ -196,7 +224,6 @@ async function loadDashboard() {
             const badge = document.getElementById('consensus-badge');
             if(badge) badge.innerText = bg.badge || "MME Consensus";
             
-            const warnings = intelObj.warnings;
             if(warnings && warnings.length > 0) {
                 document.getElementById('taf-warnings').innerHTML = warnings.map(w => `<div style="color:var(--amber); margin-top:10px;">⚠️ ${w}</div>`).join('');
             } else {

@@ -397,6 +397,145 @@ def _safe_dt(value):
     return dt.to_pydatetime()
 
 
+TAF_ISSUANCE_HOURS_UTC = {"2300": 23, "0500": 5, "1100": 11, "1700": 17}
+TAF_MIN_FRESH_MODELS = 5
+TAF_COVERAGE_HOURS = 6
+
+
+def _observation_freshness(db: ForecastDB, now: datetime | None = None) -> dict:
+    """Report source freshness separately from the count of archived observations."""
+    now = now or datetime.now(timezone.utc)
+
+    def summarize(table: str) -> dict:
+        latest = db.conn.execute(f"SELECT MAX(obs_time) FROM {table}").fetchone()[0]
+        latest_dt = _safe_dt(latest)
+        if latest_dt is None:
+            return {"latest_obs_utc": None, "age_hours": None, "status": "missing"}
+        age_hours = max(0.0, (now - latest_dt).total_seconds() / 3600.0)
+        if age_hours <= 6.0:
+            status = "fresh"
+        elif age_hours <= 24.0:
+            status = "aging"
+        else:
+            status = "stale"
+        return {
+            "latest_obs_utc": latest_dt.strftime("%Y-%m-%d %H:%M:%S"),
+            "age_hours": round(age_hours, 2),
+            "status": status,
+        }
+
+    hourly = summarize("awos_observations")
+    minute = summarize("awos_observations_1min")
+    verification_status = "ready" if hourly["status"] == "fresh" else "frozen"
+    return {
+        "hourly": hourly,
+        "minute": minute,
+        "verification_status": verification_status,
+        "note": (
+            "Verification-driven weights and residual promotion are frozen until hourly AWOS is fresh."
+            if verification_status == "frozen"
+            else "Hourly AWOS is fresh enough for verification-driven updates."
+        ),
+    }
+
+
+def _taf_window_coverage(
+    df_fcst: pd.DataFrame,
+    fresh_models: set[str],
+    valid_start: pd.Timestamp,
+    hours: int = TAF_COVERAGE_HOURS,
+) -> dict:
+    """Require a common fresh-model cohort across the opening TAF period."""
+    expected_times = pd.date_range(valid_start, periods=hours, freq="h")
+    frame = df_fcst.copy()
+    frame["_forecast_dt"] = pd.to_datetime(frame["forecast_time"])
+    common_models = set(fresh_models)
+    missing_times = []
+    for timestamp in expected_times:
+        available = set(frame.loc[frame["_forecast_dt"] == timestamp, "model"].dropna())
+        if not available:
+            missing_times.append(timestamp.strftime("%Y-%m-%d %H:%M:%S"))
+        common_models &= available
+
+    first_hour = frame.loc[frame["_forecast_dt"] == valid_start]
+    visibility_models = sorted(
+        set(first_hour.loc[first_hour["visibility"].notna(), "model"].dropna()) & common_models
+    ) if "visibility" in first_hour.columns else []
+    return {
+        "coverage_hours": hours,
+        "fresh_models_covering_window": sorted(common_models),
+        "fresh_model_count": len(common_models),
+        "direct_visibility_models": visibility_models,
+        "direct_visibility_model_count": len(visibility_models),
+        "missing_window_hours": missing_times,
+        "coverage_status": "sufficient" if len(common_models) >= TAF_MIN_FRESH_MODELS else "degraded",
+    }
+
+
+def _select_default_taf_window(
+    df_fcst: pd.DataFrame,
+    fresh_models: set[str],
+    reference_utc: datetime,
+) -> dict:
+    """Choose the next official issuance with six hours of quorum coverage."""
+    candidates = []
+    for day_offset in range(3):
+        day = (reference_utc + timedelta(days=day_offset)).date()
+        for issuance, issue_hour in TAF_ISSUANCE_HOURS_UTC.items():
+            issue_dt = datetime(day.year, day.month, day.day, issue_hour, tzinfo=timezone.utc)
+            if issue_dt < reference_utc:
+                continue
+            valid_start_wita = pd.Timestamp((issue_dt + timedelta(hours=9)).replace(tzinfo=None))
+            coverage = _taf_window_coverage(df_fcst, fresh_models, valid_start_wita)
+            candidates.append({
+                "issuance": issuance,
+                "issue_utc": issue_dt.strftime("%Y-%m-%d %H:%M:%S"),
+                "valid_start_wita": valid_start_wita.strftime("%Y-%m-%d %H:%M:%S"),
+                **coverage,
+            })
+
+    candidates.sort(key=lambda item: item["issue_utc"])
+    selected = next((item for item in candidates if item["coverage_status"] == "sufficient"), None)
+    return {
+        "selection_status": "selected" if selected else "suppressed",
+        "selected_issuance": selected["issuance"] if selected else None,
+        "selected_valid_start_wita": selected["valid_start_wita"] if selected else None,
+        "reference_utc": reference_utc.strftime("%Y-%m-%d %H:%M:%S"),
+        "minimum_fresh_models": TAF_MIN_FRESH_MODELS,
+        "coverage_hours": TAF_COVERAGE_HOURS,
+        "candidates": candidates,
+        "reason": (
+            "Next official issuance has fresh-model quorum coverage."
+            if selected else
+            "No upcoming official issuance has fresh-model quorum coverage; default TAF suppressed."
+        ),
+    }
+
+
+def _taf_provenance(
+    df_fcst: pd.DataFrame,
+    fresh_models: set[str],
+    model_freshness: list[dict],
+    valid_start: str | None,
+    observation_freshness: dict,
+) -> dict:
+    if not valid_start:
+        return {"coverage_status": "unavailable"}
+    coverage = _taf_window_coverage(df_fcst, fresh_models, pd.Timestamp(valid_start))
+    model_ages = {
+        row["model"]: row.get("age_hours")
+        for row in model_freshness
+        if row.get("model") in coverage["fresh_models_covering_window"]
+    }
+    return {
+        **coverage,
+        "model_run_age_hours": model_ages,
+        "cloud_base_source": "proxy",
+        "observation_verification_status": observation_freshness.get("verification_status"),
+        "observation_hourly_age_hours": (observation_freshness.get("hourly") or {}).get("age_hours"),
+    }
+
+
 def _model_placeholders() -> str:
     return ",".join("?" for _ in MODELS)
 
@@ -405,7 +544,13 @@ def _model_params(multiplier: int = 1) -> tuple[str, ...]:
     return tuple(MODELS) * multiplier
 
 
-def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, latest_time: str | None = None) -> dict:
+def export_system_workflow(
+    db: ForecastDB,
+    output_dir: str,
+    db_health: dict,
+    latest_time: str | None = None,
+    observation_freshness: dict | None = None,
+) -> dict:
     now = datetime.now(timezone.utc)
     model_filter = _model_placeholders()
     current_rows = pd.read_sql_query(f"""
@@ -608,6 +753,7 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
             "qm_cdfs_enabled": db_health.get("qm_cdfs_enabled"),
             "active_model_count": int(len(freshness)),
             "historical_model_count": int(len(historical_coverage)),
+            "observation_verification_status": (observation_freshness or {}).get("verification_status", "unknown"),
         },
         "pipeline_stages": [
             {"name": "Open-Meteo fetch", "output": "current 16-day model forecasts"},
@@ -620,6 +766,7 @@ def export_system_workflow(db: ForecastDB, output_dir: str, db_health: dict, lat
             {"name": "Dashboard export", "output": "static JSON under docs/data"},
         ],
         "model_freshness": freshness,
+        "observation_freshness": observation_freshness or {},
         "model_registry": registry_payload(),
         "historical_coverage": historical_coverage,
         "lead_bucket_rows_current": lead_bucket_rows,
@@ -659,6 +806,7 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
     os.makedirs(output_dir, exist_ok=True)
     
     # 0. Database Health Checker
+    export_now = datetime.now(timezone.utc)
     db_path = db.conn.execute("PRAGMA database_list").fetchall()[0][2]
     db_size_bytes = os.path.getsize(db_path) if db_path and os.path.exists(db_path) else 0
     model_filter = _model_placeholders()
@@ -711,6 +859,8 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         f"SELECT MAX(scraped_at) FROM openmeteo_forecasts WHERE run_init_utc <> 'historical_forecast_api' AND lead_hours >= 0 AND model IN ({model_filter})",
         _model_params()
     ).fetchone()[0]
+    observation_freshness = _observation_freshness(db, export_now)
+    verification_frozen = observation_freshness.get("verification_status") == "frozen"
     db_health = {
         "size_mb": round(db_size_bytes / (1024 * 1024), 2),
         "current_forecast_records": forecast_count,
@@ -725,7 +875,8 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         "qm_artifact_status": qm_artifact_status or {},
         "latest_model_run_init_utc": latest_model_run_init,
         "latest_data_pull_utc": latest_data_pull_utc,
-        "last_sync_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        "last_sync_utc": export_now.strftime("%Y-%m-%d %H:%M:%S"),
+        "observation_freshness": observation_freshness,
     }
     existing_db_health = _load_json_file(os.path.join(output_dir, "db_health.json")) or {}
     existing_obs_count = int(existing_db_health.get("observation_records") or 0)
@@ -741,6 +892,8 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         
     # 1. Calculate Weights & Metrics
     log.info("Calculating dynamic weights from recent observations...")
+    if verification_frozen:
+        log.warning("Hourly AWOS is stale; freezing verification-driven weights, metrics, and residual promotion")
     weighter = AdvancedEnsembleWeighter()    
     global_weights = {}
     global_metrics = {
@@ -762,7 +915,7 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         global_weights[param] = {m: 1.0/len(MODELS) for m in MODELS}
         
         # Native LONG format from DB
-        df_long_60d = db.get_verification_pairs(param, start_str, end_str)
+        df_long_60d = pd.DataFrame() if verification_frozen else db.get_verification_pairs(param, start_str, end_str)
         is_circular = (param == "Wind Dir.")
         
         # --- LOOKBACK METRICS CALCULATION ---
@@ -927,7 +1080,9 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
     
     if not latest_time:
         log.warning("No forecasts found in DB.")
-        workflow = export_system_workflow(db, output_dir, db_health, latest_time=None)
+        workflow = export_system_workflow(
+            db, output_dir, db_health, latest_time=None, observation_freshness=observation_freshness
+        )
         db_health["model_freshness"] = workflow.get("model_freshness", [])
         with open(os.path.join(output_dir, "db_health.json"), "w") as f:
             json.dump(db_health, f, indent=2)
@@ -953,7 +1108,9 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
           AND m.model IN ({model_filter})
     """
     df_fcst = pd.read_sql_query(query_fcst, db.conn, params=_model_params(2))
-    workflow = export_system_workflow(db, output_dir, db_health, latest_time=latest_time)
+    workflow = export_system_workflow(
+        db, output_dir, db_health, latest_time=latest_time, observation_freshness=observation_freshness
+    )
     db_health["model_freshness"] = workflow.get("model_freshness", [])
     with open(os.path.join(output_dir, "db_health.json"), "w") as f:
         json.dump(db_health, f, indent=2)
@@ -1195,9 +1352,16 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
     # Generate TAF Intel
     qm_rain_data = {m: qm_mapper.transform_series(pd.DataFrame(model_data["Rainfall"])[m], model=m).to_dict() for m in model_data["Rainfall"].keys()} if "Rainfall" in model_data else {}
     
+    fresh_models = {
+        row["model"] for row in workflow.get("model_freshness", [])
+        if row.get("status") == "fresh"
+    }
+    taf_reference_utc = _safe_dt(latest_time) or export_now
+    default_selection = _select_default_taf_window(df_fcst, fresh_models, taf_reference_utc)
+
     taf_intel = {}
     for iss in ["2300", "0500", "1100", "1700"]:
-        taf_intel[iss] = generate_tafor(
+        taf = generate_tafor(
             consensus,
             model_data,
             qm_rain_data,
@@ -1205,14 +1369,44 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
             target_issuance=iss,
             event_weight_diagnostics=event_weight_diagnostics,
         )
-    
-    taf_intel["default"] = generate_tafor(
-        consensus,
-        model_data,
-        qm_rain_data,
-        global_weights,
-        event_weight_diagnostics=event_weight_diagnostics,
-    )
+        if taf:
+            provenance = _taf_provenance(
+                df_fcst, fresh_models, workflow.get("model_freshness", []),
+                taf.get("valid_start"), observation_freshness,
+            )
+            taf["provenance"] = provenance
+            taf.setdefault("warnings", [])
+            if provenance["coverage_status"] != "sufficient":
+                taf["warnings"].append(
+                    f"Degraded model coverage: {provenance['fresh_model_count']} fresh models cover the first "
+                    f"{provenance['coverage_hours']} hours; use this issuance cautiously."
+                )
+            if verification_frozen:
+                taf["warnings"].append(
+                    "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen."
+                )
+        taf_intel[iss] = taf
+
+    selected_issuance = default_selection.get("selected_issuance")
+    if selected_issuance and taf_intel.get(selected_issuance):
+        selected = taf_intel[selected_issuance]
+        taf_intel["default"] = {
+            **selected,
+            "warnings": list(selected.get("warnings") or []),
+            "default_selection": default_selection,
+        }
+        taf_intel["default"]["warnings"].append(
+            f"Default guidance selected from the next official {selected_issuance}Z issuance with fresh-model quorum."
+        )
+    else:
+        taf_intel["default"] = {
+            "status": "suppressed",
+            "taf_text": None,
+            "warnings": [default_selection["reason"]],
+            "narration": "Default TAF is withheld until an official issuance window has fresh-model quorum coverage.",
+            "default_selection": default_selection,
+            "provenance": {"coverage_status": "suppressed"},
+        }
     
     # Output Payloads
     out_path = os.path.join(output_dir, "tafor_intel.json")
