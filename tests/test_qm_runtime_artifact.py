@@ -81,3 +81,42 @@ def test_qm_runtime_artifact_round_trip(tmp_path):
     assert correction["correction_layer_used"] == "historical_prior"
     assert correction["final_value"] == 26.0
     target.close()
+
+
+def test_operational_residual_requires_explicit_promotion(tmp_path):
+    db_path = tmp_path / "layers.sqlite"
+    conn = sqlite3.connect(db_path)
+    _ensure_qm_schema(conn)
+    columns = """
+        model, parameter, lead_bucket, fcst_quantiles, obs_quantiles,
+        n_samples, trained_at, enabled, method, low_confidence, metadata,
+        source_type, correction_layer, regime, deprecated
+    """
+    conn.execute(f"""
+        INSERT INTO qm_cdfs ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        "ECMWF_HRES", "temperature", "GLOBAL", json.dumps([20.0, 30.0]), json.dumps([21.0, 31.0]),
+        200, "2026-07-10 00:00:00", 1, "empirical", 0, "{}",
+        "continuous_historical", "historical_prior", "ALL", 0,
+    ))
+    conn.execute(f"""
+        INSERT INTO qm_cdfs ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        "ECMWF_HRES", "temperature", "L5_48plus", json.dumps([20.0, 30.0]), json.dumps([22.0, 32.0]),
+        200, "2026-07-10 00:00:00", 1, "empirical", 0, "{}",
+        "operational_multiinit", "operational_residual", "ALL", 0,
+    ))
+    conn.commit()
+
+    observe_only = apply_qm_with_layers(25.0, "ECMWF_HRES", "temperature", 48.0, conn=conn)
+    assert observe_only["operational_residual_available"] is True
+    assert observe_only["correction_layer_used"] == "historical_prior"
+    assert observe_only["final_value"] == 26.0
+
+    promoted = apply_qm_with_layers(
+        25.0, "ECMWF_HRES", "temperature", 48.0,
+        conn=conn, allow_operational_residual=True,
+    )
+    assert promoted["correction_layer_used"] == "operational_residual"
+    assert promoted["final_value"] == 28.0
+    conn.close()

@@ -9,7 +9,7 @@ import pandas as pd
 from src.db_manager import ForecastDB
 from src.advanced_ensemble_weighter import AdvancedEnsembleWeighter, MODELS, PARAMETERS
 from src.guidance_generator import generate_consensus
-from src.quantile_mapper import QuantileMapper, apply_qm_with_layers
+from src.quantile_mapper import QuantileMapper, apply_qm_with_layers, operational_residual_qm_enabled
 from src.model_registry import freshness_status, model_metadata_dict, registry_payload
 from src.event_window_verification import event_window_metrics, event_window_weight_scores
 from src.operational_residuals import build_operational_residual_state
@@ -1186,6 +1186,8 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         "by_parameter": {},
         "low_confidence": 0,
         "lead_aware_pending": 0,
+        "operational_residual_available": 0,
+        "operational_residual_mode": "enabled" if operational_residual_qm_enabled() else "observe_only",
         "artifact_status": qm_artifact_status or {},
         "historical_prior_label": "Bias-corrected: historical prior, global, not lead-aware",
         "rainfall_note": "Rain occurrence prior may inform risk; rainfall amount correction remains strict/pending.",
@@ -1230,6 +1232,8 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
                     qm_provenance["by_parameter"][param][layer] = qm_provenance["by_parameter"][param].get(layer, 0) + 1
                     if correction.get("low_confidence"):
                         qm_provenance["low_confidence"] += 1
+                    if correction.get("operational_residual_available"):
+                        qm_provenance["operational_residual_available"] += 1
                     if layer == "historical_prior" and float(lh or 0.0) > 6.0:
                         qm_provenance["lead_aware_pending"] += 1
                     record_id = record_id_by_model_time.get((m, ts.strftime("%Y-%m-%d %H:%M:%S")))
@@ -1532,7 +1536,7 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         obs_df = pd.read_sql("SELECT * FROM awos_observations WHERE obs_time >= ? ORDER BY obs_time ASC", db.conn, params=(five_days_ago,))
         if not obs_df.empty:
             obs_df['Datetime'] = pd.to_datetime(obs_df['obs_time']).dt.strftime('%Y-%m-%d %H:00:00')
-            persistency_payload = obs_df[['Datetime', 'temperature', 'dewpoint', 'wind_dir', 'wind_speed', 'rain_1h']].to_dict(orient='records')
+            persistency_payload = obs_df[['Datetime', 'temperature', 'dewpoint', 'pressure', 'wind_dir', 'wind_speed', 'rain_1h']].to_dict(orient='records')
             with open(os.path.join(output_dir, "persistency.json"), "w") as f:
                 json.dump(persistency_payload, f, indent=2)
             log.info("Persistency data exported.")

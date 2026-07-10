@@ -1000,6 +1000,7 @@ function setupPersistency(persData) {
     if(!persData || persData.length === 0) {
         document.getElementById('persistency-temp-chart').innerText = 'No historical observation data found.';
         document.getElementById('persistency-rain-chart').innerText = 'No historical observation data found.';
+        document.getElementById('persistency-pressure-chart').innerText = 'No historical observation data found.';
         return;
     }
     
@@ -1008,6 +1009,7 @@ function setupPersistency(persData) {
     const dew = persData.map(d => d.dewpoint);
     const rain = persData.map(d => d.rain_1h);
     const wind = persData.map(d => d.wind_speed);
+    const pressure = persData.map(d => d.pressure);
 
     // Temp/Dew Chart
     const tempOptions = {
@@ -1046,6 +1048,19 @@ function setupPersistency(persData) {
     };
     document.getElementById('persistency-rain-chart').innerHTML = '';
     new ApexCharts(document.getElementById('persistency-rain-chart'), rainOptions).render();
+
+    const pressureOptions = {
+        series: [{ name: 'Pressure (hPa)', data: pressure }],
+        chart: { type: 'line', height: 260, background: 'transparent', toolbar: { show: false } },
+        stroke: { width: 2, curve: 'smooth' },
+        colors: ['#8b5cf6'],
+        dataLabels: { enabled: false },
+        xaxis: { type: 'datetime', categories: times, labels: { style: { colors: '#94a3b8' } } },
+        yaxis: { title: { text: 'Pressure (hPa)' }, labels: { style: { colors: '#8b5cf6' } } },
+        theme: { mode: 'dark' }
+    };
+    document.getElementById('persistency-pressure-chart').innerHTML = '';
+    new ApexCharts(document.getElementById('persistency-pressure-chart'), pressureOptions).render();
 }
 
 function setupClimatology(clim, valid_start_str) {
@@ -1380,7 +1395,10 @@ function setupQMProvenance(prov) {
             const artifactText = artifact.imported
                 ? ` Runtime artifact loaded (${Number(artifact.imported_cdfs || 0).toLocaleString()} CDF rows).`
                 : '';
-            note.innerText = `${Number(prov.lead_aware_pending || 0).toLocaleString()} values are using historical prior while lead-aware residual QM is still pending.${artifactText} Rain amount correction remains strict/pending; occurrence risk is handled separately.`;
+            const residualText = prov.operational_residual_mode === 'observe_only'
+                ? ` ${Number(prov.operational_residual_available || 0).toLocaleString()} values have an operational residual available, but residual QM is observe-only and not applied.`
+                : '';
+            note.innerText = `${Number(prov.lead_aware_pending || 0).toLocaleString()} values are using historical prior while lead-aware residual QM is still pending.${residualText}${artifactText} Rain amount correction remains strict/pending; occurrence risk is handled separately.`;
         }
     }
 }

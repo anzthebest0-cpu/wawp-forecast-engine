@@ -71,6 +71,17 @@ try:
 except ModuleNotFoundError:
     scipy_stats = None
 
+
+def operational_residual_qm_enabled() -> bool:
+    """Return whether lead-aware operational residuals may alter forecasts.
+
+    Residual diagnostics are observe-only by default. Promotion requires an
+    explicit deployment setting after review, not simply an enabled CDF.
+    """
+    return os.getenv("WAWP_ENABLE_OPERATIONAL_RESIDUAL_QM", "0").strip().lower() in {
+        "1", "true", "yes", "on"
+    }
+
 # ---------------------------------------------------------------------------
 # Paths — mirror config.py conventions (no config import to keep this module
 # self-contained and importable without the full pipeline).
@@ -1019,7 +1030,14 @@ def load_multiparam_qm(conn, model: str, parameter: str, lead_hours: float) -> d
     )
 
 
-def apply_qm_with_layers(value: float, model: str, parameter: str, lead_hours: float, conn=None) -> dict:
+def apply_qm_with_layers(
+    value: float,
+    model: str,
+    parameter: str,
+    lead_hours: float,
+    conn=None,
+    allow_operational_residual: bool | None = None,
+) -> dict:
     raw_value = value
     result = {
         "raw_value": raw_value,
@@ -1031,6 +1049,7 @@ def apply_qm_with_layers(value: float, model: str, parameter: str, lead_hours: f
         "correction_layer_used": "raw",
         "low_confidence": False,
         "lead_bucket": _lead_bucket(lead_hours, parameter),
+        "operational_residual_available": False,
     }
     if conn is None or value is None or pd.isna(value):
         return result
@@ -1052,7 +1071,10 @@ def apply_qm_with_layers(value: float, model: str, parameter: str, lead_hours: f
     op = _load_qm_by_bucket(
         conn, model, parameter, result["lead_bucket"], SOURCE_OPERATIONAL, LAYER_OPERATIONAL
     )
-    if op:
+    result["operational_residual_available"] = bool(op)
+    if allow_operational_residual is None:
+        allow_operational_residual = operational_residual_qm_enabled()
+    if op and allow_operational_residual:
         current = apply_qm_value(current, parameter, op)
         result.update({
             "operational_residual_value": current,
