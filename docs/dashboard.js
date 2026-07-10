@@ -51,7 +51,8 @@ async function loadDashboard() {
         ]);
         
         const intelData = results[0].status === 'fulfilled' ? results[0].value : {};
-        let currentIssuance = "2300";
+        const hasValidatedDefault = intelData.default?.default_selection?.selection_status === 'selected';
+        let currentIssuance = hasValidatedDefault ? "default" : "2300";
         let intel = intelData[currentIssuance] || intelData || {};
         const weights = results[1].status === 'fulfilled' ? results[1].value : {weights: {}};
         const perf = results[2].status === 'fulfilled' ? results[2].value : null;
@@ -261,6 +262,18 @@ async function loadDashboard() {
         
         const tafSelect = document.getElementById('taf-issuance-select');
         if(tafSelect) {
+            const defaultSelection = intelData.default?.default_selection;
+            const selectedIssuance = defaultSelection?.selected_issuance;
+            const defaultOption = tafSelect.querySelector('option[value="default"]');
+            if (defaultOption && selectedIssuance) {
+                defaultOption.textContent = `Validated Default (${selectedIssuance}Z)`;
+            } else if (defaultOption && defaultSelection?.selection_status === 'suppressed') {
+                defaultOption.textContent = 'Validated Default (suppressed)';
+            } else if (defaultOption) {
+                defaultOption.textContent = 'Validated Default (awaiting pipeline)';
+                defaultOption.disabled = true;
+            }
+            tafSelect.value = currentIssuance;
             tafSelect.addEventListener('change', (e) => {
                 currentIssuance = e.target.value;
                 if(intelData[currentIssuance]) {
