@@ -46,26 +46,43 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view latest-db > /dev/null 2>&1; then
+            asset_name="$(gh release view latest-db --json assets --jq '[.assets[] | select(.name | test("^wawp_forecasts(?:-[0-9]+-[0-9]+)?\\.db$"))] | sort_by(.updatedAt) | last | .name // empty')"
+            if [ -z "$asset_name" ]; then
+              echo "Rolling release latest-db exists but contains no recoverable forecast database asset."
+              echo "Restore a verified local database to the release before running the pipeline again."
+              exit 1
+            fi
             echo "Restoring rolling forecast database from release"
-            gh release download latest-db --pattern wawp_forecasts.db --dir . --clobber
+            gh release download latest-db --pattern "$asset_name" --dir . --clobber
+            if [ "$asset_name" != "wawp_forecasts.db" ]; then
+              mv "$asset_name" wawp_forecasts.db
+            fi
             test -s wawp_forecasts.db
             python -c "import sqlite3, sys; db = sqlite3.connect('wawp_forecasts.db'); result = db.execute('PRAGMA integrity_check').fetchone()[0]; db.close(); print('SQLite integrity:', result); sys.exit(0 if result == 'ok' else 1)"
+            echo "RESTORED_DB_ASSET=$asset_name" >> "$GITHUB_ENV"
           else
             echo "No rolling database release exists; creating the one-time bootstrap release"
             gh release create latest-db --title "Latest Forecast Database" --notes "Rolling database archive created by the WAWP pipeline."
+            echo "RESTORED_DB_ASSET=" >> "$GITHUB_ENV"
           fi
 
       - name: Run Pipeline
         run: python run_pipeline.py
 
       - name: Validate and Upload Database to Release
+        timeout-minutes: 45
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           test -s wawp_forecasts.db
           python -c "import sqlite3, sys; db = sqlite3.connect('wawp_forecasts.db'); result = db.execute('PRAGMA integrity_check').fetchone()[0]; db.close(); print('SQLite integrity:', result); sys.exit(0 if result == 'ok' else 1)"
-          gh release upload latest-db wawp_forecasts.db --clobber
+          asset_name="wawp_forecasts-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.db"
+          cp wawp_forecasts.db "$asset_name"
+          gh release upload latest-db "$asset_name"
+          if [ -n "${RESTORED_DB_ASSET:-}" ] && [ "$RESTORED_DB_ASSET" != "$asset_name" ]; then
+            gh release delete-asset latest-db "$RESTORED_DB_ASSET" --yes || echo "Could not remove prior database asset; it remains as a fallback."
+          fi
 
       - name: Commit and Push Dashboard Data
         run: |
