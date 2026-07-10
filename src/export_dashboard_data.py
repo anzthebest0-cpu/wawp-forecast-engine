@@ -265,9 +265,12 @@ def _aviation_visibility_consensus(row: pd.Series, weights: dict[str, float]) ->
     }
     def has_restricted_consensus(limit: float, probability_threshold: float) -> bool:
         supporting_models = sum(1 for v in values if v < limit)
-        if supporting_models >= 2:
-            return True
-        return len(values) >= 5 and probs[int(limit)] >= probability_threshold
+        # Two outlier models must not create a prevailing aviation restriction.
+        # With the usual eight-model ensemble, require three models as well as
+        # the configured weighted support. Small ensembles still require every
+        # available source to agree through the weighted threshold.
+        minimum_models = 2 if len(values) <= 3 else 3
+        return supporting_models >= minimum_models and probs[int(limit)] >= probability_threshold
 
     if has_restricted_consensus(800.0, 0.50):
         return min(_weighted_quantile(values, w, 0.25), 800.0)

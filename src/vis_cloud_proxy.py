@@ -271,14 +271,11 @@ def estimate_cloud_group_with_pressure(rh_pct, temp_c, dewpoint_c,
         base_ft = max(18000.0, min(25000.0, lcl_ft))
     else:
         base_ft = lcl_ft
-        weak_low_cloud = (
-            amount == "FEW"
-            and low_pct < 26.0
-            and rain_mmh <= 0.1
-            and vis_m >= 9999.0
-            and rh_pct < 92.0
-        )
-        if weak_low_cloud:
+        # We have cloud amount but no direct cloud-base forecast. Do not create
+        # a sub-1000 ft prevailing ceiling from the LCL proxy alone unless rain
+        # or genuinely restricted visibility independently supports it.
+        proxy_only_low_ceiling = rain_mmh <= 0.1 and vis_m >= 800.0
+        if proxy_only_low_ceiling:
             base_ft = max(base_ft, 1000.0)
 
     base_hundreds = int(round(max(100.0, base_ft) / 100.0))
@@ -311,11 +308,17 @@ def build_hourly_vis_cloud(consensus_hour, pressure_history):
     except (TypeError, ValueError):
         model_vis_m = None
 
-    fog_or_rain_risk = R > 0.1 or (RH >= 90.0 and (T - Td) <= 3.0)
+    fog_risk = RH >= 90.0 and (T - Td) <= 3.0
     if model_vis_m is None:
-        vis_m = proxy_vis_m
-    elif fog_or_rain_risk:
+        # A thermodynamic proxy can flag fog risk, but cannot alone support a
+        # prevailing sub-800 m restriction when no model visibility exists.
+        vis_m = proxy_vis_m if R > 0.1 else max(proxy_vis_m, 800.0)
+    elif R > 0.1:
         vis_m = min(model_vis_m, proxy_vis_m)
+    elif fog_risk and model_vis_m < 5000.0:
+        # Retain a model-supported fog restriction, but reserve sub-800 m
+        # values for direct model visibility support rather than the proxy.
+        vis_m = min(model_vis_m, max(proxy_vis_m, 800.0))
     else:
         vis_m = model_vis_m
 

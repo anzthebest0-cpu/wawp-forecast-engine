@@ -1,7 +1,8 @@
 import pandas as pd
 
+from src.export_dashboard_data import _aviation_visibility_consensus
 from src.tafor_generator import _build_taf_text, generate_tafor
-from src.vis_cloud_proxy import estimate_visibility, get_weather_phenomenon
+from src.vis_cloud_proxy import build_hourly_vis_cloud, estimate_visibility, get_weather_phenomenon
 
 
 def test_cavok_not_emitted_during_light_rain():
@@ -17,6 +18,30 @@ def test_cavok_not_emitted_during_light_rain():
 def test_visibility_boundary_and_rain_wx():
     assert abs(estimate_visibility(0.49, 85, 28, 24, 5, 1013, 0) - estimate_visibility(0.50, 85, 28, 24, 5, 1013, 0)) < 1500
     assert get_weather_phenomenon(0.5, 70, 30, 20, 3000, 14) == "-RA"
+
+
+def test_two_visibility_outliers_cannot_create_prevailing_restriction():
+    row = pd.Series({"A": 50.0, "B": 100.0, "C": 9999.0, "D": 9999.0, "E": 9999.0, "F": 9999.0, "G": 9999.0, "H": 9999.0})
+    weights = {model: 1 / len(row) for model in row.index}
+    assert _aviation_visibility_consensus(row, weights) == 9999.0
+
+
+def test_proxy_alone_cannot_create_extreme_fog_or_low_ceiling():
+    vis, cloud = build_hourly_vis_cloud({
+        "temp_c": 25.0,
+        "dewpoint_c": 25.0,
+        "relative_humidity_pct": 100.0,
+        "rain": 0.0,
+        "spd": 0.4,
+        "pressure_hpa": 1011.0,
+        "month": 7,
+        "model_visibility_m": 9999.0,
+        "low_clouds": 95.0,
+        "mid_clouds": 0.0,
+        "high_clouds": 0.0,
+    }, [1011.0, 1011.0, 1011.0])
+    assert vis == "9999"
+    assert cloud == "OVC010"
 
 
 def test_generate_tafor_base_group_has_wx_when_vis_low():
@@ -42,6 +67,17 @@ def test_generate_tafor_base_group_has_wx_when_vis_low():
     weights = {"Rainfall": {m: 1 / len(models) for m in models}}
     taf = generate_tafor(df, model_data, qm_rain, weights, target_issuance="2300")
     assert taf["base_group"]["wx"] in {"-RA", "RA", "+RA", "TSRA"}
+
+
+def test_sub_one_knot_consensus_rounds_to_one_knot_not_calm():
+    df = _base_consensus_frame()
+    df["Wind"] = 0.8
+    models = ["ECMWF_HRES", "GFS_GLOBAL"]
+    model_data = {"Rainfall": {model: pd.Series([0.0] * len(df)) for model in models}}
+    qm_rain = {model: {index: 0.0 for index in range(len(df))} for model in models}
+    weights = {"Rainfall": {model: 0.5 for model in models}}
+    taf = generate_tafor(df, model_data, qm_rain, weights, target_issuance="2300")
+    assert "09001KT" in taf["taf_text"]
 
 
 def _event_diag(param, models):

@@ -1,5 +1,6 @@
 import os
 import json
+import math
 from datetime import datetime, timedelta
 import pandas as pd
 from src.taf_core import RainConfig, _build_change_groups
@@ -160,6 +161,15 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
     header = f'FTID40 WAWP {iss_day:02d}{issued_hh}00'
     raw    = header + '\n' + body + '='
     return '\n'.join(' '.join(l.split()).rstrip() for l in raw.splitlines())
+
+
+def _format_wind_speed(value) -> str:
+    """Round knots conventionally; truncation incorrectly made 0.5-0.9 kt calm."""
+    try:
+        return f"{max(0, int(math.floor(float(value) + 0.5))):02d}"
+    except (TypeError, ValueError):
+        return "00"
+
 
 def _generate_narration(bg: dict, trends: list) -> str:
     vis = bg.get('vis', '9999')
@@ -383,8 +393,8 @@ def generate_tafor(
         
     best_guess = {
         'dir': d_str,
-        'spd': f"{int(first_row['spd']):02d}" if pd.notna(first_row.get('spd')) else "00",
-        'gust': f"{int(first_row['gust']):02d}" if pd.notna(first_row.get('gust')) else "00",
+        'spd': _format_wind_speed(first_row.get('spd')),
+        'gust': _format_wind_speed(first_row.get('gust')),
         'vis': first_row['vis'],
         'wx': base_wx,
         'cloud': first_row['cloud'],
