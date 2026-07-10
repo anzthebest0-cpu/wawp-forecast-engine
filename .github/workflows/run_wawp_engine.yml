@@ -15,6 +15,12 @@ permissions:
   pages: write
   id-token: write
 
+# The rolling release asset is a shared mutable archive. Never let two runners
+# download the same copy and race to replace it.
+concurrency:
+  group: wawp-engine-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
@@ -38,10 +44,28 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download latest-db -n wawp_forecasts.db || echo "Release not found, starting fresh or using local db"
+          set -euo pipefail
+          if gh release view latest-db > /dev/null 2>&1; then
+            echo "Restoring rolling forecast database from release"
+            gh release download latest-db -n wawp_forecasts.db --clobber
+            test -s wawp_forecasts.db
+            python -c "import sqlite3, sys; db = sqlite3.connect('wawp_forecasts.db'); result = db.execute('PRAGMA integrity_check').fetchone()[0]; db.close(); print('SQLite integrity:', result); sys.exit(0 if result == 'ok' else 1)"
+          else
+            echo "No rolling database release exists; creating the one-time bootstrap release"
+            gh release create latest-db --title "Latest Forecast Database" --notes "Rolling database archive created by the WAWP pipeline."
+          fi
 
       - name: Run Pipeline
         run: python run_pipeline.py
+
+      - name: Validate and Upload Database to Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test -s wawp_forecasts.db
+          python -c "import sqlite3, sys; db = sqlite3.connect('wawp_forecasts.db'); result = db.execute('PRAGMA integrity_check').fetchone()[0]; db.close(); print('SQLite integrity:', result); sys.exit(0 if result == 'ok' else 1)"
+          gh release upload latest-db wawp_forecasts.db --clobber
 
       - name: Commit and Push Dashboard Data
         run: |
@@ -63,12 +87,6 @@ jobs:
             git commit -m "chore: auto-update dashboard data"
             git push
           fi
-
-      - name: Upload Database to Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release upload latest-db wawp_forecasts.db --clobber || gh release create latest-db wawp_forecasts.db -t "Latest Forecast Database" -n "Rolling release asset"
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
