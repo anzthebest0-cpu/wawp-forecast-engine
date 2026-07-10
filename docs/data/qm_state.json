@@ -3,7 +3,7 @@
   "vote_thr": 1.0,
   "n_quantiles": 20,
   "min_samples": 10,
-  "saved_at": "2026-07-10T16:59:18.128815+00:00",
+  "saved_at": "2026-07-10T19:58:47.621128+00:00",
   "models": {
     "ECMWF_HRES": {
       "fc_quantiles": [
@@ -21,7 +21,7 @@
       "obs_max": 20.0,
       "source": "seed",
       "n_pairs": 0,
-      "fitted_at": "2026-07-10T16:59:18.114918+00:00"
+      "fitted_at": "2026-07-10T19:58:47.608911+00:00"
     },
     "GFS_GLOBAL": {
       "fc_quantiles": [
@@ -39,7 +39,7 @@
       "obs_max": 20.0,
       "source": "seed",
       "n_pairs": 0,
-      "fitted_at": "2026-07-10T16:59:18.116689+00:00"
+      "fitted_at": "2026-07-10T19:58:47.610473+00:00"
     },
     "ICON_SEAMLESS": {
       "fc_quantiles": [
@@ -89,7 +89,7 @@
       "obs_max": 12.0,
       "source": "empirical",
       "n_pairs": 10,
-      "fitted_at": "2026-07-10T16:59:18.118881+00:00"
+      "fitted_at": "2026-07-10T19:58:47.612404+00:00"
     },
     "GEM_GLOBAL": {
       "fc_quantiles": [
@@ -139,7 +139,7 @@
       "obs_max": 12.0,
       "source": "empirical",
       "n_pairs": 15,
-      "fitted_at": "2026-07-10T16:59:18.121073+00:00"
+      "fitted_at": "2026-07-10T19:58:47.614353+00:00"
     },
     "CMA_GRAPES_GLOBAL": {
       "fc_quantiles": [
@@ -189,7 +189,7 @@
       "obs_max": 12.0,
       "source": "empirical",
       "n_pairs": 13,
-      "fitted_at": "2026-07-10T16:59:18.123249+00:00"
+      "fitted_at": "2026-07-10T19:58:47.616248+00:00"
     },
     "METEOFRANCE_ARPEGE_WORLD": {
       "fc_quantiles": [
@@ -207,7 +207,7 @@
       "obs_max": 20.0,
       "source": "seed",
       "n_pairs": 0,
-      "fitted_at": "2026-07-10T16:59:18.126661+00:00"
+      "fitted_at": "2026-07-10T19:58:47.619220+00:00"
     },
     "UKMO_GLOBAL_10KM": {
       "fc_quantiles": [
@@ -257,7 +257,7 @@
       "obs_max": 28.0,
       "source": "empirical",
       "n_pairs": 13,
-      "fitted_at": "2026-07-10T16:59:18.128785+00:00"
+      "fitted_at": "2026-07-10T19:58:47.621097+00:00"
     }
   }
 }

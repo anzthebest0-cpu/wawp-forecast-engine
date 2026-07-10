@@ -10,10 +10,10 @@
     "METEOFRANCE_ARPEGE_WORLD",
     "UKMO_GLOBAL_10KM"
   ],
-  "operational_forecast_rows": 52680,
+  "operational_forecast_rows": 55752,
   "dashboard_export_skipped": false,
   "awos_stale": false,
-  "last_run_utc": "2026-07-10 16:59:04",
+  "last_run_utc": "2026-07-10 19:58:34",
   "last_error": null,
   "openmeteo_error": null,
   "awos_error": null,
@@ -25,6 +25,6 @@
     "enabled_cdfs": 39,
     "degraded": false,
     "reason": null,
-    "replaced_existing_cdfs": 145
+    "replaced_existing_cdfs": 272
   }
 }

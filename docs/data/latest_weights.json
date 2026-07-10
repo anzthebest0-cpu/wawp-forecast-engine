@@ -1,80 +1,80 @@
 {
   "metadata": {
-    "updated_at": "2026-07-10 16:59:02",
+    "updated_at": "2026-07-10 19:58:32",
     "event_weight_diagnostics": {
       "Rainfall": {
         "applied": true,
         "reason": "event-window skill blended into event-sensitive weights",
         "min_events": 10,
         "event_weights": {
-          "ECMWF_HRES": 0.113986,
-          "GFS_GLOBAL": 0.037695,
-          "ICON_SEAMLESS": 0.098129,
-          "GEM_GLOBAL": 0.168709,
-          "CMA_GRAPES_GLOBAL": 0.0308,
+          "ECMWF_HRES": 0.113989,
+          "GFS_GLOBAL": 0.037628,
+          "ICON_SEAMLESS": 0.098083,
+          "GEM_GLOBAL": 0.16875,
+          "CMA_GRAPES_GLOBAL": 0.030731,
           "JMA_GSM": 0.0,
-          "METEOFRANCE_ARPEGE_WORLD": 0.204972,
-          "UKMO_GLOBAL_10KM": 0.345711
+          "METEOFRANCE_ARPEGE_WORLD": 0.205026,
+          "UKMO_GLOBAL_10KM": 0.345793
         },
         "model_scores": {
           "ECMWF_HRES": {
             "eligible": true,
             "reason": "usable event-window skill",
-            "score": 0.143364,
+            "score": 0.143319,
             "observed_events": 61,
             "forecast_events": 43,
-            "pm0h_hss": 0.1338,
+            "pm0h_hss": 0.1337,
             "pm1h_hss": 0.2697,
             "pm2h_hss": 0.4332,
-            "block_hss": 0.275,
+            "block_hss": 0.2749,
             "pm2h_far": 0.5
           },
           "GFS_GLOBAL": {
             "eligible": true,
             "reason": "usable event-window skill",
-            "score": 0.04741,
+            "score": 0.04731,
             "observed_events": 61,
             "forecast_events": 97,
-            "pm0h_hss": 0.0793,
-            "pm1h_hss": 0.1956,
-            "pm2h_hss": 0.3884,
-            "block_hss": 0.2403,
+            "pm0h_hss": 0.0792,
+            "pm1h_hss": 0.1955,
+            "pm2h_hss": 0.3883,
+            "block_hss": 0.2402,
             "pm2h_far": 0.6818
           },
           "ICON_SEAMLESS": {
             "eligible": true,
             "reason": "usable event-window skill",
-            "score": 0.12342,
+            "score": 0.12332,
             "observed_events": 61,
             "forecast_events": 68,
-            "pm0h_hss": 0.1862,
-            "pm1h_hss": 0.2709,
-            "pm2h_hss": 0.3342,
-            "block_hss": 0.3009,
+            "pm0h_hss": 0.1861,
+            "pm1h_hss": 0.2708,
+            "pm2h_hss": 0.3341,
+            "block_hss": 0.3008,
             "pm2h_far": 0.6875
           },
           "GEM_GLOBAL": {
             "eligible": true,
             "reason": "usable event-window skill",
-            "score": 0.212191,
+            "score": 0.212171,
             "observed_events": 61,
             "forecast_events": 98,
             "pm0h_hss": 0.2165,
             "pm1h_hss": 0.3541,
             "pm2h_hss": 0.4552,
-            "block_hss": 0.3865,
+            "block_hss": 0.3864,
             "pm2h_far": 0.6279
           },
           "CMA_GRAPES_GLOBAL": {
             "eligible": true,
             "reason": "usable event-window skill",
-            "score": 0.038738,
+            "score": 0.038638,
             "observed_events": 61,
             "forecast_events": 139,
-            "pm0h_hss": 0.1189,
-            "pm1h_hss": 0.2114,
-            "pm2h_hss": 0.2866,
-            "block_hss": 0.2751,
+            "pm0h_hss": 0.1188,
+            "pm1h_hss": 0.2113,
+            "pm2h_hss": 0.2865,
+            "block_hss": 0.275,
             "pm2h_far": 0.7949
           },
           "JMA_GSM": {
@@ -92,25 +92,25 @@
           "METEOFRANCE_ARPEGE_WORLD": {
             "eligible": true,
             "reason": "usable event-window skill",
-            "score": 0.257801,
+            "score": 0.257781,
             "observed_events": 61,
             "forecast_events": 45,
             "pm0h_hss": 0.2394,
             "pm1h_hss": 0.3511,
             "pm2h_hss": 0.4785,
-            "block_hss": 0.3274,
+            "block_hss": 0.3273,
             "pm2h_far": 0.45
           },
           "UKMO_GLOBAL_10KM": {
             "eligible": true,
             "reason": "usable event-window skill",
-            "score": 0.434813,
+            "score": 0.434768,
             "observed_events": 61,
             "forecast_events": 74,
-            "pm0h_hss": 0.3372,
+            "pm0h_hss": 0.3371,
             "pm1h_hss": 0.5141,
             "pm2h_hss": 0.6832,
-            "block_hss": 0.5037,
+            "block_hss": 0.5036,
             "pm2h_far": 0.3667
           }
         },
@@ -122,25 +122,25 @@
         "reason": "event-window skill blended into event-sensitive weights",
         "min_events": 10,
         "event_weights": {
-          "ECMWF_HRES": 0.857643,
+          "ECMWF_HRES": 0.857869,
           "GFS_GLOBAL": 0.0,
           "ICON_SEAMLESS": 0.0,
           "GEM_GLOBAL": 0.0,
-          "CMA_GRAPES_GLOBAL": 0.134972,
+          "CMA_GRAPES_GLOBAL": 0.134916,
           "JMA_GSM": 0.0,
-          "METEOFRANCE_ARPEGE_WORLD": 0.007385,
+          "METEOFRANCE_ARPEGE_WORLD": 0.007215,
           "UKMO_GLOBAL_10KM": 0.0
         },
         "model_scores": {
           "ECMWF_HRES": {
             "eligible": true,
             "reason": "usable event-window skill",
-            "score": 0.029382,
+            "score": 0.02937,
             "observed_events": 16,
             "forecast_events": 23,
             "pm0h_hss": -0.0074,
-            "pm1h_hss": 0.0987,
-            "pm2h_hss": 0.194,
+            "pm1h_hss": 0.0986,
+            "pm2h_hss": 0.1939,
             "block_hss": 0.0872,
             "pm2h_far": 0.8571
           },
@@ -153,7 +153,7 @@
             "pm0h_hss": -0.0106,
             "pm1h_hss": -0.0044,
             "pm2h_hss": -0.0044,
-            "block_hss": -0.0179,
+            "block_hss": -0.018,
             "pm2h_far": 0.9969
           },
           "ICON_SEAMLESS": {
@@ -163,9 +163,9 @@
             "observed_events": 16,
             "forecast_events": 193,
             "pm0h_hss": 0.0031,
-            "pm1h_hss": 0.0166,
-            "pm2h_hss": 0.0166,
-            "block_hss": 0.0123,
+            "pm1h_hss": 0.0165,
+            "pm2h_hss": 0.0165,
+            "block_hss": 0.0122,
             "pm2h_far": 0.9861
           },
           "GEM_GLOBAL": {
@@ -183,13 +183,13 @@
           "CMA_GRAPES_GLOBAL": {
             "eligible": true,
             "reason": "usable event-window skill",
-            "score": 0.004624,
+            "score": 0.004619,
             "observed_events": 16,
             "forecast_events": 284,
-            "pm0h_hss": -0.0012,
+            "pm0h_hss": -0.0013,
             "pm1h_hss": 0.0082,
             "pm2h_hss": 0.0178,
-            "block_hss": 0.0134,
+            "block_hss": 0.0133,
             "pm2h_far": 0.9856
           },
           "JMA_GSM": {
@@ -202,12 +202,12 @@
           "METEOFRANCE_ARPEGE_WORLD": {
             "eligible": true,
             "reason": "usable event-window skill",
-            "score": 0.000253,
+            "score": 0.000247,
             "observed_events": 16,
             "forecast_events": 110,
             "pm0h_hss": -0.0098,
             "pm1h_hss": 0.0208,
-            "pm2h_hss": 0.0505,
+            "pm2h_hss": 0.0504,
             "block_hss": 0.007,
             "pm2h_far": 0.9672
           },
@@ -217,10 +217,10 @@
             "score": 0.0,
             "observed_events": 16,
             "forecast_events": 119,
-            "pm0h_hss": -0.01,
-            "pm1h_hss": -0.01,
-            "pm2h_hss": -0.01,
-            "block_hss": -0.0258,
+            "pm0h_hss": -0.0101,
+            "pm1h_hss": -0.0101,
+            "pm2h_hss": -0.0101,
+            "block_hss": -0.0259,
             "pm2h_far": 1.0
           }
         },
@@ -231,74 +231,74 @@
   },
   "weights": {
     "Temperature": {
-      "CMA_GRAPES_GLOBAL": 0.15087795511173976,
-      "ECMWF_HRES": 0.0,
-      "GEM_GLOBAL": 0.11705908054273954,
-      "GFS_GLOBAL": 0.17351192621947126,
-      "ICON_SEAMLESS": 0.10932528749408887,
-      "JMA_GSM": 9.376654726105105e-18,
-      "METEOFRANCE_ARPEGE_WORLD": 0.0,
-      "UKMO_GLOBAL_10KM": 0.4492257506319607
+      "CMA_GRAPES_GLOBAL": 0.14959801284979882,
+      "ECMWF_HRES": 6.315477654728063e-18,
+      "GEM_GLOBAL": 0.11695976861614894,
+      "GFS_GLOBAL": 0.1736629766946022,
+      "ICON_SEAMLESS": 0.11020865256907274,
+      "JMA_GSM": 5.4108464670604706e-18,
+      "METEOFRANCE_ARPEGE_WORLD": 6.701724678676024e-18,
+      "UKMO_GLOBAL_10KM": 0.4495705892703773
     },
     "Dewpoint": {
-      "ECMWF_HRES": 0.11300688195395125,
-      "GFS_GLOBAL": 0.09350934017735936,
-      "ICON_SEAMLESS": 0.11374118687986308,
-      "GEM_GLOBAL": 0.12266699232142815,
-      "CMA_GRAPES_GLOBAL": 0.12954520951263535,
-      "JMA_GSM": 0.1396273094660818,
-      "METEOFRANCE_ARPEGE_WORLD": 0.13612525483415147,
-      "UKMO_GLOBAL_10KM": 0.15177782485452962
+      "ECMWF_HRES": 0.11302618785359846,
+      "GFS_GLOBAL": 0.09351412661151495,
+      "ICON_SEAMLESS": 0.11374154347292503,
+      "GEM_GLOBAL": 0.12267006053735259,
+      "CMA_GRAPES_GLOBAL": 0.1295305457702878,
+      "JMA_GSM": 0.1395818552910459,
+      "METEOFRANCE_ARPEGE_WORLD": 0.1361260834494314,
+      "UKMO_GLOBAL_10KM": 0.15180959701384378
     },
     "Pressure": {
-      "ECMWF_HRES": 0.12748729493214703,
-      "GFS_GLOBAL": 0.1405397448956672,
-      "ICON_SEAMLESS": 0.1658460418970944,
-      "GEM_GLOBAL": 0.134730344342223,
-      "CMA_GRAPES_GLOBAL": 0.07802813339802074,
-      "JMA_GSM": 0.08056448807280966,
-      "METEOFRANCE_ARPEGE_WORLD": 0.16954901765441566,
-      "UKMO_GLOBAL_10KM": 0.10325493480762228
+      "ECMWF_HRES": 0.12745688322952134,
+      "GFS_GLOBAL": 0.1404701217261991,
+      "ICON_SEAMLESS": 0.16598932399624364,
+      "GEM_GLOBAL": 0.1346830128655154,
+      "CMA_GRAPES_GLOBAL": 0.07804579341596356,
+      "JMA_GSM": 0.08053281683460888,
+      "METEOFRANCE_ARPEGE_WORLD": 0.16954327645482753,
+      "UKMO_GLOBAL_10KM": 0.10327877147712056
     },
     "Rainfall": {
-      "ECMWF_HRES": 0.1267354341562024,
-      "GFS_GLOBAL": 0.015424256269079395,
-      "ICON_SEAMLESS": 0.11805225471137183,
-      "GEM_GLOBAL": 0.09614217862614483,
-      "CMA_GRAPES_GLOBAL": 0.03807609591655968,
-      "JMA_GSM": 0.13123490031664178,
-      "METEOFRANCE_ARPEGE_WORLD": 0.27296506714742724,
-      "UKMO_GLOBAL_10KM": 0.2013698128565727
+      "ECMWF_HRES": 0.12673689364532678,
+      "GFS_GLOBAL": 0.01540376531579016,
+      "ICON_SEAMLESS": 0.11803916641337976,
+      "GEM_GLOBAL": 0.09615418761797778,
+      "CMA_GRAPES_GLOBAL": 0.038055650852360796,
+      "JMA_GSM": 0.1312349986989544,
+      "METEOFRANCE_ARPEGE_WORLD": 0.27298082083944786,
+      "UKMO_GLOBAL_10KM": 0.2013945166167626
     },
     "Wind Speed": {
-      "CMA_GRAPES_GLOBAL": 0.04311581054576831,
+      "CMA_GRAPES_GLOBAL": 0.04306298356536917,
       "ECMWF_HRES": 0.0,
-      "GEM_GLOBAL": 0.44909976361322174,
-      "GFS_GLOBAL": 1.0473138876325797e-17,
-      "ICON_SEAMLESS": 0.2401878776327245,
-      "JMA_GSM": 0.11224631651951399,
-      "METEOFRANCE_ARPEGE_WORLD": 0.11676404448314533,
-      "UKMO_GLOBAL_10KM": 0.03858618720562617
+      "GEM_GLOBAL": 0.44631638992125894,
+      "GFS_GLOBAL": 0.0,
+      "ICON_SEAMLESS": 0.24198715022935752,
+      "JMA_GSM": 0.1139990537576393,
+      "METEOFRANCE_ARPEGE_WORLD": 0.11587811037107805,
+      "UKMO_GLOBAL_10KM": 0.03875631215529701
     },
     "Wind Dir.": {
-      "CMA_GRAPES_GLOBAL": 0.07433643043736451,
-      "ECMWF_HRES": 0.30639426070068426,
-      "GEM_GLOBAL": 0.019277202381093473,
-      "GFS_GLOBAL": 0.2209893421088807,
-      "ICON_SEAMLESS": 0.15053205867285668,
-      "JMA_GSM": 0.005594661672653468,
-      "METEOFRANCE_ARPEGE_WORLD": 0.22287604402646694,
-      "UKMO_GLOBAL_10KM": 0.0
+      "CMA_GRAPES_GLOBAL": 0.07549723125631376,
+      "ECMWF_HRES": 0.30721638273610247,
+      "GEM_GLOBAL": 0.02051032749548067,
+      "GFS_GLOBAL": 0.2208012642898376,
+      "ICON_SEAMLESS": 0.14902027759734146,
+      "JMA_GSM": 0.005730186089393027,
+      "METEOFRANCE_ARPEGE_WORLD": 0.22122433053553037,
+      "UKMO_GLOBAL_10KM": 6.830531319818229e-16
     },
     "Wind Gust": {
-      "ECMWF_HRES": 0.7083572494031719,
+      "ECMWF_HRES": 0.7084140642488266,
       "GFS_GLOBAL": 0.0,
       "ICON_SEAMLESS": 0.0,
-      "GEM_GLOBAL": 0.12650419317402226,
-      "CMA_GRAPES_GLOBAL": 0.04049160000000001,
+      "GEM_GLOBAL": 0.12650719413508837,
+      "CMA_GRAPES_GLOBAL": 0.0404748,
       "JMA_GSM": 0.0,
-      "METEOFRANCE_ARPEGE_WORLD": 0.0717277785309322,
-      "UKMO_GLOBAL_10KM": 0.052919178891873725
+      "METEOFRANCE_ARPEGE_WORLD": 0.07167373533741223,
+      "UKMO_GLOBAL_10KM": 0.05293020627867279
     }
   }
 }
