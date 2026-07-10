@@ -55631,13 +55631,13 @@
     "UKMO_GLOBAL_10KM": "2026-07-07 20:00:00"
   },
   "Data_Pull": {
-    "CMA_GRAPES_GLOBAL": "2026-07-10 07:19:17",
-    "ECMWF_HRES": "2026-07-10 07:19:13",
-    "GEM_GLOBAL": "2026-07-10 07:19:16",
-    "GFS_GLOBAL": "2026-07-10 07:19:14",
-    "ICON_SEAMLESS": "2026-07-10 07:19:15",
-    "JMA_GSM": "2026-07-10 07:19:18",
-    "METEOFRANCE_ARPEGE_WORLD": "2026-07-10 07:19:18",
+    "CMA_GRAPES_GLOBAL": "2026-07-10 07:36:54",
+    "ECMWF_HRES": "2026-07-10 07:36:50",
+    "GEM_GLOBAL": "2026-07-10 07:36:53",
+    "GFS_GLOBAL": "2026-07-10 07:36:51",
+    "ICON_SEAMLESS": "2026-07-10 07:36:52",
+    "JMA_GSM": "2026-07-10 07:36:55",
+    "METEOFRANCE_ARPEGE_WORLD": "2026-07-10 07:36:55",
     "UKMO_GLOBAL_10KM": "2026-07-07 20:23:26"
   },
   "Model_Metadata": {
@@ -55651,7 +55651,7 @@
       "temporal_confidence": "medium",
       "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ.",
       "latest_run_init_utc": "2026-07-10 07:00:00",
-      "latest_data_pull_utc": "2026-07-10 07:19:17"
+      "latest_data_pull_utc": "2026-07-10 07:36:54"
     },
     "ECMWF_HRES": {
       "name": "ECMWF_HRES",
@@ -55663,7 +55663,7 @@
       "temporal_confidence": "medium",
       "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ.",
       "latest_run_init_utc": "2026-07-10 07:00:00",
-      "latest_data_pull_utc": "2026-07-10 07:19:13"
+      "latest_data_pull_utc": "2026-07-10 07:36:50"
     },
     "GEM_GLOBAL": {
       "name": "GEM_GLOBAL",
@@ -55675,7 +55675,7 @@
       "temporal_confidence": "medium",
       "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ.",
       "latest_run_init_utc": "2026-07-10 07:00:00",
-      "latest_data_pull_utc": "2026-07-10 07:19:16"
+      "latest_data_pull_utc": "2026-07-10 07:36:53"
     },
     "GFS_GLOBAL": {
       "name": "GFS_GLOBAL",
@@ -55687,7 +55687,7 @@
       "temporal_confidence": "high",
       "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ.",
       "latest_run_init_utc": "2026-07-10 07:00:00",
-      "latest_data_pull_utc": "2026-07-10 07:19:14"
+      "latest_data_pull_utc": "2026-07-10 07:36:51"
     },
     "ICON_SEAMLESS": {
       "name": "ICON_SEAMLESS",
@@ -55699,7 +55699,7 @@
       "temporal_confidence": "medium",
       "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ.",
       "latest_run_init_utc": "2026-07-10 07:00:00",
-      "latest_data_pull_utc": "2026-07-10 07:19:15"
+      "latest_data_pull_utc": "2026-07-10 07:36:52"
     },
     "JMA_GSM": {
       "name": "JMA_GSM",
@@ -55711,7 +55711,7 @@
       "temporal_confidence": "medium",
       "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ.",
       "latest_run_init_utc": "2026-07-10 07:00:00",
-      "latest_data_pull_utc": "2026-07-10 07:19:18"
+      "latest_data_pull_utc": "2026-07-10 07:36:55"
     },
     "METEOFRANCE_ARPEGE_WORLD": {
       "name": "METEOFRANCE_ARPEGE_WORLD",
@@ -55723,7 +55723,7 @@
       "temporal_confidence": "high",
       "hourly_output_note": "Open-Meteo hourly output grid; native model step/update frequency may differ.",
       "latest_run_init_utc": "2026-07-10 07:00:00",
-      "latest_data_pull_utc": "2026-07-10 07:19:18"
+      "latest_data_pull_utc": "2026-07-10 07:36:55"
     },
     "UKMO_GLOBAL_10KM": {
       "name": "UKMO_GLOBAL_10KM",
