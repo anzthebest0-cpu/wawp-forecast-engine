@@ -1,153 +1,225 @@
 {
   "2300": {
-    "valid_start": "2026-07-11 08:00:00",
+    "valid_start": "2026-07-08 08:00:00",
     "issued_utc": "2300",
-    "issued_day": 10,
+    "issued_day": 7,
     "base_group": {
-      "dir": "100",
-      "spd": "04",
-      "gust": "12",
-      "vis": "9999",
-      "wx": "",
-      "cloud": "FEW012",
+      "dir": "040",
+      "spd": "00",
+      "gust": "00",
+      "vis": "0050",
+      "wx": "BR",
+      "cloud": "OVC010",
       "rain": 0.0,
       "rain_mmh": 0.0,
-      "trends": [],
+      "trends": [
+        {
+          "type": "BECMG",
+          "time_str": "0814/0815",
+          "time_h_start": 14,
+          "time_h_end": 15,
+          "wx": "",
+          "vis": "",
+          "cloud": "BKN004",
+          "dir": "",
+          "spd": "",
+          "gust": "",
+          "rain_mmh": 0.0
+        }
+      ],
       "badge": "MME 2300Z Shift",
       "metrics": {
         "leader_rmse": "N/A",
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 102300\nTAF WAWP 102300Z 1100/1200 10004KT 9999 FEW012=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (4 KT).",
-    "warnings": [],
+    "taf_text": "FTID40 WAWP 072300\nTAF WAWP 072300Z 0800/0900 00000KT 0050 BR OVC010\nBECMG 0814/0815 BKN004=",
+    "narration": "Secara umum cuaca berawan tebal dengan jarak pandang terbatas. Angin dominan bertiup dengan kecepatan ringan hingga sedang (0 KT).",
+    "warnings": [
+      "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.78).",
+      "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL (strength 0.07)."
+    ],
     "event_skill_context": {
       "Rainfall": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
+        "applied": true,
+        "reason": "event-window skill blended into event-sensitive weights",
+        "weighted_score": 0.2714,
+        "weighted_far": 0.4984,
+        "strength": 0.7754,
+        "top_models": [
+          "UKMO_GLOBAL_10KM",
+          "METEOFRANCE_ARPEGE_WORLD",
+          "GEM_GLOBAL"
+        ],
         "min_events": 10,
-        "threshold": null
+        "threshold": 1.5
       },
       "Wind Gust": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
+        "applied": true,
+        "reason": "event-window skill blended into event-sensitive weights",
+        "weighted_score": 0.024,
+        "weighted_far": 0.8778,
+        "strength": 0.0686,
+        "top_models": [
+          "ECMWF_HRES",
+          "CMA_GRAPES_GLOBAL"
+        ],
         "min_events": 10,
-        "threshold": null
+        "threshold": 15.0
       }
     }
   },
   "0500": {
-    "valid_start": "2026-07-10 14:00:00",
+    "valid_start": "2026-07-08 14:00:00",
     "issued_utc": "0500",
-    "issued_day": 10,
+    "issued_day": 8,
     "base_group": {
-      "dir": "210",
-      "spd": "02",
-      "gust": "08",
-      "vis": "9999",
-      "wx": "",
-      "cloud": "SCT040",
+      "dir": "030",
+      "spd": "00",
+      "gust": "00",
+      "vis": "0050",
+      "wx": "HZ",
+      "cloud": "OVC038",
       "rain": 0.0,
       "rain_mmh": 0.0,
-      "trends": [],
+      "trends": [
+        {
+          "type": "BECMG",
+          "time_str": "0810/0811",
+          "time_h_start": 10,
+          "time_h_end": 11,
+          "wx": "",
+          "vis": "",
+          "cloud": "OVC010",
+          "dir": "",
+          "spd": "",
+          "gust": "",
+          "rain_mmh": 0.0
+        }
+      ],
       "badge": "MME 0500Z Shift",
       "metrics": {
         "leader_rmse": "N/A",
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 100500\nTAF WAWP 100500Z 1006/1106 21002KT 9999 SCT040=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (2 KT).",
-    "warnings": [],
+    "taf_text": "FTID40 WAWP 080500\nTAF WAWP 080500Z 0806/0906 00000KT 0050 HZ OVC038\nBECMG 0810/0811 OVC010=",
+    "narration": "Secara umum cuaca berawan tebal dengan jarak pandang terbatas. Angin dominan bertiup dengan kecepatan ringan hingga sedang (0 KT).",
+    "warnings": [
+      "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.78).",
+      "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL (strength 0.07)."
+    ],
     "event_skill_context": {
       "Rainfall": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
+        "applied": true,
+        "reason": "event-window skill blended into event-sensitive weights",
+        "weighted_score": 0.2714,
+        "weighted_far": 0.4984,
+        "strength": 0.7754,
+        "top_models": [
+          "UKMO_GLOBAL_10KM",
+          "METEOFRANCE_ARPEGE_WORLD",
+          "GEM_GLOBAL"
+        ],
         "min_events": 10,
-        "threshold": null
+        "threshold": 1.5
       },
       "Wind Gust": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
+        "applied": true,
+        "reason": "event-window skill blended into event-sensitive weights",
+        "weighted_score": 0.024,
+        "weighted_far": 0.8778,
+        "strength": 0.0686,
+        "top_models": [
+          "ECMWF_HRES",
+          "CMA_GRAPES_GLOBAL"
+        ],
         "min_events": 10,
-        "threshold": null
+        "threshold": 15.0
       }
     }
   },
   "1100": {
-    "valid_start": "2026-07-10 20:00:00",
+    "valid_start": "2026-07-08 20:00:00",
     "issued_utc": "1100",
-    "issued_day": 10,
+    "issued_day": 8,
     "base_group": {
-      "dir": "090",
-      "spd": "03",
-      "gust": "08",
-      "vis": "9999",
-      "wx": "",
-      "cloud": "SCT013",
+      "dir": "040",
+      "spd": "00",
+      "gust": "00",
+      "vis": "0050",
+      "wx": "BR",
+      "cloud": "OVC006",
       "rain": 0.0,
       "rain_mmh": 0.0,
-      "trends": [],
+      "trends": [
+        {
+          "type": "BECMG",
+          "time_str": "0814/0815",
+          "time_h_start": 14,
+          "time_h_end": 15,
+          "wx": "",
+          "vis": "",
+          "cloud": "BKN004",
+          "dir": "",
+          "spd": "",
+          "gust": "",
+          "rain_mmh": 0.0
+        }
+      ],
       "badge": "MME 1100Z Shift",
       "metrics": {
         "leader_rmse": "N/A",
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 101100\nTAF WAWP 101100Z 1012/1112 09003KT 9999 SCT013=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (3 KT).",
-    "warnings": [],
+    "taf_text": "FTID40 WAWP 081100\nTAF WAWP 081100Z 0812/0912 00000KT 0050 BR OVC006\nBECMG 0814/0815 BKN004=",
+    "narration": "Secara umum cuaca berawan tebal dengan jarak pandang terbatas. Angin dominan bertiup dengan kecepatan ringan hingga sedang (0 KT).",
+    "warnings": [
+      "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.78).",
+      "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL (strength 0.07)."
+    ],
     "event_skill_context": {
       "Rainfall": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
+        "applied": true,
+        "reason": "event-window skill blended into event-sensitive weights",
+        "weighted_score": 0.2714,
+        "weighted_far": 0.4984,
+        "strength": 0.7754,
+        "top_models": [
+          "UKMO_GLOBAL_10KM",
+          "METEOFRANCE_ARPEGE_WORLD",
+          "GEM_GLOBAL"
+        ],
         "min_events": 10,
-        "threshold": null
+        "threshold": 1.5
       },
       "Wind Gust": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
+        "applied": true,
+        "reason": "event-window skill blended into event-sensitive weights",
+        "weighted_score": 0.024,
+        "weighted_far": 0.8778,
+        "strength": 0.0686,
+        "top_models": [
+          "ECMWF_HRES",
+          "CMA_GRAPES_GLOBAL"
+        ],
         "min_events": 10,
-        "threshold": null
+        "threshold": 15.0
       }
     }
   },
   "1700": {
-    "valid_start": "2026-07-11 02:00:00",
+    "valid_start": "2026-07-09 02:00:00",
     "issued_utc": "1700",
-    "issued_day": 10,
+    "issued_day": 8,
     "base_group": {
-      "dir": "110",
-      "spd": "04",
-      "gust": "10",
-      "vis": "9999",
-      "wx": "",
-      "cloud": "OVC180",
+      "dir": "040",
+      "spd": "00",
+      "gust": "00",
+      "vis": "0100",
+      "wx": "BR",
+      "cloud": "BKN001",
       "rain": 0.0,
       "rain_mmh": 0.0,
       "trends": [],
@@ -157,75 +229,95 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 101700\nTAF WAWP 101700Z 1018/1118 11004KT CAVOK=",
-    "narration": "Secara umum cuaca berawan tebal dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (4 KT).",
-    "warnings": [],
+    "taf_text": "FTID40 WAWP 081700\nTAF WAWP 081700Z 0818/0918 00000KT 0100 BR BKN001=",
+    "narration": "Secara umum cuaca berawan tebal dengan jarak pandang terbatas. Angin dominan bertiup dengan kecepatan ringan hingga sedang (0 KT).",
+    "warnings": [
+      "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.78).",
+      "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL (strength 0.07)."
+    ],
     "event_skill_context": {
       "Rainfall": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
+        "applied": true,
+        "reason": "event-window skill blended into event-sensitive weights",
+        "weighted_score": 0.2714,
+        "weighted_far": 0.4984,
+        "strength": 0.7754,
+        "top_models": [
+          "UKMO_GLOBAL_10KM",
+          "METEOFRANCE_ARPEGE_WORLD",
+          "GEM_GLOBAL"
+        ],
         "min_events": 10,
-        "threshold": null
+        "threshold": 1.5
       },
       "Wind Gust": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
+        "applied": true,
+        "reason": "event-window skill blended into event-sensitive weights",
+        "weighted_score": 0.024,
+        "weighted_far": 0.8778,
+        "strength": 0.0686,
+        "top_models": [
+          "ECMWF_HRES",
+          "CMA_GRAPES_GLOBAL"
+        ],
         "min_events": 10,
-        "threshold": null
+        "threshold": 15.0
       }
     }
   },
   "default": {
-    "valid_start": "2026-07-10 12:00:00",
-    "issued_utc": "0300",
-    "issued_day": 10,
+    "valid_start": "2026-07-08 04:00:00",
+    "issued_utc": "1900",
+    "issued_day": 7,
     "base_group": {
-      "dir": "140",
-      "spd": "02",
-      "gust": "09",
-      "vis": "9999",
-      "wx": "",
-      "cloud": "SCT042",
+      "dir": "040",
+      "spd": "00",
+      "gust": "00",
+      "vis": "0050",
+      "wx": "BR",
+      "cloud": "BKN001",
       "rain": 0.0,
       "rain_mmh": 0.0,
       "trends": [],
-      "badge": "MME 0300Z Shift",
+      "badge": "MME 1900Z Shift",
       "metrics": {
         "leader_rmse": "N/A",
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 100300\nTAF WAWP 100300Z 1004/1104 14002KT 9999 SCT042=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (2 KT).",
-    "warnings": [],
+    "taf_text": "FTID40 WAWP 071900\nTAF WAWP 071900Z 0720/0820 00000KT 0050 BR BKN001=",
+    "narration": "Secara umum cuaca berawan tebal dengan jarak pandang terbatas. Angin dominan bertiup dengan kecepatan ringan hingga sedang (0 KT).",
+    "warnings": [
+      "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.78).",
+      "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL (strength 0.07)."
+    ],
     "event_skill_context": {
       "Rainfall": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
+        "applied": true,
+        "reason": "event-window skill blended into event-sensitive weights",
+        "weighted_score": 0.2714,
+        "weighted_far": 0.4984,
+        "strength": 0.7754,
+        "top_models": [
+          "UKMO_GLOBAL_10KM",
+          "METEOFRANCE_ARPEGE_WORLD",
+          "GEM_GLOBAL"
+        ],
         "min_events": 10,
-        "threshold": null
+        "threshold": 1.5
       },
       "Wind Gust": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
+        "applied": true,
+        "reason": "event-window skill blended into event-sensitive weights",
+        "weighted_score": 0.024,
+        "weighted_far": 0.8778,
+        "strength": 0.0686,
+        "top_models": [
+          "ECMWF_HRES",
+          "CMA_GRAPES_GLOBAL"
+        ],
         "min_events": 10,
-        "threshold": null
+        "threshold": 15.0
       }
     }
   }
