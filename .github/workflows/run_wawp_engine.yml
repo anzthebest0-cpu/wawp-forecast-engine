@@ -47,7 +47,7 @@ jobs:
           set -euo pipefail
           if gh release view latest-db > /dev/null 2>&1; then
             echo "Restoring rolling forecast database from release"
-            gh release download latest-db -n wawp_forecasts.db --clobber
+            gh release download latest-db --pattern wawp_forecasts.db --dir . --clobber
             test -s wawp_forecasts.db
             python -c "import sqlite3, sys; db = sqlite3.connect('wawp_forecasts.db'); result = db.execute('PRAGMA integrity_check').fetchone()[0]; db.close(); print('SQLite integrity:', result); sys.exit(0 if result == 'ok' else 1)"
           else
