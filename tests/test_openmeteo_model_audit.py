@@ -43,7 +43,8 @@ def test_openmeteo_model_run_audit_records_cadence(tmp_path):
     start = datetime(2026, 7, 6, 8)
     rows = [_row("ECMWF_HRES", start + timedelta(hours=i), scraped_at) for i in range(4)]
 
-    db.ingest_openmeteo_rows(rows)
+    processed = db.ingest_openmeteo_rows(rows)
+    assert processed == 4
     audit = db.conn.execute("""
         SELECT model, row_count, detected_interval_hours, provider_update_frequency_hours,
                expected_output_interval_hours, quality_status

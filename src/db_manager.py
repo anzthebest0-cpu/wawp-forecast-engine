@@ -347,6 +347,12 @@ class ForecastDB:
         return cursor.rowcount
 
     def ingest_openmeteo_rows(self, rows: list[dict]) -> int:
+        """Upsert Open-Meteo forecast rows and return the forecast-row count.
+
+        Run-audit rows are written after the forecast upsert.  Do not use the
+        cursor rowcount after those audit writes: it reports the final audit
+        operation (often one row), not the number of model forecast rows.
+        """
         if not rows:
             return 0
 
@@ -437,7 +443,9 @@ class ForecastDB:
         cursor.executemany(sql, clean_rows)
         self._upsert_openmeteo_run_audits(cursor, clean_rows)
         self.conn.commit()
-        return cursor.rowcount
+        # Every cleaned row is represented by one INSERT or conflict UPDATE.
+        # This deliberately reports forecast rows processed, not audit rows.
+        return len(clean_rows)
 
     def _upsert_openmeteo_run_audits(self, cursor, rows: list[dict]) -> None:
         from src.model_registry import freshness_status, model_metadata_dict

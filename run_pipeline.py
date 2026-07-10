@@ -68,10 +68,10 @@ def run():
 
         try:
             new_count = db.ingest_rows(stacked_rows) if stacked_rows else 0
-            log.info(f"Database ingested {new_count} new rows (duplicates ignored).")
+            log.info(f"Dashboard archive inserted {new_count} new rows (duplicates ignored).")
             if openmeteo_rows:
                 om_count = db.ingest_openmeteo_rows(openmeteo_rows)
-                log.info(f"Open-Meteo database ingested {om_count} new rows.")
+                log.info(f"Open-Meteo operational archive upserted {om_count} forecast rows.")
             elif openmeteo_stale:
                 log.warning("No new Open-Meteo rows ingested; exporter will use the latest archived model data.")
         except Exception as e:
