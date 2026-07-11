@@ -9,6 +9,12 @@ on:
     - cron: '30 12 * * *' # 12:30 UTC -> 20:30 WITA
     - cron: '30 18 * * *' # 18:30 UTC -> 02:30 WITA
   workflow_dispatch:
+    inputs:
+      compact_db_audit:
+        description: 'Build and validate a compact database candidate without changing the rolling release asset'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -68,6 +74,63 @@ jobs:
 
       - name: Run Pipeline
         run: python run_pipeline.py
+
+      # This is deliberately manual and audit-only. It creates a candidate from
+      # the freshly updated database, but the existing release asset is still
+      # uploaded below. A separate reviewed change is required for promotion.
+      - name: Audit Compact Database Candidate
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.compact_db_audit }}
+        run: |
+          set -euo pipefail
+          candidate_dir="artifacts/operational"
+          candidate_db="$candidate_dir/wawp_operational_candidate.db"
+          mkdir -p "$candidate_dir/dashboard_smoke"
+          python src/build_compact_operational_db.py \
+            --source wawp_forecasts.db \
+            --output "$candidate_db"
+          python - <<'PY'
+          import sqlite3
+          from pathlib import Path
+          from types import SimpleNamespace
+
+          from src.export_dashboard_data import export_all
+
+          candidate = Path("artifacts/operational/wawp_operational_candidate.db")
+          output_dir = Path("artifacts/operational/dashboard_smoke")
+          conn = sqlite3.connect(candidate)
+          try:
+              export_all(SimpleNamespace(conn=conn), str(output_dir))
+          finally:
+              conn.close()
+          required = {"db_health.json", "latest_weights.json", "tafor_intel.json", "taf_guidance.json"}
+          missing = sorted(name for name in required if not (output_dir / name).exists())
+          if missing:
+              raise SystemExit(f"Compact-candidate export is missing: {missing}")
+          print("Compact candidate dashboard export smoke test passed")
+          PY
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("artifacts/operational/wawp_operational_candidate.db.report.json").read_text())
+          if not report.get("valid"):
+              raise SystemExit("Compact database candidate did not pass validation")
+          print("COMPACTION_AUDIT=passed")
+          print("SOURCE_BYTES=", report["source_size_bytes"])
+          print("CANDIDATE_BYTES=", report["candidate_size_bytes"])
+          print("RAW_MINUTE_ROWS=", report["raw_minute_source_rows"], "->", report["raw_minute_candidate_rows"])
+          PY
+
+      - name: Upload Compact Database Audit Report
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.compact_db_audit }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: compact-db-audit-${{ github.run_id }}
+          path: |
+            artifacts/operational/*.report.json
+            artifacts/operational/dashboard_smoke/
+          retention-days: 7
+          if-no-files-found: error
 
       - name: Validate and Upload Database to Release
         timeout-minutes: 45

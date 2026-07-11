@@ -43,6 +43,18 @@ The result and its JSON validation report are written below
 `artifacts/operational/`, which is ignored by Git. The builder refuses to
 overwrite an existing candidate unless `--overwrite` is supplied.
 
+## Audit the current GitHub Release database
+
+After this runbook is merged, use **Actions -> WAWP Meteologix Engine -> Run
+workflow**, tick **Build and validate a compact database candidate without
+changing the rolling release asset**, then start the workflow manually.
+
+The runner will first restore and update the normal rolling database. It then
+builds a compact candidate from that fresh database, verifies row parity, and
+runs the dashboard exporter against the candidate. The workflow uploads only
+the small validation report and smoke-test JSON bundle as an Actions artifact
+for seven days. It does not upload the candidate itself or replace `latest-db`.
+
 ## Acceptance checks before release replacement
 
 1. The report says `"valid": true`.
