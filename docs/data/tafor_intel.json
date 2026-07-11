@@ -78,18 +78,18 @@
       "missing_window_hours": [],
       "coverage_status": "sufficient",
       "model_run_age_hours": {
-        "CMA_GRAPES_GLOBAL": 0.0,
+        "CMA_GRAPES_GLOBAL": 0.01,
         "ECMWF_HRES": 0.01,
         "GEM_GLOBAL": 0.01,
         "GFS_GLOBAL": 0.01,
         "ICON_SEAMLESS": 0.01,
-        "JMA_GSM": 0.0,
-        "METEOFRANCE_ARPEGE_WORLD": 0.0,
-        "UKMO_GLOBAL_10KM": 0.0
+        "JMA_GSM": 0.01,
+        "METEOFRANCE_ARPEGE_WORLD": 0.01,
+        "UKMO_GLOBAL_10KM": 0.12
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 13.27
+      "observation_hourly_age_hours": 13.39
     }
   },
   "0500": {
@@ -171,18 +171,18 @@
       "missing_window_hours": [],
       "coverage_status": "sufficient",
       "model_run_age_hours": {
-        "CMA_GRAPES_GLOBAL": 0.0,
+        "CMA_GRAPES_GLOBAL": 0.01,
         "ECMWF_HRES": 0.01,
         "GEM_GLOBAL": 0.01,
         "GFS_GLOBAL": 0.01,
         "ICON_SEAMLESS": 0.01,
-        "JMA_GSM": 0.0,
-        "METEOFRANCE_ARPEGE_WORLD": 0.0,
-        "UKMO_GLOBAL_10KM": 0.0
+        "JMA_GSM": 0.01,
+        "METEOFRANCE_ARPEGE_WORLD": 0.01,
+        "UKMO_GLOBAL_10KM": 0.12
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 13.27
+      "observation_hourly_age_hours": 13.39
     }
   },
   "1100": {
@@ -196,8 +196,8 @@
       "vis": "9999",
       "wx": "",
       "cloud": "FEW014",
-      "rain": 0.012673689364532677,
-      "rain_mmh": 0.012673689364532677,
+      "rain": 0.012673689364532675,
+      "rain_mmh": 0.012673689364532675,
       "trends": [],
       "badge": "MME 1100Z Shift",
       "metrics": {
@@ -264,18 +264,18 @@
       "missing_window_hours": [],
       "coverage_status": "sufficient",
       "model_run_age_hours": {
-        "CMA_GRAPES_GLOBAL": 0.0,
+        "CMA_GRAPES_GLOBAL": 0.01,
         "ECMWF_HRES": 0.01,
         "GEM_GLOBAL": 0.01,
         "GFS_GLOBAL": 0.01,
         "ICON_SEAMLESS": 0.01,
-        "JMA_GSM": 0.0,
-        "METEOFRANCE_ARPEGE_WORLD": 0.0,
-        "UKMO_GLOBAL_10KM": 0.0
+        "JMA_GSM": 0.01,
+        "METEOFRANCE_ARPEGE_WORLD": 0.01,
+        "UKMO_GLOBAL_10KM": 0.12
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 13.27
+      "observation_hourly_age_hours": 13.39
     }
   },
   "1700": {
@@ -357,18 +357,18 @@
       "missing_window_hours": [],
       "coverage_status": "sufficient",
       "model_run_age_hours": {
-        "CMA_GRAPES_GLOBAL": 0.0,
+        "CMA_GRAPES_GLOBAL": 0.01,
         "ECMWF_HRES": 0.01,
         "GEM_GLOBAL": 0.01,
         "GFS_GLOBAL": 0.01,
         "ICON_SEAMLESS": 0.01,
-        "JMA_GSM": 0.0,
-        "METEOFRANCE_ARPEGE_WORLD": 0.0,
-        "UKMO_GLOBAL_10KM": 0.0
+        "JMA_GSM": 0.01,
+        "METEOFRANCE_ARPEGE_WORLD": 0.01,
+        "UKMO_GLOBAL_10KM": 0.12
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 13.27
+      "observation_hourly_age_hours": 13.39
     }
   },
   "default": {
@@ -451,24 +451,24 @@
       "missing_window_hours": [],
       "coverage_status": "sufficient",
       "model_run_age_hours": {
-        "CMA_GRAPES_GLOBAL": 0.0,
+        "CMA_GRAPES_GLOBAL": 0.01,
         "ECMWF_HRES": 0.01,
         "GEM_GLOBAL": 0.01,
         "GFS_GLOBAL": 0.01,
         "ICON_SEAMLESS": 0.01,
-        "JMA_GSM": 0.0,
-        "METEOFRANCE_ARPEGE_WORLD": 0.0,
-        "UKMO_GLOBAL_10KM": 0.0
+        "JMA_GSM": 0.01,
+        "METEOFRANCE_ARPEGE_WORLD": 0.01,
+        "UKMO_GLOBAL_10KM": 0.12
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 13.27
+      "observation_hourly_age_hours": 13.39
     },
     "default_selection": {
       "selection_status": "selected",
       "selected_issuance": "0500",
       "selected_valid_start_wita": "2026-07-11 14:00:00",
-      "reference_utc": "2026-07-11 03:16:12",
+      "reference_utc": "2026-07-11 03:22:53",
       "minimum_fresh_models": 5,
       "coverage_hours": 6,
       "candidates": [
