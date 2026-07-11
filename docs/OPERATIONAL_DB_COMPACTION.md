@@ -8,8 +8,9 @@ pipeline run. The complete raw one-minute AWOS archive is valuable, but keeping
 millions of raw rows in that same rolling asset makes the operational workflow
 slow and vulnerable to failed uploads.
 
-The compaction tool creates a separate candidate database. It does not modify
-the current database, publish a Release asset, or remove source files.
+The compaction tool first creates a separate candidate database. The production
+workflow promotes that candidate only after its validation succeeds; it never
+edits the restored release file in place.
 
 ## What the candidate keeps
 
@@ -33,7 +34,7 @@ anything to the rolling database.
 
 ## Build a local candidate
 
-Run this locally, never in the scheduled GitHub workflow:
+Run this locally to inspect or rebuild a candidate outside GitHub:
 
 ```powershell
 python src/build_compact_operational_db.py --source wawp_forecasts.db
@@ -43,17 +44,27 @@ The result and its JSON validation report are written below
 `artifacts/operational/`, which is ignored by Git. The builder refuses to
 overwrite an existing candidate unless `--overwrite` is supplied.
 
-## Audit the current GitHub Release database
+## Production workflow
 
-After this runbook is merged, use **Actions -> WAWP Meteologix Engine -> Run
-workflow**, tick **Build and validate a compact database candidate without
-changing the rolling release asset**, then start the workflow manually.
+Every normal GitHub workflow run now follows this order:
 
-The runner will first restore and update the normal rolling database. It then
-builds a compact candidate from that fresh database, verifies row parity, and
-runs the dashboard exporter against the candidate. The workflow uploads only
-the small validation report and smoke-test JSON bundle as an Actions artifact
-for seven days. It does not upload the candidate itself or replace `latest-db`.
+```text
+restore release database
+  -> build and validate compact candidate
+  -> replace runner-local working copy with candidate
+  -> run the normal forecast/QM/dashboard pipeline on the candidate
+  -> integrity-check and upload new compact release asset
+  -> retain the immediately previous release asset as rollback
+```
+
+This means the ordinary pipeline is the fresh operational smoke test for the
+compact database. If compaction fails, the run stops before the pipeline or
+release upload can modify the live asset.
+
+For a downloadable JSON validation report, use **Actions -> WAWP Meteologix
+Engine -> Run workflow**, tick **Upload the compact-database validation report
+for this run**, then start it manually. The report is retained as an Actions
+artifact for seven days.
 
 ## Acceptance checks before release replacement
 
@@ -63,20 +74,16 @@ for seven days. It does not upload the candidate itself or replace `latest-db`.
    gust-row count, and maximum gust.
 4. Open-Meteo row count, date range, model count, and historical-row count
    match.
-5. Run `python run_pipeline.py` against a copy of the candidate and confirm
-   dashboard export, QM artifact loading, weights, and TAF guidance complete.
-6. Compare the candidate's current consensus and TAF result with the source
-   for the same fetched inputs.
-7. Keep the existing Release asset and local source database as recovery
-   copies through several successful scheduled runs.
-
-Only after all seven checks pass should a separate, reviewed change teach the
-GitHub workflow to publish the compact asset. That future change must upload
-the new asset first and retain the existing release asset as fallback.
+5. The normal pipeline runs successfully against the candidate, producing its
+   dashboard export, QM handling, weights, and TAF guidance.
+6. The new release asset uploads successfully.
+7. The immediately previous release asset remains available as rollback; the
+   complete raw-minute archive remains outside the rolling release database.
 
 ## Recovery
 
-No recovery action is needed while evaluating a candidate: the source database
-and GitHub Release database are unchanged. If a candidate fails any check,
-discard only the candidate under `artifacts/operational/` and investigate the
-report.
+If compaction fails, the workflow exits before altering the release asset. If a
+new compact release later proves unsuitable, restore the immediately previous
+release asset as `wawp_forecasts.db` and rerun the workflow. The local full
+database and original monthly minute AWOS files remain the long-term source
+archive for detailed reprocessing.

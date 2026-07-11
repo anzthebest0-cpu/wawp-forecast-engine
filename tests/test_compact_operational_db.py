@@ -75,3 +75,24 @@ def test_compact_candidate_preserves_operational_rows_and_empties_raw_minutes(tm
         assert conn.execute("SELECT MAX(wind_gust_max) FROM awos_observations").fetchone()[0] == 18.0
     finally:
         conn.close()
+
+
+def test_compact_candidate_can_be_compacted_again(tmp_path):
+    source = tmp_path / "source.db"
+    first_candidate = tmp_path / "first_candidate.db"
+    second_candidate = tmp_path / "second_candidate.db"
+    _make_source(source)
+
+    first_report = build_compact_operational_db(source, first_candidate)
+    second_report = build_compact_operational_db(first_candidate, second_candidate)
+
+    assert first_report["valid"] is True
+    assert second_report["valid"] is True
+    assert second_report["raw_minute_source_rows"] == 0
+    assert second_report["raw_minute_candidate_rows"] == 0
+
+    conn = sqlite3.connect(second_candidate)
+    try:
+        assert conn.execute(f"SELECT COUNT(*) FROM {RETENTION_TABLE}").fetchone()[0] == 1
+    finally:
+        conn.close()

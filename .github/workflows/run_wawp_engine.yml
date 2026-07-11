@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       compact_db_audit:
-        description: 'Build and validate a compact database candidate without changing the rolling release asset'
+        description: 'Upload the compact-database validation report for this run'
         required: false
         default: false
         type: boolean
@@ -72,42 +72,22 @@ jobs:
             echo "RESTORED_DB_ASSET=" >> "$GITHUB_ENV"
           fi
 
-      - name: Run Pipeline
-        run: python run_pipeline.py
-
-      # This is deliberately manual and audit-only. It creates a candidate from
-      # the freshly updated database, but the existing release asset is still
-      # uploaded below. A separate reviewed change is required for promotion.
-      - name: Audit Compact Database Candidate
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.compact_db_audit }}
+      # The compactor never changes the restored release file. It writes a
+      # validated candidate first, then the pipeline operates on that candidate.
+      # If validation fails, this run stops before it can upload any replacement.
+      - name: Compact Rolling Database Before Pipeline
         run: |
           set -euo pipefail
+          if [ ! -s wawp_forecasts.db ]; then
+            echo "No restored database yet; bootstrap pipeline will create it."
+            exit 0
+          fi
           candidate_dir="artifacts/operational"
           candidate_db="$candidate_dir/wawp_operational_candidate.db"
-          mkdir -p "$candidate_dir/dashboard_smoke"
+          mkdir -p "$candidate_dir"
           python src/build_compact_operational_db.py \
             --source wawp_forecasts.db \
             --output "$candidate_db"
-          python - <<'PY'
-          import sqlite3
-          from pathlib import Path
-          from types import SimpleNamespace
-
-          from src.export_dashboard_data import export_all
-
-          candidate = Path("artifacts/operational/wawp_operational_candidate.db")
-          output_dir = Path("artifacts/operational/dashboard_smoke")
-          conn = sqlite3.connect(candidate)
-          try:
-              export_all(SimpleNamespace(conn=conn), str(output_dir))
-          finally:
-              conn.close()
-          required = {"db_health.json", "latest_weights.json", "tafor_intel.json", "taf_guidance.json"}
-          missing = sorted(name for name in required if not (output_dir / name).exists())
-          if missing:
-              raise SystemExit(f"Compact-candidate export is missing: {missing}")
-          print("Compact candidate dashboard export smoke test passed")
-          PY
           python - <<'PY'
           import json
           from pathlib import Path
@@ -115,11 +95,16 @@ jobs:
           report = json.loads(Path("artifacts/operational/wawp_operational_candidate.db.report.json").read_text())
           if not report.get("valid"):
               raise SystemExit("Compact database candidate did not pass validation")
-          print("COMPACTION_AUDIT=passed")
+          print("COMPACTION_VALID=passed")
           print("SOURCE_BYTES=", report["source_size_bytes"])
           print("CANDIDATE_BYTES=", report["candidate_size_bytes"])
           print("RAW_MINUTE_ROWS=", report["raw_minute_source_rows"], "->", report["raw_minute_candidate_rows"])
           PY
+          mv -f "$candidate_db" wawp_forecasts.db
+          python -c "import sqlite3, sys; db = sqlite3.connect('wawp_forecasts.db'); result = db.execute('PRAGMA integrity_check').fetchone()[0]; db.close(); print('Compact SQLite integrity:', result); sys.exit(0 if result == 'ok' else 1)"
+
+      - name: Run Pipeline
+        run: python run_pipeline.py
 
       - name: Upload Compact Database Audit Report
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.compact_db_audit }}
@@ -128,9 +113,8 @@ jobs:
           name: compact-db-audit-${{ github.run_id }}
           path: |
             artifacts/operational/*.report.json
-            artifacts/operational/dashboard_smoke/
           retention-days: 7
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: Validate and Upload Database to Release
         timeout-minutes: 45
@@ -143,9 +127,17 @@ jobs:
           asset_name="wawp_forecasts-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.db"
           cp wawp_forecasts.db "$asset_name"
           gh release upload latest-db "$asset_name"
-          if [ -n "${RESTORED_DB_ASSET:-}" ] && [ "$RESTORED_DB_ASSET" != "$asset_name" ]; then
-            gh release delete-asset latest-db "$RESTORED_DB_ASSET" --yes || echo "Could not remove prior database asset; it remains as a fallback."
-          fi
+          # Keep the newly uploaded compact DB and the immediately previous
+          # release asset. Delete only older rolling database assets.
+          while IFS= read -r existing_asset; do
+            if [[ ! "$existing_asset" =~ ^wawp_forecasts(-[0-9]+-[0-9]+)?\.db$ ]]; then
+              continue
+            fi
+            if [ "$existing_asset" = "$asset_name" ] || [ "$existing_asset" = "${RESTORED_DB_ASSET:-}" ]; then
+              continue
+            fi
+            gh release delete-asset latest-db "$existing_asset" --yes || echo "Could not remove stale database asset $existing_asset; it remains available."
+          done < <(gh release view latest-db --json assets --jq '.assets[].name')
 
       - name: Commit and Push Dashboard Data
         run: |

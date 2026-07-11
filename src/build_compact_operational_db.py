@@ -99,7 +99,9 @@ def _validate(source: Path, candidate: Path) -> dict[str, Any]:
         source_counts = _table_counts(source_conn)
         candidate_counts = _table_counts(candidate_conn)
         retained_source_counts = {
-            name: count for name, count in source_counts.items() if name != RAW_MINUTE_TABLE
+            name: count
+            for name, count in source_counts.items()
+            if name not in {RAW_MINUTE_TABLE, RETENTION_TABLE}
         }
         retained_candidate_counts = {
             name: count
@@ -158,7 +160,11 @@ def build_compact_operational_db(source: Path, destination: Path, *, overwrite: 
 
     source_conn = _connect_readonly(source)
     try:
-        table_rows = _schema_rows(source_conn, "table")
+        # The retention manifest describes this compaction operation. Recreate
+        # it below instead of copying a prior run's manifest into the candidate.
+        table_rows = [
+            row for row in _schema_rows(source_conn, "table") if row[0] != RETENTION_TABLE
+        ]
         index_rows = _schema_rows(source_conn, "index")
         view_rows = _schema_rows(source_conn, "view")
         trigger_rows = _schema_rows(source_conn, "trigger")
