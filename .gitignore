@@ -16,6 +16,7 @@ artifacts/qm/*.sqlite
 artifacts/qm/*.sqlite-shm
 artifacts/qm/*.sqlite-wal
 artifacts/qm/*.json
+artifacts/operational/
 Archives/
 data/raw_obs/
 *.pyc
