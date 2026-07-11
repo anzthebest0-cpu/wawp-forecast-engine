@@ -33,6 +33,61 @@ function updatePullStatus(timestamp) {
     }
 }
 
+function renderThunderstormProxy(proxy, renderData) {
+    const tsProbVal = document.getElementById('ts-prob-val');
+    const tsProbTime = document.getElementById('ts-prob-time');
+    const audit = document.getElementById('ts-proxy-audit');
+    const method = document.getElementById('ts-proxy-method');
+    const peak = proxy?.peak;
+
+    if (!peak) {
+        if (tsProbVal) tsProbVal.innerText = '--%';
+        if (tsProbTime) tsProbTime.innerText = 'No proxy calculation available';
+        if (audit) audit.innerText = 'No peak calculation available.';
+        return;
+    }
+
+    const total = Number(peak.total || 0);
+    if (tsProbVal) {
+        tsProbVal.innerText = `${total.toFixed(0)}%`;
+        tsProbVal.style.color = total >= 30 ? 'var(--red)' : 'var(--amber)';
+    }
+    if (tsProbTime) {
+        tsProbTime.innerText = `Peak window: ${String(peak.datetime || '').substring(11, 16)} WITA`;
+    }
+
+    if (audit) {
+        const rows = (peak.components || []).map(component => {
+            const input = component.input === null || component.input === undefined ? '-' : component.input;
+            const unit = component.unit ? ` ${component.unit}` : '';
+            const contribution = Number(component.contribution || 0);
+            const contributionText = contribution > 0 ? `+${contribution.toFixed(2)}` : contribution.toFixed(2);
+            return `<tr><td>${component.label}</td><td>${input}${unit}</td><td>${component.rule}</td><td style="font-weight:700; color:${contribution > 0 ? 'var(--amber)' : 'var(--text-secondary)'}; text-align:right;">${contributionText}</td></tr>`;
+        }).join('');
+        const override = peak.weather_code_override
+            ? `<div style="margin-top:10px; color:var(--red);">WMO thunderstorm code applies an 85-point minimum.</div>`
+            : '';
+        audit.innerHTML = `
+            <div style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:12px; color:var(--text-secondary);">
+                <span>Peak: <strong style="color:var(--text-primary);">${peak.datetime} WITA</strong></span>
+                <span>WMO ${peak.weather_code ?? '-'}: <strong style="color:var(--text-primary);">${peak.weather_description || 'Unknown'}</strong></span>
+            </div>
+            <table class="data-table" style="min-width:680px;"><thead><tr><th>Signal</th><th>Input</th><th>Rule</th><th style="text-align:right;">Score</th></tr></thead>
+            <tbody>${rows}<tr><td colspan="3" style="font-weight:700;">Raw proxy score</td><td style="font-weight:700; text-align:right;">${Number(peak.raw_score || 0).toFixed(2)}</td></tr>
+            <tr><td colspan="3" style="font-weight:700; color:var(--amber);">Final TS proxy score</td><td style="font-weight:700; color:var(--amber); text-align:right;">${total.toFixed(2)} / 100</td></tr></tbody></table>${override}`;
+    }
+
+    if (method) {
+        const codes = (proxy.weather_code_legend || []).map(entry =>
+            `<div><strong>${entry.code}</strong> ${entry.description}</div>`
+        ).join('');
+        method.innerHTML = `
+            <p>${proxy.formula || ''}</p>
+            <p><strong>Interpretation:</strong> this is a convective-support proxy, not a calibrated thunderstorm probability. TAF TS groups are decided separately by aviation guidance logic.</p>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:6px 18px; margin-top:12px;">${codes}</div>`;
+    }
+}
+
 async function loadDashboard() {
     try {
         const cb = '?t=' + new Date().getTime();
@@ -155,29 +210,7 @@ async function loadDashboard() {
         }
         startShiftCountdown();
         
-        // Thunderstorm proxy risk display. TAF weather groups are generated separately in the backend.
-        const tsProbVal = document.getElementById('ts-prob-val');
-        const tsProbTime = document.getElementById('ts-prob-time');
-        if (tsProbVal && tsProbTime && renderData && renderData.length > 0) {
-            let maxProb = 0;
-            let peakTime = "";
-            renderData.forEach(d => {
-                let prob = d['Thunderstorm Risk'] ?? d['Precip Probability'] ?? d['Prob Precip 1.0mm'] ?? 0;
-                if(prob > maxProb) {
-                    maxProb = prob;
-                    peakTime = d.Datetime.substring(11, 16);
-                }
-            });
-            tsProbVal.innerText = maxProb.toFixed(0) + '%';
-            if (maxProb > 0) {
-                tsProbTime.innerText = `Peak window: ${peakTime} WITA`;
-            } else {
-                tsProbTime.innerText = `No significant risk`;
-            }
-            if (maxProb >= 30) {
-                tsProbVal.style.color = 'var(--red)';
-            }
-        }
+        renderThunderstormProxy(guidanceJson.metadata?.ts_proxy, renderData);
 
         // 1. Update Header
         document.getElementById('update-time').innerText = generatedAt + " UTC";

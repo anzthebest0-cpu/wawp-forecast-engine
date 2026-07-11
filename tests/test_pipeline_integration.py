@@ -1,6 +1,10 @@
 import pandas as pd
 
-from src.export_dashboard_data import _aviation_visibility_consensus
+from src.export_dashboard_data import (
+    _aviation_visibility_consensus,
+    _ts_proxy_components,
+    _weighted_weather_code_consensus,
+)
 from src.tafor_generator import _build_taf_text, generate_tafor
 from src.vis_cloud_proxy import build_hourly_vis_cloud, estimate_visibility, get_weather_phenomenon
 
@@ -24,6 +28,29 @@ def test_two_visibility_outliers_cannot_create_prevailing_restriction():
     row = pd.Series({"A": 50.0, "B": 100.0, "C": 9999.0, "D": 9999.0, "E": 9999.0, "F": 9999.0, "G": 9999.0, "H": 9999.0})
     weights = {model: 1 / len(row) for model in row.index}
     assert _aviation_visibility_consensus(row, weights) == 9999.0
+
+
+def test_weather_code_consensus_keeps_a_valid_weighted_category():
+    row = pd.Series({"ECMWF_HRES": 95.0, "GFS_GLOBAL": 0.0, "UKMO_GLOBAL_10KM": 0.0})
+    weights = {"ECMWF_HRES": 0.6, "GFS_GLOBAL": 0.2, "UKMO_GLOBAL_10KM": 0.2}
+
+    assert _weighted_weather_code_consensus(row, weights) == 95.0
+
+
+def test_ts_proxy_breakdown_matches_documented_peak_arithmetic():
+    row = pd.Series({
+        "Datetime": pd.Timestamp("2026-07-15 16:00:00"),
+        "Precip Probability": 29.11627817920574,
+        "Rain": 0.20931451435283108,
+        "CAPE": 1322.8877653867767,
+        "Lifted Index": -2.2627206723485394,
+        "Convective Inhibition": 1.447970142385186,
+        "Weather Code": 30.0,
+    })
+    components = _ts_proxy_components(row)
+
+    assert components["total"] == 70.19
+    assert [item["contribution"] for item in components["components"]] == [10.19, 8.0, 20.0, 10.0, 12.0, 10.0, 0.0]
 
 
 def test_proxy_alone_cannot_create_extreme_fog_or_low_ceiling():

@@ -17,6 +17,46 @@ from src.tafor_generator import generate_tafor
 
 log = logging.getLogger("exporter")
 
+WMO_WEATHER_CODES = [
+    {"code": 0, "description": "Clear sky"},
+    {"code": 1, "description": "Mainly clear"},
+    {"code": 2, "description": "Partly cloudy"},
+    {"code": 3, "description": "Overcast"},
+    {"code": 45, "description": "Fog"},
+    {"code": 48, "description": "Depositing rime fog"},
+    {"code": 51, "description": "Light drizzle"},
+    {"code": 53, "description": "Moderate drizzle"},
+    {"code": 55, "description": "Dense drizzle"},
+    {"code": 56, "description": "Light freezing drizzle"},
+    {"code": 57, "description": "Dense freezing drizzle"},
+    {"code": 61, "description": "Slight rain"},
+    {"code": 63, "description": "Moderate rain"},
+    {"code": 65, "description": "Heavy rain"},
+    {"code": 66, "description": "Light freezing rain"},
+    {"code": 67, "description": "Heavy freezing rain"},
+    {"code": 71, "description": "Slight snow fall"},
+    {"code": 73, "description": "Moderate snow fall"},
+    {"code": 75, "description": "Heavy snow fall"},
+    {"code": 77, "description": "Snow grains"},
+    {"code": 80, "description": "Slight rain showers"},
+    {"code": 81, "description": "Moderate rain showers"},
+    {"code": 82, "description": "Violent rain showers"},
+    {"code": 85, "description": "Slight snow showers"},
+    {"code": 86, "description": "Heavy snow showers"},
+    {"code": 95, "description": "Slight or moderate thunderstorm"},
+    {"code": 96, "description": "Thunderstorm with slight hail"},
+    {"code": 99, "description": "Thunderstorm with heavy hail"},
+]
+WMO_WEATHER_LABELS = {entry["code"]: entry["description"] for entry in WMO_WEATHER_CODES}
+WMO_WEATHER_SEVERITY = {
+    0: 0, 1: 1, 2: 1, 3: 2, 45: 3, 48: 3,
+    51: 4, 53: 4, 55: 4, 56: 4, 57: 4,
+    61: 5, 63: 5, 65: 5, 66: 5, 67: 5,
+    71: 5, 73: 5, 75: 5, 77: 5,
+    80: 6, 81: 6, 82: 6, 85: 6, 86: 6,
+    95: 7, 96: 8, 99: 9,
+}
+
 def sanitize_for_json(obj):
     if isinstance(obj, dict):
         return {k: sanitize_for_json(v) for k, v in obj.items()}
@@ -160,64 +200,97 @@ def _blend_event_window_weights(
     return {m: blended[m] / total for m in MODELS}
 
 
+def _number(value, default=0.0) -> float:
+    try:
+        if pd.isna(value):
+            return float(default)
+        return float(value)
+    except (TypeError, ValueError):
+        return float(default)
+
+
+def _normalise_weather_code(value) -> int | None:
+    try:
+        if pd.isna(value):
+            return None
+        return int(round(float(value)))
+    except (TypeError, ValueError):
+        return None
+
+
+def _weighted_weather_code_consensus(row: pd.Series, weights: dict[str, float]) -> float:
+    """Select a valid WMO category; categorical codes must never be averaged."""
+    votes: dict[int, float] = {}
+    for model, raw_code in row.dropna().items():
+        code = _normalise_weather_code(raw_code)
+        if code is None:
+            continue
+        votes[code] = votes.get(code, 0.0) + max(0.0, float(weights.get(model, 0.0) or 0.0))
+    if not votes:
+        return float("nan")
+    return float(max(votes, key=lambda code: (votes[code], WMO_WEATHER_SEVERITY.get(code, 0), code)))
+
+
+def _ts_proxy_components(row: pd.Series) -> dict:
+    """Return auditable components for the dashboard convective-support proxy."""
+    prob = max(0.0, min(100.0, _number(row.get("Precip Probability"), 0.0)))
+    rain = max(0.0, _number(row.get("Rain"), 0.0))
+    cape = _number(row.get("CAPE"), 0.0)
+    li = _number(row.get("Lifted Index"), 0.0)
+    cin = _number(row.get("Convective Inhibition"), 0.0)
+    weather_code = _normalise_weather_code(row.get("Weather Code"))
+    hour = int(getattr(row.get("Datetime"), "hour", 0))
+
+    rain_score = (8.0 if rain >= 0.1 else 0.0) + (10.0 if rain >= 1.0 else 0.0) + (15.0 if rain >= 5.0 else 0.0)
+    cape_score = (12.0 if cape >= 500 else 0.0) + (8.0 if cape >= 1000 else 0.0)
+    li_score = (10.0 if li <= -2 else 0.0) + (5.0 if li <= -4 else 0.0)
+    cin_score = (8.0 if cin <= 100 else 0.0) + (4.0 if cin <= 50 else 0.0) - (10.0 if cin > 200 else 0.0)
+    diurnal_score = 10.0 if 12 <= hour <= 19 else (5.0 if 10 <= hour <= 21 else 0.0)
+    precipitation_score = prob * 0.35
+    raw_score = precipitation_score + rain_score + cape_score + li_score + cin_score + diurnal_score
+    thunderstorm_override = weather_code in {95, 96, 99}
+    total = max(raw_score, 85.0) if thunderstorm_override else raw_score
+    total = max(0.0, min(100.0, total))
+
+    return {
+        "total": round(float(total), 2),
+        "raw_score": round(float(raw_score), 2),
+        "weather_code": weather_code,
+        "weather_description": WMO_WEATHER_LABELS.get(weather_code, "Unknown or unavailable WMO code"),
+        "weather_code_override": thunderstorm_override,
+        "components": [
+            {"label": "Precipitation probability", "input": round(prob, 2), "unit": "%", "rule": "x 0.35", "contribution": round(precipitation_score, 2)},
+            {"label": "Rain", "input": round(rain, 2), "unit": "mm", "rule": "+8 at 0.1, +10 at 1.0, +15 at 5.0", "contribution": round(rain_score, 2)},
+            {"label": "CAPE", "input": round(cape, 1), "unit": "J/kg", "rule": "+12 at 500, +8 at 1000", "contribution": round(cape_score, 2)},
+            {"label": "Lifted Index", "input": round(li, 2), "unit": "", "rule": "+10 at -2, +5 at -4", "contribution": round(li_score, 2)},
+            {"label": "CIN", "input": round(cin, 2), "unit": "J/kg", "rule": "+8 at <=100, +4 at <=50, -10 above 200", "contribution": round(cin_score, 2)},
+            {"label": "Convective window", "input": hour, "unit": "WITA", "rule": "+10 at 12-19, +5 at 10-21", "contribution": round(diurnal_score, 2)},
+            {"label": "Weather code", "input": weather_code if weather_code is not None else "-", "unit": "", "rule": "floor 85 for 95, 96, 99", "contribution": 0.0},
+        ],
+    }
+
+
 def _compute_ts_risk(row: pd.Series) -> float:
     """Dashboard TS proxy; TAF phenomenon selection still uses taf_core/vis_cloud_proxy."""
-    def num(name, default=0.0):
-        value = row.get(name, default)
-        try:
-            if pd.isna(value):
-                return default
-            return float(value)
-        except (TypeError, ValueError):
-            return default
+    return float(_ts_proxy_components(row)["total"])
 
-    prob = max(0.0, min(100.0, num("Precip Probability", 0.0)))
-    rain = max(0.0, num("Rain", 0.0))
-    cape = num("CAPE", 0.0)
-    li = row.get("Lifted Index")
-    cin = row.get("Convective Inhibition")
-    weather_code = row.get("Weather Code")
-    hour = row.get("Datetime").hour if hasattr(row.get("Datetime"), "hour") else 0
 
-    score = prob * 0.35
-    if rain >= 0.1:
-        score += 8.0
-    if rain >= 1.0:
-        score += 10.0
-    if rain >= 5.0:
-        score += 15.0
-    if cape >= 500:
-        score += 12.0
-    if cape >= 1000:
-        score += 8.0
-    try:
-        li_val = float(li)
-        if li_val <= -2:
-            score += 10.0
-        if li_val <= -4:
-            score += 5.0
-    except (TypeError, ValueError):
-        pass
-    try:
-        cin_val = float(cin)
-        if cin_val <= 100:
-            score += 8.0
-        if cin_val <= 50:
-            score += 4.0
-        if cin_val > 200:
-            score -= 10.0
-    except (TypeError, ValueError):
-        pass
-    if 12 <= int(hour) <= 19:
-        score += 10.0
-    elif 10 <= int(hour) <= 21:
-        score += 5.0
-    try:
-        if int(weather_code) in {95, 96, 99}:
-            score = max(score, 85.0)
-    except (TypeError, ValueError):
-        pass
-    return float(max(0.0, min(100.0, score)))
+def _ts_proxy_metadata(consensus: pd.DataFrame) -> dict:
+    rows = []
+    for _, row in consensus.iterrows():
+        components = _ts_proxy_components(row)
+        rows.append((components["total"], row, components))
+    if not rows:
+        return {"kind": "convective_support_proxy", "weather_code_legend": WMO_WEATHER_CODES, "peak": None}
+    _, peak_row, peak = max(rows, key=lambda item: item[0])
+    peak["datetime"] = pd.to_datetime(peak_row["Datetime"]).strftime("%Y-%m-%d %H:%M:%S")
+    return {
+        "kind": "convective_support_proxy",
+        "not_calibrated_probability": True,
+        "formula": "0.35 x precipitation probability plus threshold contributions from rain, CAPE, lifted index, CIN, and local convective timing; WMO thunderstorm codes apply an 85-point floor.",
+        "weather_code_legend": WMO_WEATHER_CODES,
+        "peak": peak,
+    }
 
 
 def _blend_related_weights(global_weights: dict, related_params: list[str]) -> dict[str, float]:
@@ -1310,6 +1383,8 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
             consensus[param] = p_df.apply(apply_rain_consensus, axis=1)
         elif param == "Visibility":
             consensus[param] = p_df.apply(lambda row: _aviation_visibility_consensus(row, weights), axis=1)
+        elif param == "Weather Code":
+            consensus[param] = p_df.apply(lambda row: _weighted_weather_code_consensus(row, weights), axis=1)
         elif param in {"Low Clouds", "Mid Clouds", "High Clouds"}:
             consensus[param] = p_df.apply(lambda row: _aviation_cloud_cover_consensus(row, weights), axis=1)
         else:
@@ -1338,6 +1413,7 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
     consensus = consensus.reset_index()
     consensus = consensus.rename(columns={"Wind Speed": "Wind", "Rainfall": "Rain"})
     consensus["Thunderstorm Risk"] = consensus.apply(_compute_ts_risk, axis=1)
+    ts_proxy_metadata = _ts_proxy_metadata(consensus)
     
     # Dynamically Determine Condition
     def get_condition(rain):
@@ -1428,7 +1504,8 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
             "forecast_run_label_utc": latest_time,
             "version": "v200",
             "location": "Bandara_Sangia_Ni_Bandera",
-            "qm_provenance": qm_provenance
+            "qm_provenance": qm_provenance,
+            "ts_proxy": ts_proxy_metadata,
         },
         "data": guidance_data.to_dict(orient="records")
     }
