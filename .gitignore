@@ -17,6 +17,8 @@ artifacts/qm/*.sqlite-shm
 artifacts/qm/*.sqlite-wal
 artifacts/qm/*.json
 artifacts/operational/
+artifacts/taf_replay*/
+artifacts/taf_replay_*.log
 Archives/
 data/raw_obs/
 *.pyc
