@@ -1,14 +1,5 @@
 [
   {
-    "Datetime": "2026-07-07 14:00:00",
-    "temperature": 25.3,
-    "dewpoint": 22.4,
-    "pressure": 1013.4,
-    "wind_dir": 207.0,
-    "wind_speed": 2.0,
-    "rain_1h": 0.0
-  },
-  {
     "Datetime": "2026-07-07 15:00:00",
     "temperature": 24.4,
     "dewpoint": 22.5,
