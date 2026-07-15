@@ -2,6 +2,175 @@ const SPREAD_MAX_HOURS = 96;
 let pendingSpreadModelsData = null;
 let pendingSpreadTimeLabels = [];
 let spreadChartsRendered = false;
+let pendingWeightHistoryText = null;
+let weightDriftChart = null;
+
+const WEIGHT_DRIFT_COLORS = ['#0ea5e9', '#0284c7', '#f5a623', '#d97706', '#ec4899', '#be185d', '#10b981', '#94a3b8'];
+const WEIGHT_DRIFT_MODEL_LABELS = {
+    ECMWF_HRES: 'ECMWF',
+    GFS_GLOBAL: 'GFS',
+    ICON_SEAMLESS: 'ICON',
+    GEM_GLOBAL: 'GEM',
+    CMA_GRAPES_GLOBAL: 'CMA',
+    JMA_GSM: 'JMA',
+    METEOFRANCE_ARPEGE_WORLD: 'ARPEGE',
+    UKMO_GLOBAL_10KM: 'UKMO',
+};
+
+function parseWeightHistory(historyText) {
+    return String(historyText || '').split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .map(line => {
+            try { return JSON.parse(line); } catch (_) { return null; }
+        })
+        .filter(snapshot => snapshot && snapshot.timestamp && snapshot.weights)
+        .map(snapshot => {
+            const rawTimestamp = String(snapshot.timestamp).trim();
+            const normalizedTimestamp = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(rawTimestamp)
+                ? rawTimestamp
+                : `${rawTimestamp}Z`;
+            return { ...snapshot, timeMs: new Date(normalizedTimestamp).getTime() };
+        })
+        .filter(snapshot => Number.isFinite(snapshot.timeMs))
+        .sort((a, b) => a.timeMs - b.timeMs);
+}
+
+function weightHistoryForParameter(snapshots, parameter) {
+    const records = snapshots
+        .filter(snapshot => snapshot.weights && snapshot.weights[parameter])
+        .map(snapshot => ({
+            timeMs: snapshot.timeMs,
+            values: snapshot.weights[parameter],
+        }));
+    if (!records.length) return [];
+
+    const signature = record => Object.entries(record.values || {})
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([model, value]) => `${model}:${Number(value || 0).toFixed(6)}`)
+        .join('|');
+    const changePoints = [];
+    let previous = null;
+    let previousSignature = null;
+
+    records.forEach(record => {
+        const currentSignature = signature(record);
+        if (previousSignature === null || currentSignature !== previousSignature) {
+            if (previous && changePoints[changePoints.length - 1]?.timeMs !== previous.timeMs) {
+                changePoints.push(previous);
+            }
+            changePoints.push(record);
+            previousSignature = currentSignature;
+        }
+        previous = record;
+    });
+    if (previous && changePoints[changePoints.length - 1]?.timeMs !== previous.timeMs) {
+        changePoints.push(previous);
+    }
+    return changePoints;
+}
+
+function countWeightTransitions(snapshots, parameter) {
+    let previousSignature = null;
+    let transitions = 0;
+    snapshots.forEach(snapshot => {
+        const values = snapshot.weights?.[parameter];
+        if (!values) return;
+        const signature = Object.entries(values)
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([model, value]) => `${model}:${Number(value || 0).toFixed(6)}`)
+            .join('|');
+        if (previousSignature !== null && signature !== previousSignature) transitions += 1;
+        previousSignature = signature;
+    });
+    return transitions;
+}
+
+function renderWeightDriftChart() {
+    const select = document.getElementById('weight-drift-parameter');
+    const summary = document.getElementById('weight-drift-summary');
+    const chartEl = document.getElementById('weight-drift-chart');
+    const empty = document.getElementById('weight-drift-empty');
+    if (!select || !summary || !chartEl || !empty) return;
+
+    const snapshots = parseWeightHistory(pendingWeightHistoryText);
+    const parameters = [...new Set(snapshots.flatMap(snapshot => Object.keys(snapshot.weights || {})))];
+    if (!parameters.length) {
+        summary.textContent = 'No recorded weight history is available yet.';
+        chartEl.hidden = true;
+        empty.hidden = false;
+        empty.textContent = 'The chart will appear after the pipeline writes a valid weight-history snapshot.';
+        return;
+    }
+
+    const prior = select.value;
+    select.replaceChildren();
+    parameters.forEach(parameter => {
+        const option = document.createElement('option');
+        option.value = parameter;
+        option.textContent = parameter;
+        select.appendChild(option);
+    });
+    select.value = parameters.includes(prior) ? prior : parameters[0];
+    chartEl.hidden = false;
+    empty.hidden = true;
+
+    const draw = () => {
+        const parameter = select.value;
+        const history = weightHistoryForParameter(snapshots, parameter);
+        const models = [...new Set(history.flatMap(record => Object.keys(record.values || {})))].sort();
+        const actualUpdates = countWeightTransitions(snapshots, parameter);
+        const latest = snapshots[snapshots.length - 1];
+        const latestLabel = latest ? new Date(latest.timeMs).toLocaleString('en-GB', { timeZone: 'UTC', timeZoneName: 'short' }) : 'unknown';
+        summary.textContent = `${snapshots.length} recorded runs; ${actualUpdates} actual weight transition${actualUpdates === 1 ? '' : 's'}; latest ${latestLabel}. Consecutive identical snapshots are collapsed.`;
+
+        if (weightDriftChart) {
+            weightDriftChart.destroy();
+            weightDriftChart = null;
+        }
+        const series = models.map(model => ({
+            name: WEIGHT_DRIFT_MODEL_LABELS[model] || model,
+            data: history.map(record => [record.timeMs, Number(record.values?.[model] || 0) * 100]),
+        }));
+        weightDriftChart = new ApexCharts(chartEl, {
+            ...TITAN_BASE,
+            chart: {
+                ...TITAN_BASE.chart,
+                id: 'weight-drift',
+                type: 'line',
+                height: 340,
+                toolbar: { show: false },
+            },
+            series,
+            colors: WEIGHT_DRIFT_COLORS,
+            stroke: { curve: 'stepline', width: 2, dashArray: [0, 5, 0, 5, 0, 5, 2, 8] },
+            xaxis: {
+                ...TITAN_BASE.xaxis,
+                type: 'datetime',
+                labels: { ...TITAN_BASE.xaxis.labels, format: 'dd MMM HH:mm' },
+            },
+            yaxis: {
+                min: 0,
+                max: 100,
+                tickAmount: 5,
+                labels: { formatter: value => `${Number(value).toFixed(0)}%` },
+            },
+            legend: {
+                ...TITAN_BASE.legend,
+                position: 'bottom',
+                horizontalAlign: 'left',
+            },
+            tooltip: {
+                ...TITAN_BASE.tooltip,
+                y: { formatter: value => `${Number(value).toFixed(1)}%` },
+            },
+            noData: { text: 'No weight history for this parameter.' },
+        });
+        weightDriftChart.render();
+    };
+    select.onchange = draw;
+    draw();
+}
 
 function updatePullStatus(timestamp) {
     const statusEl = document.getElementById('pull-status');
@@ -103,7 +272,11 @@ async function loadDashboard() {
             fetch('data/diurnal_climatology.json' + cb).then(r => r.json()),
             fetch('data/system_workflow.json' + cb).then(r => r.json()),
             fetch('data/operational_residuals.json' + cb).then(r => r.json()),
-            fetch('data/tafor_shadow.json' + cb).then(r => r.json())
+            fetch('data/tafor_shadow.json' + cb).then(r => r.json()),
+            fetch('data/weight_history.jsonl' + cb).then(response => {
+                if (!response.ok) throw new Error(`weight history HTTP ${response.status}`);
+                return response.text();
+            })
         ]);
         
         const intelData = results[0].status === 'fulfilled' ? results[0].value : {};
@@ -132,6 +305,7 @@ async function loadDashboard() {
         const workflowData = results[9].status === 'fulfilled' ? results[9].value : null;
         const residualData = results[10].status === 'fulfilled' ? results[10].value : null;
         const shadowTafData = results[11].status === 'fulfilled' ? results[11].value : null;
+        pendingWeightHistoryText = results[12].status === 'fulfilled' ? results[12].value : null;
         
         const healthData = results[6].status === 'fulfilled' ? results[6].value : null;
         if (healthData) {
@@ -417,6 +591,9 @@ async function loadDashboard() {
             wHtml += `</div>`;
         }
         wContainer.innerHTML = wHtml;
+        if (document.getElementById('tab-weighter')?.classList.contains('active')) {
+            renderWeightDriftChart();
+        }
         // Render data is already filtered above
 
         // 4. Meteogram Tab (using apexcharts from guidance)
@@ -521,6 +698,13 @@ function switchTab(tabId) {
 
     if (tabId === 'tab-spread' && pendingSpreadModelsData && !spreadChartsRendered) {
         setupSpreadCharts(pendingSpreadModelsData, pendingSpreadTimeLabels);
+    }
+    if (tabId === 'tab-weighter') {
+        if (weightDriftChart) {
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
+        } else {
+            renderWeightDriftChart();
+        }
     }
 }
 

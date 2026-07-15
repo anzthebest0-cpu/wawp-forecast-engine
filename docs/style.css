@@ -784,6 +784,65 @@ body {
   color: var(--cyan);
 }
 
+.weight-drift-panel {
+  margin-top: var(--sp-5);
+  padding: var(--sp-5);
+}
+
+.weight-drift-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-4);
+}
+
+.weight-drift-header h3 {
+  margin-bottom: var(--sp-1);
+}
+
+.weight-drift-summary,
+.weight-drift-empty {
+  color: var(--text-secondary);
+  font-size: var(--ts-sm);
+  line-height: 1.5;
+}
+
+.weight-drift-control {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--text-muted);
+  font-size: var(--ts-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.weight-drift-control select {
+  min-width: 170px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--r-sm);
+  padding: 6px 8px;
+  font: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.weight-drift-chart {
+  min-height: 340px;
+}
+
+@media (max-width: 640px) {
+  .weight-drift-header { align-items: stretch; }
+  .weight-drift-control { justify-content: space-between; width: 100%; }
+  .weight-drift-control select { min-width: min(220px, 62vw); }
+  .weight-drift-chart { min-height: 300px; }
+}
+
 /* ── METEOGRAM CHARTS ─────────────────────────────────────── */
 .chart-panel {
   margin-bottom: var(--sp-4);

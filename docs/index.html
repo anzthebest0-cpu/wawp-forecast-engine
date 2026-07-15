@@ -147,6 +147,20 @@
             <div class="weighter-grid" id="weighter-container">
                 <!-- Populated via JS -->
             </div>
+            <div class="panel weight-drift-panel">
+                <div class="weight-drift-header">
+                    <div>
+                        <h3>Weight Drift Over Time</h3>
+                        <div id="weight-drift-summary" class="weight-drift-summary">Loading recorded weight history...</div>
+                    </div>
+                    <label class="weight-drift-control" for="weight-drift-parameter">
+                        <span>Parameter</span>
+                        <select id="weight-drift-parameter" aria-label="Weight drift parameter"></select>
+                    </label>
+                </div>
+                <div id="weight-drift-chart" class="weight-drift-chart"></div>
+                <div id="weight-drift-empty" class="weight-drift-empty" hidden></div>
+            </div>
         </section>
 
         <!-- Tab 3: Meteogram -->
