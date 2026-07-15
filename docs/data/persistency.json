@@ -1,32 +1,5 @@
 [
   {
-    "Datetime": "2026-07-10 04:00:00",
-    "temperature": 29.8,
-    "dewpoint": 21.6,
-    "pressure": 1012.6,
-    "wind_dir": 80.0,
-    "wind_speed": 3.0,
-    "rain_1h": 0.0
-  },
-  {
-    "Datetime": "2026-07-10 05:00:00",
-    "temperature": 30.2,
-    "dewpoint": 21.3,
-    "pressure": 1011.8,
-    "wind_dir": 103.0,
-    "wind_speed": 5.0,
-    "rain_1h": 0.0
-  },
-  {
-    "Datetime": "2026-07-10 06:00:00",
-    "temperature": 31.1,
-    "dewpoint": 19.8,
-    "pressure": 1010.8,
-    "wind_dir": 150.0,
-    "wind_speed": 6.0,
-    "rain_1h": 0.0
-  },
-  {
     "Datetime": "2026-07-10 07:00:00",
     "temperature": 31.0,
     "dewpoint": 21.4,

@@ -1,0 +1,1485 @@
+{
+  "schema_version": "shadow-taf-guidance-v1",
+  "status": "shadow_only",
+  "generated_at_utc": "2026-07-15 06:38:51",
+  "message": "Shadow configuration guidance is for comparison and verification only. It does not alter the selected operational TAF guidance.",
+  "config_order": [
+    "control_current",
+    "rain_50_20",
+    "rain_50_20_becmg3"
+  ],
+  "issuances": {
+    "2300": {
+      "control_current": {
+        "config": {
+          "key": "control_current",
+          "version": "rain-control-v1",
+          "label": "Control current",
+          "description": "Frozen replay baseline: 40% wet-model probability, no minimum agreement gate, and a two-hour rain bridge. This is a comparison baseline, not a claim that it exactly matches live event adaptation.",
+          "wet_model_probability_threshold": 40.0,
+          "min_probability_agreement": 0.0,
+          "min_amount_agreement": 0.0,
+          "max_bridge_gap_hours": 2,
+          "ts_policy": "broad_current",
+          "min_rain_signal_hours": 1,
+          "becmg_min_rain_hours": 1,
+          "becmg_min_agreement": 0.1,
+          "evidence_scope": "Jan-Jun 2026 historical replay; comparison only",
+          "mode": "shadow_only",
+          "promotion_status": "not_promoted",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides"
+        },
+        "guidance": {
+          "valid_start": "2026-07-16 08:00:00",
+          "issued_utc": "2300",
+          "issued_day": 15,
+          "base_group": {
+            "dir": "110",
+            "spd": "06",
+            "gust": "13",
+            "vis": "9999",
+            "wx": "",
+            "cloud": "FEW014",
+            "rain": 0.019230837523595553,
+            "rain_mmh": 0.019230837523595553,
+            "trends": [],
+            "badge": "MME 2300Z Shift",
+            "metrics": {
+              "leader_rmse": "N/A",
+              "leader_strat": "N/A"
+            }
+          },
+          "taf_text": "FTID40 WAWP 152300\nTAF WAWP 152300Z 1600/1700 11006KT 9999 FEW014=",
+          "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
+          "warnings": [
+            "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.77).",
+            "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL, METEOFRANCE_ARPEGE_WORLD (strength 0.07)."
+          ],
+          "event_skill_context": {
+            "Rainfall": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.2704,
+              "weighted_far": 0.4995,
+              "strength": 0.7726,
+              "top_models": [
+                "UKMO_GLOBAL_10KM",
+                "METEOFRANCE_ARPEGE_WORLD",
+                "GEM_GLOBAL"
+              ],
+              "min_events": 10,
+              "threshold": 1.5
+            },
+            "Wind Gust": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.0258,
+              "weighted_far": 0.8752,
+              "strength": 0.0738,
+              "top_models": [
+                "ECMWF_HRES",
+                "CMA_GRAPES_GLOBAL",
+                "METEOFRANCE_ARPEGE_WORLD"
+              ],
+              "min_events": 10,
+              "threshold": 15.0
+            }
+          }
+        },
+        "provenance": {
+          "mode": "shadow_only",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides",
+          "issued_for": "2300Z",
+          "model_coverage": {
+            "coverage_hours": 6,
+            "fresh_models_covering_window": [
+              "CMA_GRAPES_GLOBAL",
+              "ECMWF_HRES",
+              "GEM_GLOBAL",
+              "GFS_GLOBAL",
+              "ICON_SEAMLESS",
+              "JMA_GSM",
+              "METEOFRANCE_ARPEGE_WORLD",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "fresh_model_count": 8,
+            "direct_visibility_models": [
+              "CMA_GRAPES_GLOBAL",
+              "GFS_GLOBAL",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "direct_visibility_model_count": 3,
+            "missing_window_hours": [],
+            "coverage_status": "sufficient",
+            "model_run_age_hours": {
+              "CMA_GRAPES_GLOBAL": 0.0,
+              "ECMWF_HRES": 0.01,
+              "GEM_GLOBAL": 0.01,
+              "GFS_GLOBAL": 0.01,
+              "ICON_SEAMLESS": 0.01,
+              "JMA_GSM": 0.0,
+              "METEOFRANCE_ARPEGE_WORLD": 0.0,
+              "UKMO_GLOBAL_10KM": 0.0
+            },
+            "cloud_base_source": "proxy",
+            "observation_verification_status": "frozen",
+            "observation_hourly_age_hours": 112.65
+          },
+          "verification_status": "frozen"
+        }
+      },
+      "rain_50_20": {
+        "config": {
+          "key": "rain_50_20",
+          "version": "rain-50-20-v1",
+          "label": "Rain 50/20",
+          "description": "Balanced candidate: require 50% weighted wet-model probability and 20% spread-adjusted agreement; disable rain-gap bridging.",
+          "wet_model_probability_threshold": 50.0,
+          "min_probability_agreement": 0.2,
+          "min_amount_agreement": 0.0,
+          "max_bridge_gap_hours": 0,
+          "ts_policy": "broad_current",
+          "min_rain_signal_hours": 1,
+          "becmg_min_rain_hours": 1,
+          "becmg_min_agreement": 0.1,
+          "evidence_scope": "Jan-Jun 2026 historical replay; comparison only",
+          "mode": "shadow_only",
+          "promotion_status": "not_promoted",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides"
+        },
+        "guidance": {
+          "valid_start": "2026-07-16 08:00:00",
+          "issued_utc": "2300",
+          "issued_day": 15,
+          "base_group": {
+            "dir": "110",
+            "spd": "06",
+            "gust": "13",
+            "vis": "9999",
+            "wx": "",
+            "cloud": "FEW014",
+            "rain": 0.019230837523595553,
+            "rain_mmh": 0.019230837523595553,
+            "trends": [],
+            "badge": "MME 2300Z Shift",
+            "metrics": {
+              "leader_rmse": "N/A",
+              "leader_strat": "N/A"
+            }
+          },
+          "taf_text": "FTID40 WAWP 152300\nTAF WAWP 152300Z 1600/1700 11006KT 9999 FEW014=",
+          "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
+          "warnings": [
+            "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.77).",
+            "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL, METEOFRANCE_ARPEGE_WORLD (strength 0.07)."
+          ],
+          "event_skill_context": {
+            "Rainfall": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.2704,
+              "weighted_far": 0.4995,
+              "strength": 0.7726,
+              "top_models": [
+                "UKMO_GLOBAL_10KM",
+                "METEOFRANCE_ARPEGE_WORLD",
+                "GEM_GLOBAL"
+              ],
+              "min_events": 10,
+              "threshold": 1.5
+            },
+            "Wind Gust": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.0258,
+              "weighted_far": 0.8752,
+              "strength": 0.0738,
+              "top_models": [
+                "ECMWF_HRES",
+                "CMA_GRAPES_GLOBAL",
+                "METEOFRANCE_ARPEGE_WORLD"
+              ],
+              "min_events": 10,
+              "threshold": 15.0
+            }
+          }
+        },
+        "provenance": {
+          "mode": "shadow_only",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides",
+          "issued_for": "2300Z",
+          "model_coverage": {
+            "coverage_hours": 6,
+            "fresh_models_covering_window": [
+              "CMA_GRAPES_GLOBAL",
+              "ECMWF_HRES",
+              "GEM_GLOBAL",
+              "GFS_GLOBAL",
+              "ICON_SEAMLESS",
+              "JMA_GSM",
+              "METEOFRANCE_ARPEGE_WORLD",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "fresh_model_count": 8,
+            "direct_visibility_models": [
+              "CMA_GRAPES_GLOBAL",
+              "GFS_GLOBAL",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "direct_visibility_model_count": 3,
+            "missing_window_hours": [],
+            "coverage_status": "sufficient",
+            "model_run_age_hours": {
+              "CMA_GRAPES_GLOBAL": 0.0,
+              "ECMWF_HRES": 0.01,
+              "GEM_GLOBAL": 0.01,
+              "GFS_GLOBAL": 0.01,
+              "ICON_SEAMLESS": 0.01,
+              "JMA_GSM": 0.0,
+              "METEOFRANCE_ARPEGE_WORLD": 0.0,
+              "UKMO_GLOBAL_10KM": 0.0
+            },
+            "cloud_base_source": "proxy",
+            "observation_verification_status": "frozen",
+            "observation_hourly_age_hours": 112.65
+          },
+          "verification_status": "frozen"
+        }
+      },
+      "rain_50_20_becmg3": {
+        "config": {
+          "key": "rain_50_20_becmg3",
+          "version": "rain-50-20-becmg3-v1",
+          "label": "Rain 50/20 with BECMG guard",
+          "description": "Rain 50/20 plus BECMG wording only after three rainy hours and 25% spread-adjusted agreement; weaker events remain temporary or probability wording.",
+          "wet_model_probability_threshold": 50.0,
+          "min_probability_agreement": 0.2,
+          "min_amount_agreement": 0.0,
+          "max_bridge_gap_hours": 0,
+          "ts_policy": "broad_current",
+          "min_rain_signal_hours": 1,
+          "becmg_min_rain_hours": 3,
+          "becmg_min_agreement": 0.25,
+          "evidence_scope": "Jan-Jun 2026 historical replay; comparison only",
+          "mode": "shadow_only",
+          "promotion_status": "not_promoted",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides"
+        },
+        "guidance": {
+          "valid_start": "2026-07-16 08:00:00",
+          "issued_utc": "2300",
+          "issued_day": 15,
+          "base_group": {
+            "dir": "110",
+            "spd": "06",
+            "gust": "13",
+            "vis": "9999",
+            "wx": "",
+            "cloud": "FEW014",
+            "rain": 0.019230837523595553,
+            "rain_mmh": 0.019230837523595553,
+            "trends": [],
+            "badge": "MME 2300Z Shift",
+            "metrics": {
+              "leader_rmse": "N/A",
+              "leader_strat": "N/A"
+            }
+          },
+          "taf_text": "FTID40 WAWP 152300\nTAF WAWP 152300Z 1600/1700 11006KT 9999 FEW014=",
+          "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
+          "warnings": [
+            "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.77).",
+            "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL, METEOFRANCE_ARPEGE_WORLD (strength 0.07)."
+          ],
+          "event_skill_context": {
+            "Rainfall": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.2704,
+              "weighted_far": 0.4995,
+              "strength": 0.7726,
+              "top_models": [
+                "UKMO_GLOBAL_10KM",
+                "METEOFRANCE_ARPEGE_WORLD",
+                "GEM_GLOBAL"
+              ],
+              "min_events": 10,
+              "threshold": 1.5
+            },
+            "Wind Gust": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.0258,
+              "weighted_far": 0.8752,
+              "strength": 0.0738,
+              "top_models": [
+                "ECMWF_HRES",
+                "CMA_GRAPES_GLOBAL",
+                "METEOFRANCE_ARPEGE_WORLD"
+              ],
+              "min_events": 10,
+              "threshold": 15.0
+            }
+          }
+        },
+        "provenance": {
+          "mode": "shadow_only",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides",
+          "issued_for": "2300Z",
+          "model_coverage": {
+            "coverage_hours": 6,
+            "fresh_models_covering_window": [
+              "CMA_GRAPES_GLOBAL",
+              "ECMWF_HRES",
+              "GEM_GLOBAL",
+              "GFS_GLOBAL",
+              "ICON_SEAMLESS",
+              "JMA_GSM",
+              "METEOFRANCE_ARPEGE_WORLD",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "fresh_model_count": 8,
+            "direct_visibility_models": [
+              "CMA_GRAPES_GLOBAL",
+              "GFS_GLOBAL",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "direct_visibility_model_count": 3,
+            "missing_window_hours": [],
+            "coverage_status": "sufficient",
+            "model_run_age_hours": {
+              "CMA_GRAPES_GLOBAL": 0.0,
+              "ECMWF_HRES": 0.01,
+              "GEM_GLOBAL": 0.01,
+              "GFS_GLOBAL": 0.01,
+              "ICON_SEAMLESS": 0.01,
+              "JMA_GSM": 0.0,
+              "METEOFRANCE_ARPEGE_WORLD": 0.0,
+              "UKMO_GLOBAL_10KM": 0.0
+            },
+            "cloud_base_source": "proxy",
+            "observation_verification_status": "frozen",
+            "observation_hourly_age_hours": 112.65
+          },
+          "verification_status": "frozen"
+        }
+      }
+    },
+    "0500": {
+      "control_current": {
+        "config": {
+          "key": "control_current",
+          "version": "rain-control-v1",
+          "label": "Control current",
+          "description": "Frozen replay baseline: 40% wet-model probability, no minimum agreement gate, and a two-hour rain bridge. This is a comparison baseline, not a claim that it exactly matches live event adaptation.",
+          "wet_model_probability_threshold": 40.0,
+          "min_probability_agreement": 0.0,
+          "min_amount_agreement": 0.0,
+          "max_bridge_gap_hours": 2,
+          "ts_policy": "broad_current",
+          "min_rain_signal_hours": 1,
+          "becmg_min_rain_hours": 1,
+          "becmg_min_agreement": 0.1,
+          "evidence_scope": "Jan-Jun 2026 historical replay; comparison only",
+          "mode": "shadow_only",
+          "promotion_status": "not_promoted",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides"
+        },
+        "guidance": {
+          "valid_start": "2026-07-15 14:00:00",
+          "issued_utc": "0500",
+          "issued_day": 15,
+          "base_group": {
+            "dir": "110",
+            "spd": "07",
+            "gust": "08",
+            "vis": "9999",
+            "wx": "",
+            "cloud": "SCT035",
+            "rain": 0.07874057837054363,
+            "rain_mmh": 0.07874057837054363,
+            "trends": [],
+            "badge": "MME 0500Z Shift",
+            "metrics": {
+              "leader_rmse": "N/A",
+              "leader_strat": "N/A"
+            }
+          },
+          "taf_text": "FTID40 WAWP 150500\nTAF WAWP 150500Z 1506/1606 11007KT 9999 SCT035=",
+          "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (7 KT).",
+          "warnings": [
+            "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.77).",
+            "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL, METEOFRANCE_ARPEGE_WORLD (strength 0.07)."
+          ],
+          "event_skill_context": {
+            "Rainfall": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.2704,
+              "weighted_far": 0.4995,
+              "strength": 0.7726,
+              "top_models": [
+                "UKMO_GLOBAL_10KM",
+                "METEOFRANCE_ARPEGE_WORLD",
+                "GEM_GLOBAL"
+              ],
+              "min_events": 10,
+              "threshold": 1.5
+            },
+            "Wind Gust": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.0258,
+              "weighted_far": 0.8752,
+              "strength": 0.0738,
+              "top_models": [
+                "ECMWF_HRES",
+                "CMA_GRAPES_GLOBAL",
+                "METEOFRANCE_ARPEGE_WORLD"
+              ],
+              "min_events": 10,
+              "threshold": 15.0
+            }
+          }
+        },
+        "provenance": {
+          "mode": "shadow_only",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides",
+          "issued_for": "0500Z",
+          "model_coverage": {
+            "coverage_hours": 6,
+            "fresh_models_covering_window": [
+              "CMA_GRAPES_GLOBAL",
+              "ECMWF_HRES",
+              "GEM_GLOBAL",
+              "GFS_GLOBAL",
+              "ICON_SEAMLESS",
+              "JMA_GSM",
+              "METEOFRANCE_ARPEGE_WORLD",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "fresh_model_count": 8,
+            "direct_visibility_models": [
+              "CMA_GRAPES_GLOBAL",
+              "GFS_GLOBAL",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "direct_visibility_model_count": 3,
+            "missing_window_hours": [],
+            "coverage_status": "sufficient",
+            "model_run_age_hours": {
+              "CMA_GRAPES_GLOBAL": 0.0,
+              "ECMWF_HRES": 0.01,
+              "GEM_GLOBAL": 0.01,
+              "GFS_GLOBAL": 0.01,
+              "ICON_SEAMLESS": 0.01,
+              "JMA_GSM": 0.0,
+              "METEOFRANCE_ARPEGE_WORLD": 0.0,
+              "UKMO_GLOBAL_10KM": 0.0
+            },
+            "cloud_base_source": "proxy",
+            "observation_verification_status": "frozen",
+            "observation_hourly_age_hours": 112.65
+          },
+          "verification_status": "frozen"
+        }
+      },
+      "rain_50_20": {
+        "config": {
+          "key": "rain_50_20",
+          "version": "rain-50-20-v1",
+          "label": "Rain 50/20",
+          "description": "Balanced candidate: require 50% weighted wet-model probability and 20% spread-adjusted agreement; disable rain-gap bridging.",
+          "wet_model_probability_threshold": 50.0,
+          "min_probability_agreement": 0.2,
+          "min_amount_agreement": 0.0,
+          "max_bridge_gap_hours": 0,
+          "ts_policy": "broad_current",
+          "min_rain_signal_hours": 1,
+          "becmg_min_rain_hours": 1,
+          "becmg_min_agreement": 0.1,
+          "evidence_scope": "Jan-Jun 2026 historical replay; comparison only",
+          "mode": "shadow_only",
+          "promotion_status": "not_promoted",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides"
+        },
+        "guidance": {
+          "valid_start": "2026-07-15 14:00:00",
+          "issued_utc": "0500",
+          "issued_day": 15,
+          "base_group": {
+            "dir": "110",
+            "spd": "07",
+            "gust": "08",
+            "vis": "9999",
+            "wx": "",
+            "cloud": "SCT035",
+            "rain": 0.07874057837054363,
+            "rain_mmh": 0.07874057837054363,
+            "trends": [],
+            "badge": "MME 0500Z Shift",
+            "metrics": {
+              "leader_rmse": "N/A",
+              "leader_strat": "N/A"
+            }
+          },
+          "taf_text": "FTID40 WAWP 150500\nTAF WAWP 150500Z 1506/1606 11007KT 9999 SCT035=",
+          "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (7 KT).",
+          "warnings": [
+            "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.77).",
+            "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL, METEOFRANCE_ARPEGE_WORLD (strength 0.07)."
+          ],
+          "event_skill_context": {
+            "Rainfall": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.2704,
+              "weighted_far": 0.4995,
+              "strength": 0.7726,
+              "top_models": [
+                "UKMO_GLOBAL_10KM",
+                "METEOFRANCE_ARPEGE_WORLD",
+                "GEM_GLOBAL"
+              ],
+              "min_events": 10,
+              "threshold": 1.5
+            },
+            "Wind Gust": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.0258,
+              "weighted_far": 0.8752,
+              "strength": 0.0738,
+              "top_models": [
+                "ECMWF_HRES",
+                "CMA_GRAPES_GLOBAL",
+                "METEOFRANCE_ARPEGE_WORLD"
+              ],
+              "min_events": 10,
+              "threshold": 15.0
+            }
+          }
+        },
+        "provenance": {
+          "mode": "shadow_only",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides",
+          "issued_for": "0500Z",
+          "model_coverage": {
+            "coverage_hours": 6,
+            "fresh_models_covering_window": [
+              "CMA_GRAPES_GLOBAL",
+              "ECMWF_HRES",
+              "GEM_GLOBAL",
+              "GFS_GLOBAL",
+              "ICON_SEAMLESS",
+              "JMA_GSM",
+              "METEOFRANCE_ARPEGE_WORLD",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "fresh_model_count": 8,
+            "direct_visibility_models": [
+              "CMA_GRAPES_GLOBAL",
+              "GFS_GLOBAL",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "direct_visibility_model_count": 3,
+            "missing_window_hours": [],
+            "coverage_status": "sufficient",
+            "model_run_age_hours": {
+              "CMA_GRAPES_GLOBAL": 0.0,
+              "ECMWF_HRES": 0.01,
+              "GEM_GLOBAL": 0.01,
+              "GFS_GLOBAL": 0.01,
+              "ICON_SEAMLESS": 0.01,
+              "JMA_GSM": 0.0,
+              "METEOFRANCE_ARPEGE_WORLD": 0.0,
+              "UKMO_GLOBAL_10KM": 0.0
+            },
+            "cloud_base_source": "proxy",
+            "observation_verification_status": "frozen",
+            "observation_hourly_age_hours": 112.65
+          },
+          "verification_status": "frozen"
+        }
+      },
+      "rain_50_20_becmg3": {
+        "config": {
+          "key": "rain_50_20_becmg3",
+          "version": "rain-50-20-becmg3-v1",
+          "label": "Rain 50/20 with BECMG guard",
+          "description": "Rain 50/20 plus BECMG wording only after three rainy hours and 25% spread-adjusted agreement; weaker events remain temporary or probability wording.",
+          "wet_model_probability_threshold": 50.0,
+          "min_probability_agreement": 0.2,
+          "min_amount_agreement": 0.0,
+          "max_bridge_gap_hours": 0,
+          "ts_policy": "broad_current",
+          "min_rain_signal_hours": 1,
+          "becmg_min_rain_hours": 3,
+          "becmg_min_agreement": 0.25,
+          "evidence_scope": "Jan-Jun 2026 historical replay; comparison only",
+          "mode": "shadow_only",
+          "promotion_status": "not_promoted",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides"
+        },
+        "guidance": {
+          "valid_start": "2026-07-15 14:00:00",
+          "issued_utc": "0500",
+          "issued_day": 15,
+          "base_group": {
+            "dir": "110",
+            "spd": "07",
+            "gust": "08",
+            "vis": "9999",
+            "wx": "",
+            "cloud": "SCT035",
+            "rain": 0.07874057837054363,
+            "rain_mmh": 0.07874057837054363,
+            "trends": [],
+            "badge": "MME 0500Z Shift",
+            "metrics": {
+              "leader_rmse": "N/A",
+              "leader_strat": "N/A"
+            }
+          },
+          "taf_text": "FTID40 WAWP 150500\nTAF WAWP 150500Z 1506/1606 11007KT 9999 SCT035=",
+          "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (7 KT).",
+          "warnings": [
+            "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.77).",
+            "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL, METEOFRANCE_ARPEGE_WORLD (strength 0.07)."
+          ],
+          "event_skill_context": {
+            "Rainfall": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.2704,
+              "weighted_far": 0.4995,
+              "strength": 0.7726,
+              "top_models": [
+                "UKMO_GLOBAL_10KM",
+                "METEOFRANCE_ARPEGE_WORLD",
+                "GEM_GLOBAL"
+              ],
+              "min_events": 10,
+              "threshold": 1.5
+            },
+            "Wind Gust": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.0258,
+              "weighted_far": 0.8752,
+              "strength": 0.0738,
+              "top_models": [
+                "ECMWF_HRES",
+                "CMA_GRAPES_GLOBAL",
+                "METEOFRANCE_ARPEGE_WORLD"
+              ],
+              "min_events": 10,
+              "threshold": 15.0
+            }
+          }
+        },
+        "provenance": {
+          "mode": "shadow_only",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides",
+          "issued_for": "0500Z",
+          "model_coverage": {
+            "coverage_hours": 6,
+            "fresh_models_covering_window": [
+              "CMA_GRAPES_GLOBAL",
+              "ECMWF_HRES",
+              "GEM_GLOBAL",
+              "GFS_GLOBAL",
+              "ICON_SEAMLESS",
+              "JMA_GSM",
+              "METEOFRANCE_ARPEGE_WORLD",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "fresh_model_count": 8,
+            "direct_visibility_models": [
+              "CMA_GRAPES_GLOBAL",
+              "GFS_GLOBAL",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "direct_visibility_model_count": 3,
+            "missing_window_hours": [],
+            "coverage_status": "sufficient",
+            "model_run_age_hours": {
+              "CMA_GRAPES_GLOBAL": 0.0,
+              "ECMWF_HRES": 0.01,
+              "GEM_GLOBAL": 0.01,
+              "GFS_GLOBAL": 0.01,
+              "ICON_SEAMLESS": 0.01,
+              "JMA_GSM": 0.0,
+              "METEOFRANCE_ARPEGE_WORLD": 0.0,
+              "UKMO_GLOBAL_10KM": 0.0
+            },
+            "cloud_base_source": "proxy",
+            "observation_verification_status": "frozen",
+            "observation_hourly_age_hours": 112.65
+          },
+          "verification_status": "frozen"
+        }
+      }
+    },
+    "1100": {
+      "control_current": {
+        "config": {
+          "key": "control_current",
+          "version": "rain-control-v1",
+          "label": "Control current",
+          "description": "Frozen replay baseline: 40% wet-model probability, no minimum agreement gate, and a two-hour rain bridge. This is a comparison baseline, not a claim that it exactly matches live event adaptation.",
+          "wet_model_probability_threshold": 40.0,
+          "min_probability_agreement": 0.0,
+          "min_amount_agreement": 0.0,
+          "max_bridge_gap_hours": 2,
+          "ts_policy": "broad_current",
+          "min_rain_signal_hours": 1,
+          "becmg_min_rain_hours": 1,
+          "becmg_min_agreement": 0.1,
+          "evidence_scope": "Jan-Jun 2026 historical replay; comparison only",
+          "mode": "shadow_only",
+          "promotion_status": "not_promoted",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides"
+        },
+        "guidance": {
+          "valid_start": "2026-07-15 20:00:00",
+          "issued_utc": "1100",
+          "issued_day": 15,
+          "base_group": {
+            "dir": "100",
+            "spd": "06",
+            "gust": "13",
+            "vis": "9999",
+            "wx": "",
+            "cloud": "SCT010",
+            "rain": 0.03847087859896079,
+            "rain_mmh": 0.03847087859896079,
+            "trends": [],
+            "badge": "MME 1100Z Shift",
+            "metrics": {
+              "leader_rmse": "N/A",
+              "leader_strat": "N/A"
+            }
+          },
+          "taf_text": "FTID40 WAWP 151100\nTAF WAWP 151100Z 1512/1612 10006KT 9999 SCT010=",
+          "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
+          "warnings": [
+            "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.77).",
+            "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL, METEOFRANCE_ARPEGE_WORLD (strength 0.07)."
+          ],
+          "event_skill_context": {
+            "Rainfall": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.2704,
+              "weighted_far": 0.4995,
+              "strength": 0.7726,
+              "top_models": [
+                "UKMO_GLOBAL_10KM",
+                "METEOFRANCE_ARPEGE_WORLD",
+                "GEM_GLOBAL"
+              ],
+              "min_events": 10,
+              "threshold": 1.5
+            },
+            "Wind Gust": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.0258,
+              "weighted_far": 0.8752,
+              "strength": 0.0738,
+              "top_models": [
+                "ECMWF_HRES",
+                "CMA_GRAPES_GLOBAL",
+                "METEOFRANCE_ARPEGE_WORLD"
+              ],
+              "min_events": 10,
+              "threshold": 15.0
+            }
+          }
+        },
+        "provenance": {
+          "mode": "shadow_only",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides",
+          "issued_for": "1100Z",
+          "model_coverage": {
+            "coverage_hours": 6,
+            "fresh_models_covering_window": [
+              "CMA_GRAPES_GLOBAL",
+              "ECMWF_HRES",
+              "GEM_GLOBAL",
+              "GFS_GLOBAL",
+              "ICON_SEAMLESS",
+              "JMA_GSM",
+              "METEOFRANCE_ARPEGE_WORLD",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "fresh_model_count": 8,
+            "direct_visibility_models": [
+              "CMA_GRAPES_GLOBAL",
+              "GFS_GLOBAL",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "direct_visibility_model_count": 3,
+            "missing_window_hours": [],
+            "coverage_status": "sufficient",
+            "model_run_age_hours": {
+              "CMA_GRAPES_GLOBAL": 0.0,
+              "ECMWF_HRES": 0.01,
+              "GEM_GLOBAL": 0.01,
+              "GFS_GLOBAL": 0.01,
+              "ICON_SEAMLESS": 0.01,
+              "JMA_GSM": 0.0,
+              "METEOFRANCE_ARPEGE_WORLD": 0.0,
+              "UKMO_GLOBAL_10KM": 0.0
+            },
+            "cloud_base_source": "proxy",
+            "observation_verification_status": "frozen",
+            "observation_hourly_age_hours": 112.65
+          },
+          "verification_status": "frozen"
+        }
+      },
+      "rain_50_20": {
+        "config": {
+          "key": "rain_50_20",
+          "version": "rain-50-20-v1",
+          "label": "Rain 50/20",
+          "description": "Balanced candidate: require 50% weighted wet-model probability and 20% spread-adjusted agreement; disable rain-gap bridging.",
+          "wet_model_probability_threshold": 50.0,
+          "min_probability_agreement": 0.2,
+          "min_amount_agreement": 0.0,
+          "max_bridge_gap_hours": 0,
+          "ts_policy": "broad_current",
+          "min_rain_signal_hours": 1,
+          "becmg_min_rain_hours": 1,
+          "becmg_min_agreement": 0.1,
+          "evidence_scope": "Jan-Jun 2026 historical replay; comparison only",
+          "mode": "shadow_only",
+          "promotion_status": "not_promoted",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides"
+        },
+        "guidance": {
+          "valid_start": "2026-07-15 20:00:00",
+          "issued_utc": "1100",
+          "issued_day": 15,
+          "base_group": {
+            "dir": "100",
+            "spd": "06",
+            "gust": "13",
+            "vis": "9999",
+            "wx": "",
+            "cloud": "SCT010",
+            "rain": 0.03847087859896079,
+            "rain_mmh": 0.03847087859896079,
+            "trends": [],
+            "badge": "MME 1100Z Shift",
+            "metrics": {
+              "leader_rmse": "N/A",
+              "leader_strat": "N/A"
+            }
+          },
+          "taf_text": "FTID40 WAWP 151100\nTAF WAWP 151100Z 1512/1612 10006KT 9999 SCT010=",
+          "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
+          "warnings": [
+            "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.77).",
+            "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL, METEOFRANCE_ARPEGE_WORLD (strength 0.07)."
+          ],
+          "event_skill_context": {
+            "Rainfall": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.2704,
+              "weighted_far": 0.4995,
+              "strength": 0.7726,
+              "top_models": [
+                "UKMO_GLOBAL_10KM",
+                "METEOFRANCE_ARPEGE_WORLD",
+                "GEM_GLOBAL"
+              ],
+              "min_events": 10,
+              "threshold": 1.5
+            },
+            "Wind Gust": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.0258,
+              "weighted_far": 0.8752,
+              "strength": 0.0738,
+              "top_models": [
+                "ECMWF_HRES",
+                "CMA_GRAPES_GLOBAL",
+                "METEOFRANCE_ARPEGE_WORLD"
+              ],
+              "min_events": 10,
+              "threshold": 15.0
+            }
+          }
+        },
+        "provenance": {
+          "mode": "shadow_only",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides",
+          "issued_for": "1100Z",
+          "model_coverage": {
+            "coverage_hours": 6,
+            "fresh_models_covering_window": [
+              "CMA_GRAPES_GLOBAL",
+              "ECMWF_HRES",
+              "GEM_GLOBAL",
+              "GFS_GLOBAL",
+              "ICON_SEAMLESS",
+              "JMA_GSM",
+              "METEOFRANCE_ARPEGE_WORLD",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "fresh_model_count": 8,
+            "direct_visibility_models": [
+              "CMA_GRAPES_GLOBAL",
+              "GFS_GLOBAL",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "direct_visibility_model_count": 3,
+            "missing_window_hours": [],
+            "coverage_status": "sufficient",
+            "model_run_age_hours": {
+              "CMA_GRAPES_GLOBAL": 0.0,
+              "ECMWF_HRES": 0.01,
+              "GEM_GLOBAL": 0.01,
+              "GFS_GLOBAL": 0.01,
+              "ICON_SEAMLESS": 0.01,
+              "JMA_GSM": 0.0,
+              "METEOFRANCE_ARPEGE_WORLD": 0.0,
+              "UKMO_GLOBAL_10KM": 0.0
+            },
+            "cloud_base_source": "proxy",
+            "observation_verification_status": "frozen",
+            "observation_hourly_age_hours": 112.65
+          },
+          "verification_status": "frozen"
+        }
+      },
+      "rain_50_20_becmg3": {
+        "config": {
+          "key": "rain_50_20_becmg3",
+          "version": "rain-50-20-becmg3-v1",
+          "label": "Rain 50/20 with BECMG guard",
+          "description": "Rain 50/20 plus BECMG wording only after three rainy hours and 25% spread-adjusted agreement; weaker events remain temporary or probability wording.",
+          "wet_model_probability_threshold": 50.0,
+          "min_probability_agreement": 0.2,
+          "min_amount_agreement": 0.0,
+          "max_bridge_gap_hours": 0,
+          "ts_policy": "broad_current",
+          "min_rain_signal_hours": 1,
+          "becmg_min_rain_hours": 3,
+          "becmg_min_agreement": 0.25,
+          "evidence_scope": "Jan-Jun 2026 historical replay; comparison only",
+          "mode": "shadow_only",
+          "promotion_status": "not_promoted",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides"
+        },
+        "guidance": {
+          "valid_start": "2026-07-15 20:00:00",
+          "issued_utc": "1100",
+          "issued_day": 15,
+          "base_group": {
+            "dir": "100",
+            "spd": "06",
+            "gust": "13",
+            "vis": "9999",
+            "wx": "",
+            "cloud": "SCT010",
+            "rain": 0.03847087859896079,
+            "rain_mmh": 0.03847087859896079,
+            "trends": [],
+            "badge": "MME 1100Z Shift",
+            "metrics": {
+              "leader_rmse": "N/A",
+              "leader_strat": "N/A"
+            }
+          },
+          "taf_text": "FTID40 WAWP 151100\nTAF WAWP 151100Z 1512/1612 10006KT 9999 SCT010=",
+          "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
+          "warnings": [
+            "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.77).",
+            "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL, METEOFRANCE_ARPEGE_WORLD (strength 0.07)."
+          ],
+          "event_skill_context": {
+            "Rainfall": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.2704,
+              "weighted_far": 0.4995,
+              "strength": 0.7726,
+              "top_models": [
+                "UKMO_GLOBAL_10KM",
+                "METEOFRANCE_ARPEGE_WORLD",
+                "GEM_GLOBAL"
+              ],
+              "min_events": 10,
+              "threshold": 1.5
+            },
+            "Wind Gust": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.0258,
+              "weighted_far": 0.8752,
+              "strength": 0.0738,
+              "top_models": [
+                "ECMWF_HRES",
+                "CMA_GRAPES_GLOBAL",
+                "METEOFRANCE_ARPEGE_WORLD"
+              ],
+              "min_events": 10,
+              "threshold": 15.0
+            }
+          }
+        },
+        "provenance": {
+          "mode": "shadow_only",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides",
+          "issued_for": "1100Z",
+          "model_coverage": {
+            "coverage_hours": 6,
+            "fresh_models_covering_window": [
+              "CMA_GRAPES_GLOBAL",
+              "ECMWF_HRES",
+              "GEM_GLOBAL",
+              "GFS_GLOBAL",
+              "ICON_SEAMLESS",
+              "JMA_GSM",
+              "METEOFRANCE_ARPEGE_WORLD",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "fresh_model_count": 8,
+            "direct_visibility_models": [
+              "CMA_GRAPES_GLOBAL",
+              "GFS_GLOBAL",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "direct_visibility_model_count": 3,
+            "missing_window_hours": [],
+            "coverage_status": "sufficient",
+            "model_run_age_hours": {
+              "CMA_GRAPES_GLOBAL": 0.0,
+              "ECMWF_HRES": 0.01,
+              "GEM_GLOBAL": 0.01,
+              "GFS_GLOBAL": 0.01,
+              "ICON_SEAMLESS": 0.01,
+              "JMA_GSM": 0.0,
+              "METEOFRANCE_ARPEGE_WORLD": 0.0,
+              "UKMO_GLOBAL_10KM": 0.0
+            },
+            "cloud_base_source": "proxy",
+            "observation_verification_status": "frozen",
+            "observation_hourly_age_hours": 112.65
+          },
+          "verification_status": "frozen"
+        }
+      }
+    },
+    "1700": {
+      "control_current": {
+        "config": {
+          "key": "control_current",
+          "version": "rain-control-v1",
+          "label": "Control current",
+          "description": "Frozen replay baseline: 40% wet-model probability, no minimum agreement gate, and a two-hour rain bridge. This is a comparison baseline, not a claim that it exactly matches live event adaptation.",
+          "wet_model_probability_threshold": 40.0,
+          "min_probability_agreement": 0.0,
+          "min_amount_agreement": 0.0,
+          "max_bridge_gap_hours": 2,
+          "ts_policy": "broad_current",
+          "min_rain_signal_hours": 1,
+          "becmg_min_rain_hours": 1,
+          "becmg_min_agreement": 0.1,
+          "evidence_scope": "Jan-Jun 2026 historical replay; comparison only",
+          "mode": "shadow_only",
+          "promotion_status": "not_promoted",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides"
+        },
+        "guidance": {
+          "valid_start": "2026-07-16 02:00:00",
+          "issued_utc": "1700",
+          "issued_day": 15,
+          "base_group": {
+            "dir": "100",
+            "spd": "05",
+            "gust": "13",
+            "vis": "9999",
+            "wx": "",
+            "cloud": "FEW065",
+            "rain": 0.0,
+            "rain_mmh": 0.0,
+            "trends": [],
+            "badge": "MME 1700Z Shift",
+            "metrics": {
+              "leader_rmse": "N/A",
+              "leader_strat": "N/A"
+            }
+          },
+          "taf_text": "FTID40 WAWP 151700\nTAF WAWP 151700Z 1518/1618 10005KT CAVOK=",
+          "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (5 KT).",
+          "warnings": [
+            "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.77).",
+            "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL, METEOFRANCE_ARPEGE_WORLD (strength 0.07)."
+          ],
+          "event_skill_context": {
+            "Rainfall": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.2704,
+              "weighted_far": 0.4995,
+              "strength": 0.7726,
+              "top_models": [
+                "UKMO_GLOBAL_10KM",
+                "METEOFRANCE_ARPEGE_WORLD",
+                "GEM_GLOBAL"
+              ],
+              "min_events": 10,
+              "threshold": 1.5
+            },
+            "Wind Gust": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.0258,
+              "weighted_far": 0.8752,
+              "strength": 0.0738,
+              "top_models": [
+                "ECMWF_HRES",
+                "CMA_GRAPES_GLOBAL",
+                "METEOFRANCE_ARPEGE_WORLD"
+              ],
+              "min_events": 10,
+              "threshold": 15.0
+            }
+          }
+        },
+        "provenance": {
+          "mode": "shadow_only",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides",
+          "issued_for": "1700Z",
+          "model_coverage": {
+            "coverage_hours": 6,
+            "fresh_models_covering_window": [
+              "CMA_GRAPES_GLOBAL",
+              "ECMWF_HRES",
+              "GEM_GLOBAL",
+              "GFS_GLOBAL",
+              "ICON_SEAMLESS",
+              "JMA_GSM",
+              "METEOFRANCE_ARPEGE_WORLD",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "fresh_model_count": 8,
+            "direct_visibility_models": [
+              "CMA_GRAPES_GLOBAL",
+              "GFS_GLOBAL",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "direct_visibility_model_count": 3,
+            "missing_window_hours": [],
+            "coverage_status": "sufficient",
+            "model_run_age_hours": {
+              "CMA_GRAPES_GLOBAL": 0.0,
+              "ECMWF_HRES": 0.01,
+              "GEM_GLOBAL": 0.01,
+              "GFS_GLOBAL": 0.01,
+              "ICON_SEAMLESS": 0.01,
+              "JMA_GSM": 0.0,
+              "METEOFRANCE_ARPEGE_WORLD": 0.0,
+              "UKMO_GLOBAL_10KM": 0.0
+            },
+            "cloud_base_source": "proxy",
+            "observation_verification_status": "frozen",
+            "observation_hourly_age_hours": 112.65
+          },
+          "verification_status": "frozen"
+        }
+      },
+      "rain_50_20": {
+        "config": {
+          "key": "rain_50_20",
+          "version": "rain-50-20-v1",
+          "label": "Rain 50/20",
+          "description": "Balanced candidate: require 50% weighted wet-model probability and 20% spread-adjusted agreement; disable rain-gap bridging.",
+          "wet_model_probability_threshold": 50.0,
+          "min_probability_agreement": 0.2,
+          "min_amount_agreement": 0.0,
+          "max_bridge_gap_hours": 0,
+          "ts_policy": "broad_current",
+          "min_rain_signal_hours": 1,
+          "becmg_min_rain_hours": 1,
+          "becmg_min_agreement": 0.1,
+          "evidence_scope": "Jan-Jun 2026 historical replay; comparison only",
+          "mode": "shadow_only",
+          "promotion_status": "not_promoted",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides"
+        },
+        "guidance": {
+          "valid_start": "2026-07-16 02:00:00",
+          "issued_utc": "1700",
+          "issued_day": 15,
+          "base_group": {
+            "dir": "100",
+            "spd": "05",
+            "gust": "13",
+            "vis": "9999",
+            "wx": "",
+            "cloud": "FEW065",
+            "rain": 0.0,
+            "rain_mmh": 0.0,
+            "trends": [],
+            "badge": "MME 1700Z Shift",
+            "metrics": {
+              "leader_rmse": "N/A",
+              "leader_strat": "N/A"
+            }
+          },
+          "taf_text": "FTID40 WAWP 151700\nTAF WAWP 151700Z 1518/1618 10005KT CAVOK=",
+          "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (5 KT).",
+          "warnings": [
+            "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.77).",
+            "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL, METEOFRANCE_ARPEGE_WORLD (strength 0.07)."
+          ],
+          "event_skill_context": {
+            "Rainfall": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.2704,
+              "weighted_far": 0.4995,
+              "strength": 0.7726,
+              "top_models": [
+                "UKMO_GLOBAL_10KM",
+                "METEOFRANCE_ARPEGE_WORLD",
+                "GEM_GLOBAL"
+              ],
+              "min_events": 10,
+              "threshold": 1.5
+            },
+            "Wind Gust": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.0258,
+              "weighted_far": 0.8752,
+              "strength": 0.0738,
+              "top_models": [
+                "ECMWF_HRES",
+                "CMA_GRAPES_GLOBAL",
+                "METEOFRANCE_ARPEGE_WORLD"
+              ],
+              "min_events": 10,
+              "threshold": 15.0
+            }
+          }
+        },
+        "provenance": {
+          "mode": "shadow_only",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides",
+          "issued_for": "1700Z",
+          "model_coverage": {
+            "coverage_hours": 6,
+            "fresh_models_covering_window": [
+              "CMA_GRAPES_GLOBAL",
+              "ECMWF_HRES",
+              "GEM_GLOBAL",
+              "GFS_GLOBAL",
+              "ICON_SEAMLESS",
+              "JMA_GSM",
+              "METEOFRANCE_ARPEGE_WORLD",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "fresh_model_count": 8,
+            "direct_visibility_models": [
+              "CMA_GRAPES_GLOBAL",
+              "GFS_GLOBAL",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "direct_visibility_model_count": 3,
+            "missing_window_hours": [],
+            "coverage_status": "sufficient",
+            "model_run_age_hours": {
+              "CMA_GRAPES_GLOBAL": 0.0,
+              "ECMWF_HRES": 0.01,
+              "GEM_GLOBAL": 0.01,
+              "GFS_GLOBAL": 0.01,
+              "ICON_SEAMLESS": 0.01,
+              "JMA_GSM": 0.0,
+              "METEOFRANCE_ARPEGE_WORLD": 0.0,
+              "UKMO_GLOBAL_10KM": 0.0
+            },
+            "cloud_base_source": "proxy",
+            "observation_verification_status": "frozen",
+            "observation_hourly_age_hours": 112.65
+          },
+          "verification_status": "frozen"
+        }
+      },
+      "rain_50_20_becmg3": {
+        "config": {
+          "key": "rain_50_20_becmg3",
+          "version": "rain-50-20-becmg3-v1",
+          "label": "Rain 50/20 with BECMG guard",
+          "description": "Rain 50/20 plus BECMG wording only after three rainy hours and 25% spread-adjusted agreement; weaker events remain temporary or probability wording.",
+          "wet_model_probability_threshold": 50.0,
+          "min_probability_agreement": 0.2,
+          "min_amount_agreement": 0.0,
+          "max_bridge_gap_hours": 0,
+          "ts_policy": "broad_current",
+          "min_rain_signal_hours": 1,
+          "becmg_min_rain_hours": 3,
+          "becmg_min_agreement": 0.25,
+          "evidence_scope": "Jan-Jun 2026 historical replay; comparison only",
+          "mode": "shadow_only",
+          "promotion_status": "not_promoted",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides"
+        },
+        "guidance": {
+          "valid_start": "2026-07-16 02:00:00",
+          "issued_utc": "1700",
+          "issued_day": 15,
+          "base_group": {
+            "dir": "100",
+            "spd": "05",
+            "gust": "13",
+            "vis": "9999",
+            "wx": "",
+            "cloud": "FEW065",
+            "rain": 0.0,
+            "rain_mmh": 0.0,
+            "trends": [],
+            "badge": "MME 1700Z Shift",
+            "metrics": {
+              "leader_rmse": "N/A",
+              "leader_strat": "N/A"
+            }
+          },
+          "taf_text": "FTID40 WAWP 151700\nTAF WAWP 151700Z 1518/1618 10005KT CAVOK=",
+          "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (5 KT).",
+          "warnings": [
+            "Rain/TS confidence adjusted with event-window skill from UKMO_GLOBAL_10KM, METEOFRANCE_ARPEGE_WORLD, GEM_GLOBAL (strength 0.77).",
+            "Gust groups allowed by event-window skill from ECMWF_HRES, CMA_GRAPES_GLOBAL, METEOFRANCE_ARPEGE_WORLD (strength 0.07)."
+          ],
+          "event_skill_context": {
+            "Rainfall": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.2704,
+              "weighted_far": 0.4995,
+              "strength": 0.7726,
+              "top_models": [
+                "UKMO_GLOBAL_10KM",
+                "METEOFRANCE_ARPEGE_WORLD",
+                "GEM_GLOBAL"
+              ],
+              "min_events": 10,
+              "threshold": 1.5
+            },
+            "Wind Gust": {
+              "applied": true,
+              "reason": "event-window skill blended into event-sensitive weights",
+              "weighted_score": 0.0258,
+              "weighted_far": 0.8752,
+              "strength": 0.0738,
+              "top_models": [
+                "ECMWF_HRES",
+                "CMA_GRAPES_GLOBAL",
+                "METEOFRANCE_ARPEGE_WORLD"
+              ],
+              "min_events": 10,
+              "threshold": 15.0
+            }
+          }
+        },
+        "provenance": {
+          "mode": "shadow_only",
+          "selected_operational_impact": "none",
+          "comparison_target": "event-adaptive guidance in tafor_intel.json",
+          "event_calibration": "preserved except for this configuration's explicit rain/TS overrides",
+          "issued_for": "1700Z",
+          "model_coverage": {
+            "coverage_hours": 6,
+            "fresh_models_covering_window": [
+              "CMA_GRAPES_GLOBAL",
+              "ECMWF_HRES",
+              "GEM_GLOBAL",
+              "GFS_GLOBAL",
+              "ICON_SEAMLESS",
+              "JMA_GSM",
+              "METEOFRANCE_ARPEGE_WORLD",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "fresh_model_count": 8,
+            "direct_visibility_models": [
+              "CMA_GRAPES_GLOBAL",
+              "GFS_GLOBAL",
+              "UKMO_GLOBAL_10KM"
+            ],
+            "direct_visibility_model_count": 3,
+            "missing_window_hours": [],
+            "coverage_status": "sufficient",
+            "model_run_age_hours": {
+              "CMA_GRAPES_GLOBAL": 0.0,
+              "ECMWF_HRES": 0.01,
+              "GEM_GLOBAL": 0.01,
+              "GFS_GLOBAL": 0.01,
+              "ICON_SEAMLESS": 0.01,
+              "JMA_GSM": 0.0,
+              "METEOFRANCE_ARPEGE_WORLD": 0.0,
+              "UKMO_GLOBAL_10KM": 0.0
+            },
+            "cloud_base_source": "proxy",
+            "observation_verification_status": "frozen",
+            "observation_hourly_age_hours": 112.65
+          },
+          "verification_status": "frozen"
+        }
+      }
+    }
+  }
+}
