@@ -19,6 +19,7 @@ artifacts/qm/*.json
 artifacts/operational/
 artifacts/taf_replay*/
 artifacts/taf_replay_*.log
+graphify-out/
 Archives/
 data/raw_obs/
 *.pyc

@@ -100,6 +100,14 @@ class RainConfig:
                              # cap=4 + <= guard is correct: D=2 -> window=4 -> 2<=2.0 ✓
                              # Aligns with WIII operational standard (85% of TEMPOs ≤4h).
     MAX_GROUPS      = 5      # SOP Sec 12 group cap
+    WET_MODEL_PROBABILITY_THR = 40.0  # weighted wet-model share for probability rain signal
+    MIN_PROBABILITY_AGREEMENT = 0.0   # spread-adjusted agreement gate for that probability signal
+    MIN_RAIN_SIGNAL_AGREEMENT = 0.0   # spread-adjusted agreement gate for consensus-amount signal
+    MAX_BRIDGE_GAP = 2                # hours; 0 disables the rain-gap bridge
+    MIN_RAIN_SIGNAL_HOURS = 1         # suppresses isolated rain signals only when a replay overrides it
+    TS_POLICY = "broad_current"       # broad_current | direct_weather_code | strict_environmental
+    BECMG_MIN_RAIN_HOURS = 1          # preserves current onset behavior by default
+    BECMG_MIN_AGREEMENT = 0.10         # current BECMG floor, equal to PROB40_CUT
 
 
 
@@ -389,15 +397,38 @@ def _build_change_groups(
     # caused the bridge to fire too easily on noise.
 
     MME_BRIDGE_MM  = _RC.BRIDGE_THR
-    MAX_BRIDGE_GAP = 2
+    MAX_BRIDGE_GAP = _RC.MAX_BRIDGE_GAP
+
+    def _filter_short_rain_runs(signal: list[bool], minimum_hours: int) -> list[bool]:
+        """Keep rain runs only when they meet an experimental persistence floor."""
+        if minimum_hours <= 1:
+            return signal[:]
+        filtered = signal[:]
+        start = 0
+        while start < len(signal):
+            if not signal[start]:
+                start += 1
+                continue
+            end = start
+            while end < len(signal) and signal[end]:
+                end += 1
+            if end - start < minimum_hours:
+                for index in range(start, end):
+                    filtered[index] = False
+            start = end
+        return filtered
 
     def _build_rain_signal() -> list[bool]:
-        # Use rain >= CONSENSUS_THR OR prob_precip_10 >= 40.0
+        # Defaults preserve the operational 1 mm/h or 40% wet-model rule.
+        # Hindcast callers can tighten either route through an injected config.
         base = []
-        for r in consensus_truth:
+        for hour, r in enumerate(consensus_truth):
             has_rain = r.get("rain", 0) >= _RC.CONSENSUS_THR
-            has_prob = r.get("prob_precip_10", 0) >= 40.0
-            base.append(has_rain or has_prob)
+            has_prob = r.get("prob_precip_10", 0) >= _RC.WET_MODEL_PROBABILITY_THR
+            agreement = rain_agreement(hour)
+            amount_supported = has_rain and agreement >= _RC.MIN_RAIN_SIGNAL_AGREEMENT
+            probability_supported = has_prob and agreement >= _RC.MIN_PROBABILITY_AGREEMENT
+            base.append(amount_supported or probability_supported)
             
         bridged = base[:]
         i = 0
@@ -422,7 +453,7 @@ def _build_change_groups(
                 i = gap_end if gap_end > i else i + 1
             else:
                 i += 1
-        return bridged
+        return _filter_short_rain_runs(bridged, _RC.MIN_RAIN_SIGNAL_HOURS)
 
     rainy_sig = _build_rain_signal()
 
@@ -567,7 +598,10 @@ def _build_change_groups(
             # [FIX] If the block is long enough to be permanent, but model agreement 
             # is too low to issue a confident BECMG (< PROB40_CUT), DO NOT completely suppress it. 
             # Demote it to a temporary event so it can be safely caught by the PROB30 TEMPO logic.
-            if permanent and agr < _RC.PROB40_CUT:
+            if permanent and (
+                agr < _RC.BECMG_MIN_AGREEMENT
+                or D < _RC.BECMG_MIN_RAIN_HOURS
+            ):
                 permanent = False
 
             if permanent:
@@ -605,7 +639,7 @@ def _build_change_groups(
                 # Guard: if start=0, rain begins at the very first TAF hour.
                 # ts would be max(0,-1)=0=te - zero-length window.
                 # In that case the base state handles it; no onset BECMG needed.
-                if agr >= _RC.PROB40_CUT:
+                if agr >= _RC.BECMG_MIN_AGREEMENT:
                     _width = 1 if agr >= _RC.TEMPO_CUT else (
                              2 if agr >= _RC.PROB40_CUT else 3)
                     te = start                    # rain permanently established here
@@ -1076,6 +1110,7 @@ def _build_change_groups(
                 cin=hour_data.get("convective_inhib"),
                 weather_code=hour_data.get("weather_code"),
                 month=hour_data.get("month"),
+                ts_policy=getattr(_RC, "TS_POLICY", "broad_current"),
             )
             if not wx_str:
                 # Hard rule: no vis-only sub-5000m change groups without a phenomenon
@@ -1100,6 +1135,7 @@ def _build_change_groups(
                     cin=hour_data.get("convective_inhib"),
                     weather_code=hour_data.get("weather_code"),
                     month=hour_data.get("month"),
+                    ts_policy=getattr(_RC, "TS_POLICY", "broad_current"),
                 )
         
         lookahead = min(i + 8, N) - i

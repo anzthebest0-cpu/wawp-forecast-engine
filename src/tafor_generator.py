@@ -81,6 +81,30 @@ def _event_aware_config(event_context: dict):
     EventAwareRainConfig.GUST_MIN_EXCESS = 10.0
     return EventAwareRainConfig
 
+
+def _overlay_shadow_policy(event_config, experimental_taf_config):
+    """Preserve live event calibration while overriding declared test gates."""
+    override_names = (
+        "WET_MODEL_PROBABILITY_THR",
+        "MIN_PROBABILITY_AGREEMENT",
+        "MIN_RAIN_SIGNAL_AGREEMENT",
+        "MAX_BRIDGE_GAP",
+        "MIN_RAIN_SIGNAL_HOURS",
+        "TS_POLICY",
+        "BECMG_MIN_RAIN_HOURS",
+        "BECMG_MIN_AGREEMENT",
+    )
+    overrides = {
+        name: experimental_taf_config.__dict__[name]
+        for name in override_names
+        if name in experimental_taf_config.__dict__
+    }
+    return type(
+        f"EventAware_{experimental_taf_config.__name__}",
+        (event_config,),
+        overrides,
+    )
+
 def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
     issued_hh  = iss_utc[:2]
     issued_str = f"{iss_day:02d}{issued_hh}00Z"
@@ -212,6 +236,7 @@ def generate_tafor(
     model_weights: dict,
     target_issuance: str = None,
     event_weight_diagnostics: dict | None = None,
+    experimental_taf_config=None,
 ) -> dict:
     """
     Core TAF generator. Takes the consensus DataFrame and raw/QM model data 
@@ -330,7 +355,14 @@ def generate_tafor(
         qm_rain_local[m] = {i: v for i, v in enumerate(sliced_values)}
             
     event_context = _event_skill_context(event_weight_diagnostics)
-    taf_config = _event_aware_config(event_context)
+    event_config = _event_aware_config(event_context)
+    if experimental_taf_config is None:
+        taf_config = event_config
+    else:
+        # A shadow/replay policy controls only its explicitly declared rain
+        # wording gates.  Retain the live event-aware calibration (including
+        # verified gust eligibility) for every other setting.
+        taf_config = _overlay_shadow_policy(event_config, experimental_taf_config)
 
     # Generate change groups
     change_group_weights = model_weights.get("Rainfall", model_weights) if isinstance(model_weights, dict) else model_weights
@@ -389,6 +421,7 @@ def generate_tafor(
         cin=first_row.get("convective_inhib"),
         weather_code=first_row.get("weather_code"),
         month=first_row.get("month"),
+        ts_policy=getattr(taf_config, "TS_POLICY", "broad_current"),
     )
         
     best_guess = {

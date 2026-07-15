@@ -14,6 +14,7 @@ from src.model_registry import freshness_status, model_metadata_dict, registry_p
 from src.event_window_verification import event_window_metrics, event_window_weight_scores
 from src.operational_residuals import build_operational_residual_state
 from src.tafor_generator import generate_tafor
+from src.tafor_shadow import build_shadow_taf_payload
 
 log = logging.getLogger("exporter")
 
@@ -1492,6 +1493,27 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
     out_path = os.path.join(output_dir, "tafor_intel.json")
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(sanitize_for_json(taf_intel), f, indent=2, default=str, allow_nan=False)
+
+    # Replay-tested rain wording candidates are generated separately so they
+    # can be verified without changing the selected event-adaptive guidance.
+    taf_shadow = build_shadow_taf_payload(
+        consensus,
+        model_data,
+        qm_rain_data,
+        global_weights,
+        event_weight_diagnostics=event_weight_diagnostics,
+        generated_at=export_now,
+    )
+    for issuance, alternatives in taf_shadow["issuances"].items():
+        model_provenance = (taf_intel.get(issuance) or {}).get("provenance")
+        for alternative in alternatives.values():
+            alternative["provenance"]["model_coverage"] = model_provenance
+            alternative["provenance"]["verification_status"] = (
+                observation_freshness.get("verification_status")
+            )
+    shadow_path = os.path.join(output_dir, "tafor_shadow.json")
+    with open(shadow_path, "w", encoding="utf-8") as f:
+        json.dump(sanitize_for_json(taf_shadow), f, indent=2, default=str, allow_nan=False)
         
     # Output taf_guidance.json (Consensus data)
     guidance_data = consensus.copy()

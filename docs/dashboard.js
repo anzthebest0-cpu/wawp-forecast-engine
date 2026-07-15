@@ -102,7 +102,8 @@ async function loadDashboard() {
             fetch('data/persistency.json' + cb).then(r => r.json()),
             fetch('data/diurnal_climatology.json' + cb).then(r => r.json()),
             fetch('data/system_workflow.json' + cb).then(r => r.json()),
-            fetch('data/operational_residuals.json' + cb).then(r => r.json())
+            fetch('data/operational_residuals.json' + cb).then(r => r.json()),
+            fetch('data/tafor_shadow.json' + cb).then(r => r.json())
         ]);
         
         const intelData = results[0].status === 'fulfilled' ? results[0].value : {};
@@ -130,6 +131,7 @@ async function loadDashboard() {
         const diurnalData = results[8].status === 'fulfilled' ? results[8].value : null;
         const workflowData = results[9].status === 'fulfilled' ? results[9].value : null;
         const residualData = results[10].status === 'fulfilled' ? results[10].value : null;
+        const shadowTafData = results[11].status === 'fulfilled' ? results[11].value : null;
         
         const healthData = results[6].status === 'fulfilled' ? results[6].value : null;
         if (healthData) {
@@ -290,8 +292,54 @@ async function loadDashboard() {
                 });
             }
         }
+
+        function shadowIssuanceFor(selection) {
+            if (selection !== 'default') return selection;
+            return intelData.default?.default_selection?.selected_issuance || null;
+        }
+
+        function renderShadowTAF(selection) {
+            const panel = document.getElementById('shadow-taf-panel');
+            const select = document.getElementById('shadow-taf-config-select');
+            const status = document.getElementById('shadow-taf-status');
+            const note = document.getElementById('shadow-taf-config-note');
+            const display = document.getElementById('shadow-taf-text');
+            if (!panel || !select || !status || !note || !display || !shadowTafData?.issuances) return;
+
+            const issuance = shadowIssuanceFor(selection);
+            const alternatives = issuance ? shadowTafData.issuances[issuance] : null;
+            if (!alternatives || Object.keys(alternatives).length === 0) {
+                panel.hidden = true;
+                return;
+            }
+
+            panel.hidden = false;
+            const keys = (shadowTafData.config_order || Object.keys(alternatives))
+                .filter(key => alternatives[key]);
+            const previous = select.value;
+            select.replaceChildren();
+            keys.forEach(key => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = alternatives[key].config?.label || key;
+                select.appendChild(option);
+            });
+            select.value = keys.includes(previous) ? previous : keys[0];
+
+            const renderSelected = () => {
+                const alternative = alternatives[select.value];
+                const config = alternative?.config || {};
+                const guidance = alternative?.guidance || {};
+                status.textContent = `Shadow only for ${issuance}Z. It cannot alter the validated default, copied draft, or issuance selection.`;
+                note.textContent = config.description || 'Configuration details are unavailable.';
+                display.textContent = guidance.taf_text || 'No shadow guidance was generated for this issuance.';
+            };
+            select.onchange = renderSelected;
+            renderSelected();
+        }
         
         renderIntel(intel);
+        renderShadowTAF(currentIssuance);
         
         const tafSelect = document.getElementById('taf-issuance-select');
         if(tafSelect) {
@@ -312,6 +360,7 @@ async function loadDashboard() {
                 if(intelData[currentIssuance]) {
                     renderIntel(intelData[currentIssuance]);
                 }
+                renderShadowTAF(currentIssuance);
             });
         }
 

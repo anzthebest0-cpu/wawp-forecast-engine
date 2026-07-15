@@ -99,7 +99,8 @@ def estimate_visibility(rain_mmh, rh_pct, temp_c, dewpoint_c,
 
 
 def detect_tsra(cape=None, lifted_index=None, cin=None, weather_code=None,
-                month=None, rain_mmh=0.0, rh_pct=0.0, local_hour_wita=None):
+                month=None, rain_mmh=0.0, rh_pct=0.0, local_hour_wita=None,
+                ts_policy="broad_current"):
     """
     CAPE-aware TSRA proxy tuned for maritime tropics.
     CIN threshold is 100 J/kg per the overhaul brief.
@@ -111,19 +112,26 @@ def detect_tsra(cape=None, lifted_index=None, cin=None, weather_code=None,
         except (TypeError, ValueError):
             pass
 
+    if ts_policy == "direct_weather_code":
+        return None
+
     wet_months = {11, 12, 1, 2, 3, 4}
-    cape_thr = 500 if month is None or int(month) in wet_months else 800
-    cin_thr = 100
+    strict_environmental = ts_policy == "strict_environmental"
+    cape_thr = 1000 if strict_environmental else (500 if month is None or int(month) in wet_months else 800)
+    cin_thr = 50 if strict_environmental else 100
+    li_thr = -4 if strict_environmental else -2
+    min_rain = 1.0 if strict_environmental else 0.0
+    start_hour, end_hour = (14, 19) if strict_environmental else (11, 21)
 
     if cape is not None and lifted_index is not None and cin is not None:
         try:
-            if float(cape) >= cape_thr and float(lifted_index) <= -2 and float(cin) <= cin_thr:
-                if rain_mmh >= 5 or (local_hour_wita is not None and 11 <= int(local_hour_wita) <= 21):
+            if float(cape) >= cape_thr and float(lifted_index) <= li_thr and float(cin) <= cin_thr:
+                if rain_mmh >= max(5.0, min_rain) or (local_hour_wita is not None and start_hour <= int(local_hour_wita) <= end_hour and rain_mmh >= min_rain):
                     return "TSRA"
         except (TypeError, ValueError):
             pass
 
-    if local_hour_wita is not None and rain_mmh >= 7.5 and 11 <= int(local_hour_wita) <= 21 and rh_pct >= 85:
+    if not strict_environmental and local_hour_wita is not None and rain_mmh >= 7.5 and 11 <= int(local_hour_wita) <= 21 and rh_pct >= 85:
         return "TSRA"
     return None
 
@@ -149,7 +157,8 @@ def estimate_visibility_rain_typed(rain_mmh, rain_type="convective", **kwargs):
 
 
 def get_weather_phenomenon(rain_mmh, rh_pct, temp_c, dewpoint_c, vis_m, local_hour_wita,
-                           cape=None, lifted_index=None, cin=None, weather_code=None, month=None):
+                           cape=None, lifted_index=None, cin=None, weather_code=None, month=None,
+                           ts_policy="broad_current"):
     """
     Returns the appropriate ICAO weather phenomenon code for the TAF change group.
     Ensures that if vis_m < 5000m, a weather phenomenon is provided (unless conditions fall through).
@@ -167,9 +176,27 @@ def get_weather_phenomenon(rain_mmh, rh_pct, temp_c, dewpoint_c, vis_m, local_ho
             rain_mmh=rain_mmh,
             rh_pct=rh_pct,
             local_hour_wita=local_hour_wita,
+            ts_policy=ts_policy,
         )
         if tsra:
             return tsra
+        # In an experimental restrictive TS policy, a suppressed environmental
+        # TS diagnosis remains precipitation. Downgrade it to RA instead of
+        # allowing the later light-rain branch to erase the weather entirely.
+        if ts_policy != "broad_current":
+            broad_tsra = detect_tsra(
+                cape=cape,
+                lifted_index=lifted_index,
+                cin=cin,
+                weather_code=weather_code,
+                month=month,
+                rain_mmh=rain_mmh,
+                rh_pct=rh_pct,
+                local_hour_wita=local_hour_wita,
+                ts_policy="broad_current",
+            )
+            if broad_tsra:
+                return "RA"
         if rain_mmh >= 10.0:
             return "+RA"
         elif rain_mmh >= 2.5:

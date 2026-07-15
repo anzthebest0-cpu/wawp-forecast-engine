@@ -1,0 +1,20 @@
+# Keep the project graph about maintained source, configuration, tests, and docs.
+*
+!.graphifyignore
+!AGENTS.md
+!README.md
+!KNOWN_ISSUES.md
+!requirements.txt
+!run_pipeline.py
+!src/
+!src/**
+!tests/
+!tests/**
+!docs/
+!docs/**
+docs/data/
+docs/data/**
+!.github/
+!.github/**
+!config/
+!config/**
