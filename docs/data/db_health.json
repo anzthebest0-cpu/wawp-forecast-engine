@@ -1,12 +1,12 @@
 {
-  "size_mb": 635.41,
+  "size_mb": 640.93,
   "current_forecast_records": 3072,
   "forecast_records": 3072,
-  "operational_forecast_records": 205512,
+  "operational_forecast_records": 208584,
   "historical_forecast_records": 398424,
   "observation_records": 42680,
   "observation_1min_records": 0,
-  "openmeteo_records": 605856,
+  "openmeteo_records": 608928,
   "runtime_qm_cdfs_enabled": 182,
   "qm_cdfs_enabled": 182,
   "qm_artifact_status": {
@@ -19,13 +19,13 @@
     "reason": null,
     "replaced_existing_cdfs": 272
   },
-  "latest_model_run_init_utc": "2026-07-22 14:00:00",
-  "latest_data_pull_utc": "2026-07-22 14:33:23",
-  "last_sync_utc": "2026-07-22 14:33:55",
+  "latest_model_run_init_utc": "2026-07-22 19:00:00",
+  "latest_data_pull_utc": "2026-07-22 19:52:29",
+  "last_sync_utc": "2026-07-22 19:52:41",
   "observation_freshness": {
     "hourly": {
       "latest_obs_utc": "2026-07-10 14:00:00",
-      "age_hours": 288.57,
+      "age_hours": 293.88,
       "status": "stale"
     },
     "minute": {
@@ -37,9 +37,9 @@
     "note": "Verification-driven weights and residual promotion are frozen until hourly AWOS is fresh."
   },
   "operational_residuals": {
-    "generated_at": "2026-07-22 14:33:58",
-    "start_date": "2026-05-23 14:33:56",
-    "end_date": "2026-07-22 14:33:56",
+    "generated_at": "2026-07-22 19:52:44",
+    "start_date": "2026-05-23 19:52:42",
+    "end_date": "2026-07-22 19:52:42",
     "mode": "observe_only",
     "enabled_rows": 0,
     "total_pairs": 93561,
@@ -61,13 +61,13 @@
       "openmeteo_model_id": "cma_grapes_global",
       "provider": "CMA GRAPES",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-22 14:33:21",
-      "latest_run_init_utc": "2026-07-22 14:00:00",
-      "first_forecast_time": "2026-07-22 22:00:00",
-      "last_forecast_time": "2026-08-07 21:00:00",
+      "latest_scraped_at": "2026-07-22 19:52:27",
+      "latest_run_init_utc": "2026-07-22 19:00:00",
+      "first_forecast_time": "2026-07-23 03:00:00",
+      "last_forecast_time": "2026-08-08 02:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.01,
+      "age_hours": 0.0,
       "status": "fresh",
       "detected_interval_hours": 1.0,
       "expected_output_interval_hours": 1.0,
@@ -87,10 +87,10 @@
       "openmeteo_model_id": "ecmwf_ifs025",
       "provider": "ECMWF IFS HRES",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-22 14:33:16",
-      "latest_run_init_utc": "2026-07-22 14:00:00",
-      "first_forecast_time": "2026-07-22 22:00:00",
-      "last_forecast_time": "2026-08-07 21:00:00",
+      "latest_scraped_at": "2026-07-22 19:52:23",
+      "latest_run_init_utc": "2026-07-22 19:00:00",
+      "first_forecast_time": "2026-07-23 03:00:00",
+      "last_forecast_time": "2026-08-08 02:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.01,
@@ -115,10 +115,10 @@
       "openmeteo_model_id": "gem_global",
       "provider": "CMC GEM",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-22 14:33:20",
-      "latest_run_init_utc": "2026-07-22 14:00:00",
-      "first_forecast_time": "2026-07-22 22:00:00",
-      "last_forecast_time": "2026-08-07 21:00:00",
+      "latest_scraped_at": "2026-07-22 19:52:26",
+      "latest_run_init_utc": "2026-07-22 19:00:00",
+      "first_forecast_time": "2026-07-23 03:00:00",
+      "last_forecast_time": "2026-08-08 02:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.01,
@@ -143,10 +143,10 @@
       "openmeteo_model_id": "gfs_global",
       "provider": "NOAA GFS",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-22 14:33:17",
-      "latest_run_init_utc": "2026-07-22 14:00:00",
-      "first_forecast_time": "2026-07-22 22:00:00",
-      "last_forecast_time": "2026-08-07 21:00:00",
+      "latest_scraped_at": "2026-07-22 19:52:24",
+      "latest_run_init_utc": "2026-07-22 19:00:00",
+      "first_forecast_time": "2026-07-23 03:00:00",
+      "last_forecast_time": "2026-08-08 02:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.01,
@@ -166,10 +166,10 @@
       "openmeteo_model_id": "icon_seamless",
       "provider": "DWD ICON seamless",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-22 14:33:19",
-      "latest_run_init_utc": "2026-07-22 14:00:00",
-      "first_forecast_time": "2026-07-22 22:00:00",
-      "last_forecast_time": "2026-08-07 21:00:00",
+      "latest_scraped_at": "2026-07-22 19:52:25",
+      "latest_run_init_utc": "2026-07-22 19:00:00",
+      "first_forecast_time": "2026-07-23 03:00:00",
+      "last_forecast_time": "2026-08-08 02:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.01,
@@ -194,13 +194,13 @@
       "openmeteo_model_id": "jma_gsm",
       "provider": "JMA GSM",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-22 14:33:22",
-      "latest_run_init_utc": "2026-07-22 14:00:00",
-      "first_forecast_time": "2026-07-22 22:00:00",
-      "last_forecast_time": "2026-08-07 21:00:00",
+      "latest_scraped_at": "2026-07-22 19:52:28",
+      "latest_run_init_utc": "2026-07-22 19:00:00",
+      "first_forecast_time": "2026-07-23 03:00:00",
+      "last_forecast_time": "2026-08-08 02:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.01,
+      "age_hours": 0.0,
       "status": "fresh",
       "detected_interval_hours": 1.0,
       "expected_output_interval_hours": 1.0,
@@ -225,13 +225,13 @@
       "openmeteo_model_id": "meteofrance_arpege_world",
       "provider": "Meteo-France ARPEGE World",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-22 14:33:23",
-      "latest_run_init_utc": "2026-07-22 14:00:00",
-      "first_forecast_time": "2026-07-22 22:00:00",
-      "last_forecast_time": "2026-08-07 21:00:00",
+      "latest_scraped_at": "2026-07-22 19:52:28",
+      "latest_run_init_utc": "2026-07-22 19:00:00",
+      "first_forecast_time": "2026-07-23 03:00:00",
+      "last_forecast_time": "2026-08-08 02:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 0.01,
+      "age_hours": 0.0,
       "status": "fresh",
       "detected_interval_hours": 1.0,
       "expected_output_interval_hours": 1.0,
@@ -254,14 +254,14 @@
       "openmeteo_model_id": "ukmo_global_deterministic_10km",
       "provider": "UK Met Office Global 10 km",
       "row_count": 384,
-      "latest_scraped_at": "2026-07-22 09:08:34",
-      "latest_run_init_utc": "2026-07-22 09:00:00",
-      "first_forecast_time": "2026-07-22 17:00:00",
-      "last_forecast_time": "2026-08-07 16:00:00",
+      "latest_scraped_at": "2026-07-22 19:52:29",
+      "latest_run_init_utc": "2026-07-22 19:00:00",
+      "first_forecast_time": "2026-07-23 03:00:00",
+      "last_forecast_time": "2026-08-08 02:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 5.42,
-      "status": "stale",
+      "age_hours": 0.0,
+      "status": "fresh",
       "detected_interval_hours": 1.0,
       "expected_output_interval_hours": 1.0,
       "provider_update_frequency_hours": 1.0,
@@ -278,52 +278,52 @@
     }
   ],
   "qm_provenance": {
-    "total_values": 21784,
+    "total_values": 21504,
     "by_layer": {
-      "historical_prior": 8635,
+      "historical_prior": 8727,
       "operational_residual": 0,
-      "raw": 13149
+      "raw": 12777
     },
     "by_parameter": {
       "Temperature": {
-        "historical_prior": 1746,
+        "historical_prior": 1767,
         "operational_residual": 0,
-        "raw": 1366
+        "raw": 1305
       },
       "Dewpoint": {
-        "historical_prior": 1651,
+        "historical_prior": 1671,
         "operational_residual": 0,
-        "raw": 1461
+        "raw": 1401
       },
       "Pressure": {
-        "historical_prior": 1746,
+        "historical_prior": 1767,
         "operational_residual": 0,
-        "raw": 1366
+        "raw": 1305
       },
       "Rainfall": {
         "historical_prior": 0,
         "operational_residual": 0,
-        "raw": 3112
+        "raw": 3072
       },
       "Wind Speed": {
-        "historical_prior": 1746,
+        "historical_prior": 1755,
         "operational_residual": 0,
-        "raw": 1366
+        "raw": 1317
       },
       "Wind Dir.": {
-        "historical_prior": 1746,
+        "historical_prior": 1767,
         "operational_residual": 0,
-        "raw": 1366
+        "raw": 1305
       },
       "Wind Gust": {
         "historical_prior": 0,
         "operational_residual": 0,
-        "raw": 3112
+        "raw": 3072
       }
     },
     "low_confidence": 0,
-    "lead_aware_pending": 8362,
-    "operational_residual_available": 8058,
+    "lead_aware_pending": 8454,
+    "operational_residual_available": 8156,
     "operational_residual_mode": "observe_only",
     "artifact_status": {
       "available": true,
@@ -338,9 +338,9 @@
     "historical_prior_label": "Bias-corrected: historical prior, global, not lead-aware",
     "rainfall_note": "Rain occurrence prior may inform risk; rainfall amount correction remains strict/pending.",
     "percent_by_layer": {
-      "historical_prior": 39.64,
+      "historical_prior": 40.58,
       "operational_residual": 0.0,
-      "raw": 60.36
+      "raw": 59.42
     }
   }
 }
