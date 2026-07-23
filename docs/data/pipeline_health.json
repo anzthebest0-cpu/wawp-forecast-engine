@@ -9,10 +9,10 @@
     "JMA_GSM",
     "METEOFRANCE_ARPEGE_WORLD"
   ],
-  "operational_forecast_rows": 215880,
+  "operational_forecast_rows": 218568,
   "dashboard_export_skipped": false,
   "awos_stale": false,
-  "last_run_utc": "2026-07-23 09:07:26",
+  "last_run_utc": "2026-07-23 14:41:03",
   "last_error": null,
   "openmeteo_error": null,
   "awos_error": null,
