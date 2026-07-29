@@ -1,6 +1,7 @@
 {
   "openmeteo_stale": false,
   "openmeteo_models_fetched": [
+    "CMA_GRAPES_GLOBAL",
     "ECMWF_HRES",
     "GEM_GLOBAL",
     "GFS_GLOBAL",
@@ -9,10 +10,10 @@
     "METEOFRANCE_ARPEGE_WORLD",
     "UKMO_GLOBAL_10KM"
   ],
-  "operational_forecast_rows": 283080,
+  "operational_forecast_rows": 286152,
   "dashboard_export_skipped": false,
   "awos_stale": false,
-  "last_run_utc": "2026-07-29 09:22:37",
+  "last_run_utc": "2026-07-29 14:39:30",
   "last_error": null,
   "openmeteo_error": null,
   "awos_error": null,
