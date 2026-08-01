@@ -72,6 +72,39 @@ jobs:
             echo "RESTORED_DB_ASSET=" >> "$GITHUB_ENV"
           fi
 
+      - name: Download AWOS Source Inbox
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          inbox_dir="artifacts/awos-inbox"
+          mkdir -p "$inbox_dir"
+          if gh release view awos-inbox > /dev/null 2>&1; then
+            asset_count="$(gh release view awos-inbox --json assets --jq '[.assets[] | select(.name | endswith(".dat"))] | length')"
+            if [ "$asset_count" -gt 0 ]; then
+              gh release download awos-inbox --pattern '*.dat' --dir "$inbox_dir" --clobber
+              echo "Downloaded $asset_count AWOS source assets."
+            else
+              echo "AWOS inbox exists but contains no .dat assets."
+            fi
+          else
+            echo "No awos-inbox release exists; continuing without release AWOS ingestion."
+          fi
+
+      - name: Ingest AWOS Source Inbox
+        run: |
+          set -euo pipefail
+          inbox_dir="artifacts/awos-inbox"
+          if compgen -G "$inbox_dir/*.dat" > /dev/null; then
+            python -m src.ingest_awos_inbox \
+              --directory "$inbox_dir" \
+              --db wawp_forecasts.db \
+              --source-tag awos-inbox \
+              --report "$inbox_dir/ingestion-report.json"
+          else
+            echo "No downloaded AWOS assets to ingest."
+          fi
+
       # The compactor never changes the restored release file. It writes a
       # validated candidate first, then the pipeline operates on that candidate.
       # If validation fails, this run stops before it can upload any replacement.
@@ -115,6 +148,15 @@ jobs:
             artifacts/operational/*.report.json
           retention-days: 7
           if-no-files-found: warn
+
+      - name: Upload AWOS Ingestion Report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: awos-ingestion-${{ github.run_id }}
+          path: artifacts/awos-inbox/ingestion-report.json
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Validate and Upload Database to Release
         timeout-minutes: 45

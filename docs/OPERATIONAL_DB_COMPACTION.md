@@ -17,6 +17,8 @@ edits the restored release file in place.
 - All Open-Meteo forecast rows and model-run metadata.
 - All hourly AWOS observations, including `wind_gust_max` derived from minute
   data.
+- The `awos_source_ingest_manifest`, which prevents an already processed
+  release asset from being reapplied after raw minute rows are compacted out.
 - All QM CDFs, training pairs, correction audit rows, weights, and dashboard
   inputs.
 - Every index and table schema required by the live pipeline.
@@ -28,9 +30,11 @@ historical rows remain in the original database and in the supplied monthly
 AWOS source files. The candidate records the number of excluded rows in its
 `operational_data_retention` manifest.
 
-The live pipeline does not currently ingest minute files automatically, so a
-future minute-data process must derive hourly/event summaries before adding
-anything to the rolling database.
+The live pipeline downloads source files from the `awos-inbox` GitHub Release.
+It ingests hourly files first, temporarily loads previously unseen minute
+assets, derives hourly gust maxima when WGS is populated, records the source
+checksum, and only then builds the compact rolling candidate. Wind speed is not
+silently substituted when the minute source has no gust observations.
 
 ## Build a local candidate
 
