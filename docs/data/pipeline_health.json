@@ -6,13 +6,14 @@
     "GEM_GLOBAL",
     "GFS_GLOBAL",
     "ICON_SEAMLESS",
+    "JMA_GSM",
     "METEOFRANCE_ARPEGE_WORLD",
     "UKMO_GLOBAL_10KM"
   ],
-  "operational_forecast_rows": 325704,
+  "operational_forecast_rows": 328776,
   "dashboard_export_skipped": false,
   "awos_stale": false,
-  "last_run_utc": "2026-08-01 19:43:16",
+  "last_run_utc": "2026-08-02 03:32:30",
   "last_error": null,
   "openmeteo_error": null,
   "awos_error": null,
@@ -25,5 +26,7 @@
     "degraded": false,
     "reason": null,
     "replaced_existing_cdfs": 305
-  }
+  },
+  "dashboard_export_succeeded": true,
+  "dashboard_export_error": null
 }

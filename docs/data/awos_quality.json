@@ -1,0 +1,90 @@
+{
+  "metadata": {
+    "quality_contract_version": "awos-cross-grain-quality-v1-shadow",
+    "generated_at_utc": "2026-08-02 03:33:38",
+    "mode": "observe_only",
+    "promotion_eligible": false
+  },
+  "status": "warning",
+  "hard_issue_count": 0,
+  "warning_count": 2,
+  "verification_eligible": true,
+  "parameter_eligibility": {
+    "Temperature": {
+      "eligible": true,
+      "reason": "hourly AWOS quality"
+    },
+    "Dewpoint": {
+      "eligible": true,
+      "reason": "hourly AWOS quality"
+    },
+    "Pressure": {
+      "eligible": true,
+      "reason": "hourly AWOS quality"
+    },
+    "Rainfall": {
+      "eligible": true,
+      "reason": "hourly RA36 quality"
+    },
+    "Wind Speed": {
+      "eligible": true,
+      "reason": "hourly 10-minute aviation wind quality"
+    },
+    "Wind Dir.": {
+      "eligible": true,
+      "reason": "hourly 10-minute aviation wind quality"
+    },
+    "Wind Gust": {
+      "eligible": false,
+      "reason": "insufficient populated minute WGS evidence in the latest 60 days"
+    }
+  },
+  "hourly": {
+    "row_count": 43193,
+    "distinct_timestamp_count": 43193,
+    "duplicate_timestamp_count": 0,
+    "first_obs_utc": "2021-07-19 04:00:00",
+    "last_obs_utc": "2026-07-31 23:00:00",
+    "expected_hour_count": 44132,
+    "missing_hour_count": 939,
+    "negative_rain_count": 0,
+    "humidity_out_of_range_count": 0,
+    "pressure_out_of_range_count": 0,
+    "wind_speed_out_of_range_count": 0,
+    "wind_direction_out_of_range_count": 0,
+    "dewpoint_above_temperature_count": 0,
+    "rows_with_derived_gust_value": 43193,
+    "rows_with_positive_derived_gust": 368,
+    "age_hours": 28.56,
+    "rain_timestamp_label": "interval_end",
+    "operational_wind_source": "first WD36/WS36 pair (10-minute aviation wind)",
+    "recent_gust_lookback_start_utc": "2026-06-01 23:00:00",
+    "recent_positive_derived_gust_count": 0
+  },
+  "minute": {
+    "retention": "temporary raw evidence; compact operational DB may contain zero rows",
+    "rain_semantics": "rolling_one_hour_accumulation_snapshot",
+    "safe_rain_aggregation": "boundary/max comparison only; never sum minute rain snapshots",
+    "row_count": 0,
+    "recent_row_count": 0,
+    "incomplete_recent_day_count": 0,
+    "distinct_timestamp_count": 0,
+    "duplicate_timestamp_count": 0,
+    "first_obs_utc": null,
+    "last_obs_utc": null,
+    "negative_rain_count": 0,
+    "humidity_out_of_range_count": 0,
+    "gust_out_of_range_count": 0,
+    "rows_with_gust_value": 0
+  },
+  "cross_grain": {
+    "hourly_rows_with_minute_coverage": 0,
+    "gust_comparable_hours": 0,
+    "gust_match_hours": 0,
+    "gust_mismatch_hours": 0,
+    "rain_boundary_comparable_hours": 0,
+    "rain_boundary_match_hours": 0,
+    "rain_boundary_mismatch_hours": 0,
+    "gust_interval": "maximum over (hour-1h, hour], labelled at interval end"
+  }
+}
