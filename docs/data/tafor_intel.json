@@ -28,31 +28,23 @@
     "event_skill_context": {
       "Rainfall": {
         "applied": false,
-        "reason": "event-window diagnostics retained for review but excluded from weights and TAF change-group logic",
-        "weighted_score": 0.2704,
-        "weighted_far": 0.4995,
-        "strength": 0.7726,
-        "top_models": [
-          "UKMO_GLOBAL_10KM",
-          "METEOFRANCE_ARPEGE_WORLD",
-          "GEM_GLOBAL"
-        ],
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
         "min_events": 10,
-        "threshold": 1.5
+        "threshold": null
       },
       "Wind Gust": {
         "applied": false,
-        "reason": "event-window diagnostics retained for review but excluded from weights and TAF change-group logic",
-        "weighted_score": 0.0258,
-        "weighted_far": 0.8752,
-        "strength": 0.0738,
-        "top_models": [
-          "ECMWF_HRES",
-          "CMA_GRAPES_GLOBAL",
-          "METEOFRANCE_ARPEGE_WORLD"
-        ],
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
         "min_events": 10,
-        "threshold": 15.0
+        "threshold": null
       }
     },
     "provenance": {
@@ -77,18 +69,18 @@
       "missing_window_hours": [],
       "coverage_status": "sufficient",
       "model_run_age_hours": {
-        "CMA_GRAPES_GLOBAL": 0.16,
-        "ECMWF_HRES": 0.16,
-        "GEM_GLOBAL": 0.16,
-        "GFS_GLOBAL": 0.16,
-        "ICON_SEAMLESS": 0.16,
-        "JMA_GSM": 0.16,
-        "METEOFRANCE_ARPEGE_WORLD": 0.39,
-        "UKMO_GLOBAL_10KM": 0.15
+        "CMA_GRAPES_GLOBAL": 0.17,
+        "ECMWF_HRES": 0.17,
+        "GEM_GLOBAL": 0.17,
+        "GFS_GLOBAL": 0.17,
+        "ICON_SEAMLESS": 0.17,
+        "JMA_GSM": 0.17,
+        "METEOFRANCE_ARPEGE_WORLD": 0.16,
+        "UKMO_GLOBAL_10KM": 0.46
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 28.81
+      "observation_hourly_age_hours": 29.1
     }
   },
   "0500": {
@@ -120,31 +112,23 @@
     "event_skill_context": {
       "Rainfall": {
         "applied": false,
-        "reason": "event-window diagnostics retained for review but excluded from weights and TAF change-group logic",
-        "weighted_score": 0.2704,
-        "weighted_far": 0.4995,
-        "strength": 0.7726,
-        "top_models": [
-          "UKMO_GLOBAL_10KM",
-          "METEOFRANCE_ARPEGE_WORLD",
-          "GEM_GLOBAL"
-        ],
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
         "min_events": 10,
-        "threshold": 1.5
+        "threshold": null
       },
       "Wind Gust": {
         "applied": false,
-        "reason": "event-window diagnostics retained for review but excluded from weights and TAF change-group logic",
-        "weighted_score": 0.0258,
-        "weighted_far": 0.8752,
-        "strength": 0.0738,
-        "top_models": [
-          "ECMWF_HRES",
-          "CMA_GRAPES_GLOBAL",
-          "METEOFRANCE_ARPEGE_WORLD"
-        ],
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
         "min_events": 10,
-        "threshold": 15.0
+        "threshold": null
       }
     },
     "provenance": {
@@ -169,18 +153,18 @@
       "missing_window_hours": [],
       "coverage_status": "sufficient",
       "model_run_age_hours": {
-        "CMA_GRAPES_GLOBAL": 0.16,
-        "ECMWF_HRES": 0.16,
-        "GEM_GLOBAL": 0.16,
-        "GFS_GLOBAL": 0.16,
-        "ICON_SEAMLESS": 0.16,
-        "JMA_GSM": 0.16,
-        "METEOFRANCE_ARPEGE_WORLD": 0.39,
-        "UKMO_GLOBAL_10KM": 0.15
+        "CMA_GRAPES_GLOBAL": 0.17,
+        "ECMWF_HRES": 0.17,
+        "GEM_GLOBAL": 0.17,
+        "GFS_GLOBAL": 0.17,
+        "ICON_SEAMLESS": 0.17,
+        "JMA_GSM": 0.17,
+        "METEOFRANCE_ARPEGE_WORLD": 0.16,
+        "UKMO_GLOBAL_10KM": 0.46
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 28.81
+      "observation_hourly_age_hours": 29.1
     }
   },
   "1100": {
@@ -212,31 +196,23 @@
     "event_skill_context": {
       "Rainfall": {
         "applied": false,
-        "reason": "event-window diagnostics retained for review but excluded from weights and TAF change-group logic",
-        "weighted_score": 0.2704,
-        "weighted_far": 0.4995,
-        "strength": 0.7726,
-        "top_models": [
-          "UKMO_GLOBAL_10KM",
-          "METEOFRANCE_ARPEGE_WORLD",
-          "GEM_GLOBAL"
-        ],
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
         "min_events": 10,
-        "threshold": 1.5
+        "threshold": null
       },
       "Wind Gust": {
         "applied": false,
-        "reason": "event-window diagnostics retained for review but excluded from weights and TAF change-group logic",
-        "weighted_score": 0.0258,
-        "weighted_far": 0.8752,
-        "strength": 0.0738,
-        "top_models": [
-          "ECMWF_HRES",
-          "CMA_GRAPES_GLOBAL",
-          "METEOFRANCE_ARPEGE_WORLD"
-        ],
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
         "min_events": 10,
-        "threshold": 15.0
+        "threshold": null
       }
     },
     "provenance": {
@@ -261,18 +237,18 @@
       "missing_window_hours": [],
       "coverage_status": "sufficient",
       "model_run_age_hours": {
-        "CMA_GRAPES_GLOBAL": 0.16,
-        "ECMWF_HRES": 0.16,
-        "GEM_GLOBAL": 0.16,
-        "GFS_GLOBAL": 0.16,
-        "ICON_SEAMLESS": 0.16,
-        "JMA_GSM": 0.16,
-        "METEOFRANCE_ARPEGE_WORLD": 0.39,
-        "UKMO_GLOBAL_10KM": 0.15
+        "CMA_GRAPES_GLOBAL": 0.17,
+        "ECMWF_HRES": 0.17,
+        "GEM_GLOBAL": 0.17,
+        "GFS_GLOBAL": 0.17,
+        "ICON_SEAMLESS": 0.17,
+        "JMA_GSM": 0.17,
+        "METEOFRANCE_ARPEGE_WORLD": 0.16,
+        "UKMO_GLOBAL_10KM": 0.46
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 28.81
+      "observation_hourly_age_hours": 29.1
     }
   },
   "1700": {
@@ -280,7 +256,7 @@
     "issued_utc": "1700",
     "issued_day": 2,
     "base_group": {
-      "dir": "110",
+      "dir": "100",
       "spd": "05",
       "gust": "22",
       "vis": "9999",
@@ -295,7 +271,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 021700\nTAF WAWP 021700Z 0218/0318 11005G22KT CAVOK=",
+    "taf_text": "FTID40 WAWP 021700\nTAF WAWP 021700Z 0218/0318 10005G22KT CAVOK=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (5 KT).",
     "warnings": [
       "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen.",
@@ -304,31 +280,23 @@
     "event_skill_context": {
       "Rainfall": {
         "applied": false,
-        "reason": "event-window diagnostics retained for review but excluded from weights and TAF change-group logic",
-        "weighted_score": 0.2704,
-        "weighted_far": 0.4995,
-        "strength": 0.7726,
-        "top_models": [
-          "UKMO_GLOBAL_10KM",
-          "METEOFRANCE_ARPEGE_WORLD",
-          "GEM_GLOBAL"
-        ],
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
         "min_events": 10,
-        "threshold": 1.5
+        "threshold": null
       },
       "Wind Gust": {
         "applied": false,
-        "reason": "event-window diagnostics retained for review but excluded from weights and TAF change-group logic",
-        "weighted_score": 0.0258,
-        "weighted_far": 0.8752,
-        "strength": 0.0738,
-        "top_models": [
-          "ECMWF_HRES",
-          "CMA_GRAPES_GLOBAL",
-          "METEOFRANCE_ARPEGE_WORLD"
-        ],
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
         "min_events": 10,
-        "threshold": 15.0
+        "threshold": null
       }
     },
     "provenance": {
@@ -353,18 +321,18 @@
       "missing_window_hours": [],
       "coverage_status": "sufficient",
       "model_run_age_hours": {
-        "CMA_GRAPES_GLOBAL": 0.16,
-        "ECMWF_HRES": 0.16,
-        "GEM_GLOBAL": 0.16,
-        "GFS_GLOBAL": 0.16,
-        "ICON_SEAMLESS": 0.16,
-        "JMA_GSM": 0.16,
-        "METEOFRANCE_ARPEGE_WORLD": 0.39,
-        "UKMO_GLOBAL_10KM": 0.15
+        "CMA_GRAPES_GLOBAL": 0.17,
+        "ECMWF_HRES": 0.17,
+        "GEM_GLOBAL": 0.17,
+        "GFS_GLOBAL": 0.17,
+        "ICON_SEAMLESS": 0.17,
+        "JMA_GSM": 0.17,
+        "METEOFRANCE_ARPEGE_WORLD": 0.16,
+        "UKMO_GLOBAL_10KM": 0.46
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 28.81
+      "observation_hourly_age_hours": 29.1
     }
   },
   "default": {
@@ -397,31 +365,23 @@
     "event_skill_context": {
       "Rainfall": {
         "applied": false,
-        "reason": "event-window diagnostics retained for review but excluded from weights and TAF change-group logic",
-        "weighted_score": 0.2704,
-        "weighted_far": 0.4995,
-        "strength": 0.7726,
-        "top_models": [
-          "UKMO_GLOBAL_10KM",
-          "METEOFRANCE_ARPEGE_WORLD",
-          "GEM_GLOBAL"
-        ],
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
         "min_events": 10,
-        "threshold": 1.5
+        "threshold": null
       },
       "Wind Gust": {
         "applied": false,
-        "reason": "event-window diagnostics retained for review but excluded from weights and TAF change-group logic",
-        "weighted_score": 0.0258,
-        "weighted_far": 0.8752,
-        "strength": 0.0738,
-        "top_models": [
-          "ECMWF_HRES",
-          "CMA_GRAPES_GLOBAL",
-          "METEOFRANCE_ARPEGE_WORLD"
-        ],
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
         "min_events": 10,
-        "threshold": 15.0
+        "threshold": null
       }
     },
     "provenance": {
@@ -446,24 +406,24 @@
       "missing_window_hours": [],
       "coverage_status": "sufficient",
       "model_run_age_hours": {
-        "CMA_GRAPES_GLOBAL": 0.16,
-        "ECMWF_HRES": 0.16,
-        "GEM_GLOBAL": 0.16,
-        "GFS_GLOBAL": 0.16,
-        "ICON_SEAMLESS": 0.16,
-        "JMA_GSM": 0.16,
-        "METEOFRANCE_ARPEGE_WORLD": 0.39,
-        "UKMO_GLOBAL_10KM": 0.15
+        "CMA_GRAPES_GLOBAL": 0.17,
+        "ECMWF_HRES": 0.17,
+        "GEM_GLOBAL": 0.17,
+        "GFS_GLOBAL": 0.17,
+        "ICON_SEAMLESS": 0.17,
+        "JMA_GSM": 0.17,
+        "METEOFRANCE_ARPEGE_WORLD": 0.16,
+        "UKMO_GLOBAL_10KM": 0.46
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 28.81
+      "observation_hourly_age_hours": 29.1
     },
     "default_selection": {
       "selection_status": "selected",
       "selected_issuance": "0500",
       "selected_valid_start_wita": "2026-08-02 14:00:00",
-      "reference_utc": "2026-08-02 03:46:49",
+      "reference_utc": "2026-08-02 04:04:25",
       "minimum_fresh_models": 5,
       "coverage_hours": 6,
       "candidates": [
