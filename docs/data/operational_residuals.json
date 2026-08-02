@@ -1,8 +1,8 @@
 {
   "metadata": {
-    "generated_at": "2026-08-02 03:39:06",
-    "start_date": "2026-06-03 03:33:39",
-    "end_date": "2026-08-02 03:33:39",
+    "generated_at": "2026-08-02 03:55:56",
+    "start_date": "2026-06-03 03:48:21",
+    "end_date": "2026-08-02 03:48:21",
     "mode": "observe_only",
     "pairing_contract_version": "openmeteo-valid-time-utc-v1",
     "verification_frozen": true,

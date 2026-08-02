@@ -109,7 +109,7 @@
   },
   {
     "Datetime": "2026-07-28 16:00:00",
-    "temperature": NaN,
+    "temperature": null,
     "dewpoint": 20.8,
     "pressure": 1011.9,
     "wind_dir": 102.0,
