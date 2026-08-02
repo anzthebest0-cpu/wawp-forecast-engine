@@ -20,18 +20,26 @@ REQUIRED_JSON = (
     "db_health.json",
     "individual_models.json",
     "latest_weights.json",
+    "persistency.json",
     "pipeline_health.json",
     "taf_guidance.json",
     "tafor_intel.json",
 )
 
 
+def _reject_nonfinite_json_constant(value: str) -> None:
+    raise ValueError(f"non-finite JSON constant: {value}")
+
+
 def _read_json(path: Path) -> tuple[Any | None, str | None]:
     if not path.is_file() or path.stat().st_size == 0:
         return None, "missing_or_empty"
     try:
-        return json.loads(path.read_text(encoding="utf-8")), None
-    except (OSError, json.JSONDecodeError) as exc:
+        return json.loads(
+            path.read_text(encoding="utf-8"),
+            parse_constant=_reject_nonfinite_json_constant,
+        ), None
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
         return None, f"invalid_json: {exc}"
 
 

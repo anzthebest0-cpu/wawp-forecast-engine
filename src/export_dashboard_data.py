@@ -1756,8 +1756,13 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         if not obs_df.empty:
             obs_df['Datetime'] = pd.to_datetime(obs_df['obs_time']).dt.strftime('%Y-%m-%d %H:00:00')
             persistency_payload = obs_df[['Datetime', 'temperature', 'dewpoint', 'pressure', 'wind_dir', 'wind_speed', 'rain_1h']].to_dict(orient='records')
-            with open(os.path.join(output_dir, "persistency.json"), "w") as f:
-                json.dump(persistency_payload, f, indent=2)
+            with open(os.path.join(output_dir, "persistency.json"), "w", encoding="utf-8") as f:
+                json.dump(
+                    sanitize_for_json(persistency_payload),
+                    f,
+                    indent=2,
+                    allow_nan=False,
+                )
             log.info("Persistency data exported.")
     except Exception as e:
         log.warning(f"Persistency export failed: {e}")

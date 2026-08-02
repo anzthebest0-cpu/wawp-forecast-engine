@@ -115,3 +115,29 @@ def test_publication_gate_rejects_stale_dashboard_provenance(tmp_path):
 
     assert report["passed"] is False
     assert "dashboard_database_provenance_mismatch" in report["hard_failures"]
+
+
+def test_publication_gate_rejects_nonfinite_json(tmp_path):
+    db = ForecastDB(str(tmp_path / "candidate.db"))
+    try:
+        db.ingest_openmeteo_rows([
+            _forecast(model, hour) for model in MODELS for hour in range(24)
+        ])
+    finally:
+        db.close()
+    data_dir = tmp_path / "data"
+    _write_dashboard_payloads(data_dir)
+    (data_dir / "persistency.json").write_text(
+        '[{"temperature": NaN}]',
+        encoding="utf-8",
+    )
+
+    report = validate_publication_candidate(
+        tmp_path / "candidate.db", data_dir, models=MODELS
+    )
+
+    assert report["passed"] is False
+    assert any(
+        "persistency.json" in failure and "non-finite" in failure
+        for failure in report["hard_failures"]
+    )

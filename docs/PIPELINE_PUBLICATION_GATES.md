@@ -10,7 +10,8 @@ dashboard publication. It fails closed for:
 - fewer than six models with a complete clean collection cycle;
 - blocked hourly AWOS quality;
 - skipped dashboard export;
-- missing or invalid required JSON artifacts;
+- missing or invalid required JSON artifacts, including non-finite values such
+  as `NaN` or infinity that browsers reject;
 - dashboard provenance that does not match the candidate database's latest
   model scrape;
 - missing explicit exporter-success confirmation;
