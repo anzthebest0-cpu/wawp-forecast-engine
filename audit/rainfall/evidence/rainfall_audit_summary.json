@@ -1,0 +1,689 @@
+{
+  "metadata": {
+    "generated_at_utc": "2026-08-02 00:45:00",
+    "database": "D:\\UJI_PERFORMA_MODEL\\meteologix-wawp-main\\wawp_forecasts.db",
+    "database_size_bytes": 778760192,
+    "database_sha256": "179ea48e488cb65d628aed3f3aea447bfa9f499a38b324d646002b5c3d6c5ea4",
+    "sqlite_quick_check": "ok",
+    "audit_mode": "read_only"
+  },
+  "observations_hourly": {
+    "grain": "one row per stored hourly AWOS timestamp",
+    "semantics_version": "wawp-meteorological-contract-v1-shadow",
+    "rain_timestamp_label": "interval_end",
+    "location": "Bandara_Sangia_Ni_Bandera",
+    "first_obs_utc": "2021-07-19T04:00:00",
+    "last_obs_utc": "2026-06-30T10:00:00",
+    "row_count": 42449,
+    "distinct_timestamp_count": 42449,
+    "duplicate_timestamp_count": 0,
+    "expected_hour_count": 43375,
+    "missing_hour_count": 926,
+    "null_rain_count": 1074,
+    "negative_rain_count": 0,
+    "rain_total_mm_if_hourly_increment": 10210.6,
+    "maximum_hourly_value_mm": 86.9,
+    "wet_sample_counts": {
+      "0.1": 3748,
+      "1.0": 1460,
+      "1.5": 1231,
+      "5.0": 595,
+      "10.0": 246,
+      "20.0": 76
+    },
+    "metric_comparison_at_threshold": {
+      "threshold_mm_per_hour": 1.5,
+      "strict_hourly_wet_samples": 1231,
+      "unique_contiguous_episodes": 804,
+      "legacy_centered_rolling_peak_samples": 2788,
+      "legacy_inflation_factor_vs_hourly": 2.2648,
+      "complete_utc_aligned_3h_end_labeled_bins": 13670,
+      "wet_complete_3h_bins_at_same_numeric_threshold": 979,
+      "three_hour_threshold_status": "diagnostic only; mm/3h threshold requires meteorological approval"
+    },
+    "monthly_metric_comparison": [
+      {
+        "month": "2021-07",
+        "stored_hours": 283,
+        "nonnull_rain_hours": 282,
+        "strict_hourly_wet_samples": 1,
+        "unique_contiguous_episodes": 1,
+        "legacy_centered_rolling_peak_samples": 3
+      },
+      {
+        "month": "2021-08",
+        "stored_hours": 732,
+        "nonnull_rain_hours": 729,
+        "strict_hourly_wet_samples": 33,
+        "unique_contiguous_episodes": 25,
+        "legacy_centered_rolling_peak_samples": 81
+      },
+      {
+        "month": "2021-09",
+        "stored_hours": 720,
+        "nonnull_rain_hours": 719,
+        "strict_hourly_wet_samples": 31,
+        "unique_contiguous_episodes": 22,
+        "legacy_centered_rolling_peak_samples": 73
+      },
+      {
+        "month": "2021-10",
+        "stored_hours": 685,
+        "nonnull_rain_hours": 679,
+        "strict_hourly_wet_samples": 11,
+        "unique_contiguous_episodes": 8,
+        "legacy_centered_rolling_peak_samples": 26
+      },
+      {
+        "month": "2021-11",
+        "stored_hours": 716,
+        "nonnull_rain_hours": 716,
+        "strict_hourly_wet_samples": 32,
+        "unique_contiguous_episodes": 20,
+        "legacy_centered_rolling_peak_samples": 68
+      },
+      {
+        "month": "2021-12",
+        "stored_hours": 743,
+        "nonnull_rain_hours": 743,
+        "strict_hourly_wet_samples": 20,
+        "unique_contiguous_episodes": 14,
+        "legacy_centered_rolling_peak_samples": 48
+      },
+      {
+        "month": "2022-01",
+        "stored_hours": 744,
+        "nonnull_rain_hours": 742,
+        "strict_hourly_wet_samples": 17,
+        "unique_contiguous_episodes": 14,
+        "legacy_centered_rolling_peak_samples": 45
+      },
+      {
+        "month": "2022-02",
+        "stored_hours": 671,
+        "nonnull_rain_hours": 669,
+        "strict_hourly_wet_samples": 25,
+        "unique_contiguous_episodes": 11,
+        "legacy_centered_rolling_peak_samples": 47
+      },
+      {
+        "month": "2022-03",
+        "stored_hours": 734,
+        "nonnull_rain_hours": 732,
+        "strict_hourly_wet_samples": 31,
+        "unique_contiguous_episodes": 17,
+        "legacy_centered_rolling_peak_samples": 63
+      },
+      {
+        "month": "2022-04",
+        "stored_hours": 577,
+        "nonnull_rain_hours": 577,
+        "strict_hourly_wet_samples": 26,
+        "unique_contiguous_episodes": 18,
+        "legacy_centered_rolling_peak_samples": 61
+      },
+      {
+        "month": "2022-05",
+        "stored_hours": 696,
+        "nonnull_rain_hours": 529,
+        "strict_hourly_wet_samples": 27,
+        "unique_contiguous_episodes": 18,
+        "legacy_centered_rolling_peak_samples": 63
+      },
+      {
+        "month": "2022-06",
+        "stored_hours": 720,
+        "nonnull_rain_hours": 277,
+        "strict_hourly_wet_samples": 21,
+        "unique_contiguous_episodes": 21,
+        "legacy_centered_rolling_peak_samples": 61
+      },
+      {
+        "month": "2022-07",
+        "stored_hours": 744,
+        "nonnull_rain_hours": 403,
+        "strict_hourly_wet_samples": 14,
+        "unique_contiguous_episodes": 10,
+        "legacy_centered_rolling_peak_samples": 35
+      },
+      {
+        "month": "2022-08",
+        "stored_hours": 744,
+        "nonnull_rain_hours": 744,
+        "strict_hourly_wet_samples": 26,
+        "unique_contiguous_episodes": 19,
+        "legacy_centered_rolling_peak_samples": 64
+      },
+      {
+        "month": "2022-09",
+        "stored_hours": 720,
+        "nonnull_rain_hours": 720,
+        "strict_hourly_wet_samples": 35,
+        "unique_contiguous_episodes": 22,
+        "legacy_centered_rolling_peak_samples": 78
+      },
+      {
+        "month": "2022-10",
+        "stored_hours": 729,
+        "nonnull_rain_hours": 729,
+        "strict_hourly_wet_samples": 33,
+        "unique_contiguous_episodes": 24,
+        "legacy_centered_rolling_peak_samples": 78
+      },
+      {
+        "month": "2022-11",
+        "stored_hours": 691,
+        "nonnull_rain_hours": 691,
+        "strict_hourly_wet_samples": 38,
+        "unique_contiguous_episodes": 16,
+        "legacy_centered_rolling_peak_samples": 69
+      },
+      {
+        "month": "2022-12",
+        "stored_hours": 744,
+        "nonnull_rain_hours": 741,
+        "strict_hourly_wet_samples": 15,
+        "unique_contiguous_episodes": 10,
+        "legacy_centered_rolling_peak_samples": 34
+      },
+      {
+        "month": "2023-01",
+        "stored_hours": 728,
+        "nonnull_rain_hours": 728,
+        "strict_hourly_wet_samples": 16,
+        "unique_contiguous_episodes": 7,
+        "legacy_centered_rolling_peak_samples": 30
+      },
+      {
+        "month": "2023-02",
+        "stored_hours": 659,
+        "nonnull_rain_hours": 658,
+        "strict_hourly_wet_samples": 26,
+        "unique_contiguous_episodes": 8,
+        "legacy_centered_rolling_peak_samples": 42
+      },
+      {
+        "month": "2023-03",
+        "stored_hours": 725,
+        "nonnull_rain_hours": 725,
+        "strict_hourly_wet_samples": 23,
+        "unique_contiguous_episodes": 15,
+        "legacy_centered_rolling_peak_samples": 53
+      },
+      {
+        "month": "2023-04",
+        "stored_hours": 712,
+        "nonnull_rain_hours": 712,
+        "strict_hourly_wet_samples": 18,
+        "unique_contiguous_episodes": 13,
+        "legacy_centered_rolling_peak_samples": 44
+      },
+      {
+        "month": "2023-05",
+        "stored_hours": 731,
+        "nonnull_rain_hours": 719,
+        "strict_hourly_wet_samples": 20,
+        "unique_contiguous_episodes": 17,
+        "legacy_centered_rolling_peak_samples": 52
+      },
+      {
+        "month": "2023-06",
+        "stored_hours": 712,
+        "nonnull_rain_hours": 712,
+        "strict_hourly_wet_samples": 20,
+        "unique_contiguous_episodes": 17,
+        "legacy_centered_rolling_peak_samples": 51
+      },
+      {
+        "month": "2023-07",
+        "stored_hours": 728,
+        "nonnull_rain_hours": 728,
+        "strict_hourly_wet_samples": 16,
+        "unique_contiguous_episodes": 11,
+        "legacy_centered_rolling_peak_samples": 37
+      },
+      {
+        "month": "2023-08",
+        "stored_hours": 744,
+        "nonnull_rain_hours": 744,
+        "strict_hourly_wet_samples": 4,
+        "unique_contiguous_episodes": 4,
+        "legacy_centered_rolling_peak_samples": 12
+      },
+      {
+        "month": "2023-09",
+        "stored_hours": 687,
+        "nonnull_rain_hours": 687,
+        "strict_hourly_wet_samples": 2,
+        "unique_contiguous_episodes": 2,
+        "legacy_centered_rolling_peak_samples": 6
+      },
+      {
+        "month": "2023-10",
+        "stored_hours": 737,
+        "nonnull_rain_hours": 737,
+        "strict_hourly_wet_samples": 6,
+        "unique_contiguous_episodes": 4,
+        "legacy_centered_rolling_peak_samples": 13
+      },
+      {
+        "month": "2023-11",
+        "stored_hours": 718,
+        "nonnull_rain_hours": 718,
+        "strict_hourly_wet_samples": 16,
+        "unique_contiguous_episodes": 12,
+        "legacy_centered_rolling_peak_samples": 39
+      },
+      {
+        "month": "2023-12",
+        "stored_hours": 743,
+        "nonnull_rain_hours": 742,
+        "strict_hourly_wet_samples": 20,
+        "unique_contiguous_episodes": 13,
+        "legacy_centered_rolling_peak_samples": 46
+      },
+      {
+        "month": "2024-01",
+        "stored_hours": 739,
+        "nonnull_rain_hours": 739,
+        "strict_hourly_wet_samples": 45,
+        "unique_contiguous_episodes": 20,
+        "legacy_centered_rolling_peak_samples": 85
+      },
+      {
+        "month": "2024-02",
+        "stored_hours": 688,
+        "nonnull_rain_hours": 688,
+        "strict_hourly_wet_samples": 29,
+        "unique_contiguous_episodes": 20,
+        "legacy_centered_rolling_peak_samples": 66
+      },
+      {
+        "month": "2024-03",
+        "stored_hours": 743,
+        "nonnull_rain_hours": 743,
+        "strict_hourly_wet_samples": 43,
+        "unique_contiguous_episodes": 19,
+        "legacy_centered_rolling_peak_samples": 79
+      },
+      {
+        "month": "2024-04",
+        "stored_hours": 720,
+        "nonnull_rain_hours": 720,
+        "strict_hourly_wet_samples": 37,
+        "unique_contiguous_episodes": 18,
+        "legacy_centered_rolling_peak_samples": 73
+      },
+      {
+        "month": "2024-05",
+        "stored_hours": 744,
+        "nonnull_rain_hours": 744,
+        "strict_hourly_wet_samples": 21,
+        "unique_contiguous_episodes": 19,
+        "legacy_centered_rolling_peak_samples": 59
+      },
+      {
+        "month": "2024-06",
+        "stored_hours": 720,
+        "nonnull_rain_hours": 720,
+        "strict_hourly_wet_samples": 21,
+        "unique_contiguous_episodes": 15,
+        "legacy_centered_rolling_peak_samples": 50
+      },
+      {
+        "month": "2024-07",
+        "stored_hours": 744,
+        "nonnull_rain_hours": 744,
+        "strict_hourly_wet_samples": 24,
+        "unique_contiguous_episodes": 15,
+        "legacy_centered_rolling_peak_samples": 55
+      },
+      {
+        "month": "2024-08",
+        "stored_hours": 744,
+        "nonnull_rain_hours": 744,
+        "strict_hourly_wet_samples": 7,
+        "unique_contiguous_episodes": 7,
+        "legacy_centered_rolling_peak_samples": 21
+      },
+      {
+        "month": "2024-09",
+        "stored_hours": 719,
+        "nonnull_rain_hours": 719,
+        "strict_hourly_wet_samples": 19,
+        "unique_contiguous_episodes": 13,
+        "legacy_centered_rolling_peak_samples": 44
+      },
+      {
+        "month": "2024-10",
+        "stored_hours": 705,
+        "nonnull_rain_hours": 705,
+        "strict_hourly_wet_samples": 15,
+        "unique_contiguous_episodes": 13,
+        "legacy_centered_rolling_peak_samples": 39
+      },
+      {
+        "month": "2024-11",
+        "stored_hours": 720,
+        "nonnull_rain_hours": 720,
+        "strict_hourly_wet_samples": 23,
+        "unique_contiguous_episodes": 15,
+        "legacy_centered_rolling_peak_samples": 54
+      },
+      {
+        "month": "2024-12",
+        "stored_hours": 731,
+        "nonnull_rain_hours": 731,
+        "strict_hourly_wet_samples": 20,
+        "unique_contiguous_episodes": 15,
+        "legacy_centered_rolling_peak_samples": 48
+      },
+      {
+        "month": "2025-01",
+        "stored_hours": 729,
+        "nonnull_rain_hours": 729,
+        "strict_hourly_wet_samples": 20,
+        "unique_contiguous_episodes": 15,
+        "legacy_centered_rolling_peak_samples": 48
+      },
+      {
+        "month": "2025-02",
+        "stored_hours": 672,
+        "nonnull_rain_hours": 672,
+        "strict_hourly_wet_samples": 16,
+        "unique_contiguous_episodes": 11,
+        "legacy_centered_rolling_peak_samples": 37
+      },
+      {
+        "month": "2025-03",
+        "stored_hours": 726,
+        "nonnull_rain_hours": 726,
+        "strict_hourly_wet_samples": 30,
+        "unique_contiguous_episodes": 19,
+        "legacy_centered_rolling_peak_samples": 67
+      },
+      {
+        "month": "2025-04",
+        "stored_hours": 643,
+        "nonnull_rain_hours": 643,
+        "strict_hourly_wet_samples": 29,
+        "unique_contiguous_episodes": 18,
+        "legacy_centered_rolling_peak_samples": 61
+      },
+      {
+        "month": "2025-05",
+        "stored_hours": 672,
+        "nonnull_rain_hours": 672,
+        "strict_hourly_wet_samples": 18,
+        "unique_contiguous_episodes": 14,
+        "legacy_centered_rolling_peak_samples": 45
+      },
+      {
+        "month": "2025-06",
+        "stored_hours": 720,
+        "nonnull_rain_hours": 720,
+        "strict_hourly_wet_samples": 18,
+        "unique_contiguous_episodes": 11,
+        "legacy_centered_rolling_peak_samples": 39
+      },
+      {
+        "month": "2025-07",
+        "stored_hours": 686,
+        "nonnull_rain_hours": 686,
+        "strict_hourly_wet_samples": 9,
+        "unique_contiguous_episodes": 5,
+        "legacy_centered_rolling_peak_samples": 19
+      },
+      {
+        "month": "2025-08",
+        "stored_hours": 711,
+        "nonnull_rain_hours": 711,
+        "strict_hourly_wet_samples": 9,
+        "unique_contiguous_episodes": 6,
+        "legacy_centered_rolling_peak_samples": 20
+      },
+      {
+        "month": "2025-09",
+        "stored_hours": 720,
+        "nonnull_rain_hours": 720,
+        "strict_hourly_wet_samples": 12,
+        "unique_contiguous_episodes": 10,
+        "legacy_centered_rolling_peak_samples": 30
+      },
+      {
+        "month": "2025-10",
+        "stored_hours": 737,
+        "nonnull_rain_hours": 660,
+        "strict_hourly_wet_samples": 21,
+        "unique_contiguous_episodes": 13,
+        "legacy_centered_rolling_peak_samples": 45
+      },
+      {
+        "month": "2025-11",
+        "stored_hours": 720,
+        "nonnull_rain_hours": 720,
+        "strict_hourly_wet_samples": 14,
+        "unique_contiguous_episodes": 12,
+        "legacy_centered_rolling_peak_samples": 38
+      },
+      {
+        "month": "2025-12",
+        "stored_hours": 743,
+        "nonnull_rain_hours": 743,
+        "strict_hourly_wet_samples": 29,
+        "unique_contiguous_episodes": 12,
+        "legacy_centered_rolling_peak_samples": 53
+      },
+      {
+        "month": "2026-01",
+        "stored_hours": 744,
+        "nonnull_rain_hours": 742,
+        "strict_hourly_wet_samples": 13,
+        "unique_contiguous_episodes": 8,
+        "legacy_centered_rolling_peak_samples": 29
+      },
+      {
+        "month": "2026-02",
+        "stored_hours": 672,
+        "nonnull_rain_hours": 672,
+        "strict_hourly_wet_samples": 16,
+        "unique_contiguous_episodes": 10,
+        "legacy_centered_rolling_peak_samples": 36
+      },
+      {
+        "month": "2026-03",
+        "stored_hours": 744,
+        "nonnull_rain_hours": 744,
+        "strict_hourly_wet_samples": 9,
+        "unique_contiguous_episodes": 7,
+        "legacy_centered_rolling_peak_samples": 23
+      },
+      {
+        "month": "2026-04",
+        "stored_hours": 697,
+        "nonnull_rain_hours": 689,
+        "strict_hourly_wet_samples": 7,
+        "unique_contiguous_episodes": 6,
+        "legacy_centered_rolling_peak_samples": 19
+      },
+      {
+        "month": "2026-05",
+        "stored_hours": 674,
+        "nonnull_rain_hours": 672,
+        "strict_hourly_wet_samples": 26,
+        "unique_contiguous_episodes": 18,
+        "legacy_centered_rolling_peak_samples": 62
+      },
+      {
+        "month": "2026-06",
+        "stored_hours": 705,
+        "nonnull_rain_hours": 705,
+        "strict_hourly_wet_samples": 8,
+        "unique_contiguous_episodes": 7,
+        "legacy_centered_rolling_peak_samples": 22
+      }
+    ]
+  },
+  "observations_minute": {
+    "row_count": 2504680,
+    "nonnull_rain_count": 2440483,
+    "positive_rain_sample_count": 148673,
+    "negative_rain_sample_count": 0,
+    "first_obs": "2021-06-07 10:11:00",
+    "last_obs": "2026-06-01 06:09:00",
+    "minimum_raw_value": 0.0,
+    "maximum_raw_value": 86.9,
+    "raw_sum": 307485.7,
+    "interpretation_status": "rolling_one_hour_accumulation_snapshot",
+    "safe_aggregation": "do not sum minute values; use hourly RA36 for rainfall accumulation"
+  },
+  "minute_hourly_reconciliation": {
+    "paired_hour_count": 40673,
+    "all_hour_boundary_value_matches_hourly_count": 40663,
+    "all_hour_preceding_minute_sum_matches_hourly_count": 36987,
+    "all_hour_preceding_minute_max_matches_hourly_count": 40667,
+    "wet_hour_count": 3713,
+    "wet_hour_boundary_value_matches_hourly_count": 3711,
+    "wet_hour_preceding_minute_sum_matches_hourly_count": 31,
+    "wet_hour_preceding_minute_max_matches_hourly_count": 3711,
+    "wet_hour_preceding_minute_sum_raw_total": 305652.3,
+    "wet_hour_hourly_total": 10160.4,
+    "boundary_match_rate": 0.9998,
+    "wet_hour_boundary_match_rate": 0.9995,
+    "finding": "minute RA is a rolling one-hour accumulation snapshot: the value at the hour boundary matches hourly RA36; summing minute values is invalid"
+  },
+  "forecasts": {
+    "grain": "model run plus valid time",
+    "row_count": 448032,
+    "model_count": 13,
+    "run_label_count": 18,
+    "first_forecast_time": "2023-01-01 00:00:00",
+    "last_forecast_time": "2026-07-24 03:00:00",
+    "negative_rain_count": 18,
+    "rain_vs_precipitation_mismatch_count_when_precipitation_present": 28175,
+    "precipitation_null_count": 114985,
+    "impossible_lifted_index_count": 8420,
+    "cloud_cover_out_of_range_count": 9497,
+    "rain_column_semantics": "current live scraper stores total precipitation in rain; historical loaders must be checked separately",
+    "models": [
+      {
+        "model": "BOM_ACCESS_GLOBAL",
+        "rows": 31032,
+        "run_labels": 2,
+        "rain_ge_1_5_rows": 1666,
+        "precipitation_null_rows": 18191
+      },
+      {
+        "model": "CMA_GRAPES_GLOBAL",
+        "rows": 36792,
+        "run_labels": 17,
+        "rain_ge_1_5_rows": 1279,
+        "precipitation_null_rows": 14196
+      },
+      {
+        "model": "ECMWF_HRES",
+        "rows": 37176,
+        "run_labels": 18,
+        "rain_ge_1_5_rows": 249,
+        "precipitation_null_rows": 15264
+      },
+      {
+        "model": "ERA5_SEAMLESS",
+        "rows": 31032,
+        "run_labels": 2,
+        "rain_ge_1_5_rows": 522,
+        "precipitation_null_rows": 456
+      },
+      {
+        "model": "GEM_GLOBAL",
+        "rows": 36792,
+        "run_labels": 17,
+        "rain_ge_1_5_rows": 851,
+        "precipitation_null_rows": 15995
+      },
+      {
+        "model": "GEM_SEAMLESS",
+        "rows": 31032,
+        "run_labels": 2,
+        "rain_ge_1_5_rows": 851,
+        "precipitation_null_rows": 10695
+      },
+      {
+        "model": "GFS_GLOBAL",
+        "rows": 36912,
+        "run_labels": 18,
+        "rain_ge_1_5_rows": 1386,
+        "precipitation_null_rows": 133
+      },
+      {
+        "model": "GFS_SEAMLESS",
+        "rows": 31032,
+        "run_labels": 2,
+        "rain_ge_1_5_rows": 1386,
+        "precipitation_null_rows": 0
+      },
+      {
+        "model": "ICON_GLOBAL",
+        "rows": 31032,
+        "run_labels": 2,
+        "rain_ge_1_5_rows": 797,
+        "precipitation_null_rows": 195
+      },
+      {
+        "model": "ICON_SEAMLESS",
+        "rows": 36792,
+        "run_labels": 17,
+        "rain_ge_1_5_rows": 797,
+        "precipitation_null_rows": 5615
+      },
+      {
+        "model": "JMA_GSM",
+        "rows": 36792,
+        "run_labels": 17,
+        "rain_ge_1_5_rows": 348,
+        "precipitation_null_rows": 17958
+      },
+      {
+        "model": "METEOFRANCE_ARPEGE_WORLD",
+        "rows": 34824,
+        "run_labels": 12,
+        "rain_ge_1_5_rows": 1397,
+        "precipitation_null_rows": 12617
+      },
+      {
+        "model": "UKMO_GLOBAL_10KM",
+        "rows": 36792,
+        "run_labels": 17,
+        "rain_ge_1_5_rows": 1042,
+        "precipitation_null_rows": 3670
+      }
+    ]
+  },
+  "forecast_hard_anomalies": {
+    "row_count": 17222,
+    "affected_models": [
+      "CMA_GRAPES_GLOBAL",
+      "ECMWF_HRES",
+      "GEM_GLOBAL",
+      "GFS_GLOBAL",
+      "GFS_SEAMLESS",
+      "ICON_SEAMLESS",
+      "JMA_GSM",
+      "METEOFRANCE_ARPEGE_WORLD",
+      "UKMO_GLOBAL_10KM"
+    ],
+    "affected_run_count": 104,
+    "first_scrape": "2026-07-03 05:14:29",
+    "last_scrape": "2026-07-07 20:23:26",
+    "status": "quarantine from training and replay until source mapping is reconstructed"
+  },
+  "time_alignment": {
+    "pairing_contract_version": "openmeteo-valid-time-utc-v1",
+    "latest_observation_utc": "2026-06-30 10:00:00",
+    "historical_exact_text_join_rows": 390728,
+    "operational_exact_text_join_rows": 0,
+    "operational_utc_normalized_join_rows": 0,
+    "risk": "forecast_time remains WITA for operational display compatibility; verification uses the explicit or derived valid_time_utc field against AWOS UTC",
+    "status": "UTC pairing implemented; residuals remain observe-only pending live evidence"
+  }
+}

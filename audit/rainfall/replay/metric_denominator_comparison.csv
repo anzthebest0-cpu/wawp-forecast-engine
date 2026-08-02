@@ -1,0 +1,13 @@
+split,hourly_threshold_mm,valid_hourly_samples,strict_wet_hours,unique_contiguous_episodes,legacy_centered_expanded_wet_samples,legacy_inflation_vs_strict,complete_3h_blocks,wet_complete_3h_same_numeric,legacy_status
+development_2023_2025,0.1,25729,2194,1115,4291,1.95579,8539,1420,diagnostic_only_future_leaking_transformation
+development_2023_2025,1.0,25729,853,523,1856,2.17585,8539,652,diagnostic_only_future_leaking_transformation
+development_2023_2025,1.5,25729,716,458,1602,2.23743,8539,565,diagnostic_only_future_leaking_transformation
+development_2023_2025,5.0,25729,343,277,879,2.56268,8539,322,diagnostic_only_future_leaking_transformation
+development_2023_2025,10.0,25729,143,117,372,2.6014,8539,159,diagnostic_only_future_leaking_transformation
+development_2023_2025,20.0,25729,43,40,123,2.86047,8539,67,diagnostic_only_future_leaking_transformation
+holdout_2026_h1,0.1,4224,348,173,665,1.91092,1399,222,diagnostic_only_future_leaking_transformation
+holdout_2026_h1,1.0,4224,95,67,228,2.4,1399,91,diagnostic_only_future_leaking_transformation
+holdout_2026_h1,1.5,4224,79,56,191,2.41772,1399,77,diagnostic_only_future_leaking_transformation
+holdout_2026_h1,5.0,4224,30,26,82,2.73333,1399,30,diagnostic_only_future_leaking_transformation
+holdout_2026_h1,10.0,4224,15,14,43,2.86667,1399,17,diagnostic_only_future_leaking_transformation
+holdout_2026_h1,20.0,4224,3,3,9,3.0,1399,4,diagnostic_only_future_leaking_transformation

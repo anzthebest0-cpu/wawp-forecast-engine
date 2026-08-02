@@ -557,6 +557,43 @@
             </div>
 
             <div class="panel" style="margin-top: 20px;">
+                <h3>Selection & Observation Quality</h3>
+                <div class="param-grid">
+                    <div class="param-card">
+                        <div class="param-label">Forecast Selection</div>
+                        <div class="param-value" id="selection-mode">--</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Clean Models Selected</div>
+                        <div class="param-value" id="selection-model-count">--</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Changed From Latest</div>
+                        <div class="param-value" id="selection-changed-count">--</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">AWOS Quality</div>
+                        <div class="param-value" id="awos-quality-status">--</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Missing Hourly Records</div>
+                        <div class="param-value" id="awos-missing-hours">--</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Gust Cross-Check</div>
+                        <div class="param-value" id="awos-gust-match">--</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Rain Boundary Cross-Check</div>
+                        <div class="param-value" id="awos-rain-match">--</div>
+                    </div>
+                </div>
+                <p id="selection-quality-note" style="color: var(--text-secondary); margin-top: 15px; font-size: 0.9em;">
+                    Deterministic as-of selection and AWOS cross-grain checks are observe-only until reviewed.
+                </p>
+            </div>
+
+            <div class="panel" style="margin-top: 20px;">
                 <h3>QM Provenance</h3>
                 <div class="param-grid" id="qm-provenance-grid">
                     <div class="param-card">

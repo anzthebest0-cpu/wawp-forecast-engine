@@ -26,6 +26,8 @@ def run():
     QM_RUNTIME_PATH = runtime_db_path(_HERE)
     
     log.info("Starting WAWP Open-Meteo Pipeline...")
+    dashboard_export_succeeded = False
+    dashboard_export_error = None
     
     # 1. Scrape latest data
     openmeteo_stale = False
@@ -99,8 +101,7 @@ def run():
 
         health_path = os.path.join(_HERE, "docs", "data", "pipeline_health.json")
         os.makedirs(os.path.dirname(health_path), exist_ok=True)
-        with open(health_path, "w", encoding="utf-8") as f:
-            json.dump({
+        health_payload = {
                 "openmeteo_stale": openmeteo_stale,
                 "openmeteo_models_fetched": sorted(all_models_data.keys()),
                 "operational_forecast_rows": operational_forecast_count,
@@ -111,7 +112,11 @@ def run():
                 "openmeteo_error": openmeteo_error,
                 "awos_error": awos_error,
                 "qm_artifact_status": qm_artifact_status,
-            }, f, indent=2)
+                "dashboard_export_succeeded": False,
+                "dashboard_export_error": None,
+            }
+        with open(health_path, "w", encoding="utf-8") as f:
+            json.dump(health_payload, f, indent=2)
 
         try:
             obs_count = db.conn.execute("SELECT COUNT(*) FROM awos_observations").fetchone()[0]
@@ -136,13 +141,24 @@ def run():
                 )
             else:
                 export_all(db, DOCS_DIR, qm_artifact_status=qm_artifact_status)
+                dashboard_export_succeeded = True
                 log.info("Dashboard data exported.")
         except Exception as e:
             log.error(f"Exporter failed: {e}")
+            dashboard_export_error = str(e)
+
+        health_payload["dashboard_export_succeeded"] = dashboard_export_succeeded
+        health_payload["dashboard_export_error"] = dashboard_export_error
+        health_payload["last_error"] = dashboard_export_error or health_payload.get("last_error")
+        with open(health_path, "w", encoding="utf-8") as f:
+            json.dump(health_payload, f, indent=2)
             
     finally:
         db.close()
         
+    if not dashboard_export_succeeded:
+        log.error("Pipeline finished with a blocking dashboard export failure.")
+        raise SystemExit(1)
     log.info("Pipeline finished successfully.")
 
 if __name__ == "__main__":

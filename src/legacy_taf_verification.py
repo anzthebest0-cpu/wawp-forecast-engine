@@ -55,7 +55,7 @@ WIND_RE = re.compile(r"\b(?P<direction>\d{3}|VRB)(?P<speed>\d{2})(?:G(?P<gust>\d
 VIS_RE = re.compile(r"\b(\d{4})\b")
 CLOUD_RE = re.compile(r"\b(FEW|SCT|BKN|OVC)(\d{3})(?:CB|TCU)?\b")
 WX_RE = re.compile(
-    r"\b(?:-?DZ|-?RA|\+RA|-?SN|-?SG|-?IC|-?PL|-?GR|-?GS|-?UP|-?BR|-?FG|-?FU|-?VA|-?DU|-?SA|-?HZ|-?PY|-?PO|-?SQ|-?FC|-?SS|-?DS|MIFG|BCFG|PRFG|DRSN|BLSN|-?SHRA|-?TSRA|-?FZRA|-?SHSN|-?TSSN|-?FZSN|-?SHGR|-?TSGR|-?FZGR|-?SHGS|-?TSGS|-?FZGS)\b"
+    r"\b(?:NSW|TS|VCTS|VCSH|-?DZ|-?RA|\+RA|-?SN|-?SG|-?IC|-?PL|-?GR|-?GS|-?UP|-?BR|-?FG|-?FU|-?VA|-?DU|-?SA|-?HZ|-?PY|-?PO|-?SQ|-?FC|-?SS|-?DS|MIFG|BCFG|PRFG|DRSN|BLSN|-?SHRA|-?TSRA|-?FZRA|-?SHSN|-?TSSN|-?FZSN|-?SHGR|-?TSGR|-?FZGR|-?SHGS|-?TSGS|-?FZGS)\b"
 )
 GROUP_RE = re.compile(r"\b(?P<kind>BECMG|TEMPO|PROB\d{2}\s+TEMPO)\s+(?P<window>\d{4}/\d{4})\b")
 HEADER_RE = re.compile(r"\bTAF\s+WAWP\s+(?P<issue>\d{6})Z\s+(?P<valid>\d{4}/\d{4})\b")
@@ -165,6 +165,8 @@ def _parse_state(segment: str) -> WeatherState:
 
     weather_match = WX_RE.search(remainder)
     weather = weather_match.group(0) if weather_match else None
+    if weather == "NSW" or "CAVOK" in remainder:
+        weather = "0"
     cloud = CLOUD_RE.search(remainder)
     cloud_amount = cloud.group(1) if cloud else ("SKC" if "CAVOK" in remainder else None)
     cloud_base_ft = int(cloud.group(2)) * 100 if cloud else (9999 if "CAVOK" in remainder else None)

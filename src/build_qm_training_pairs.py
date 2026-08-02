@@ -8,6 +8,12 @@ import os
 import sys
 
 from src.advanced_ensemble_weighter import MODELS
+from src.forecast_time_provenance import (
+    clean_operational_cycle_sql,
+    hard_valid_forecast_sql,
+    local_valid_time_sql,
+    valid_time_utc_sql,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("qm_pairs")
@@ -16,13 +22,18 @@ log = logging.getLogger("qm_pairs")
 def build_training_pairs(db) -> int:
     log.info("Building qm_training_pairs candidate")
     model_filter = ",".join("?" for _ in MODELS)
+    valid_utc = valid_time_utc_sql("f")
+    valid_local = local_valid_time_sql("f")
+    hard_valid = hard_valid_forecast_sql("f")
+    clean_cycle = clean_operational_cycle_sql("f")
     db.conn.execute("DROP TABLE IF EXISTS qm_training_pairs_candidate")
     db.conn.execute(f"""
         CREATE TABLE qm_training_pairs_candidate AS
         SELECT
             f.model,
             f.run_init_utc,
-            f.forecast_time AS valid_time,
+            f.scraped_at AS collected_at_utc,
+            {valid_utc} AS valid_time,
             f.lead_hours,
             CASE
                 WHEN f.run_init_utc = 'historical_forecast_api' THEN 'continuous_historical'
@@ -33,8 +44,8 @@ def build_training_pairs(db) -> int:
                 ELSE 'operational_residual'
             END AS correction_layer,
             CASE
-                WHEN CAST(strftime('%H', f.forecast_time) AS INTEGER) BETWEEN 6 AND 11 THEN 'morning_06_11'
-                WHEN CAST(strftime('%H', f.forecast_time) AS INTEGER) BETWEEN 12 AND 19 THEN 'convective_12_19'
+                WHEN CAST(strftime('%H', {valid_local}) AS INTEGER) BETWEEN 6 AND 11 THEN 'morning_06_11'
+                WHEN CAST(strftime('%H', {valid_local}) AS INTEGER) BETWEEN 12 AND 19 THEN 'convective_12_19'
                 ELSE 'night_20_05'
             END AS regime,
             CASE
@@ -62,17 +73,19 @@ def build_training_pairs(db) -> int:
             o.dewpoint     AS obs_dewpoint,
             o.pressure     AS obs_pressure,
             o.wind_speed   AS obs_wind_speed,
-            o.wind_gust_max AS obs_wind_gust,
+            CASE WHEN o.wind_gust_max > 0 THEN o.wind_gust_max END AS obs_wind_gust,
             o.wind_dir     AS obs_wind_dir,
             o.rain_1h      AS obs_rain
         FROM openmeteo_forecasts f
         INNER JOIN awos_observations o
-            ON f.forecast_time = o.obs_time
+            ON {valid_utc} = o.obs_time
             AND f.location = o.location
         WHERE o.temperature IS NOT NULL
           AND f.model IN ({model_filter})
           AND (f.run_init_utc = 'historical_forecast_api' OR f.lead_hours >= 0)
-        ORDER BY f.model, f.run_init_utc, f.forecast_time
+          AND {hard_valid}
+          AND (f.run_init_utc = 'historical_forecast_api' OR {clean_cycle})
+        ORDER BY f.model, f.run_init_utc, {valid_utc}
     """, tuple(MODELS))
     n = db.conn.execute("SELECT COUNT(*) FROM qm_training_pairs_candidate").fetchone()[0]
     if n <= 0:

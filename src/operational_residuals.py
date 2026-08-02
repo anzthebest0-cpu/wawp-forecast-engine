@@ -12,6 +12,13 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
+from src.forecast_time_provenance import (
+    TIME_CONTRACT_VERSION,
+    clean_operational_cycle_sql,
+    hard_valid_forecast_sql,
+    valid_time_utc_sql,
+)
+
 
 PARAMETERS = [
     "Temperature",
@@ -264,27 +271,123 @@ def summarize_parameter_pairs(df: pd.DataFrame, parameter: str) -> dict:
 def query_operational_pairs(conn, parameter: str, start_date: str, end_date: str, models: list[str]) -> pd.DataFrame:
     f_col, o_col = PARAMETER_COLUMNS[parameter]
     placeholders = ",".join("?" for _ in models)
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(openmeteo_forecasts)")}
+    valid_utc = valid_time_utc_sql("f", has_explicit_column="valid_time_utc" in columns)
+    time_basis = (
+        "COALESCE(f.forecast_time_basis, 'legacy_derived')"
+        if "forecast_time_basis" in columns
+        else "'legacy_derived'"
+    )
+    hard_valid = hard_valid_forecast_sql("f")
+    clean_cycle = clean_operational_cycle_sql("f")
+    observation_filter = "AND o.wind_gust_max > 0" if parameter == "Wind Gust" else ""
     query = f"""
         SELECT
-            f.forecast_time AS Datetime,
+            {valid_utc} AS Datetime,
+            f.forecast_time AS Local_Datetime,
             f.model AS Model,
+            f.run_init_utc AS Collection_Cycle_UTC,
             f.run_init_utc AS Run_Init_UTC,
+            f.scraped_at AS Collected_At_UTC,
+            {time_basis} AS Time_Basis,
             f.lead_hours AS Lead_Hour,
             f.{f_col} AS forecast,
             o.{o_col} AS obs
         FROM openmeteo_forecasts f
         INNER JOIN awos_observations o
             ON f.location = o.location
-            AND f.forecast_time = o.obs_time
-        WHERE f.forecast_time >= ? AND f.forecast_time <= ?
+            AND {valid_utc} = o.obs_time
+        WHERE {valid_utc} >= ? AND {valid_utc} <= ?
           AND f.run_init_utc <> 'historical_forecast_api'
           AND f.lead_hours >= 0
           AND f.model IN ({placeholders})
+          AND {hard_valid}
+          AND {clean_cycle}
+          {observation_filter}
+        ORDER BY f.model, f.run_init_utc, {valid_utc}
     """
     return pd.read_sql_query(query, conn, params=(start_date, end_date, *models))
 
 
-def build_operational_residual_state(conn, start_date: str, end_date: str, models: list[str]) -> dict:
+def operational_pairing_audit(
+    conn,
+    start_date: str,
+    end_date: str,
+    models: list[str],
+) -> dict:
+    placeholders = ",".join("?" for _ in models)
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(openmeteo_forecasts)")}
+    has_explicit_utc = "valid_time_utc" in columns
+    valid_utc = valid_time_utc_sql("f", has_explicit_column=has_explicit_utc)
+    hard_valid = hard_valid_forecast_sql("f")
+    clean_cycle = clean_operational_cycle_sql("f")
+    explicit_utc_count = (
+        "SUM(CASE WHEN f.valid_time_utc IS NOT NULL THEN 1 ELSE 0 END)"
+        if has_explicit_utc
+        else "0"
+    )
+    params = (start_date, end_date, *models)
+    scope = conn.execute(f"""
+        SELECT COUNT(*), COUNT(DISTINCT f.model), COUNT(DISTINCT f.run_init_utc),
+               MIN({valid_utc}), MAX({valid_utc}),
+               {explicit_utc_count},
+               SUM(CASE WHEN {hard_valid} THEN 0 ELSE 1 END)
+        FROM openmeteo_forecasts f
+        WHERE {valid_utc} >= ? AND {valid_utc} <= ?
+          AND f.run_init_utc <> 'historical_forecast_api'
+          AND f.lead_hours >= 0
+          AND f.model IN ({placeholders})
+    """, params).fetchone()
+    corrected_pairs = conn.execute(f"""
+        SELECT COUNT(*)
+        FROM openmeteo_forecasts f
+        INNER JOIN awos_observations o
+          ON o.location=f.location AND o.obs_time={valid_utc}
+        WHERE {valid_utc} >= ? AND {valid_utc} <= ?
+          AND f.run_init_utc <> 'historical_forecast_api'
+          AND f.lead_hours >= 0
+          AND f.model IN ({placeholders})
+          AND {hard_valid}
+          AND {clean_cycle}
+    """, params).fetchone()[0]
+    legacy_pairs = conn.execute(f"""
+        SELECT COUNT(*)
+        FROM openmeteo_forecasts f
+        INNER JOIN awos_observations o
+          ON o.location=f.location AND o.obs_time=f.forecast_time
+        WHERE {valid_utc} >= ? AND {valid_utc} <= ?
+          AND f.run_init_utc <> 'historical_forecast_api'
+          AND f.lead_hours >= 0
+          AND f.model IN ({placeholders})
+    """, params).fetchone()[0]
+    return {
+        "pairing_contract_version": TIME_CONTRACT_VERSION,
+        "forecast_time_compatibility_basis": "WITA for operational Forecast API rows",
+        "verification_join": "valid_time_utc equals AWOS obs_time UTC",
+        "run_provenance": "run_init_utc is a collection-cycle proxy, not a confirmed provider initialization",
+        "scope_forecast_rows": int(scope[0] or 0),
+        "scope_model_count": int(scope[1] or 0),
+        "scope_collection_cycle_count": int(scope[2] or 0),
+        "first_valid_time_utc": scope[3],
+        "last_valid_time_utc": scope[4],
+        "explicit_valid_time_utc_rows": int(scope[5] or 0),
+        "hard_anomaly_rows_excluded": int(scope[6] or 0),
+        "whole_cycle_quarantine": True,
+        "physically_aligned_pair_rows": int(corrected_pairs or 0),
+        "legacy_naive_text_pair_rows": int(legacy_pairs or 0),
+        "promotion_eligible": False,
+    }
+
+
+def build_operational_residual_state(
+    conn,
+    start_date: str,
+    end_date: str,
+    models: list[str],
+    *,
+    verification_frozen: bool = False,
+) -> dict:
+    pairing_audit = operational_pairing_audit(conn, start_date, end_date, models)
     parameters = {}
     detail_rows = []
     for parameter in PARAMETERS:
@@ -304,14 +407,21 @@ def build_operational_residual_state(conn, start_date: str, end_date: str, model
             "start_date": start_date,
             "end_date": end_date,
             "mode": "observe_only",
+            "pairing_contract_version": TIME_CONTRACT_VERSION,
+            "verification_frozen": bool(verification_frozen),
+            "promotion_eligible": False,
             "enabled_rows": 0,
             "total_pairs": total_pairs,
             "ready_rows": ready_rows,
             "pending_rows": pending_rows,
             "disabled_rows": disabled_rows,
             "lead_buckets": [name for name, _, _ in LEAD_BUCKETS],
-            "note": "Operational residuals are measured only; no live forecast correction is applied in this phase.",
+            "note": (
+                "Operational residuals are measured with UTC-normalized valid times only; "
+                "no live forecast correction is applied in this phase."
+            ),
         },
+        "pairing_audit": pairing_audit,
         "parameters": parameters,
         "rows": detail_rows,
     }

@@ -66,6 +66,8 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+
+from src.forecast_time_provenance import TIME_CONTRACT_VERSION
 try:
     from scipy import stats as scipy_stats
 except ModuleNotFoundError:
@@ -820,6 +822,9 @@ def _insert_qm(
     skill = _skill_score(scores)
     low_conf = bool(qm.get("low_confidence", False))
     metadata = {k: v for k, v in qm.items() if k not in {"fcst_quantiles", "obs_quantiles"}}
+    if correction_layer == LAYER_OPERATIONAL:
+        metadata["pairing_contract_version"] = TIME_CONTRACT_VERSION
+        metadata["run_provenance"] = "collection_cycle_proxy_not_provider_initialization"
     conn.execute("""
         INSERT INTO qm_cdfs (
             model, parameter, lead_bucket, fcst_quantiles, obs_quantiles,
@@ -898,6 +903,15 @@ def fit_multiparam_qm_to_db(conn, log_fn=print) -> dict:
            OR (correction_layer = ? AND lead_bucket <> ?)
         """,
         (LAYER_HISTORICAL, HISTORICAL_PRIOR_BUCKET),
+    )
+    conn.execute(
+        """
+        UPDATE qm_cdfs
+        SET enabled=0, deprecated=1
+        WHERE correction_layer = ?
+          AND (metadata IS NULL OR metadata NOT LIKE ?)
+        """,
+        (LAYER_OPERATIONAL, f'%"pairing_contract_version"%{TIME_CONTRACT_VERSION}%'),
     )
     historical_qm: dict[tuple[str, str], dict] = {}
     for model in MULTIPARAM_MODELS_OPENMETEO:

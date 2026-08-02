@@ -139,6 +139,23 @@ jobs:
       - name: Run Pipeline
         run: python run_pipeline.py
 
+      - name: Validate Publication Candidate
+        run: |
+          set -euo pipefail
+          python -m src.pipeline_publication_gate \
+            --database wawp_forecasts.db \
+            --data-dir docs/data \
+            --output artifacts/validation/publication_gate.json
+
+      - name: Upload Publication Gate Report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: publication-gate-${{ github.run_id }}
+          path: artifacts/validation/publication_gate.json
+          retention-days: 30
+          if-no-files-found: warn
+
       - name: Upload Compact Database Audit Report
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.compact_db_audit }}
         uses: actions/upload-artifact@v4

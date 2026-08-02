@@ -21,34 +21,52 @@ class ModelMetadata:
     forecast_horizon_hours: int
     temporal_confidence: str
     hourly_output_note: str
+    native_temporal_resolution: str = "unknown"
+    interpolation_note: str = ""
 
 
 HOURLY_OUTPUT_NOTE = "Open-Meteo hourly output grid; native model step/update frequency may differ."
 
 MODEL_REGISTRY: dict[str, ModelMetadata] = {
     "ECMWF_HRES": ModelMetadata(
-        "ECMWF_HRES", "ecmwf_ifs025", "ECMWF IFS HRES", 1.0, 6.0, 384, "medium", HOURLY_OUTPUT_NOTE
+        "ECMWF_HRES", "ecmwf_ifs025", "ECMWF IFS HRES", 1.0, 6.0, 360, "high", HOURLY_OUTPUT_NOTE,
+        "1h through 90h, 3h after 90h, 6h after 144h",
+        "Open-Meteo interpolates non-hourly long-lead steps to its hourly response grid.",
     ),
     "GFS_GLOBAL": ModelMetadata(
-        "GFS_GLOBAL", "gfs_global", "NOAA GFS", 1.0, 1.0, 384, "high", HOURLY_OUTPUT_NOTE
+        "GFS_GLOBAL", "gfs_global", "NOAA GFS", 1.0, 6.0, 384, "high", HOURLY_OUTPUT_NOTE,
+        "1h through 120h, 3h after 120h",
+        "Open-Meteo interpolates 3-hourly long-lead values to 1-hourly.",
     ),
     "ICON_SEAMLESS": ModelMetadata(
-        "ICON_SEAMLESS", "icon_seamless", "DWD ICON seamless", 1.0, 3.0, 384, "medium", HOURLY_OUTPUT_NOTE
+        "ICON_SEAMLESS", "icon_seamless", "DWD ICON Global at WAWP", 1.0, 6.0, 180, "high", HOURLY_OUTPUT_NOTE,
+        "1h through 78h, 3h after 78h",
+        "WAWP is outside ICON-EU/D2; ICON Global cadence applies.",
     ),
     "GEM_GLOBAL": ModelMetadata(
-        "GEM_GLOBAL", "gem_global", "CMC GEM", 1.0, 6.0, 384, "medium", HOURLY_OUTPUT_NOTE
+        "GEM_GLOBAL", "gem_global", "CMC GEM Global", 1.0, 12.0, 240, "low", HOURLY_OUTPUT_NOTE,
+        "3h",
+        "Open-Meteo interpolates all GEM Global values from 3-hourly to 1-hourly.",
     ),
     "CMA_GRAPES_GLOBAL": ModelMetadata(
-        "CMA_GRAPES_GLOBAL", "cma_grapes_global", "CMA GRAPES", 1.0, 6.0, 384, "medium", HOURLY_OUTPUT_NOTE
+        "CMA_GRAPES_GLOBAL", "cma_grapes_global", "CMA GRAPES Global", 1.0, 6.0, 240, "low", HOURLY_OUTPUT_NOTE,
+        "3h",
+        "Open-Meteo returns an hourly grid from native 3-hourly guidance.",
     ),
     "JMA_GSM": ModelMetadata(
-        "JMA_GSM", "jma_gsm", "JMA GSM", 1.0, 3.0, 384, "medium", HOURLY_OUTPUT_NOTE
+        "JMA_GSM", "jma_gsm", "JMA GSM", 1.0, 6.0, 264, "low", HOURLY_OUTPUT_NOTE,
+        "6h",
+        "Open-Meteo interpolates all GSM values from 6-hourly to 1-hourly.",
     ),
     "METEOFRANCE_ARPEGE_WORLD": ModelMetadata(
-        "METEOFRANCE_ARPEGE_WORLD", "meteofrance_arpege_world", "Meteo-France ARPEGE World", 1.0, 1.0, 384, "high", HOURLY_OUTPUT_NOTE
+        "METEOFRANCE_ARPEGE_WORLD", "meteofrance_arpege_world", "Meteo-France ARPEGE World", 1.0, 6.0, 96, "medium", HOURLY_OUTPUT_NOTE,
+        "1h through 48h, 3h after 48h",
+        "Open-Meteo interpolates non-hourly long-lead values to 1-hourly.",
     ),
     "UKMO_GLOBAL_10KM": ModelMetadata(
-        "UKMO_GLOBAL_10KM", "ukmo_global_deterministic_10km", "UK Met Office Global 10 km", 1.0, 1.0, 384, "high", HOURLY_OUTPUT_NOTE
+        "UKMO_GLOBAL_10KM", "ukmo_global_deterministic_10km", "UK Met Office Global 10 km", 1.0, 6.0, 168, "medium", HOURLY_OUTPUT_NOTE,
+        "1h through 54h, 3h after 54h, 6h after 144h",
+        "Open-Meteo interpolates non-hourly long-lead values to 1-hourly; open data has additional delay.",
     ),
 }
 
@@ -95,6 +113,8 @@ def model_metadata_dict(model: str) -> dict[str, Any]:
             "forecast_horizon_hours": None,
             "temporal_confidence": "unknown",
             "hourly_output_note": "Model is not in WAWP registry; audit before trusting cadence.",
+            "native_temporal_resolution": "unknown",
+            "interpolation_note": "",
         }
     return asdict(meta)
 
@@ -107,6 +127,7 @@ def registry_payload() -> dict[str, Any]:
             "output_interval": "Interval between timestamps returned to WAWP after Open-Meteo processing.",
             "provider_update_frequency": "Expected cadence at which provider model guidance is refreshed.",
             "event_window_parameters": "Rain and gust verification should use event/timing windows, not strict hourly-only scoring.",
+            "native_cadence": "Native temporal resolution controls timing confidence even when the API response is hourly.",
         },
     }
 

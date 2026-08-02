@@ -11,12 +11,23 @@ from src.advanced_ensemble_weighter import AdvancedEnsembleWeighter, MODELS, PAR
 from src.guidance_generator import generate_consensus
 from src.quantile_mapper import QuantileMapper, apply_qm_with_layers, operational_residual_qm_enabled
 from src.model_registry import freshness_status, model_metadata_dict, registry_payload
+from src.meteorological_contract import (
+    GUST_EVENT_SHADOW_KT,
+    RAIN_3H_SHADOW_MM,
+    RAIN_EVENT_SHADOW_MM_H,
+)
 from src.event_window_verification import event_window_metrics, event_window_weight_scores
 from src.operational_residuals import build_operational_residual_state
+from src.forecast_time_provenance import TIME_CONTRACT_VERSION
+from src.forecast_selection import asof_selection_enabled, select_latest_clean_collections
+from src.awos_quality import build_awos_quality_state
 from src.tafor_generator import generate_tafor
 from src.tafor_shadow import build_shadow_taf_payload
 
 log = logging.getLogger("exporter")
+
+EVENT_WINDOW_WEIGHTING_MODE_ENV = "WAWP_EVENT_WINDOW_WEIGHTING_MODE"
+EVENT_WINDOW_WEIGHTING_MODES = {"observe_only", "enabled"}
 
 WMO_WEATHER_CODES = [
     {"code": 0, "description": "Clear sky"},
@@ -97,9 +108,45 @@ def _weights_have_signal(weights: dict) -> bool:
 def _event_diagnostics_have_signal(diagnostics: dict) -> bool:
     for param in ("Rainfall", "Wind Gust"):
         diag = (diagnostics or {}).get(param) or {}
-        if diag.get("applied") and diag.get("event_weights"):
+        if (diag.get("applied") or diag.get("skill_ready")) and diag.get("event_weights"):
             return True
     return False
+
+
+def _event_window_weighting_mode() -> str:
+    mode = os.environ.get(EVENT_WINDOW_WEIGHTING_MODE_ENV, "observe_only").strip().lower()
+    if mode not in EVENT_WINDOW_WEIGHTING_MODES:
+        log.warning(
+            "Unsupported %s=%r; using observe_only",
+            EVENT_WINDOW_WEIGHTING_MODE_ENV,
+            mode,
+        )
+        return "observe_only"
+    return mode
+
+
+def _operationalize_event_diagnostics(diagnostics: dict, mode: str | None = None) -> dict:
+    """Separate verified-looking diagnostics from permission to affect guidance."""
+    result = dict(diagnostics or {})
+    selected_mode = mode or _event_window_weighting_mode()
+    if selected_mode not in EVENT_WINDOW_WEIGHTING_MODES:
+        selected_mode = "observe_only"
+
+    skill_ready = bool(result.get("applied") and result.get("event_weights"))
+    result["skill_ready"] = skill_ready
+    result["mode"] = selected_mode
+    result["applied"] = bool(skill_ready and selected_mode == "enabled")
+    result["weighting_enabled"] = result["applied"]
+    result["audit_status"] = (
+        "event-window influence explicitly enabled"
+        if result["applied"]
+        else "observe-only while rainfall and gust event metrics are under audit"
+    )
+    if skill_ready and not result["applied"]:
+        result["reason"] = (
+            "event-window diagnostics retained for review but excluded from weights and TAF change-group logic"
+        )
+    return result
 
 
 def _residual_state_sample_count(payload: dict) -> int:
@@ -448,15 +495,31 @@ def calculate_advanced_metrics(weighter, df_long: pd.DataFrame, param: str, is_c
 
     if param == "Rainfall":
         metrics_payload["event_windows"] = {
-            "description": "Rain event verification with exact, +/-1h, +/-2h, and 3h block tolerance. Used to separate timing displacement from true misses/false alarms.",
-            "threshold": 1.5,
-            "models": event_window_metrics(df_w, threshold=1.5, windows=(0, 1, 2), block_hours=3),
+            "description": "Shadow rain verification: strict clock-hour occurrence, one-to-one episode matching at +/-1h and +/-2h, and complete UTC-aligned 3h accumulation.",
+            "threshold": RAIN_EVENT_SHADOW_MM_H,
+            "metric_schema_version": "event-window-v2-shadow",
+            "models": event_window_metrics(
+                df_w,
+                threshold=RAIN_EVENT_SHADOW_MM_H,
+                windows=(0, 1, 2),
+                block_hours=3,
+                block_mode="sum",
+                block_threshold=RAIN_3H_SHADOW_MM,
+            ),
         }
     elif param == "Wind Gust":
         metrics_payload["event_windows"] = {
-            "description": "Gust event verification with exact, +/-1h, +/-2h, and 3h block tolerance. Peak error uses the strongest forecast gust inside +/-2h around observed gust events.",
-            "threshold": 15.0,
-            "models": event_window_metrics(df_w, threshold=15.0, windows=(0, 1, 2), block_hours=3),
+            "description": "Shadow gust verification: strict clock-hour occurrence, one-to-one episode matching at +/-1h and +/-2h, and complete UTC-aligned 3h peak gust.",
+            "threshold": GUST_EVENT_SHADOW_KT,
+            "metric_schema_version": "event-window-v2-shadow",
+            "models": event_window_metrics(
+                df_w,
+                threshold=GUST_EVENT_SHADOW_KT,
+                windows=(0, 1, 2),
+                block_hours=3,
+                block_mode="max",
+                block_threshold=GUST_EVENT_SHADOW_KT,
+            ),
         }
 
     return metrics_payload
@@ -733,6 +796,8 @@ def export_system_workflow(
             "quality_notes": audit.get("quality_notes") or "",
             "missing_parameters": audit.get("missing_parameters", []),
             "temporal_confidence": meta.get("temporal_confidence"),
+            "native_temporal_resolution": meta.get("native_temporal_resolution"),
+            "interpolation_note": meta.get("interpolation_note"),
             "hourly_output_note": audit.get("hourly_output_note") or meta.get("hourly_output_note"),
         })
 
@@ -831,7 +896,7 @@ def export_system_workflow(
         },
         "pipeline_stages": [
             {"name": "Open-Meteo fetch", "output": "current 16-day model forecasts"},
-            {"name": "SQLite archive", "output": "run_init_utc, forecast_time, lead_hours, scraped_at"},
+            {"name": "SQLite archive", "output": "collection-cycle proxy, local display time, UTC valid time, lead hours, scrape time"},
             {"name": "AWOS ingestion", "output": "hourly and 1-minute observations"},
             {"name": "Training pairs", "output": "forecast-observation joins"},
             {"name": "QM calibration", "output": "parameter/model correction CDFs"},
@@ -934,7 +999,11 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         _model_params()
     ).fetchone()[0]
     observation_freshness = _observation_freshness(db, export_now)
-    verification_frozen = observation_freshness.get("verification_status") == "frozen"
+    awos_quality = build_awos_quality_state(db.conn, now_utc=export_now)
+    verification_frozen = (
+        observation_freshness.get("verification_status") == "frozen"
+        or awos_quality.get("status") == "blocked"
+    )
     db_health = {
         "size_mb": round(db_size_bytes / (1024 * 1024), 2),
         "current_forecast_records": forecast_count,
@@ -951,7 +1020,10 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         "latest_data_pull_utc": latest_data_pull_utc,
         "last_sync_utc": export_now.strftime("%Y-%m-%d %H:%M:%S"),
         "observation_freshness": observation_freshness,
+        "awos_quality": awos_quality,
     }
+    with open(os.path.join(output_dir, "awos_quality.json"), "w", encoding="utf-8") as f:
+        json.dump(sanitize_for_json(awos_quality), f, indent=2)
     existing_db_health = _load_json_file(os.path.join(output_dir, "db_health.json")) or {}
     existing_obs_count = int(existing_db_health.get("observation_records") or 0)
     if obs_count < 10000 and existing_obs_count > obs_count:
@@ -1029,11 +1101,21 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
                 w = _skill_fallback_weights(df_long_60d, param, is_circular)
 
             if param in {"Rainfall", "Wind Gust"}:
-                threshold = 1.5 if param == "Rainfall" else 15.0
-                event_metrics_60d = event_window_metrics(df_crps, threshold=threshold, windows=(0, 1, 2), block_hours=3)
+                threshold = RAIN_EVENT_SHADOW_MM_H if param == "Rainfall" else GUST_EVENT_SHADOW_KT
+                block_threshold = RAIN_3H_SHADOW_MM if param == "Rainfall" else GUST_EVENT_SHADOW_KT
+                block_mode = "sum" if param == "Rainfall" else "max"
+                event_metrics_60d = event_window_metrics(
+                    df_crps,
+                    threshold=threshold,
+                    windows=(0, 1, 2),
+                    block_hours=3,
+                    block_mode=block_mode,
+                    block_threshold=block_threshold,
+                )
                 event_diag = event_window_weight_scores(event_metrics_60d, parameter=param, models=MODELS, min_events=10)
                 event_diag["blend_factor"] = 0.30
                 event_diag["threshold"] = threshold
+                event_diag = _operationalize_event_diagnostics(event_diag)
                 event_weight_diagnostics[param] = event_diag
                 if event_diag.get("applied") and event_diag.get("event_weights"):
                     w = _blend_event_window_weights(w, event_diag["event_weights"], blend_factor=0.30)
@@ -1066,14 +1148,14 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
             p_df = df_wide.copy().set_index("Datetime")
             model_data[param] = {m: p_df[m].dropna() for m in p_df.columns if m in MODELS}
         elif param in {"Rainfall", "Wind Gust"}:
-            event_weight_diagnostics[param] = {
+            event_weight_diagnostics[param] = _operationalize_event_diagnostics({
                 "applied": False,
                 "reason": "event-window weighting pending because no forecast-observation pairs were available",
                 "blend_factor": 0.30,
                 "min_events": 10,
                 "event_weights": {},
                 "model_scores": {},
-            }
+            })
             
     # --- RESTORE LEGACY INTELLIGENCE ---
     # Since DB is new, we fallback to the trained weights and diurnal biases from New_CODE
@@ -1129,18 +1211,34 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         not _event_diagnostics_have_signal(event_weight_diagnostics)
         and _event_diagnostics_have_signal(existing_event_diagnostics)
     ):
-        event_weight_diagnostics = existing_event_diagnostics
+        event_weight_diagnostics = {
+            param: _operationalize_event_diagnostics(diag)
+            for param, diag in existing_event_diagnostics.items()
+        }
         log.warning("Using preserved event-window diagnostics; current export has no event skill pairs")
 
     residuals_path = os.path.join(output_dir, "operational_residuals.json")
-    residual_state = build_operational_residual_state(db.conn, start_str, end_str, list(MODELS))
+    residual_state = build_operational_residual_state(
+        db.conn,
+        start_str,
+        end_str,
+        list(MODELS),
+        verification_frozen=verification_frozen,
+    )
     existing_residual_state = _load_json_file(residuals_path) or {}
-    if _residual_state_sample_count(existing_residual_state) > _residual_state_sample_count(residual_state):
+    existing_contract = (existing_residual_state.get("metadata") or {}).get("pairing_contract_version")
+    if (
+        existing_contract == TIME_CONTRACT_VERSION
+        and _residual_state_sample_count(existing_residual_state) > _residual_state_sample_count(residual_state)
+    ):
         residual_state = existing_residual_state
         log.warning("Preserving existing operational_residuals.json because current export has fewer operational pairs")
+    elif existing_residual_state and existing_contract != TIME_CONTRACT_VERSION:
+        log.warning("Discarding preserved operational residual state built under an incompatible time-pairing contract")
     with open(residuals_path, "w", encoding="utf-8") as f:
         json.dump(sanitize_for_json(residual_state), f, indent=2)
     db_health["operational_residuals"] = residual_state.get("metadata", {})
+    db_health["forecast_time_provenance"] = getattr(db, "time_provenance_status", {})
     with open(os.path.join(output_dir, "db_health.json"), "w") as f:
         json.dump(db_health, f, indent=2)
             
@@ -1182,6 +1280,23 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
           AND m.model IN ({model_filter})
     """
     df_fcst = pd.read_sql_query(query_fcst, db.conn, params=_model_params(2))
+    selected_df, selection_audit = select_latest_clean_collections(
+        db.conn,
+        MODELS,
+        as_of_utc=export_now.strftime("%Y-%m-%d %H:%M:%S"),
+    )
+    selection_audit["applied"] = False
+    selection_audit["operational_policy"] = "existing latest-scrape-per-model"
+    if asof_selection_enabled() and not selected_df.empty:
+        df_fcst = selected_df
+        selection_audit["applied"] = True
+        selection_audit["operational_policy"] = "deterministic latest clean collection at cutoff"
+    elif asof_selection_enabled() and selected_df.empty:
+        selection_audit["fallback_reason"] = "no clean candidate rows; existing latest selection retained"
+        log.warning("As-of selection enabled but no clean candidate rows were available; retaining existing selection")
+    db_health["forecast_selection"] = selection_audit
+    with open(os.path.join(output_dir, "forecast_selection.json"), "w", encoding="utf-8") as f:
+        json.dump(sanitize_for_json(selection_audit), f, indent=2)
     workflow = export_system_workflow(
         db, output_dir, db_health, latest_time=latest_time, observation_freshness=observation_freshness
     )
@@ -1465,6 +1580,11 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
             if verification_frozen:
                 taf["warnings"].append(
                     "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen."
+                )
+            if _event_window_weighting_mode() != "enabled":
+                taf["warnings"].append(
+                    "Rain/gust event-window diagnostics are observe-only during metric audit; "
+                    "they do not alter weights or TAF change groups."
                 )
         taf_intel[iss] = taf
 

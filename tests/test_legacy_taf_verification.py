@@ -57,6 +57,43 @@ def test_structured_state_keeps_completed_becmg_before_tempo_overlay():
     assert state[1].visibility_m == 3000
 
 
+def test_becmg_nsw_clears_previously_active_rain():
+    taf = parse_taf(
+        "TAF WAWP 010500Z 0106/0206 30005KT 4000 RA BKN018 "
+        "BECMG 0108/0110 9999 NSW FEW020=",
+        "2026-01",
+    )
+
+    before = active_state_structured(taf, datetime(2026, 1, 1, 7, tzinfo=UTC))
+    after = active_state_structured(taf, datetime(2026, 1, 1, 10, tzinfo=UTC))
+
+    assert before[1].weather == "RA"
+    assert after[1].weather == "0"
+
+
+def test_becmg_cavok_clears_previously_active_rain():
+    taf = parse_taf(
+        "TAF WAWP 010500Z 0106/0206 30005KT 4000 RA BKN018 "
+        "BECMG 0108/0110 CAVOK=",
+        "2026-01",
+    )
+
+    after = active_state_structured(taf, datetime(2026, 1, 1, 10, tzinfo=UTC))
+
+    assert after[1].weather == "0"
+
+
+def test_bare_thunderstorm_token_is_parsed_as_significant_weather():
+    taf = parse_taf(
+        "TAF WAWP 010500Z 0106/0206 22004KT 5000 TS FEW018CB SCT020=",
+        "2026-01",
+    )
+
+    state = active_state_structured(taf, datetime(2026, 1, 1, 6, tzinfo=UTC))
+
+    assert state[1].weather == "TS"
+
+
 def test_legacy_tempo_rule_is_preserved_for_reproducibility():
     assert legacy_tempo_adjustment(0, 4, "rain_occurrence", False) == 1.2
     assert legacy_tempo_adjustment(1, 4, "rain_occurrence", False) == 4.0

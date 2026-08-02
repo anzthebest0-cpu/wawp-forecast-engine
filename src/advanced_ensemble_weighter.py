@@ -239,6 +239,15 @@ from typing import Dict, List, Tuple, Optional, Any
 from datetime import datetime, timedelta
 import json
 import math
+import os
+
+
+LEGACY_TIMING_WEIGHTING_ENV = "WAWP_LEGACY_TIMING_WEIGHTING_MODE"
+
+
+def legacy_timing_weighting_enabled() -> bool:
+    """Legacy many-to-one timing influence is opt-in for controlled tests only."""
+    return os.environ.get(LEGACY_TIMING_WEIGHTING_ENV, "deprecated").strip().lower() == "enabled"
 try:
     from sklearn.linear_model import Ridge
     from sklearn.model_selection import TimeSeriesSplit
@@ -1690,7 +1699,12 @@ class AdvancedEnsembleWeighter:
                                   base_w:       Optional[Dict[str, float]] = None,
                                   ) -> Dict[str, float]:
         """
-        Derive per-model weights from rainfall timing accuracy.
+        Derive deprecated per-model weights from rainfall timing accuracy.
+
+        This legacy method is disabled by default because its independent
+        observed-event scans are not the approved one-to-one episode verifier.
+        It is retained only for reproducibility and controlled comparison via
+        ``WAWP_LEGACY_TIMING_WEIGHTING_MODE=enabled``.
 
         Only active for Rainfall.  Returns base_w unchanged for all other
         parameters (Wind Speed, Temperature, Wind Direction are not affected).
@@ -1738,6 +1752,19 @@ class AdvancedEnsembleWeighter:
 
         if base_w is None:
             base_w = self._equal_weights()
+
+        if not legacy_timing_weighting_enabled():
+            self.timing_weights = {
+                "status": "deprecated_observe_only",
+                "applied": False,
+                "reason": (
+                    "legacy peak-window timing weights are excluded; use the "
+                    "one-to-one event-window shadow verifier"
+                ),
+                "n_events": 0,
+                "scores": {},
+            }
+            return dict(base_w)
 
         # Only meaningful for Rainfall
         if parameter != "Rainfall":

@@ -140,16 +140,16 @@ def aggregate_1min_to_hourly_gust(db_path: str) -> int:
                     SELECT MAX(m.wind_gust)
                     FROM awos_observations_1min m
                     WHERE m.location = awos_observations.location
-                      AND m.obs_time >= awos_observations.obs_time
-                      AND m.obs_time < datetime(awos_observations.obs_time, '+1 hour')
+                      AND m.obs_time > datetime(awos_observations.obs_time, '-1 hour')
+                      AND m.obs_time <= awos_observations.obs_time
                       AND m.wind_gust IS NOT NULL
                 )
                 WHERE EXISTS (
                     SELECT 1
                     FROM awos_observations_1min m
                     WHERE m.location = awos_observations.location
-                      AND m.obs_time >= awos_observations.obs_time
-                      AND m.obs_time < datetime(awos_observations.obs_time, '+1 hour')
+                      AND m.obs_time > datetime(awos_observations.obs_time, '-1 hour')
+                      AND m.obs_time <= awos_observations.obs_time
                       AND m.wind_gust IS NOT NULL
                 )
             """)

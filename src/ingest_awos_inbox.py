@@ -12,6 +12,7 @@ import json
 import logging
 import re
 import sqlite3
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,7 @@ from typing import Any
 import pandas as pd
 
 from src.awos_hourly_parser import read_hourly_awos
+from src.awos_quality import build_awos_quality_state
 from src.ingest_awos_1min import LOCATION_NAME, parse_1min_file
 
 
@@ -55,7 +57,7 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
             pressure        REAL,
             rain_1h         REAL DEFAULT 0.0,
             wind_speed      REAL DEFAULT 0.0,
-            wind_gust_max   REAL DEFAULT 0.0,
+            wind_gust_max   REAL,
             wind_dir        REAL,
             visibility      REAL,
             UNIQUE(location, obs_time)
@@ -197,14 +199,15 @@ def _ingest_hourly(conn: sqlite3.Connection, frame: pd.DataFrame) -> int:
                 _clean_float(row.Rain),
                 _clean_float(row.WS),
                 _clean_float(row.WD),
+                None,
             )
         )
     conn.executemany(
         """
         INSERT INTO awos_observations
             (location, obs_time, temperature, dewpoint, humidity, pressure,
-             rain_1h, wind_speed, wind_dir)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             rain_1h, wind_speed, wind_dir, wind_gust_max)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(location, obs_time) DO UPDATE SET
             temperature=excluded.temperature,
             dewpoint=excluded.dewpoint,
@@ -269,19 +272,51 @@ def _aggregate_hourly_gust(conn: sqlite3.Connection) -> int:
             SELECT MAX(m.wind_gust)
             FROM awos_observations_1min m
             WHERE m.location = awos_observations.location
-              AND m.obs_time >= awos_observations.obs_time
-              AND m.obs_time < datetime(awos_observations.obs_time, '+1 hour')
+              AND m.obs_time > datetime(awos_observations.obs_time, '-1 hour')
+              AND m.obs_time <= awos_observations.obs_time
               AND m.wind_gust IS NOT NULL
         )
         WHERE EXISTS (
             SELECT 1
             FROM awos_observations_1min m
             WHERE m.location = awos_observations.location
-              AND m.obs_time >= awos_observations.obs_time
-              AND m.obs_time < datetime(awos_observations.obs_time, '+1 hour')
+              AND m.obs_time > datetime(awos_observations.obs_time, '-1 hour')
+              AND m.obs_time <= awos_observations.obs_time
               AND m.wind_gust IS NOT NULL
         )
         """
+    )
+    return max(cursor.rowcount, 0)
+
+
+def _null_hourly_gust_without_minute_source(
+    conn: sqlite3.Connection,
+    minute_assets: list[dict[str, Any]],
+) -> int:
+    """Keep unavailable WGS as NULL instead of treating it as a calm gust."""
+    timestamps = pd.concat(
+        [asset["frame"][["UTC"]] for asset in minute_assets], ignore_index=True
+    )["UTC"]
+    if timestamps.empty:
+        return 0
+    first_hour = timestamps.min().floor("h").strftime("%Y-%m-%d %H:%M:%S")
+    last_hour = timestamps.max().ceil("h").strftime("%Y-%m-%d %H:%M:%S")
+    cursor = conn.execute(
+        """
+        UPDATE awos_observations
+        SET wind_gust_max = NULL
+        WHERE location = ?
+          AND obs_time BETWEEN ? AND ?
+          AND NOT EXISTS (
+              SELECT 1
+              FROM awos_observations_1min m
+              WHERE m.location = awos_observations.location
+                AND m.obs_time > datetime(awos_observations.obs_time, '-1 hour')
+                AND m.obs_time <= awos_observations.obs_time
+                AND m.wind_gust IS NOT NULL
+          )
+        """,
+        (LOCATION_NAME, first_hour, last_hour),
     )
     return max(cursor.rowcount, 0)
 
@@ -324,12 +359,13 @@ def ingest_awos_inbox(directory: Path, db_path: Path, source_tag: str = "awos-in
 
     assets, warnings = _load_assets(directory)
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(db_path) as conn:
+    with closing(sqlite3.connect(db_path)) as conn:
         _ensure_schema(conn)
         pending = [asset for asset in assets if not _already_applied(conn, source_tag, asset)]
         skipped = len(assets) - len(pending)
         applied: list[dict[str, Any]] = []
         gust_rows = 0
+        gust_missing_rows_cleared = 0
         try:
             conn.execute("BEGIN IMMEDIATE")
             for asset in [item for item in pending if item["type"] == "hourly"]:
@@ -343,6 +379,9 @@ def ingest_awos_inbox(directory: Path, db_path: Path, source_tag: str = "awos-in
                 applied.append({"asset": asset["path"].name, "type": "minute", "rows": count})
             if minute_applied:
                 gust_rows = _aggregate_hourly_gust(conn)
+                gust_missing_rows_cleared = _null_hourly_gust_without_minute_source(
+                    conn, [asset for asset, _ in minute_applied]
+                )
                 for asset, count in minute_applied:
                     _record_manifest(conn, source_tag, asset, count)
             conn.commit()
@@ -368,6 +407,7 @@ def ingest_awos_inbox(directory: Path, db_path: Path, source_tag: str = "awos-in
             f"SELECT COUNT(*) FROM {MANIFEST_TABLE} WHERE source_tag = ? AND status = 'applied'",
             (source_tag,),
         ).fetchone()[0]
+        quality_state = build_awos_quality_state(conn, location=LOCATION_NAME)
 
     return {
         "source_tag": source_tag,
@@ -379,6 +419,7 @@ def ingest_awos_inbox(directory: Path, db_path: Path, source_tag: str = "awos-in
         "applied": applied,
         "warnings": warnings,
         "hourly_gust_rows_updated": gust_rows,
+        "hourly_gust_rows_cleared_missing_source": gust_missing_rows_cleared,
         "hourly_database_rows": hourly_summary[0],
         "hourly_first_obs": hourly_summary[1],
         "hourly_last_obs": hourly_summary[2],
@@ -386,6 +427,7 @@ def ingest_awos_inbox(directory: Path, db_path: Path, source_tag: str = "awos-in
         "raw_minute_rows_before_compaction": minute_rows,
         "minute_wind_gust_values": minute_gust_values,
         "manifest_rows": manifest_rows,
+        "quality_state": quality_state,
         "generated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
     }
 

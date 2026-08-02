@@ -1,0 +1,370 @@
+{
+  "shadow_version": "selection-qm-shadow-v1",
+  "generated_at_utc": "2026-08-02T03:16:49.008696+00:00",
+  "database": "D:\\UJI_PERFORMA_MODEL\\meteologix-wawp-main\\tmp\\current-release-audit\\wawp_forecasts-30715296086-1.db",
+  "lookback_days": 60,
+  "start_utc": "2026-06-01 23:00:00",
+  "end_utc": "2026-07-31 23:00:00",
+  "observe_only": true,
+  "promotion_eligible": false,
+  "caveats": [
+    "Scores use archived operational pairs that pass current UTC and whole-cycle quarantine contracts.",
+    "Existing CDF artifacts may have been fitted using overlapping data; this is diagnostic, not independent promotion evidence.",
+    "Operational residual CDFs without the current pairing contract are rejected from the shadow variant.",
+    "Rainfall occurrence and wet/wet amount are scored separately."
+  ],
+  "latest_snapshot": {
+    "selection": {
+      "selection_contract_version": "collection-asof-clean-cycle-v1",
+      "mode": "observe_only",
+      "as_of_utc": null,
+      "provider_initialization_available": false,
+      "selection_basis": "latest clean WAWP collection at or before cutoff",
+      "minimum_cycle_rows": 24,
+      "promotion_eligible": false,
+      "selected_model_count": 8,
+      "selected_forecast_row_count": 3072,
+      "selection_changed_model_count": 1,
+      "selection_changed_models": [
+        "JMA_GSM"
+      ],
+      "models_without_clean_cycle": [],
+      "models": [
+        {
+          "model": "ECMWF_HRES",
+          "candidate_cycle_count": 113,
+          "rejected_hard_anomaly_cycle_count": 14,
+          "rejected_incomplete_cycle_count": 0,
+          "latest_available_scraped_at": "2026-08-01 19:42:47",
+          "selected_scraped_at": "2026-08-01 19:42:47",
+          "selected_collection_cycle_utc": "2026-08-01 19:00:00",
+          "selected_row_count": 384,
+          "selection_changed_from_latest": false,
+          "status": "selected"
+        },
+        {
+          "model": "GFS_GLOBAL",
+          "candidate_cycle_count": 113,
+          "rejected_hard_anomaly_cycle_count": 14,
+          "rejected_incomplete_cycle_count": 0,
+          "latest_available_scraped_at": "2026-08-01 19:42:48",
+          "selected_scraped_at": "2026-08-01 19:42:48",
+          "selected_collection_cycle_utc": "2026-08-01 19:00:00",
+          "selected_row_count": 384,
+          "selection_changed_from_latest": false,
+          "status": "selected"
+        },
+        {
+          "model": "ICON_SEAMLESS",
+          "candidate_cycle_count": 112,
+          "rejected_hard_anomaly_cycle_count": 13,
+          "rejected_incomplete_cycle_count": 0,
+          "latest_available_scraped_at": "2026-08-01 19:42:49",
+          "selected_scraped_at": "2026-08-01 19:42:49",
+          "selected_collection_cycle_utc": "2026-08-01 19:00:00",
+          "selected_row_count": 384,
+          "selection_changed_from_latest": false,
+          "status": "selected"
+        },
+        {
+          "model": "GEM_GLOBAL",
+          "candidate_cycle_count": 112,
+          "rejected_hard_anomaly_cycle_count": 13,
+          "rejected_incomplete_cycle_count": 0,
+          "latest_available_scraped_at": "2026-08-01 19:42:51",
+          "selected_scraped_at": "2026-08-01 19:42:51",
+          "selected_collection_cycle_utc": "2026-08-01 19:00:00",
+          "selected_row_count": 384,
+          "selection_changed_from_latest": false,
+          "status": "selected"
+        },
+        {
+          "model": "CMA_GRAPES_GLOBAL",
+          "candidate_cycle_count": 111,
+          "rejected_hard_anomaly_cycle_count": 13,
+          "rejected_incomplete_cycle_count": 0,
+          "latest_available_scraped_at": "2026-08-01 19:42:52",
+          "selected_scraped_at": "2026-08-01 19:42:52",
+          "selected_collection_cycle_utc": "2026-08-01 19:00:00",
+          "selected_row_count": 384,
+          "selection_changed_from_latest": false,
+          "status": "selected"
+        },
+        {
+          "model": "JMA_GSM",
+          "candidate_cycle_count": 109,
+          "rejected_hard_anomaly_cycle_count": 20,
+          "rejected_incomplete_cycle_count": 0,
+          "latest_available_scraped_at": "2026-08-01 17:22:36",
+          "selected_scraped_at": "2026-08-01 08:40:06",
+          "selected_collection_cycle_utc": "2026-08-01 08:00:00",
+          "selected_row_count": 384,
+          "selection_changed_from_latest": true,
+          "status": "selected"
+        },
+        {
+          "model": "METEOFRANCE_ARPEGE_WORLD",
+          "candidate_cycle_count": 85,
+          "rejected_hard_anomaly_cycle_count": 8,
+          "rejected_incomplete_cycle_count": 0,
+          "latest_available_scraped_at": "2026-08-01 19:43:14",
+          "selected_scraped_at": "2026-08-01 19:43:14",
+          "selected_collection_cycle_utc": "2026-08-01 19:00:00",
+          "selected_row_count": 384,
+          "selection_changed_from_latest": false,
+          "status": "selected"
+        },
+        {
+          "model": "UKMO_GLOBAL_10KM",
+          "candidate_cycle_count": 89,
+          "rejected_hard_anomaly_cycle_count": 13,
+          "rejected_incomplete_cycle_count": 0,
+          "latest_available_scraped_at": "2026-08-01 19:43:15",
+          "selected_scraped_at": "2026-08-01 19:43:15",
+          "selected_collection_cycle_utc": "2026-08-01 19:00:00",
+          "selected_row_count": 384,
+          "selection_changed_from_latest": false,
+          "status": "selected"
+        }
+      ]
+    },
+    "overlap_rows": 3063,
+    "parameter_differences": {
+      "Temperature": {
+        "comparable_rows": 1745,
+        "changed_rows": 201,
+        "mean_absolute_difference": 0.0331,
+        "maximum_absolute_difference": 1.6
+      },
+      "Dewpoint": {
+        "comparable_rows": 1745,
+        "changed_rows": 211,
+        "mean_absolute_difference": 0.045,
+        "maximum_absolute_difference": 1.4
+      },
+      "Pressure": {
+        "comparable_rows": 1745,
+        "changed_rows": 206,
+        "mean_absolute_difference": 0.0438,
+        "maximum_absolute_difference": 1.3
+      },
+      "Rainfall": {
+        "comparable_rows": 3063,
+        "changed_rows": 24,
+        "mean_absolute_difference": 0.0012,
+        "maximum_absolute_difference": 0.3
+      },
+      "Wind Speed": {
+        "comparable_rows": 1733,
+        "changed_rows": 209,
+        "mean_absolute_difference": 0.052,
+        "maximum_absolute_difference": 1.9
+      },
+      "Wind Dir.": {
+        "comparable_rows": 1733,
+        "changed_rows": 219,
+        "mean_absolute_difference": 0.884,
+        "maximum_absolute_difference": 31.0
+      },
+      "Wind Gust": {
+        "comparable_rows": 1492,
+        "changed_rows": 0,
+        "mean_absolute_difference": 0.0,
+        "maximum_absolute_difference": 0.0
+      }
+    }
+  },
+  "paired_scores": {
+    "qm_rows": {
+      "historical_prior": 39,
+      "operational_residual": 0,
+      "rejected_stale_operational": 185
+    },
+    "parameters": {
+      "Temperature": {
+        "pair_count": 119804,
+        "model_count": 8,
+        "first_valid_utc": "2026-07-02 16:00:00",
+        "last_valid_utc": "2026-07-31 23:00:00",
+        "layer_coverage": {
+          "historical_prior": 119804
+        },
+        "raw": {
+          "sample_count": 119804,
+          "mae": 1.7505,
+          "bias": 0.8354
+        },
+        "historical_prior": {
+          "sample_count": 119804,
+          "mae": 1.4169,
+          "bias": -0.0233
+        },
+        "historical_plus_residual": {
+          "sample_count": 119804,
+          "mae": 1.4169,
+          "bias": -0.0233
+        }
+      },
+      "Dewpoint": {
+        "pair_count": 120077,
+        "model_count": 8,
+        "first_valid_utc": "2026-07-02 16:00:00",
+        "last_valid_utc": "2026-07-31 23:00:00",
+        "layer_coverage": {
+          "historical_prior": 113534,
+          "raw": 6543
+        },
+        "raw": {
+          "sample_count": 120077,
+          "mae": 1.0877,
+          "bias": 0.0294
+        },
+        "historical_prior": {
+          "sample_count": 120077,
+          "mae": 1.183,
+          "bias": 0.5028
+        },
+        "historical_plus_residual": {
+          "sample_count": 120077,
+          "mae": 1.183,
+          "bias": 0.5028
+        }
+      },
+      "Pressure": {
+        "pair_count": 120235,
+        "model_count": 8,
+        "first_valid_utc": "2026-07-02 16:00:00",
+        "last_valid_utc": "2026-07-31 23:00:00",
+        "layer_coverage": {
+          "historical_prior": 120235
+        },
+        "raw": {
+          "sample_count": 120235,
+          "mae": 0.5981,
+          "bias": 0.0044
+        },
+        "historical_prior": {
+          "sample_count": 120235,
+          "mae": 0.57,
+          "bias": -0.1889
+        },
+        "historical_plus_residual": {
+          "sample_count": 120235,
+          "mae": 0.57,
+          "bias": -0.1889
+        }
+      },
+      "Rainfall": {
+        "pair_count": 179474,
+        "model_count": 8,
+        "first_valid_utc": "2026-07-02 16:00:00",
+        "last_valid_utc": "2026-07-31 23:00:00",
+        "layer_coverage": {
+          "raw": 179474
+        },
+        "raw": {
+          "sample_count": 179474,
+          "mae": 0.045,
+          "bias": -0.0166,
+          "occurrence_0.1mm": {
+            "hits": 644,
+            "misses": 3196,
+            "false_alarms": 11923,
+            "correct_negatives": 163711,
+            "POD": 0.1677,
+            "FAR": 0.9488,
+            "CSI": 0.0409,
+            "HSS": 0.0473
+          },
+          "wet_wet_count": 644,
+          "wet_wet_amount_mae": 1.5807
+        },
+        "historical_prior": {
+          "sample_count": 179474,
+          "mae": 0.045,
+          "bias": -0.0166,
+          "occurrence_0.1mm": {
+            "hits": 644,
+            "misses": 3196,
+            "false_alarms": 11923,
+            "correct_negatives": 163711,
+            "POD": 0.1677,
+            "FAR": 0.9488,
+            "CSI": 0.0409,
+            "HSS": 0.0473
+          },
+          "wet_wet_count": 644,
+          "wet_wet_amount_mae": 1.5807
+        },
+        "historical_plus_residual": {
+          "sample_count": 179474,
+          "mae": 0.045,
+          "bias": -0.0166,
+          "occurrence_0.1mm": {
+            "hits": 644,
+            "misses": 3196,
+            "false_alarms": 11923,
+            "correct_negatives": 163711,
+            "POD": 0.1677,
+            "FAR": 0.9488,
+            "CSI": 0.0409,
+            "HSS": 0.0473
+          },
+          "wet_wet_count": 644,
+          "wet_wet_amount_mae": 1.5807
+        }
+      },
+      "Wind Speed": {
+        "pair_count": 120071,
+        "model_count": 8,
+        "first_valid_utc": "2026-07-02 16:00:00",
+        "last_valid_utc": "2026-07-31 23:00:00",
+        "layer_coverage": {
+          "historical_prior": 120071
+        },
+        "raw": {
+          "sample_count": 120071,
+          "mae": 3.3741,
+          "bias": 2.2258
+        },
+        "historical_prior": {
+          "sample_count": 120071,
+          "mae": 2.6874,
+          "bias": 1.0179
+        },
+        "historical_plus_residual": {
+          "sample_count": 120071,
+          "mae": 2.6874,
+          "bias": 1.0179
+        }
+      },
+      "Wind Gust": {
+        "pair_count": 0
+      },
+      "Wind Dir.": {
+        "pair_count": 120083,
+        "model_count": 8,
+        "first_valid_utc": "2026-07-02 16:00:00",
+        "last_valid_utc": "2026-07-31 23:00:00",
+        "layer_coverage": {
+          "historical_prior": 120083
+        },
+        "raw": {
+          "sample_count": 120083,
+          "mae": 59.5552,
+          "bias": -16.9982
+        },
+        "historical_prior": {
+          "sample_count": 120083,
+          "mae": 54.8584,
+          "bias": -7.7658
+        },
+        "historical_plus_residual": {
+          "sample_count": 120083,
+          "mae": 54.8584,
+          "bias": -7.7658
+        }
+      }
+    }
+  }
+}

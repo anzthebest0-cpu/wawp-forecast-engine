@@ -3,6 +3,7 @@ import pandas as pd
 import json
 from datetime import datetime
 from src.awos_hourly_parser import read_hourly_awos
+from src.forecast_time_provenance import ensure_time_provenance_schema, normalize_row_time_fields
 
 LOCATION_NAME = "Bandara_Sangia_Ni_Bandera"
 
@@ -80,7 +81,7 @@ class ForecastDB:
                 pressure        REAL,
                 rain_1h         REAL    DEFAULT 0.0,
                 wind_speed      REAL    DEFAULT 0.0,
-                wind_gust_max   REAL    DEFAULT 0.0,
+                wind_gust_max   REAL,
                 wind_dir        REAL,
                 visibility      REAL,
                 UNIQUE(location, obs_time)
@@ -122,6 +123,8 @@ class ForecastDB:
                 model             TEXT    NOT NULL,
                 run_init_utc      TEXT    NOT NULL,
                 forecast_time     TEXT    NOT NULL,
+                valid_time_utc    TEXT,
+                forecast_time_basis TEXT,
                 lead_hours        REAL,
                 scraped_at        TEXT    NOT NULL,
                 temperature       REAL,
@@ -165,6 +168,8 @@ class ForecastDB:
             "ALTER TABLE openmeteo_forecasts ADD COLUMN precipitation_probability REAL",
             "ALTER TABLE openmeteo_forecasts ADD COLUMN soil_temperature_0_to_7cm REAL",
             "ALTER TABLE openmeteo_forecasts ADD COLUMN soil_moisture_0_to_7cm REAL",
+            "ALTER TABLE openmeteo_forecasts ADD COLUMN valid_time_utc TEXT",
+            "ALTER TABLE openmeteo_forecasts ADD COLUMN forecast_time_basis TEXT",
         ]:
             try:
                 cursor.execute(ddl)
@@ -272,6 +277,7 @@ class ForecastDB:
         """)
         
         self.conn.commit()
+        self.time_provenance_status = ensure_time_provenance_schema(self.conn)
 
     def ingest_rows(self, rows: list[dict]) -> int:
         """
@@ -359,7 +365,8 @@ class ForecastDB:
         cursor = self.conn.cursor()
         sql = """
             INSERT INTO openmeteo_forecasts (
-                location, model, run_init_utc, forecast_time, lead_hours, scraped_at,
+                location, model, run_init_utc, forecast_time, valid_time_utc,
+                forecast_time_basis, lead_hours, scraped_at,
                 temperature, dewpoint, humidity, pressure_msl, rain, precipitation, showers, snowfall,
                 wind_speed, wind_gust, wind_dir,
                 cloud_cover, cloud_cover_low, cloud_cover_mid, cloud_cover_high,
@@ -367,7 +374,8 @@ class ForecastDB:
                 sunshine_duration, shortwave_radiation, direct_radiation, diffuse_radiation,
                 precipitation_probability, soil_temperature_0_to_7cm, soil_moisture_0_to_7cm
             ) VALUES (
-                :location, :model, :run_init_utc, :forecast_time, :lead_hours, :scraped_at,
+                :location, :model, :run_init_utc, :forecast_time, :valid_time_utc,
+                :forecast_time_basis, :lead_hours, :scraped_at,
                 :temperature, :dewpoint, :humidity, :pressure_msl, :rain, :precipitation, :showers, :snowfall,
                 :wind_speed, :wind_gust, :wind_dir,
                 :cloud_cover, :cloud_cover_low, :cloud_cover_mid, :cloud_cover_high,
@@ -377,6 +385,8 @@ class ForecastDB:
             )
             ON CONFLICT(location, model, run_init_utc, forecast_time) DO UPDATE SET
                 lead_hours=excluded.lead_hours,
+                valid_time_utc=excluded.valid_time_utc,
+                forecast_time_basis=excluded.forecast_time_basis,
                 scraped_at=excluded.scraped_at,
                 temperature=excluded.temperature,
                 dewpoint=excluded.dewpoint,
@@ -409,8 +419,10 @@ class ForecastDB:
         """
         clean_rows = []
         for row in rows:
-            clean = {k: row.get(k) for k in [
-                "location", "model", "run_init_utc", "forecast_time", "lead_hours", "scraped_at",
+            normalized_row = normalize_row_time_fields(row)
+            clean = {k: normalized_row.get(k) for k in [
+                "location", "model", "run_init_utc", "forecast_time", "valid_time_utc",
+                "forecast_time_basis", "lead_hours", "scraped_at",
                 "temperature", "dewpoint", "humidity", "pressure_msl", "rain", "precipitation", "showers", "snowfall",
                 "wind_speed", "wind_gust", "wind_dir", "cloud_cover", "cloud_cover_low",
                 "cloud_cover_mid", "cloud_cover_high", "weather_code", "visibility",
@@ -642,8 +654,11 @@ class ForecastDB:
         # Verification has migrated to Open-Meteo; the old meteologix_forecasts
         # table is retained only as a compatibility archive for earlier exports.
         from src.advanced_ensemble_weighter import MODELS
+        from src.forecast_time_provenance import hard_valid_forecast_sql
         model_filter = ",".join("?" for _ in MODELS)
         f_col_sql = "pressure_msl" if f_col == "pressure" else f_col
+        hard_valid = hard_valid_forecast_sql("f")
+        observation_filter = "AND o.wind_gust_max > 0" if param == "Wind Gust" else ""
         query = f"""
             SELECT 
                 f.forecast_time as Datetime,
@@ -658,6 +673,8 @@ class ForecastDB:
             WHERE f.forecast_time >= ? AND f.forecast_time <= ?
               AND f.run_init_utc = 'historical_forecast_api'
               AND f.model IN ({model_filter})
+              AND {hard_valid}
+              {observation_filter}
         """
         return pd.read_sql_query(query, self.conn, params=(start_date, end_date, *MODELS))
 

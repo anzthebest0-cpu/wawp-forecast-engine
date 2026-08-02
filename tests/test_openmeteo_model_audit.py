@@ -64,4 +64,25 @@ def test_openmeteo_model_run_audit_records_cadence(tmp_path):
 
 def test_freshness_status_uses_model_cadence():
     assert freshness_status(4.0, model_metadata_dict("ECMWF_HRES")["provider_update_frequency_hours"]) == "fresh"
-    assert freshness_status(4.0, model_metadata_dict("GFS_GLOBAL")["provider_update_frequency_hours"]) == "stale"
+    assert freshness_status(4.0, model_metadata_dict("GFS_GLOBAL")["provider_update_frequency_hours"]) == "fresh"
+    assert freshness_status(8.0, model_metadata_dict("GFS_GLOBAL")["provider_update_frequency_hours"]) == "aging"
+    assert freshness_status(13.0, model_metadata_dict("GFS_GLOBAL")["provider_update_frequency_hours"]) == "stale"
+
+
+def test_global_model_registry_uses_location_specific_provider_cadence():
+    expected = {
+        "ECMWF_HRES": 6.0,
+        "GFS_GLOBAL": 6.0,
+        "ICON_SEAMLESS": 6.0,
+        "GEM_GLOBAL": 12.0,
+        "CMA_GRAPES_GLOBAL": 6.0,
+        "JMA_GSM": 6.0,
+        "METEOFRANCE_ARPEGE_WORLD": 6.0,
+        "UKMO_GLOBAL_10KM": 6.0,
+    }
+    assert {
+        model: model_metadata_dict(model)["provider_update_frequency_hours"]
+        for model in expected
+    } == expected
+    assert model_metadata_dict("JMA_GSM")["native_temporal_resolution"] == "6h"
+    assert "interpolates" in model_metadata_dict("GEM_GLOBAL")["interpolation_note"]

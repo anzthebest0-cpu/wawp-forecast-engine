@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from src.build_compact_operational_db import build_compact_operational_db
+from src.awos_quality import AWOS_QUALITY_CONTRACT_VERSION
 from src.ingest_awos_inbox import MANIFEST_TABLE, ingest_awos_inbox
 
 
@@ -57,17 +58,23 @@ def test_inbox_ingests_both_products_and_is_idempotent(tmp_path: Path):
 
     assert first["discovered_assets"] == 2
     assert first["applied_assets"] == 2
-    assert first["hourly_gust_rows_updated"] == 1
+    assert first["hourly_gust_rows_updated"] == 2
+    assert first["quality_state"]["metadata"]["quality_contract_version"] == AWOS_QUALITY_CONTRACT_VERSION
+    assert first["quality_state"]["cross_grain"]["gust_match_hours"] == 2
     assert second["applied_assets"] == 0
     assert second["skipped_assets"] == 2
 
     with sqlite3.connect(db_path) as conn:
         assert conn.execute("SELECT COUNT(*) FROM awos_observations").fetchone()[0] == 2
         assert conn.execute("SELECT COUNT(*) FROM awos_observations_1min").fetchone()[0] == 2
-        gust = conn.execute(
+        gust_00 = conn.execute(
             "SELECT wind_gust_max FROM awos_observations WHERE obs_time='2026-07-01 00:00:00'"
         ).fetchone()[0]
-        assert gust == 14
+        gust_01 = conn.execute(
+            "SELECT wind_gust_max FROM awos_observations WHERE obs_time='2026-07-01 01:00:00'"
+        ).fetchone()[0]
+        assert gust_00 == 8
+        assert gust_01 == 14
         assert conn.execute(f"SELECT COUNT(*) FROM {MANIFEST_TABLE}").fetchone()[0] == 2
 
 
@@ -88,6 +95,28 @@ def test_compaction_keeps_manifest_and_derived_gust(tmp_path: Path):
     with sqlite3.connect(candidate) as conn:
         assert conn.execute(f"SELECT COUNT(*) FROM {MANIFEST_TABLE}").fetchone()[0] == 2
         assert conn.execute("SELECT MAX(wind_gust_max) FROM awos_observations").fetchone()[0] == 17
+
+
+def test_missing_minute_wgs_remains_unknown_not_zero(tmp_path: Path):
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    _write_hourly(inbox / "000HLY.202607.dat")
+    _write_minute(
+        inbox / "000OneMinute.20260701.dat",
+        [_minute_row(0, 8).replace(" 8 314 ", " /// 314 ")],
+    )
+    db_path = tmp_path / "wawp.db"
+
+    report = ingest_awos_inbox(inbox, db_path)
+
+    assert report["minute_wind_gust_values"] == 0
+    assert report["hourly_gust_rows_updated"] == 0
+    assert report["hourly_gust_rows_cleared_missing_source"] >= 1
+    with sqlite3.connect(db_path) as conn:
+        values = conn.execute(
+            "SELECT wind_gust_max FROM awos_observations ORDER BY obs_time"
+        ).fetchall()
+    assert values == [(None,), (None,)]
 
 
 def test_inbox_rejects_unsupported_minute_filename(tmp_path: Path):

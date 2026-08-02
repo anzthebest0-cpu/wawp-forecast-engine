@@ -132,8 +132,10 @@ def fetch_model(model_name: str, model_id: str, forecast_days: int = 16) -> tupl
     openmeteo_rows = []
     for idx, time_str in enumerate(times):
         valid_wita = pd.to_datetime(time_str)
+        valid_utc = valid_wita - pd.Timedelta(hours=WITA_OFFSET_HOURS)
         forecast_time = valid_wita.strftime("%Y-%m-%d %H:%M:%S")
-        lead_hours = (valid_wita - pd.to_datetime(run_init_utc) - pd.Timedelta(hours=WITA_OFFSET_HOURS)).total_seconds() / 3600.0
+        valid_time_utc = valid_utc.strftime("%Y-%m-%d %H:%M:%S")
+        lead_hours = (valid_utc - pd.to_datetime(run_init_utc)).total_seconds() / 3600.0
 
         def h(name, default=None):
             values = hourly.get(name) or []
@@ -150,6 +152,8 @@ def fetch_model(model_name: str, model_id: str, forecast_days: int = 16) -> tupl
             "model": model_name,
             "run_init_utc": run_init_utc,
             "forecast_time": forecast_time,
+            "valid_time_utc": valid_time_utc,
+            "forecast_time_basis": "forecast_api_wita",
             "lead_hours": lead_hours,
             "scraped_at": scraped_at,
             "temperature": h("temperature_2m"),
@@ -181,6 +185,7 @@ def fetch_model(model_name: str, model_id: str, forecast_days: int = 16) -> tupl
             "Model": model_name,
             "Run_Init_UTC": run_init_utc,
             "Datetime": forecast_time,
+            "Valid_Time_UTC": valid_time_utc,
             "Scraped_At": scraped_at,
             "Temperature": om["temperature"],
             "Dewpoint": om["dewpoint"],
@@ -188,7 +193,9 @@ def fetch_model(model_name: str, model_id: str, forecast_days: int = 16) -> tupl
             "Pressure": om["pressure_msl"],
             "Rain": total_rain,
             "Prob_Precip_0.1": precip_prob,
-            "Prob_Precip_1.0": precip_prob,
+            # Open-Meteo defines this probability as >0.1 mm in the preceding
+            # hour. It must not be relabelled as a 1.0 mm exceedance probability.
+            "Prob_Precip_1.0": None,
             "Prob_Precip_10.0": None,
             "Wind": om["wind_speed"],
             "Gust": om["wind_gust"],

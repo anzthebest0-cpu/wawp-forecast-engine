@@ -342,6 +342,10 @@ async function loadDashboard() {
                 verificationElem.style.color = frozen ? 'var(--amber)' : 'var(--green)';
             }
             setupHealthFreshness(healthData.model_freshness || []);
+            setupSelectionAndObservationQuality(
+                healthData.forecast_selection || {},
+                healthData.awos_quality || {}
+            );
             setupQMProvenance(healthData.qm_provenance || null);
             setupOperationalResiduals(residualData || {metadata: healthData.operational_residuals || {}});
         }
@@ -1192,7 +1196,14 @@ function renderEventWindowVerification(lbMetrics) {
                 rows.push({
                     parameter: label,
                     model,
-                    window: key === 'pm0h' ? 'Exact' : (key === 'pm1h' ? '+/-1h' : (key === 'pm2h' ? '+/-2h' : '3h block')),
+                    window: key === 'pm0h'
+                        ? 'Strict hour'
+                        : (key === 'pm1h'
+                            ? 'Episode +/-1h'
+                            : (key === 'pm2h'
+                                ? 'Episode +/-2h'
+                                : (metric.aggregation === 'sum' ? '3h accumulation' : '3h peak'))),
+                    unit: metric.verification_unit || '-',
                     hss: metric.HSS,
                     csi: metric.CSI,
                     pod: metric.POD,
@@ -1213,7 +1224,13 @@ function renderEventWindowVerification(lbMetrics) {
         return;
     }
 
-    const windowOrder = {'Exact': 0, '+/-1h': 1, '+/-2h': 2, '3h block': 3};
+    const windowOrder = {
+        'Strict hour': 0,
+        'Episode +/-1h': 1,
+        'Episode +/-2h': 2,
+        '3h accumulation': 3,
+        '3h peak': 3
+    };
     rows.sort((a, b) => {
         if (a.parameter !== b.parameter) return a.parameter.localeCompare(b.parameter);
         if (a.window !== b.window) return windowOrder[a.window] - windowOrder[b.window];
@@ -1230,6 +1247,7 @@ function renderEventWindowVerification(lbMetrics) {
                         <th>Param</th>
                         <th>Model</th>
                         <th>Window</th>
+                        <th>Unit</th>
                         <th>HSS</th>
                         <th>CSI</th>
                         <th>POD</th>
@@ -1246,6 +1264,7 @@ function renderEventWindowVerification(lbMetrics) {
                             <td>${row.parameter}</td>
                             <td>${row.model}</td>
                             <td>${row.window}</td>
+                            <td>${row.unit}</td>
                             <td>${fmt(row.hss)}</td>
                             <td>${fmt(row.csi)}</td>
                             <td>${fmt(row.pod)}</td>
@@ -1634,6 +1653,47 @@ function setupHealthFreshness(freshnessRows) {
         `;
         tbody.appendChild(tr);
     });
+}
+
+function setupSelectionAndObservationQuality(selection, quality) {
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = value;
+    };
+    const fmtRatio = (matched, total) => {
+        const denominator = Number(total || 0);
+        if (!denominator) return 'No overlap';
+        return `${Number(matched || 0).toLocaleString()} / ${denominator.toLocaleString()}`;
+    };
+    const mode = selection.mode || 'observe_only';
+    setText('selection-mode', selection.applied ? 'Enabled' : mode.replace('_', ' '));
+    setText('selection-model-count', Number(selection.selected_model_count || 0).toLocaleString());
+    setText('selection-changed-count', Number(selection.selection_changed_model_count || 0).toLocaleString());
+    setText('awos-quality-status', quality.status || 'unknown');
+    setText('awos-missing-hours', Number(quality?.hourly?.missing_hour_count || 0).toLocaleString());
+    setText('awos-gust-match', fmtRatio(
+        quality?.cross_grain?.gust_match_hours,
+        quality?.cross_grain?.gust_comparable_hours
+    ));
+    setText('awos-rain-match', fmtRatio(
+        quality?.cross_grain?.rain_boundary_match_hours,
+        quality?.cross_grain?.rain_boundary_comparable_hours
+    ));
+    const status = document.getElementById('awos-quality-status');
+    if (status) {
+        status.style.color = quality.status === 'ok'
+            ? 'var(--green)' : (quality.status === 'blocked' ? 'var(--crimson)' : 'var(--amber)');
+    }
+    const note = document.getElementById('selection-quality-note');
+    if (note) {
+        const changed = (selection.selection_changed_models || []).join(', ');
+        const selectionText = selection.applied
+            ? 'Deterministic clean-cycle selection is enabled.'
+            : 'Deterministic clean-cycle selection is observe-only and does not alter TAF guidance.';
+        const changedText = changed ? ` Candidate differs for: ${changed}.` : '';
+        const rainText = ' One-minute rain is treated as a rolling one-hour snapshot and is never summed.';
+        note.innerText = `${selectionText}${changedText}${rainText}`;
+    }
 }
 
 function setupQMProvenance(prov) {

@@ -1,0 +1,83 @@
+{
+  "metadata": {
+    "generated_at_utc": "2026-08-02 00:15:29",
+    "database": "D:\\UJI_PERFORMA_MODEL\\meteologix-wawp-main\\wawp_forecasts.db",
+    "database_sha256": "179ea48e488cb65d628aed3f3aea447bfa9f499a38b324d646002b5c3d6c5ea4",
+    "sqlite_quick_check": "ok",
+    "semantics_version": "wawp-meteorological-contract-v1-shadow",
+    "replay_version": "rainfall-shadow-replay-v1",
+    "source_type": "continuous_historical",
+    "lead_aware": false,
+    "operational_effect": "none",
+    "selection_rule": "top three models by development CSI, HSS tie-break, then FAR; evaluated unchanged on holdout"
+  },
+  "data_audit": {
+    "raw_exact_join_rows": 240448,
+    "usable_pair_rows": 239550,
+    "quarantined_rows": 898,
+    "duplicate_model_valid_time_rows": 0,
+    "invalid_or_missing_time_rows": 0,
+    "invalid_or_missing_amount_rows": 833,
+    "hard_physical_anomaly_rows": 65,
+    "negative_forecast_rain_rows": 9,
+    "negative_observed_rain_rows": 0,
+    "quarantine_policy": "exclude every ambiguous duplicate and every row with missing, negative, or hard-invalid forecast fields"
+  },
+  "splits": [
+    {
+      "name": "development_2023_2025",
+      "start_utc_inclusive": "2023-01-01T00:00:00",
+      "end_utc_exclusive": "2026-01-01T00:00:00",
+      "pair_rows": 205763,
+      "distinct_valid_hours": 25729,
+      "observed_wet_hours_ge_1_5": 716
+    },
+    {
+      "name": "holdout_2026_h1",
+      "start_utc_inclusive": "2026-01-01T00:00:00",
+      "end_utc_exclusive": "2026-07-01T00:00:00",
+      "pair_rows": 33787,
+      "distinct_valid_hours": 4224,
+      "observed_wet_hours_ge_1_5": 79
+    }
+  ],
+  "thresholds_mm_per_hour": [
+    0.1,
+    1.0,
+    1.5,
+    5.0,
+    10.0,
+    20.0
+  ],
+  "products": [
+    "strict_hourly",
+    "episode_pm1h",
+    "episode_pm2h",
+    "cadence_aware_episode",
+    "complete_3h_same_numeric",
+    "complete_3h_rate_equivalent"
+  ],
+  "native_cadence_hours": {
+    "ECMWF_HRES": 1,
+    "GFS_GLOBAL": 1,
+    "ICON_SEAMLESS": 1,
+    "GEM_GLOBAL": 3,
+    "CMA_GRAPES_GLOBAL": 3,
+    "JMA_GSM": 6,
+    "METEOFRANCE_ARPEGE_WORLD": 1,
+    "UKMO_GLOBAL_10KM": 1
+  },
+  "bootstrap": {
+    "unit": "calendar_7_day_block",
+    "replicates": 500,
+    "seed": 20260802,
+    "scope": "holdout primary threshold and frozen median ensembles"
+  },
+  "warnings": [
+    "Continuous historical forecasts are not archived individual runs and cannot support lead-aware conclusions.",
+    "The same-numeric 3-hour threshold is sensitivity-only; rate-equivalent uses hourly threshold multiplied by three.",
+    "Cadence-aware episode tolerance is capped at plus/minus two hours and remains diagnostic for native 6-hour JMA guidance.",
+    "Legacy centered expansion is future-leaking and is never used for ranking or promotion."
+  ],
+  "operational_verdict": "do not promote rainfall event-window weights from this replay; retain strict, episode, and complete-block products as separate shadow diagnostics"
+}

@@ -1,0 +1,31 @@
+{
+  "semantics_version": "wawp-meteorological-contract-v1-shadow",
+  "generated_at_utc": "2026-08-02 03:21:28",
+  "hourly_file": "D:\\UJI_PERFORMA_MODEL\\JULY\\000HLY.202607.dat",
+  "minute_file_count": 32,
+  "hourly_rows": 744,
+  "minute_rows": 46066,
+  "minute_duplicate_timestamp_count": 0,
+  "minute_day_count": 32,
+  "incomplete_minute_day_count": 3,
+  "minute_gust_value_count": 0,
+  "paired_hour_boundaries": 743,
+  "boundary_exact_match_count": 743,
+  "boundary_match_rate": 1.0,
+  "forward_clock_hour_comparison": {
+    "paired_hours": 743,
+    "sum_match_count": 728,
+    "max_match_count": 732,
+    "first_match_count": 743,
+    "last_match_count": 720
+  },
+  "conclusion": "rolling_one_hour_accumulation_snapshot",
+  "safe_use": "Use hourly RA36 for amounts; never sum minute RA snapshots.",
+  "gust_reconciliation": {
+    "database_provided": true,
+    "comparable_hours": 0,
+    "match_hours": 0,
+    "mismatch_hours": 0,
+    "maximum_absolute_difference_kt": null
+  }
+}

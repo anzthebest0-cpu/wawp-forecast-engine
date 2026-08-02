@@ -1,0 +1,17 @@
+split,model,paired_hours,all_hour_MAE_mm,all_hour_bias_mm,observed_wet_hours_ge_0_1,wet_wet_hours_ge_0_1,missed_wet_hours_ge_0_1,wet_wet_MAE_mm,wet_wet_bias_mm,source_type,lead_aware
+development_2023_2025,ECMWF_HRES,25729,0.23332,-0.21201,2194,65,2129,2.88615,-2.23692,continuous_historical,False
+development_2023_2025,GFS_GLOBAL,25664,0.3719,-0.02951,2188,965,1223,3.10964,-2.14674,continuous_historical,False
+development_2023_2025,ICON_SEAMLESS,25729,0.30715,-0.10801,2194,884,1310,2.77183,-2.05532,continuous_historical,False
+development_2023_2025,GEM_GLOBAL,25729,0.3431,-0.07261,2194,664,1530,3.33193,-1.73072,continuous_historical,False
+development_2023_2025,CMA_GRAPES_GLOBAL,25729,0.34917,-0.06667,2194,737,1457,2.64478,-1.64125,continuous_historical,False
+development_2023_2025,JMA_GSM,25729,0.28875,-0.13843,2194,635,1559,2.52441,-2.02551,continuous_historical,False
+development_2023_2025,METEOFRANCE_ARPEGE_WORLD,25725,0.35785,-0.0457,2194,894,1300,3.03647,-1.96443,continuous_historical,False
+development_2023_2025,UKMO_GLOBAL_10KM,25729,0.37421,-0.04648,2194,587,1607,3.08569,-1.6908,continuous_historical,False
+holdout_2026_h1,ECMWF_HRES,4224,0.32467,0.09848,348,267,81,1.69963,-0.89213,continuous_historical,False
+holdout_2026_h1,GFS_GLOBAL,4224,0.40249,0.17929,348,210,138,2.08762,-0.8981,continuous_historical,False
+holdout_2026_h1,ICON_SEAMLESS,4224,0.34912,0.11631,348,210,138,2.14333,-1.01952,continuous_historical,False
+holdout_2026_h1,GEM_GLOBAL,4224,0.32822,0.09616,348,163,185,2.24233,-0.53313,continuous_historical,False
+holdout_2026_h1,CMA_GRAPES_GLOBAL,4224,0.43089,0.19316,348,150,198,1.962,-0.258,continuous_historical,False
+holdout_2026_h1,JMA_GSM,4224,0.31761,0.07538,348,214,134,1.97009,-1.4757,continuous_historical,False
+holdout_2026_h1,METEOFRANCE_ARPEGE_WORLD,4219,0.34314,0.10948,348,168,180,1.77321,-0.4875,continuous_historical,False
+holdout_2026_h1,UKMO_GLOBAL_10KM,4224,0.30592,0.06596,348,129,219,2.64574,-0.54961,continuous_historical,False

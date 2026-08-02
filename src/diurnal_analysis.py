@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import sqlite3
+from contextlib import closing
 from datetime import datetime, timezone
 
 import numpy as np
@@ -40,7 +41,7 @@ log = logging.getLogger("diurnal")
 
 
 def load_observations(db_path: str) -> pd.DataFrame:
-    with sqlite3.connect(db_path) as conn:
+    with closing(sqlite3.connect(db_path)) as conn:
         df = pd.read_sql("""
             SELECT obs_time, temperature, dewpoint, humidity, pressure,
                    wind_speed, wind_gust_max, wind_dir, rain_1h, visibility
@@ -411,7 +412,7 @@ def build_operational_briefing(df: pd.DataFrame, convective_window: dict, sea_br
 
 def compute_monthly_v_dry(db_path: str) -> dict:
     try:
-        with sqlite3.connect(db_path) as conn:
+        with closing(sqlite3.connect(db_path)) as conn:
             check = conn.execute("""
                 SELECT COUNT(*) FROM awos_observations
                 WHERE visibility IS NOT NULL AND rain_1h < 0.1
