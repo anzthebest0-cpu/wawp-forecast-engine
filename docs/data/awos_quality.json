@@ -1,37 +1,37 @@
 {
   "metadata": {
     "quality_contract_version": "awos-cross-grain-quality-v1-shadow",
-    "generated_at_utc": "2026-08-02 19:44:19",
+    "generated_at_utc": "2026-08-03 04:08:05",
     "mode": "observe_only",
     "promotion_eligible": false
   },
   "status": "warning",
   "hard_issue_count": 0,
   "warning_count": 2,
-  "verification_eligible": true,
+  "verification_eligible": false,
   "parameter_eligibility": {
     "Temperature": {
-      "eligible": true,
+      "eligible": false,
       "reason": "hourly AWOS quality"
     },
     "Dewpoint": {
-      "eligible": true,
+      "eligible": false,
       "reason": "hourly AWOS quality"
     },
     "Pressure": {
-      "eligible": true,
+      "eligible": false,
       "reason": "hourly AWOS quality"
     },
     "Rainfall": {
-      "eligible": true,
+      "eligible": false,
       "reason": "hourly RA36 quality"
     },
     "Wind Speed": {
-      "eligible": true,
+      "eligible": false,
       "reason": "hourly 10-minute aviation wind quality"
     },
     "Wind Dir.": {
-      "eligible": true,
+      "eligible": false,
       "reason": "hourly 10-minute aviation wind quality"
     },
     "Wind Gust": {
@@ -55,7 +55,7 @@
     "dewpoint_above_temperature_count": 0,
     "rows_with_derived_gust_value": 43193,
     "rows_with_positive_derived_gust": 368,
-    "age_hours": 44.74,
+    "age_hours": 53.13,
     "rain_timestamp_label": "interval_end",
     "operational_wind_source": "first WD36/WS36 pair (10-minute aviation wind)",
     "recent_gust_lookback_start_utc": "2026-06-01 23:00:00",
