@@ -9,7 +9,7 @@
       "gust": "22",
       "vis": "9999",
       "wx": "",
-      "cloud": "FEW015",
+      "cloud": "FEW017",
       "rain": 0.0,
       "rain_mmh": 0.0,
       "trends": [],
@@ -19,7 +19,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 162300\nTAF WAWP 162300Z 1700/1800 11006G22KT 9999 FEW015=",
+    "taf_text": "FTID40 WAWP 162300\nTAF WAWP 162300Z 1700/1800 11006G22KT 9999 FEW017=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
     "warnings": [
       "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen.",
@@ -75,200 +75,35 @@
         "GFS_GLOBAL": 0.28,
         "ICON_SEAMLESS": 0.28,
         "JMA_GSM": 0.28,
-        "METEOFRANCE_ARPEGE_WORLD": 5.34,
-        "UKMO_GLOBAL_10KM": 0.27
+        "METEOFRANCE_ARPEGE_WORLD": 0.28,
+        "UKMO_GLOBAL_10KM": 0.28
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 368.21
+      "observation_hourly_age_hours": 374.19
     }
   },
   "0500": {
-    "valid_start": "2026-08-16 14:00:00",
+    "valid_start": "2026-08-17 14:00:00",
     "issued_utc": "0500",
-    "issued_day": 16,
+    "issued_day": 17,
     "base_group": {
-      "dir": "250",
-      "spd": "15",
-      "gust": "28",
+      "dir": "240",
+      "spd": "04",
+      "gust": "21",
       "vis": "9999",
       "wx": "",
-      "cloud": "BKN180",
+      "cloud": "SCT180",
       "rain": 0.0,
       "rain_mmh": 0.0,
-      "trends": [
-        {
-          "type": "BECMG",
-          "time_str": "1606/1607",
-          "time_h_start": 6,
-          "time_h_end": 7,
-          "wx": "",
-          "vis": "",
-          "cloud": "",
-          "dir": "250",
-          "spd": "04",
-          "gust": "24",
-          "rain_mmh": 0.0
-        }
-      ],
+      "trends": [],
       "badge": "MME 0500Z Shift",
       "metrics": {
         "leader_rmse": "N/A",
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 160500\nTAF WAWP 160500Z 1606/1706 25015G28KT CAVOK\nBECMG 1606/1607 25004G24KT=",
-    "narration": "Secara umum cuaca berawan tebal dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan cukup kencang (15 KT).",
-    "warnings": [
-      "Degraded model coverage: 1 fresh models cover the first 6 hours; use this issuance cautiously.",
-      "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen.",
-      "Rain/gust event-window diagnostics are observe-only during metric audit; they do not alter weights or TAF change groups."
-    ],
-    "event_skill_context": {
-      "Rainfall": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
-        "min_events": 10,
-        "threshold": null
-      },
-      "Wind Gust": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
-        "min_events": 10,
-        "threshold": null
-      }
-    },
-    "provenance": {
-      "coverage_hours": 6,
-      "fresh_models_covering_window": [
-        "METEOFRANCE_ARPEGE_WORLD"
-      ],
-      "fresh_model_count": 1,
-      "direct_visibility_models": [],
-      "direct_visibility_model_count": 0,
-      "missing_window_hours": [],
-      "coverage_status": "degraded",
-      "model_run_age_hours": {
-        "METEOFRANCE_ARPEGE_WORLD": 5.34
-      },
-      "cloud_base_source": "proxy",
-      "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 368.21
-    }
-  },
-  "1100": {
-    "valid_start": "2026-08-16 20:00:00",
-    "issued_utc": "1100",
-    "issued_day": 16,
-    "base_group": {
-      "dir": "090",
-      "spd": "03",
-      "gust": "17",
-      "vis": "9999",
-      "wx": "",
-      "cloud": "FEW014",
-      "rain": 0.0,
-      "rain_mmh": 0.0,
-      "trends": [],
-      "badge": "MME 1100Z Shift",
-      "metrics": {
-        "leader_rmse": "N/A",
-        "leader_strat": "N/A"
-      }
-    },
-    "taf_text": "FTID40 WAWP 161100\nTAF WAWP 161100Z 1612/1712 09003G17KT 9999 FEW014=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (3 KT).",
-    "warnings": [
-      "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen.",
-      "Rain/gust event-window diagnostics are observe-only during metric audit; they do not alter weights or TAF change groups."
-    ],
-    "event_skill_context": {
-      "Rainfall": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
-        "min_events": 10,
-        "threshold": null
-      },
-      "Wind Gust": {
-        "applied": false,
-        "reason": "event-window weighting pending because no forecast-observation pairs were available",
-        "weighted_score": 0.0,
-        "weighted_far": null,
-        "strength": 0.0,
-        "top_models": [],
-        "min_events": 10,
-        "threshold": null
-      }
-    },
-    "provenance": {
-      "coverage_hours": 6,
-      "fresh_models_covering_window": [
-        "CMA_GRAPES_GLOBAL",
-        "ECMWF_HRES",
-        "GEM_GLOBAL",
-        "GFS_GLOBAL",
-        "ICON_SEAMLESS",
-        "JMA_GSM",
-        "METEOFRANCE_ARPEGE_WORLD",
-        "UKMO_GLOBAL_10KM"
-      ],
-      "fresh_model_count": 8,
-      "direct_visibility_models": [
-        "CMA_GRAPES_GLOBAL",
-        "GFS_GLOBAL",
-        "UKMO_GLOBAL_10KM"
-      ],
-      "direct_visibility_model_count": 3,
-      "missing_window_hours": [],
-      "coverage_status": "sufficient",
-      "model_run_age_hours": {
-        "CMA_GRAPES_GLOBAL": 0.28,
-        "ECMWF_HRES": 0.28,
-        "GEM_GLOBAL": 0.28,
-        "GFS_GLOBAL": 0.28,
-        "ICON_SEAMLESS": 0.28,
-        "JMA_GSM": 0.28,
-        "METEOFRANCE_ARPEGE_WORLD": 5.34,
-        "UKMO_GLOBAL_10KM": 0.27
-      },
-      "cloud_base_source": "proxy",
-      "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 368.21
-    }
-  },
-  "1700": {
-    "valid_start": "2026-08-17 02:00:00",
-    "issued_utc": "1700",
-    "issued_day": 16,
-    "base_group": {
-      "dir": "110",
-      "spd": "04",
-      "gust": "21",
-      "vis": "9999",
-      "wx": "",
-      "cloud": "SCT010",
-      "rain": 0.0,
-      "rain_mmh": 0.0,
-      "trends": [],
-      "badge": "MME 1700Z Shift",
-      "metrics": {
-        "leader_rmse": "N/A",
-        "leader_strat": "N/A"
-      }
-    },
-    "taf_text": "FTID40 WAWP 161700\nTAF WAWP 161700Z 1618/1718 11004G21KT 9999 SCT010=",
+    "taf_text": "FTID40 WAWP 170500\nTAF WAWP 170500Z 1706/1806 24004G21KT CAVOK=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (4 KT).",
     "warnings": [
       "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen.",
@@ -324,25 +159,25 @@
         "GFS_GLOBAL": 0.28,
         "ICON_SEAMLESS": 0.28,
         "JMA_GSM": 0.28,
-        "METEOFRANCE_ARPEGE_WORLD": 5.34,
-        "UKMO_GLOBAL_10KM": 0.27
+        "METEOFRANCE_ARPEGE_WORLD": 0.28,
+        "UKMO_GLOBAL_10KM": 0.28
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 368.21
+      "observation_hourly_age_hours": 374.19
     }
   },
-  "default": {
-    "valid_start": "2026-08-16 20:00:00",
+  "1100": {
+    "valid_start": "2026-08-17 20:00:00",
     "issued_utc": "1100",
-    "issued_day": 16,
+    "issued_day": 17,
     "base_group": {
-      "dir": "090",
-      "spd": "03",
-      "gust": "17",
+      "dir": "110",
+      "spd": "05",
+      "gust": "19",
       "vis": "9999",
       "wx": "",
-      "cloud": "FEW014",
+      "cloud": "FEW180",
       "rain": 0.0,
       "rain_mmh": 0.0,
       "trends": [],
@@ -352,12 +187,11 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 161100\nTAF WAWP 161100Z 1612/1712 09003G17KT 9999 FEW014=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (3 KT).",
+    "taf_text": "FTID40 WAWP 171100\nTAF WAWP 171100Z 1712/1812 11005G19KT CAVOK=",
+    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (5 KT).",
     "warnings": [
       "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen.",
-      "Rain/gust event-window diagnostics are observe-only during metric audit; they do not alter weights or TAF change groups.",
-      "Default guidance selected from the next official 1100Z issuance with fresh-model quorum."
+      "Rain/gust event-window diagnostics are observe-only during metric audit; they do not alter weights or TAF change groups."
     ],
     "event_skill_context": {
       "Rainfall": {
@@ -409,46 +243,190 @@
         "GFS_GLOBAL": 0.28,
         "ICON_SEAMLESS": 0.28,
         "JMA_GSM": 0.28,
-        "METEOFRANCE_ARPEGE_WORLD": 5.34,
-        "UKMO_GLOBAL_10KM": 0.27
+        "METEOFRANCE_ARPEGE_WORLD": 0.28,
+        "UKMO_GLOBAL_10KM": 0.28
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 368.21
+      "observation_hourly_age_hours": 374.19
+    }
+  },
+  "1700": {
+    "valid_start": "2026-08-17 02:00:00",
+    "issued_utc": "1700",
+    "issued_day": 16,
+    "base_group": {
+      "dir": "110",
+      "spd": "04",
+      "gust": "20",
+      "vis": "9999",
+      "wx": "",
+      "cloud": "SCT010",
+      "rain": 0.0,
+      "rain_mmh": 0.0,
+      "trends": [],
+      "badge": "MME 1700Z Shift",
+      "metrics": {
+        "leader_rmse": "N/A",
+        "leader_strat": "N/A"
+      }
+    },
+    "taf_text": "FTID40 WAWP 161700\nTAF WAWP 161700Z 1618/1718 11004G20KT 9999 SCT010=",
+    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (4 KT).",
+    "warnings": [
+      "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen.",
+      "Rain/gust event-window diagnostics are observe-only during metric audit; they do not alter weights or TAF change groups."
+    ],
+    "event_skill_context": {
+      "Rainfall": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      },
+      "Wind Gust": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      }
+    },
+    "provenance": {
+      "coverage_hours": 6,
+      "fresh_models_covering_window": [
+        "CMA_GRAPES_GLOBAL",
+        "ECMWF_HRES",
+        "GEM_GLOBAL",
+        "GFS_GLOBAL",
+        "ICON_SEAMLESS",
+        "JMA_GSM",
+        "METEOFRANCE_ARPEGE_WORLD",
+        "UKMO_GLOBAL_10KM"
+      ],
+      "fresh_model_count": 8,
+      "direct_visibility_models": [
+        "CMA_GRAPES_GLOBAL",
+        "GFS_GLOBAL",
+        "UKMO_GLOBAL_10KM"
+      ],
+      "direct_visibility_model_count": 3,
+      "missing_window_hours": [],
+      "coverage_status": "sufficient",
+      "model_run_age_hours": {
+        "CMA_GRAPES_GLOBAL": 0.28,
+        "ECMWF_HRES": 0.28,
+        "GEM_GLOBAL": 0.28,
+        "GFS_GLOBAL": 0.28,
+        "ICON_SEAMLESS": 0.28,
+        "JMA_GSM": 0.28,
+        "METEOFRANCE_ARPEGE_WORLD": 0.28,
+        "UKMO_GLOBAL_10KM": 0.28
+      },
+      "cloud_base_source": "proxy",
+      "observation_verification_status": "frozen",
+      "observation_hourly_age_hours": 374.19
+    }
+  },
+  "default": {
+    "valid_start": "2026-08-17 02:00:00",
+    "issued_utc": "1700",
+    "issued_day": 16,
+    "base_group": {
+      "dir": "110",
+      "spd": "04",
+      "gust": "20",
+      "vis": "9999",
+      "wx": "",
+      "cloud": "SCT010",
+      "rain": 0.0,
+      "rain_mmh": 0.0,
+      "trends": [],
+      "badge": "MME 1700Z Shift",
+      "metrics": {
+        "leader_rmse": "N/A",
+        "leader_strat": "N/A"
+      }
+    },
+    "taf_text": "FTID40 WAWP 161700\nTAF WAWP 161700Z 1618/1718 11004G20KT 9999 SCT010=",
+    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (4 KT).",
+    "warnings": [
+      "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen.",
+      "Rain/gust event-window diagnostics are observe-only during metric audit; they do not alter weights or TAF change groups.",
+      "Default guidance selected from the next official 1700Z issuance with fresh-model quorum."
+    ],
+    "event_skill_context": {
+      "Rainfall": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      },
+      "Wind Gust": {
+        "applied": false,
+        "reason": "event-window weighting pending because no forecast-observation pairs were available",
+        "weighted_score": 0.0,
+        "weighted_far": null,
+        "strength": 0.0,
+        "top_models": [],
+        "min_events": 10,
+        "threshold": null
+      }
+    },
+    "provenance": {
+      "coverage_hours": 6,
+      "fresh_models_covering_window": [
+        "CMA_GRAPES_GLOBAL",
+        "ECMWF_HRES",
+        "GEM_GLOBAL",
+        "GFS_GLOBAL",
+        "ICON_SEAMLESS",
+        "JMA_GSM",
+        "METEOFRANCE_ARPEGE_WORLD",
+        "UKMO_GLOBAL_10KM"
+      ],
+      "fresh_model_count": 8,
+      "direct_visibility_models": [
+        "CMA_GRAPES_GLOBAL",
+        "GFS_GLOBAL",
+        "UKMO_GLOBAL_10KM"
+      ],
+      "direct_visibility_model_count": 3,
+      "missing_window_hours": [],
+      "coverage_status": "sufficient",
+      "model_run_age_hours": {
+        "CMA_GRAPES_GLOBAL": 0.28,
+        "ECMWF_HRES": 0.28,
+        "GEM_GLOBAL": 0.28,
+        "GFS_GLOBAL": 0.28,
+        "ICON_SEAMLESS": 0.28,
+        "JMA_GSM": 0.28,
+        "METEOFRANCE_ARPEGE_WORLD": 0.28,
+        "UKMO_GLOBAL_10KM": 0.28
+      },
+      "cloud_base_source": "proxy",
+      "observation_verification_status": "frozen",
+      "observation_hourly_age_hours": 374.19
     },
     "default_selection": {
       "selection_status": "selected",
-      "selected_issuance": "1100",
-      "selected_valid_start_wita": "2026-08-16 20:00:00",
-      "reference_utc": "2026-08-16 07:10:41",
+      "selected_issuance": "1700",
+      "selected_valid_start_wita": "2026-08-17 02:00:00",
+      "reference_utc": "2026-08-16 13:09:04",
       "minimum_fresh_models": 5,
       "coverage_hours": 6,
       "candidates": [
-        {
-          "issuance": "1100",
-          "issue_utc": "2026-08-16 11:00:00",
-          "valid_start_wita": "2026-08-16 20:00:00",
-          "coverage_hours": 6,
-          "fresh_models_covering_window": [
-            "CMA_GRAPES_GLOBAL",
-            "ECMWF_HRES",
-            "GEM_GLOBAL",
-            "GFS_GLOBAL",
-            "ICON_SEAMLESS",
-            "JMA_GSM",
-            "METEOFRANCE_ARPEGE_WORLD",
-            "UKMO_GLOBAL_10KM"
-          ],
-          "fresh_model_count": 8,
-          "direct_visibility_models": [
-            "CMA_GRAPES_GLOBAL",
-            "GFS_GLOBAL",
-            "UKMO_GLOBAL_10KM"
-          ],
-          "direct_visibility_model_count": 3,
-          "missing_window_hours": [],
-          "coverage_status": "sufficient"
-        },
         {
           "issuance": "1700",
           "issue_utc": "2026-08-16 17:00:00",
