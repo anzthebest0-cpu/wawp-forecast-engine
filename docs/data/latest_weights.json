@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "updated_at": "2026-08-19 13:27:16",
+    "updated_at": "2026-08-19 19:03:25",
     "event_weight_diagnostics": {
       "Rainfall": {
         "applied": false,
@@ -71,13 +71,13 @@
     },
     "Wind Speed": {
       "ECMWF_HRES": 0.0,
-      "GFS_GLOBAL": 1.215643378436174e-17,
-      "ICON_SEAMLESS": 0.24287069339441522,
-      "GEM_GLOBAL": 0.4466214909998307,
+      "GFS_GLOBAL": 1.2156433784361742e-17,
+      "ICON_SEAMLESS": 0.24287069339441525,
+      "GEM_GLOBAL": 0.44662149099983073,
       "CMA_GRAPES_GLOBAL": 0.0,
-      "JMA_GSM": 0.24808190111146844,
-      "METEOFRANCE_ARPEGE_WORLD": 0.03057241197442293,
-      "UKMO_GLOBAL_10KM": 0.03185350251986258
+      "JMA_GSM": 0.24808190111146847,
+      "METEOFRANCE_ARPEGE_WORLD": 0.030572411974422932,
+      "UKMO_GLOBAL_10KM": 0.03185350251986259
     },
     "Wind Dir.": {
       "ECMWF_HRES": 0.2929481765021209,
