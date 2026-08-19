@@ -7,17 +7,22 @@ and future promotion gates.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import logging
+from time import perf_counter
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
 from src.forecast_time_provenance import (
+    HISTORICAL_RUN_LABEL,
     TIME_CONTRACT_VERSION,
-    clean_operational_cycle_sql,
     hard_valid_forecast_sql,
     valid_time_utc_sql,
 )
+
+
+log = logging.getLogger(__name__)
 
 
 PARAMETERS = [
@@ -46,6 +51,14 @@ PARAMETER_COLUMNS = {
     "Wind Speed": ("wind_speed", "wind_speed"),
     "Wind Gust": ("wind_gust", "wind_gust_max"),
     "Wind Dir.": ("wind_dir", "wind_dir"),
+}
+
+PAIR_COLUMN_ALIASES = {
+    parameter: (
+        f"forecast_{forecast_column}",
+        f"obs_{observation_column}",
+    )
+    for parameter, (forecast_column, observation_column) in PARAMETER_COLUMNS.items()
 }
 
 PROMOTION_THRESHOLDS = {
@@ -268,20 +281,68 @@ def summarize_parameter_pairs(df: pd.DataFrame, parameter: str) -> dict:
     }
 
 
-def query_operational_pairs(conn, parameter: str, start_date: str, end_date: str, models: list[str]) -> pd.DataFrame:
-    f_col, o_col = PARAMETER_COLUMNS[parameter]
+def _operational_valid_time_sql(conn, alias: str = "f") -> tuple[str, bool]:
+    """Use the indexed UTC column after migration, with legacy fallback support."""
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(openmeteo_forecasts)")}
+    has_explicit_utc = "valid_time_utc" in columns
+    if has_explicit_utc:
+        # ensure_time_provenance_schema() backfills every operational row. Using
+        # the column directly lets SQLite use idx_om_valid_utc; wrapping it in
+        # COALESCE/CASE forced a full forecast-archive scan on every parameter.
+        return f"{alias}.valid_time_utc", True
+    return valid_time_utc_sql(alias, has_explicit_column=False), False
+
+
+def _clean_cycle_ctes(valid_utc: str, placeholders: str) -> str:
+    """Materialize cycle eligibility once instead of once per forecast row."""
+    candidate_valid = hard_valid_forecast_sql("q")
+    return f"""
+        WITH candidate_cycles AS MATERIALIZED (
+            SELECT DISTINCT f.location, f.model, f.run_init_utc, f.scraped_at
+            FROM openmeteo_forecasts f
+            WHERE {valid_utc} >= ? AND {valid_utc} <= ?
+              AND f.run_init_utc <> '{HISTORICAL_RUN_LABEL}'
+              AND f.lead_hours >= 0
+              AND f.model IN ({placeholders})
+        ),
+        clean_cycles AS MATERIALIZED (
+            SELECT c.location, c.model, c.run_init_utc, c.scraped_at
+            FROM candidate_cycles c
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM openmeteo_forecasts q
+                WHERE q.location = c.location
+                  AND q.model = c.model
+                  AND q.run_init_utc = c.run_init_utc
+                  AND q.scraped_at = c.scraped_at
+                  AND NOT ({candidate_valid})
+            )
+        )
+    """
+
+
+def query_operational_pair_matrix(
+    conn,
+    start_date: str,
+    end_date: str,
+    models: list[str],
+) -> pd.DataFrame:
+    """Fetch all residual parameters with one UTC-aligned, cycle-clean join."""
     placeholders = ",".join("?" for _ in models)
     columns = {row[1] for row in conn.execute("PRAGMA table_info(openmeteo_forecasts)")}
-    valid_utc = valid_time_utc_sql("f", has_explicit_column="valid_time_utc" in columns)
+    valid_utc, _has_explicit_utc = _operational_valid_time_sql(conn, "f")
     time_basis = (
         "COALESCE(f.forecast_time_basis, 'legacy_derived')"
         if "forecast_time_basis" in columns
         else "'legacy_derived'"
     )
     hard_valid = hard_valid_forecast_sql("f")
-    clean_cycle = clean_operational_cycle_sql("f")
-    observation_filter = "AND o.wind_gust_max > 0" if parameter == "Wind Gust" else ""
-    query = f"""
+    parameter_columns = ",\n            ".join(
+        f"f.{forecast_column} AS {PAIR_COLUMN_ALIASES[parameter][0]}, "
+        f"o.{observation_column} AS {PAIR_COLUMN_ALIASES[parameter][1]}"
+        for parameter, (forecast_column, observation_column) in PARAMETER_COLUMNS.items()
+    )
+    query = _clean_cycle_ctes(valid_utc, placeholders) + f"""
         SELECT
             {valid_utc} AS Datetime,
             f.forecast_time AS Local_Datetime,
@@ -291,9 +352,13 @@ def query_operational_pairs(conn, parameter: str, start_date: str, end_date: str
             f.scraped_at AS Collected_At_UTC,
             {time_basis} AS Time_Basis,
             f.lead_hours AS Lead_Hour,
-            f.{f_col} AS forecast,
-            o.{o_col} AS obs
+            {parameter_columns}
         FROM openmeteo_forecasts f
+        INNER JOIN clean_cycles c
+            ON c.location = f.location
+            AND c.model = f.model
+            AND c.run_init_utc = f.run_init_utc
+            AND c.scraped_at = f.scraped_at
         INNER JOIN awos_observations o
             ON f.location = o.location
             AND {valid_utc} = o.obs_time
@@ -302,11 +367,62 @@ def query_operational_pairs(conn, parameter: str, start_date: str, end_date: str
           AND f.lead_hours >= 0
           AND f.model IN ({placeholders})
           AND {hard_valid}
-          AND {clean_cycle}
-          {observation_filter}
         ORDER BY f.model, f.run_init_utc, {valid_utc}
     """
-    return pd.read_sql_query(query, conn, params=(start_date, end_date, *models))
+    params = (start_date, end_date, *models, start_date, end_date, *models)
+    return pd.read_sql_query(query, conn, params=params)
+
+
+def _query_operational_pair_count(
+    conn,
+    start_date: str,
+    end_date: str,
+    models: list[str],
+) -> int:
+    """Count aligned clean-cycle pairs without requiring parameter columns."""
+    placeholders = ",".join("?" for _ in models)
+    valid_utc, _has_explicit_utc = _operational_valid_time_sql(conn, "f")
+    hard_valid = hard_valid_forecast_sql("f")
+    query = _clean_cycle_ctes(valid_utc, placeholders) + f"""
+        SELECT COUNT(*)
+        FROM openmeteo_forecasts f
+        INNER JOIN clean_cycles c
+            ON c.location = f.location
+            AND c.model = f.model
+            AND c.run_init_utc = f.run_init_utc
+            AND c.scraped_at = f.scraped_at
+        INNER JOIN awos_observations o
+            ON o.location = f.location
+            AND o.obs_time = {valid_utc}
+        WHERE {valid_utc} >= ? AND {valid_utc} <= ?
+          AND f.run_init_utc <> '{HISTORICAL_RUN_LABEL}'
+          AND f.lead_hours >= 0
+          AND f.model IN ({placeholders})
+          AND {hard_valid}
+    """
+    params = (start_date, end_date, *models, start_date, end_date, *models)
+    return int(conn.execute(query, params).fetchone()[0] or 0)
+
+
+def _parameter_pairs_from_matrix(matrix: pd.DataFrame, parameter: str) -> pd.DataFrame:
+    forecast_column, observation_column = PAIR_COLUMN_ALIASES[parameter]
+    base_columns = [
+        "Datetime", "Local_Datetime", "Model", "Collection_Cycle_UTC",
+        "Run_Init_UTC", "Collected_At_UTC", "Time_Basis", "Lead_Hour",
+    ]
+    if matrix.empty:
+        return pd.DataFrame(columns=[*base_columns, "forecast", "obs"])
+    pairs = matrix[[*base_columns, forecast_column, observation_column]].rename(
+        columns={forecast_column: "forecast", observation_column: "obs"}
+    )
+    if parameter == "Wind Gust":
+        pairs = pairs[pd.to_numeric(pairs["obs"], errors="coerce") > 0]
+    return pairs.reset_index(drop=True)
+
+
+def query_operational_pairs(conn, parameter: str, start_date: str, end_date: str, models: list[str]) -> pd.DataFrame:
+    matrix = query_operational_pair_matrix(conn, start_date, end_date, models)
+    return _parameter_pairs_from_matrix(matrix, parameter)
 
 
 def operational_pairing_audit(
@@ -314,13 +430,14 @@ def operational_pairing_audit(
     start_date: str,
     end_date: str,
     models: list[str],
+    *,
+    physically_aligned_pair_rows: int | None = None,
 ) -> dict:
     placeholders = ",".join("?" for _ in models)
     columns = {row[1] for row in conn.execute("PRAGMA table_info(openmeteo_forecasts)")}
     has_explicit_utc = "valid_time_utc" in columns
-    valid_utc = valid_time_utc_sql("f", has_explicit_column=has_explicit_utc)
+    valid_utc, _ = _operational_valid_time_sql(conn, "f")
     hard_valid = hard_valid_forecast_sql("f")
-    clean_cycle = clean_operational_cycle_sql("f")
     explicit_utc_count = (
         "SUM(CASE WHEN f.valid_time_utc IS NOT NULL THEN 1 ELSE 0 END)"
         if has_explicit_utc
@@ -338,18 +455,10 @@ def operational_pairing_audit(
           AND f.lead_hours >= 0
           AND f.model IN ({placeholders})
     """, params).fetchone()
-    corrected_pairs = conn.execute(f"""
-        SELECT COUNT(*)
-        FROM openmeteo_forecasts f
-        INNER JOIN awos_observations o
-          ON o.location=f.location AND o.obs_time={valid_utc}
-        WHERE {valid_utc} >= ? AND {valid_utc} <= ?
-          AND f.run_init_utc <> 'historical_forecast_api'
-          AND f.lead_hours >= 0
-          AND f.model IN ({placeholders})
-          AND {hard_valid}
-          AND {clean_cycle}
-    """, params).fetchone()[0]
+    if physically_aligned_pair_rows is None:
+        corrected_pairs = _query_operational_pair_count(conn, start_date, end_date, models)
+    else:
+        corrected_pairs = int(physically_aligned_pair_rows)
     legacy_pairs = conn.execute(f"""
         SELECT COUNT(*)
         FROM openmeteo_forecasts f
@@ -387,21 +496,44 @@ def build_operational_residual_state(
     *,
     verification_frozen: bool = False,
 ) -> dict:
-    pairing_audit = operational_pairing_audit(conn, start_date, end_date, models)
+    started = perf_counter()
+    log.info("Building operational residual pair matrix...")
+    matrix = query_operational_pair_matrix(conn, start_date, end_date, models)
+    matrix_seconds = perf_counter() - started
+    log.info(
+        "Operational residual pair matrix ready: rows=%d elapsed=%.2fs",
+        len(matrix),
+        matrix_seconds,
+    )
+    audit_started = perf_counter()
+    pairing_audit = operational_pairing_audit(
+        conn,
+        start_date,
+        end_date,
+        models,
+        physically_aligned_pair_rows=len(matrix),
+    )
+    log.info("Operational residual pairing audit ready: elapsed=%.2fs", perf_counter() - audit_started)
     parameters = {}
     detail_rows = []
     for parameter in PARAMETERS:
-        pairs = query_operational_pairs(conn, parameter, start_date, end_date, models)
+        pairs = _parameter_pairs_from_matrix(matrix, parameter)
         result = summarize_parameter_pairs(pairs, parameter)
         parameters[parameter] = result["summary"]
         detail_rows.extend(result["rows"])
+        log.info(
+            "Operational residual summary %s: pairs=%d status=%s",
+            parameter,
+            result["summary"]["total_pairs"],
+            result["summary"]["status"],
+        )
 
     ready_rows = sum(1 for row in detail_rows if row["promotion_status"] == "ready_observe_only")
     pending_rows = sum(1 for row in detail_rows if row["promotion_status"] == "pending")
     disabled_rows = sum(1 for row in detail_rows if row["promotion_status"] == "disabled_observe_only")
     total_pairs = sum(int(summary.get("total_pairs") or 0) for summary in parameters.values())
 
-    return {
+    state = {
         "metadata": {
             "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
             "start_date": start_date,
@@ -425,3 +557,5 @@ def build_operational_residual_state(
         "parameters": parameters,
         "rows": detail_rows,
     }
+    log.info("Operational residual state complete: elapsed=%.2fs", perf_counter() - started)
+    return state

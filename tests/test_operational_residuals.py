@@ -1,6 +1,8 @@
 import pandas as pd
 
+import src.operational_residuals as operational_residuals
 from src.operational_residuals import (
+    build_operational_residual_state,
     circular_diff_deg,
     lead_bucket,
     summarize_parameter_pairs,
@@ -86,3 +88,53 @@ def test_rainfall_tracks_occurrence_and_defers_amount_residual():
     assert row["promotion_status"] == "ready_observe_only"
     assert "amount residual deferred" in row["reason"]
     assert row["rainfall_occurrence"]["HSS"] > 0
+
+
+def test_residual_state_fetches_pair_matrix_once(monkeypatch):
+    calls = []
+    matrix = pd.DataFrame({
+        "Datetime": ["2026-07-01 00:00:00"],
+        "Local_Datetime": ["2026-07-01 08:00:00"],
+        "Model": ["ECMWF_HRES"],
+        "Collection_Cycle_UTC": ["2026-07-01 00:00:00"],
+        "Run_Init_UTC": ["2026-07-01 00:00:00"],
+        "Collected_At_UTC": ["2026-07-01 00:05:00"],
+        "Time_Basis": ["forecast_api_wita"],
+        "Lead_Hour": [0.0],
+        "forecast_temperature": [27.0],
+        "obs_temperature": [28.0],
+        "forecast_dewpoint": [23.0],
+        "obs_dewpoint": [24.0],
+        "forecast_pressure_msl": [1008.0],
+        "obs_pressure": [1009.0],
+        "forecast_rain": [0.0],
+        "obs_rain_1h": [0.0],
+        "forecast_wind_speed": [5.0],
+        "obs_wind_speed": [6.0],
+        "forecast_wind_gust": [10.0],
+        "obs_wind_gust_max": [12.0],
+        "forecast_wind_dir": [90.0],
+        "obs_wind_dir": [100.0],
+    })
+
+    def fake_matrix(_conn, _start, _end, _models):
+        calls.append("matrix")
+        return matrix
+
+    monkeypatch.setattr(operational_residuals, "query_operational_pair_matrix", fake_matrix)
+    monkeypatch.setattr(
+        operational_residuals,
+        "operational_pairing_audit",
+        lambda *_args, **_kwargs: {"physically_aligned_pair_rows": len(matrix)},
+    )
+
+    state = build_operational_residual_state(
+        object(),
+        "2026-07-01 00:00:00",
+        "2026-07-02 00:00:00",
+        ["ECMWF_HRES"],
+    )
+
+    assert calls == ["matrix"]
+    assert state["metadata"]["total_pairs"] == 7
+    assert all(summary["total_pairs"] == 1 for summary in state["parameters"].values())
