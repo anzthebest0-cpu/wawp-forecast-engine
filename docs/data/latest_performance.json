@@ -7900,58 +7900,58 @@
       "Temperature": {
         "overall": {
           "ECMWF_HRES": {
-            "RMSE": 2.775,
-            "Bias": 1.301,
-            "MAE": 2.387,
+            "RMSE": 2.779,
+            "Bias": 1.313,
+            "MAE": 2.391,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "GFS_GLOBAL": {
-            "RMSE": 1.304,
-            "Bias": 0.646,
-            "MAE": 1.096,
+            "RMSE": 1.307,
+            "Bias": 0.648,
+            "MAE": 1.101,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "ICON_SEAMLESS": {
-            "RMSE": 2.101,
-            "Bias": 1.848,
-            "MAE": 1.877,
+            "RMSE": 2.104,
+            "Bias": 1.852,
+            "MAE": 1.88,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "GEM_GLOBAL": {
-            "RMSE": 2.006,
-            "Bias": 1.287,
-            "MAE": 1.708,
+            "RMSE": 2.01,
+            "Bias": 1.291,
+            "MAE": 1.714,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "CMA_GRAPES_GLOBAL": {
-            "RMSE": 1.433,
-            "Bias": -0.197,
-            "MAE": 1.131,
+            "RMSE": 1.435,
+            "Bias": -0.195,
+            "MAE": 1.133,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "JMA_GSM": {
             "RMSE": 2.249,
-            "Bias": 0.745,
-            "MAE": 1.944,
+            "Bias": 0.757,
+            "MAE": 1.943,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "METEOFRANCE_ARPEGE_WORLD": {
-            "RMSE": 3.009,
-            "Bias": 2.192,
-            "MAE": 2.477,
+            "RMSE": 3.015,
+            "Bias": 2.204,
+            "MAE": 2.484,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "UKMO_GLOBAL_10KM": {
-            "RMSE": 1.147,
-            "Bias": -0.315,
-            "MAE": 0.929,
+            "RMSE": 1.145,
+            "Bias": -0.31,
+            "MAE": 0.926,
             "HSS": 0.0,
             "CSI": 1.0
           }
@@ -7959,28 +7959,28 @@
         "lead_time": {
           "Day 1": {
             "ECMWF_HRES": {
-              "RMSE": 2.775
+              "RMSE": 2.779
             },
             "GFS_GLOBAL": {
-              "RMSE": 1.304
+              "RMSE": 1.307
             },
             "ICON_SEAMLESS": {
-              "RMSE": 2.101
+              "RMSE": 2.104
             },
             "GEM_GLOBAL": {
-              "RMSE": 2.006
+              "RMSE": 2.01
             },
             "CMA_GRAPES_GLOBAL": {
-              "RMSE": 1.433
+              "RMSE": 1.435
             },
             "JMA_GSM": {
               "RMSE": 2.249
             },
             "METEOFRANCE_ARPEGE_WORLD": {
-              "RMSE": 3.009
+              "RMSE": 3.015
             },
             "UKMO_GLOBAL_10KM": {
-              "RMSE": 1.147
+              "RMSE": 1.145
             }
           }
         },
@@ -7996,7 +7996,7 @@
             "7": 3.7,
             "8": 0.89,
             "9": -0.42,
-            "10": -1.136,
+            "10": -1.1,
             "11": -1.5,
             "12": -1.7,
             "13": -1.4,
@@ -8022,7 +8022,7 @@
             "7": 1.34,
             "8": 0.2,
             "9": 0.31,
-            "10": 0.482,
+            "10": 0.53,
             "11": 0.6,
             "12": 0.727,
             "13": 1.118,
@@ -8048,7 +8048,7 @@
             "7": 2.34,
             "8": 1.09,
             "9": 0.95,
-            "10": 1.082,
+            "10": 1.09,
             "11": 1.236,
             "12": 1.582,
             "13": 2.309,
@@ -8074,7 +8074,7 @@
             "7": 1.93,
             "8": 0.31,
             "9": 0.34,
-            "10": 0.6,
+            "10": 0.63,
             "11": 0.564,
             "12": 0.736,
             "13": 1.5,
@@ -8100,7 +8100,7 @@
             "7": 1.79,
             "8": -0.22,
             "9": -0.59,
-            "10": -0.327,
+            "10": -0.29,
             "11": 0.027,
             "12": 0.164,
             "13": 0.473,
@@ -8126,7 +8126,7 @@
             "7": 3.08,
             "8": 0.17,
             "9": -1.2,
-            "10": -1.855,
+            "10": -1.82,
             "11": -2.036,
             "12": -1.873,
             "13": -1.236,
@@ -8152,7 +8152,7 @@
             "7": 3.43,
             "8": 0.88,
             "9": 0.05,
-            "10": -0.064,
+            "10": 0.02,
             "11": 0.291,
             "12": 0.8,
             "13": 1.427,
@@ -8178,7 +8178,7 @@
             "7": 0.15,
             "8": -0.85,
             "9": -1.0,
-            "10": -1.0,
+            "10": -0.94,
             "11": -0.918,
             "12": -0.5,
             "13": -0.0,
@@ -8200,57 +8200,57 @@
       "Dewpoint": {
         "overall": {
           "ECMWF_HRES": {
-            "RMSE": 0.88,
-            "Bias": 0.218,
-            "MAE": 0.722,
+            "RMSE": 0.882,
+            "Bias": 0.221,
+            "MAE": 0.723,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "GFS_GLOBAL": {
             "RMSE": 1.16,
-            "Bias": -0.698,
-            "MAE": 0.942,
+            "Bias": -0.696,
+            "MAE": 0.941,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "ICON_SEAMLESS": {
-            "RMSE": 1.358,
-            "Bias": -0.481,
+            "RMSE": 1.359,
+            "Bias": -0.478,
             "MAE": 1.022,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "GEM_GLOBAL": {
-            "RMSE": 1.358,
-            "Bias": 0.29,
-            "MAE": 1.078,
+            "RMSE": 1.36,
+            "Bias": 0.295,
+            "MAE": 1.079,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "CMA_GRAPES_GLOBAL": {
-            "RMSE": 1.3,
-            "Bias": 0.401,
-            "MAE": 1.052,
+            "RMSE": 1.303,
+            "Bias": 0.403,
+            "MAE": 1.056,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "JMA_GSM": {
             "RMSE": 1.065,
-            "Bias": 0.492,
+            "Bias": 0.49,
             "MAE": 0.871,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "METEOFRANCE_ARPEGE_WORLD": {
-            "RMSE": 1.113,
-            "Bias": 0.231,
-            "MAE": 0.918,
+            "RMSE": 1.115,
+            "Bias": 0.235,
+            "MAE": 0.919,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "UKMO_GLOBAL_10KM": {
             "RMSE": 1.23,
-            "Bias": 0.804,
+            "Bias": 0.803,
             "MAE": 1.049,
             "HSS": 0.0,
             "CSI": 1.0
@@ -8259,25 +8259,25 @@
         "lead_time": {
           "Day 1": {
             "ECMWF_HRES": {
-              "RMSE": 0.88
+              "RMSE": 0.882
             },
             "GFS_GLOBAL": {
               "RMSE": 1.16
             },
             "ICON_SEAMLESS": {
-              "RMSE": 1.358
+              "RMSE": 1.359
             },
             "GEM_GLOBAL": {
-              "RMSE": 1.358
+              "RMSE": 1.36
             },
             "CMA_GRAPES_GLOBAL": {
-              "RMSE": 1.3
+              "RMSE": 1.303
             },
             "JMA_GSM": {
               "RMSE": 1.065
             },
             "METEOFRANCE_ARPEGE_WORLD": {
-              "RMSE": 1.113
+              "RMSE": 1.115
             },
             "UKMO_GLOBAL_10KM": {
               "RMSE": 1.23
@@ -8296,7 +8296,7 @@
             "7": 0.83,
             "8": 0.03,
             "9": -0.09,
-            "10": -0.045,
+            "10": -0.0,
             "11": -0.136,
             "12": -0.027,
             "13": -0.218,
@@ -8322,7 +8322,7 @@
             "7": 0.21,
             "8": -0.69,
             "9": -1.36,
-            "10": -1.227,
+            "10": -1.23,
             "11": -1.009,
             "12": -0.855,
             "13": -1.3,
@@ -8348,7 +8348,7 @@
             "7": 0.95,
             "8": -0.09,
             "9": -0.54,
-            "10": -0.691,
+            "10": -0.65,
             "11": -0.964,
             "12": -1.2,
             "13": -1.827,
@@ -8374,7 +8374,7 @@
             "7": 1.35,
             "8": 0.67,
             "9": 0.21,
-            "10": 0.055,
+            "10": 0.15,
             "11": 0.209,
             "12": -0.173,
             "13": -0.855,
@@ -8400,7 +8400,7 @@
             "7": 1.47,
             "8": 0.76,
             "9": 0.75,
-            "10": 0.582,
+            "10": 0.64,
             "11": 0.227,
             "12": -0.164,
             "13": -0.891,
@@ -8426,7 +8426,7 @@
             "7": 1.43,
             "8": 0.71,
             "9": 0.77,
-            "10": 0.964,
+            "10": 0.96,
             "11": 1.0,
             "12": 0.873,
             "13": 0.4,
@@ -8452,7 +8452,7 @@
             "7": 0.9,
             "8": 0.22,
             "9": -0.06,
-            "10": -0.564,
+            "10": -0.55,
             "11": -1.155,
             "12": -1.645,
             "13": -1.655,
@@ -8478,7 +8478,7 @@
             "7": 1.29,
             "8": 1.29,
             "9": 0.92,
-            "10": 1.018,
+            "10": 1.01,
             "11": 0.836,
             "12": 0.436,
             "13": -0.136,
@@ -8500,58 +8500,58 @@
       "Pressure": {
         "overall": {
           "ECMWF_HRES": {
-            "RMSE": 0.393,
+            "RMSE": 0.394,
             "Bias": 0.25,
             "MAE": 0.332,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "GFS_GLOBAL": {
-            "RMSE": 0.496,
-            "Bias": 0.143,
-            "MAE": 0.397,
+            "RMSE": 0.497,
+            "Bias": 0.144,
+            "MAE": 0.398,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "ICON_SEAMLESS": {
-            "RMSE": 0.365,
+            "RMSE": 0.366,
             "Bias": 0.106,
             "MAE": 0.298,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "GEM_GLOBAL": {
-            "RMSE": 0.473,
-            "Bias": 0.163,
-            "MAE": 0.373,
+            "RMSE": 0.474,
+            "Bias": 0.164,
+            "MAE": 0.374,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "CMA_GRAPES_GLOBAL": {
-            "RMSE": 0.878,
-            "Bias": 0.773,
-            "MAE": 0.782,
+            "RMSE": 0.879,
+            "Bias": 0.775,
+            "MAE": 0.783,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "JMA_GSM": {
-            "RMSE": 0.918,
-            "Bias": 0.649,
-            "MAE": 0.747,
+            "RMSE": 0.92,
+            "Bias": 0.652,
+            "MAE": 0.749,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "METEOFRANCE_ARPEGE_WORLD": {
             "RMSE": 0.409,
-            "Bias": -0.082,
-            "MAE": 0.335,
+            "Bias": -0.083,
+            "MAE": 0.337,
             "HSS": 0.0,
             "CSI": 1.0
           },
           "UKMO_GLOBAL_10KM": {
-            "RMSE": 0.62,
-            "Bias": 0.515,
-            "MAE": 0.541,
+            "RMSE": 0.621,
+            "Bias": 0.516,
+            "MAE": 0.542,
             "HSS": 0.0,
             "CSI": 1.0
           }
@@ -8559,28 +8559,28 @@
         "lead_time": {
           "Day 1": {
             "ECMWF_HRES": {
-              "RMSE": 0.393
+              "RMSE": 0.394
             },
             "GFS_GLOBAL": {
-              "RMSE": 0.496
+              "RMSE": 0.497
             },
             "ICON_SEAMLESS": {
-              "RMSE": 0.365
+              "RMSE": 0.366
             },
             "GEM_GLOBAL": {
-              "RMSE": 0.473
+              "RMSE": 0.474
             },
             "CMA_GRAPES_GLOBAL": {
-              "RMSE": 0.878
+              "RMSE": 0.879
             },
             "JMA_GSM": {
-              "RMSE": 0.918
+              "RMSE": 0.92
             },
             "METEOFRANCE_ARPEGE_WORLD": {
               "RMSE": 0.409
             },
             "UKMO_GLOBAL_10KM": {
-              "RMSE": 0.62
+              "RMSE": 0.621
             }
           }
         },
@@ -8596,7 +8596,7 @@
             "7": 0.47,
             "8": 0.43,
             "9": 0.25,
-            "10": 0.118,
+            "10": 0.11,
             "11": 0.245,
             "12": 0.336,
             "13": 0.182,
@@ -8622,7 +8622,7 @@
             "7": 0.57,
             "8": 0.59,
             "9": 0.36,
-            "10": 0.1,
+            "10": 0.12,
             "11": -0.127,
             "12": -0.291,
             "13": -0.436,
@@ -8648,7 +8648,7 @@
             "7": 0.31,
             "8": 0.27,
             "9": 0.1,
-            "10": -0.018,
+            "10": -0.03,
             "11": -0.136,
             "12": -0.009,
             "13": -0.091,
@@ -8674,7 +8674,7 @@
             "7": 0.28,
             "8": 0.16,
             "9": 0.07,
-            "10": -0.127,
+            "10": -0.13,
             "11": -0.064,
             "12": 0.055,
             "13": -0.2,
@@ -8700,7 +8700,7 @@
             "7": 1.14,
             "8": 1.03,
             "9": 0.7,
-            "10": 0.355,
+            "10": 0.35,
             "11": 0.336,
             "12": 0.482,
             "13": 0.473,
@@ -8726,7 +8726,7 @@
             "7": 1.17,
             "8": 0.71,
             "9": 0.33,
-            "10": 0.0,
+            "10": 0.03,
             "11": -0.055,
             "12": 0.109,
             "13": 0.282,
@@ -8752,7 +8752,7 @@
             "7": 0.36,
             "8": 0.23,
             "9": 0.15,
-            "10": 0.045,
+            "10": 0.05,
             "11": -0.155,
             "12": -0.191,
             "13": -0.291,
@@ -8778,7 +8778,7 @@
             "7": 0.68,
             "8": 0.39,
             "9": 0.44,
-            "10": 0.327,
+            "10": 0.34,
             "11": 0.355,
             "12": 0.555,
             "13": 0.445,
@@ -8802,35 +8802,35 @@
           "ECMWF_HRES": {
             "RMSE": 0.195,
             "Bias": 0.041,
-            "MAE": 0.061,
+            "MAE": 0.062,
             "HSS": 0.0,
             "CSI": 0.0
           },
           "GFS_GLOBAL": {
-            "RMSE": 0.221,
+            "RMSE": 0.222,
             "Bias": 0.043,
-            "MAE": 0.059,
+            "MAE": 0.06,
             "HSS": -0.004,
             "CSI": 0.0
           },
           "ICON_SEAMLESS": {
-            "RMSE": 0.109,
+            "RMSE": 0.11,
             "Bias": -0.007,
             "MAE": 0.013,
             "HSS": 0.0,
             "CSI": 0.0
           },
           "GEM_GLOBAL": {
-            "RMSE": 0.733,
+            "RMSE": 0.734,
             "Bias": 0.146,
-            "MAE": 0.165,
+            "MAE": 0.166,
             "HSS": -0.006,
             "CSI": 0.0
           },
           "CMA_GRAPES_GLOBAL": {
-            "RMSE": 0.453,
-            "Bias": 0.145,
-            "MAE": 0.153,
+            "RMSE": 0.454,
+            "Bias": 0.146,
+            "MAE": 0.154,
             "HSS": 0.148,
             "CSI": 0.083
           },
@@ -8842,16 +8842,16 @@
             "CSI": 0.0
           },
           "METEOFRANCE_ARPEGE_WORLD": {
-            "RMSE": 0.137,
+            "RMSE": 0.138,
             "Bias": -0.006,
             "MAE": 0.018,
             "HSS": 0.0,
             "CSI": 0.0
           },
           "UKMO_GLOBAL_10KM": {
-            "RMSE": 0.18,
-            "Bias": 0.045,
-            "MAE": 0.049,
+            "RMSE": 0.181,
+            "Bias": 0.046,
+            "MAE": 0.05,
             "HSS": 0.665,
             "CSI": 0.5
           }
@@ -8862,25 +8862,25 @@
               "RMSE": 0.195
             },
             "GFS_GLOBAL": {
-              "RMSE": 0.221
+              "RMSE": 0.222
             },
             "ICON_SEAMLESS": {
-              "RMSE": 0.109
+              "RMSE": 0.11
             },
             "GEM_GLOBAL": {
-              "RMSE": 0.733
+              "RMSE": 0.734
             },
             "CMA_GRAPES_GLOBAL": {
-              "RMSE": 0.453
+              "RMSE": 0.454
             },
             "JMA_GSM": {
               "RMSE": 0.153
             },
             "METEOFRANCE_ARPEGE_WORLD": {
-              "RMSE": 0.137
+              "RMSE": 0.138
             },
             "UKMO_GLOBAL_10KM": {
-              "RMSE": 0.18
+              "RMSE": 0.181
             }
           }
         },
@@ -8896,7 +8896,7 @@
             "7": 0.0,
             "8": 0.0,
             "9": 0.01,
-            "10": 0.009,
+            "10": 0.01,
             "11": 0.009,
             "12": 0.109,
             "13": 0.109,
@@ -8922,7 +8922,7 @@
             "7": 0.0,
             "8": 0.0,
             "9": 0.0,
-            "10": 0.009,
+            "10": 0.01,
             "11": 0.055,
             "12": 0.136,
             "13": 0.118,
@@ -8974,7 +8974,7 @@
             "7": 0.0,
             "8": 0.01,
             "9": 0.0,
-            "10": 0.027,
+            "10": 0.03,
             "11": 0.209,
             "12": 0.373,
             "13": 0.055,
@@ -9000,7 +9000,7 @@
             "7": 0.0,
             "8": 0.0,
             "9": 0.13,
-            "10": 0.118,
+            "10": 0.13,
             "11": 0.118,
             "12": 0.527,
             "13": 0.527,
@@ -9026,7 +9026,7 @@
             "7": 0.0,
             "8": 0.0,
             "9": 0.01,
-            "10": 0.009,
+            "10": 0.01,
             "11": 0.009,
             "12": 0.009,
             "13": 0.009,
@@ -9078,7 +9078,7 @@
             "7": 0.0,
             "8": 0.0,
             "9": 0.0,
-            "10": 0.009,
+            "10": 0.01,
             "11": 0.027,
             "12": 0.064,
             "13": 0.118,
@@ -9107,13 +9107,13 @@
                 "threshold": 1.5,
                 "window_hours": 0,
                 "verification_unit": "sample",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 12,
                 "hits": 1,
                 "misses": 0,
                 "false_alarms": 11,
-                "correct_negatives": 237,
+                "correct_negatives": 236,
                 "POD": 1.0,
                 "FAR": 0.9167,
                 "CSI": 0.0833,
@@ -9126,7 +9126,7 @@
                 "threshold": 1.5,
                 "window_hours": 1,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 4,
                 "hits": 0,
@@ -9149,7 +9149,7 @@
                 "threshold": 1.5,
                 "window_hours": 2,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 4,
                 "hits": 1,
@@ -9209,13 +9209,13 @@
                 "threshold": 1.5,
                 "window_hours": 0,
                 "verification_unit": "sample",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 0,
                 "hits": 0,
                 "misses": 1,
                 "false_alarms": 0,
-                "correct_negatives": 248,
+                "correct_negatives": 247,
                 "POD": 0.0,
                 "FAR": null,
                 "CSI": 0.0,
@@ -9228,7 +9228,7 @@
                 "threshold": 1.5,
                 "window_hours": 1,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 0,
                 "hits": 0,
@@ -9251,7 +9251,7 @@
                 "threshold": 1.5,
                 "window_hours": 2,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 0,
                 "hits": 0,
@@ -9311,13 +9311,13 @@
                 "threshold": 1.5,
                 "window_hours": 0,
                 "verification_unit": "sample",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 4,
                 "hits": 0,
                 "misses": 1,
                 "false_alarms": 4,
-                "correct_negatives": 244,
+                "correct_negatives": 243,
                 "POD": 0.0,
                 "FAR": 1.0,
                 "CSI": 0.0,
@@ -9330,7 +9330,7 @@
                 "threshold": 1.5,
                 "window_hours": 1,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 2,
                 "hits": 0,
@@ -9353,7 +9353,7 @@
                 "threshold": 1.5,
                 "window_hours": 2,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 2,
                 "hits": 0,
@@ -9413,13 +9413,13 @@
                 "threshold": 1.5,
                 "window_hours": 0,
                 "verification_unit": "sample",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 1,
                 "hits": 0,
                 "misses": 1,
                 "false_alarms": 1,
-                "correct_negatives": 247,
+                "correct_negatives": 246,
                 "POD": 0.0,
                 "FAR": 1.0,
                 "CSI": 0.0,
@@ -9432,7 +9432,7 @@
                 "threshold": 1.5,
                 "window_hours": 1,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 1,
                 "hits": 0,
@@ -9455,7 +9455,7 @@
                 "threshold": 1.5,
                 "window_hours": 2,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 1,
                 "hits": 0,
@@ -9515,13 +9515,13 @@
                 "threshold": 1.5,
                 "window_hours": 0,
                 "verification_unit": "sample",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 0,
                 "hits": 0,
                 "misses": 1,
                 "false_alarms": 0,
-                "correct_negatives": 248,
+                "correct_negatives": 247,
                 "POD": 0.0,
                 "FAR": null,
                 "CSI": 0.0,
@@ -9534,7 +9534,7 @@
                 "threshold": 1.5,
                 "window_hours": 1,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 0,
                 "hits": 0,
@@ -9557,7 +9557,7 @@
                 "threshold": 1.5,
                 "window_hours": 2,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 0,
                 "hits": 0,
@@ -9617,13 +9617,13 @@
                 "threshold": 1.5,
                 "window_hours": 0,
                 "verification_unit": "sample",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 0,
                 "hits": 0,
                 "misses": 1,
                 "false_alarms": 0,
-                "correct_negatives": 248,
+                "correct_negatives": 247,
                 "POD": 0.0,
                 "FAR": null,
                 "CSI": 0.0,
@@ -9636,7 +9636,7 @@
                 "threshold": 1.5,
                 "window_hours": 1,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 0,
                 "hits": 0,
@@ -9659,7 +9659,7 @@
                 "threshold": 1.5,
                 "window_hours": 2,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 0,
                 "hits": 0,
@@ -9719,13 +9719,13 @@
                 "threshold": 1.5,
                 "window_hours": 0,
                 "verification_unit": "sample",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 0,
                 "hits": 0,
                 "misses": 1,
                 "false_alarms": 0,
-                "correct_negatives": 248,
+                "correct_negatives": 247,
                 "POD": 0.0,
                 "FAR": null,
                 "CSI": 0.0,
@@ -9738,7 +9738,7 @@
                 "threshold": 1.5,
                 "window_hours": 1,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 0,
                 "hits": 0,
@@ -9761,7 +9761,7 @@
                 "threshold": 1.5,
                 "window_hours": 2,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 0,
                 "hits": 0,
@@ -9821,13 +9821,13 @@
                 "threshold": 1.5,
                 "window_hours": 0,
                 "verification_unit": "sample",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 2,
                 "hits": 1,
                 "misses": 0,
                 "false_alarms": 1,
-                "correct_negatives": 247,
+                "correct_negatives": 246,
                 "POD": 1.0,
                 "FAR": 0.5,
                 "CSI": 0.5,
@@ -9840,7 +9840,7 @@
                 "threshold": 1.5,
                 "window_hours": 1,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 2,
                 "hits": 1,
@@ -9863,7 +9863,7 @@
                 "threshold": 1.5,
                 "window_hours": 2,
                 "verification_unit": "one_to_one_episode",
-                "sample_size": 249,
+                "sample_size": 248,
                 "observed_events": 1,
                 "forecast_events": 2,
                 "hits": 1,
@@ -9922,87 +9922,87 @@
       "Wind Speed": {
         "overall": {
           "ECMWF_HRES": {
-            "RMSE": 5.163,
-            "Bias": 3.19,
-            "MAE": 4.343,
-            "HSS": -0.268,
+            "RMSE": 5.173,
+            "Bias": 3.201,
+            "MAE": 4.359,
+            "HSS": -0.272,
             "CSI": 0.146
           },
           "GFS_GLOBAL": {
-            "RMSE": 3.859,
-            "Bias": 2.201,
-            "MAE": 3.379,
+            "RMSE": 3.863,
+            "Bias": 2.198,
+            "MAE": 3.381,
             "HSS": -0.18,
-            "CSI": 0.182
+            "CSI": 0.183
           },
           "ICON_SEAMLESS": {
-            "RMSE": 3.21,
-            "Bias": 2.466,
-            "MAE": 2.757,
-            "HSS": 0.302,
-            "CSI": 0.4
+            "RMSE": 3.202,
+            "Bias": 2.456,
+            "MAE": 2.748,
+            "HSS": 0.305,
+            "CSI": 0.403
           },
           "GEM_GLOBAL": {
-            "RMSE": 2.316,
-            "Bias": 0.23,
-            "MAE": 1.919,
-            "HSS": 0.172,
+            "RMSE": 2.32,
+            "Bias": 0.229,
+            "MAE": 1.925,
+            "HSS": 0.171,
             "CSI": 0.171
           },
           "CMA_GRAPES_GLOBAL": {
-            "RMSE": 2.893,
-            "Bias": 0.953,
-            "MAE": 2.488,
-            "HSS": -0.191,
+            "RMSE": 2.898,
+            "Bias": 0.952,
+            "MAE": 2.493,
+            "HSS": -0.189,
             "CSI": 0.113
           },
           "JMA_GSM": {
-            "RMSE": 2.397,
-            "Bias": 0.87,
-            "MAE": 2.062,
+            "RMSE": 2.401,
+            "Bias": 0.876,
+            "MAE": 2.069,
             "HSS": -0.144,
             "CSI": 0.0
           },
           "METEOFRANCE_ARPEGE_WORLD": {
-            "RMSE": 3.823,
-            "Bias": 2.645,
-            "MAE": 3.314,
-            "HSS": -0.043,
+            "RMSE": 3.831,
+            "Bias": 2.654,
+            "MAE": 3.326,
+            "HSS": -0.046,
             "CSI": 0.243
           },
           "UKMO_GLOBAL_10KM": {
-            "RMSE": 3.131,
-            "Bias": 2.422,
-            "MAE": 2.717,
-            "HSS": 0.081,
-            "CSI": 0.305
+            "RMSE": 3.125,
+            "Bias": 2.414,
+            "MAE": 2.71,
+            "HSS": 0.082,
+            "CSI": 0.307
           }
         },
         "lead_time": {
           "Day 1": {
             "ECMWF_HRES": {
-              "RMSE": 5.163
+              "RMSE": 5.173
             },
             "GFS_GLOBAL": {
-              "RMSE": 3.859
+              "RMSE": 3.863
             },
             "ICON_SEAMLESS": {
-              "RMSE": 3.21
+              "RMSE": 3.202
             },
             "GEM_GLOBAL": {
-              "RMSE": 2.316
+              "RMSE": 2.32
             },
             "CMA_GRAPES_GLOBAL": {
-              "RMSE": 2.893
+              "RMSE": 2.898
             },
             "JMA_GSM": {
-              "RMSE": 2.397
+              "RMSE": 2.401
             },
             "METEOFRANCE_ARPEGE_WORLD": {
-              "RMSE": 3.823
+              "RMSE": 3.831
             },
             "UKMO_GLOBAL_10KM": {
-              "RMSE": 3.131
+              "RMSE": 3.125
             }
           }
         },
@@ -10018,7 +10018,7 @@
             "7": 5.5,
             "8": 4.3,
             "9": 1.11,
-            "10": -0.782,
+            "10": -0.9,
             "11": -1.673,
             "12": -2.936,
             "13": -1.191,
@@ -10044,7 +10044,7 @@
             "7": 3.36,
             "8": 3.08,
             "9": 1.74,
-            "10": 0.309,
+            "10": 0.06,
             "11": -1.7,
             "12": -3.173,
             "13": -2.491,
@@ -10070,7 +10070,7 @@
             "7": 1.34,
             "8": 3.61,
             "9": 3.85,
-            "10": 3.918,
+            "10": 3.83,
             "11": 3.582,
             "12": 2.509,
             "13": 1.836,
@@ -10096,7 +10096,7 @@
             "7": 1.7,
             "8": 1.18,
             "9": 0.51,
-            "10": -0.245,
+            "10": -0.32,
             "11": -0.836,
             "12": -1.882,
             "13": -2.818,
@@ -10122,7 +10122,7 @@
             "7": 2.9,
             "8": 2.32,
             "9": 0.55,
-            "10": -0.291,
+            "10": -0.45,
             "11": -0.873,
             "12": -2.055,
             "13": -2.336,
@@ -10148,7 +10148,7 @@
             "7": 2.47,
             "8": 1.77,
             "9": 0.17,
-            "10": -0.655,
+            "10": -0.67,
             "11": -1.109,
             "12": -1.973,
             "13": -2.255,
@@ -10174,7 +10174,7 @@
             "7": 4.15,
             "8": 3.75,
             "9": 2.14,
-            "10": 0.645,
+            "10": 0.68,
             "11": -0.764,
             "12": -2.736,
             "13": -1.982,
@@ -10200,7 +10200,7 @@
             "7": 2.44,
             "8": 2.94,
             "9": 3.29,
-            "10": 2.982,
+            "10": 2.84,
             "11": 2.027,
             "12": 0.709,
             "13": 0.145,
@@ -10222,58 +10222,58 @@
       "Wind Dir.": {
         "overall": {
           "ECMWF_HRES": {
-            "RMSE": 73.782,
-            "Bias": -5.715,
-            "MAE": 58.847,
+            "RMSE": 73.071,
+            "Bias": -6.452,
+            "MAE": 58.371,
             "HSS": 0.0,
             "CSI": 0.024
           },
           "GFS_GLOBAL": {
-            "RMSE": 75.352,
-            "Bias": -10.008,
-            "MAE": 57.285,
+            "RMSE": 74.782,
+            "Bias": -9.387,
+            "MAE": 56.855,
             "HSS": 0.0,
             "CSI": 0.032
           },
           "ICON_SEAMLESS": {
-            "RMSE": 84.83,
-            "Bias": -10.928,
-            "MAE": 65.104,
+            "RMSE": 84.337,
+            "Bias": -10.298,
+            "MAE": 64.694,
             "HSS": 0.0,
             "CSI": 0.02
           },
           "GEM_GLOBAL": {
-            "RMSE": 78.461,
-            "Bias": -10.361,
-            "MAE": 62.064,
+            "RMSE": 77.968,
+            "Bias": -9.762,
+            "MAE": 61.673,
             "HSS": 0.0,
             "CSI": 0.012
           },
           "CMA_GRAPES_GLOBAL": {
-            "RMSE": 79.951,
-            "Bias": -17.627,
-            "MAE": 64.462,
+            "RMSE": 79.432,
+            "Bias": -17.036,
+            "MAE": 64.06,
             "HSS": 0.0,
             "CSI": 0.016
           },
           "JMA_GSM": {
-            "RMSE": 82.262,
-            "Bias": -18.008,
-            "MAE": 64.876,
+            "RMSE": 81.783,
+            "Bias": -17.427,
+            "MAE": 64.484,
             "HSS": 0.0,
             "CSI": 0.02
           },
           "METEOFRANCE_ARPEGE_WORLD": {
-            "RMSE": 74.221,
-            "Bias": -13.98,
-            "MAE": 60.028,
+            "RMSE": 73.655,
+            "Bias": -13.383,
+            "MAE": 59.617,
             "HSS": 0.0,
             "CSI": 0.028
           },
           "UKMO_GLOBAL_10KM": {
-            "RMSE": 85.99,
-            "Bias": -20.96,
-            "MAE": 70.486,
+            "RMSE": 85.5,
+            "Bias": -20.367,
+            "MAE": 70.093,
             "HSS": 0.0,
             "CSI": 0.0
           }
@@ -10281,28 +10281,28 @@
         "lead_time": {
           "Day 1": {
             "ECMWF_HRES": {
-              "RMSE": 73.782
+              "RMSE": 73.071
             },
             "GFS_GLOBAL": {
-              "RMSE": 75.352
+              "RMSE": 74.782
             },
             "ICON_SEAMLESS": {
-              "RMSE": 84.83
+              "RMSE": 84.337
             },
             "GEM_GLOBAL": {
-              "RMSE": 78.461
+              "RMSE": 77.968
             },
             "CMA_GRAPES_GLOBAL": {
-              "RMSE": 79.951
+              "RMSE": 79.432
             },
             "JMA_GSM": {
-              "RMSE": 82.262
+              "RMSE": 81.783
             },
             "METEOFRANCE_ARPEGE_WORLD": {
-              "RMSE": 74.221
+              "RMSE": 73.655
             },
             "UKMO_GLOBAL_10KM": {
-              "RMSE": 85.99
+              "RMSE": 85.5
             }
           }
         },
