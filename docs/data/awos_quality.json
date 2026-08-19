@@ -1,37 +1,37 @@
 {
   "metadata": {
     "quality_contract_version": "awos-cross-grain-quality-v1-shadow",
-    "generated_at_utc": "2026-08-18 13:25:31",
+    "generated_at_utc": "2026-08-19 01:18:36",
     "mode": "observe_only",
     "promotion_eligible": false
   },
   "status": "warning",
   "hard_issue_count": 0,
   "warning_count": 2,
-  "verification_eligible": false,
+  "verification_eligible": true,
   "parameter_eligibility": {
     "Temperature": {
-      "eligible": false,
+      "eligible": true,
       "reason": "hourly AWOS quality"
     },
     "Dewpoint": {
-      "eligible": false,
+      "eligible": true,
       "reason": "hourly AWOS quality"
     },
     "Pressure": {
-      "eligible": false,
+      "eligible": true,
       "reason": "hourly AWOS quality"
     },
     "Rainfall": {
-      "eligible": false,
+      "eligible": true,
       "reason": "hourly RA36 quality"
     },
     "Wind Speed": {
-      "eligible": false,
+      "eligible": true,
       "reason": "hourly 10-minute aviation wind quality"
     },
     "Wind Dir.": {
-      "eligible": false,
+      "eligible": true,
       "reason": "hourly 10-minute aviation wind quality"
     },
     "Wind Gust": {
@@ -40,12 +40,12 @@
     }
   },
   "hourly": {
-    "row_count": 43193,
-    "distinct_timestamp_count": 43193,
+    "row_count": 43626,
+    "distinct_timestamp_count": 43626,
     "duplicate_timestamp_count": 0,
     "first_obs_utc": "2021-07-19 04:00:00",
-    "last_obs_utc": "2026-07-31 23:00:00",
-    "expected_hour_count": 44132,
+    "last_obs_utc": "2026-08-19 00:00:00",
+    "expected_hour_count": 44565,
     "missing_hour_count": 939,
     "negative_rain_count": 0,
     "humidity_out_of_range_count": 0,
@@ -55,10 +55,10 @@
     "dewpoint_above_temperature_count": 0,
     "rows_with_derived_gust_value": 43193,
     "rows_with_positive_derived_gust": 368,
-    "age_hours": 422.43,
+    "age_hours": 1.31,
     "rain_timestamp_label": "interval_end",
     "operational_wind_source": "first WD36/WS36 pair (10-minute aviation wind)",
-    "recent_gust_lookback_start_utc": "2026-06-01 23:00:00",
+    "recent_gust_lookback_start_utc": "2026-06-20 00:00:00",
     "recent_positive_derived_gust_count": 0
   },
   "minute": {
