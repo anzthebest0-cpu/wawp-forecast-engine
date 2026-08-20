@@ -1,59 +1,5 @@
 [
   {
-    "Datetime": "2026-08-15 08:00:00",
-    "temperature": 30.7,
-    "dewpoint": 21.7,
-    "pressure": 1011.1,
-    "wind_dir": 249.0,
-    "wind_speed": 7.0,
-    "rain_1h": 0.0
-  },
-  {
-    "Datetime": "2026-08-15 09:00:00",
-    "temperature": 30.5,
-    "dewpoint": 21.9,
-    "pressure": 1011.2,
-    "wind_dir": 271.0,
-    "wind_speed": 4.0,
-    "rain_1h": 0.0
-  },
-  {
-    "Datetime": "2026-08-15 10:00:00",
-    "temperature": 30.1,
-    "dewpoint": 19.4,
-    "pressure": 1011.7,
-    "wind_dir": 143.0,
-    "wind_speed": 5.0,
-    "rain_1h": 0.0
-  },
-  {
-    "Datetime": "2026-08-15 11:00:00",
-    "temperature": 27.4,
-    "dewpoint": 18.3,
-    "pressure": 1012.6,
-    "wind_dir": 107.0,
-    "wind_speed": 3.0,
-    "rain_1h": 0.0
-  },
-  {
-    "Datetime": "2026-08-15 12:00:00",
-    "temperature": 25.2,
-    "dewpoint": 19.2,
-    "pressure": 1013.2,
-    "wind_dir": 86.0,
-    "wind_speed": 4.0,
-    "rain_1h": 0.0
-  },
-  {
-    "Datetime": "2026-08-15 13:00:00",
-    "temperature": 24.3,
-    "dewpoint": 19.7,
-    "pressure": 1013.6,
-    "wind_dir": 91.0,
-    "wind_speed": 2.0,
-    "rain_1h": 0.0
-  },
-  {
     "Datetime": "2026-08-15 14:00:00",
     "temperature": 22.4,
     "dewpoint": 19.6,
