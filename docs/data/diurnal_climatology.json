@@ -1,7 +1,7 @@
 {
   "metadata": {
     "station": "Bandara_Sangia_Ni_Bandera",
-    "generated_at": "2026-08-21T07:28:18.944844+00:00",
+    "generated_at": "2026-08-21T13:31:30.634570+00:00",
     "data_period": {
       "start": "2021-07-19T14:00:00",
       "end": "2026-08-19T08:00:00"
@@ -2520,7 +2520,7 @@
       "significant": true
     },
     "temp_anova": {
-      "f_statistic": 4206.5971657297205,
+      "f_statistic": 4206.597165729735,
       "p_value": 0.0,
       "significant": true
     },
