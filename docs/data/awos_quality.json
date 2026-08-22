@@ -1,7 +1,7 @@
 {
   "metadata": {
     "quality_contract_version": "awos-cross-grain-quality-v1-shadow",
-    "generated_at_utc": "2026-08-22 13:11:30",
+    "generated_at_utc": "2026-08-22 19:01:32",
     "mode": "observe_only",
     "promotion_eligible": false
   },
@@ -55,7 +55,7 @@
     "dewpoint_above_temperature_count": 0,
     "rows_with_derived_gust_value": 43193,
     "rows_with_positive_derived_gust": 368,
-    "age_hours": 85.19,
+    "age_hours": 91.03,
     "rain_timestamp_label": "interval_end",
     "operational_wind_source": "first WD36/WS36 pair (10-minute aviation wind)",
     "recent_gust_lookback_start_utc": "2026-06-20 00:00:00",
