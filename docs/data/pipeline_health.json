@@ -9,10 +9,10 @@
     "JMA_GSM",
     "UKMO_GLOBAL_10KM"
   ],
-  "operational_forecast_rows": 594888,
+  "operational_forecast_rows": 597576,
   "dashboard_export_skipped": false,
   "awos_stale": false,
-  "last_run_utc": "2026-08-25 13:29:01",
+  "last_run_utc": "2026-08-25 19:09:45",
   "last_error": null,
   "openmeteo_error": null,
   "awos_error": null,
