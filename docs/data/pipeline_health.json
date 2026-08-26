@@ -7,12 +7,13 @@
     "GFS_GLOBAL",
     "ICON_SEAMLESS",
     "JMA_GSM",
-    "METEOFRANCE_ARPEGE_WORLD"
+    "METEOFRANCE_ARPEGE_WORLD",
+    "UKMO_GLOBAL_10KM"
   ],
-  "operational_forecast_rows": 605640,
+  "operational_forecast_rows": 608712,
   "dashboard_export_skipped": false,
   "awos_stale": false,
-  "last_run_utc": "2026-08-26 13:34:21",
+  "last_run_utc": "2026-08-26 20:28:53",
   "last_error": null,
   "openmeteo_error": null,
   "awos_error": null,
