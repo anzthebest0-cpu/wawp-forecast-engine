@@ -9,7 +9,7 @@
       "gust": "22",
       "vis": "9999",
       "wx": "",
-      "cloud": "FEW021",
+      "cloud": "FEW020",
       "rain": 0.0,
       "rain_mmh": 0.0,
       "trends": [],
@@ -19,7 +19,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 312300\nTAF WAWP 312300Z 0100/0200 11006G22KT 9999 FEW021=",
+    "taf_text": "FTID40 WAWP 312300\nTAF WAWP 312300Z 0100/0200 11006G22KT 9999 FEW020=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
     "warnings": [
       "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen.",
@@ -80,7 +80,7 @@
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 307.26
+      "observation_hourly_age_hours": 311.04
     }
   },
   "0500": {
@@ -90,12 +90,12 @@
     "base_group": {
       "dir": "160",
       "spd": "03",
-      "gust": "21",
+      "gust": "19",
       "vis": "9999",
       "wx": "",
-      "cloud": "FEW050",
-      "rain": 0.0480706327579261,
-      "rain_mmh": 0.0480706327579261,
+      "cloud": "FEW052",
+      "rain": 0.0,
+      "rain_mmh": 0.0,
       "trends": [],
       "badge": "MME 0500Z Shift",
       "metrics": {
@@ -103,7 +103,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 010500\nTAF WAWP 010500Z 0106/0206 16003G21KT CAVOK=",
+    "taf_text": "FTID40 WAWP 010500\nTAF WAWP 010500Z 0106/0206 16003G19KT CAVOK=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (3 KT).",
     "warnings": [
       "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen.",
@@ -164,7 +164,7 @@
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 307.26
+      "observation_hourly_age_hours": 311.04
     }
   },
   "1100": {
@@ -174,12 +174,12 @@
     "base_group": {
       "dir": "080",
       "spd": "06",
-      "gust": "20",
-      "vis": "9999",
+      "gust": "18",
+      "vis": "6000",
       "wx": "",
-      "cloud": "FEW025",
-      "rain": 0.011590166663636572,
-      "rain_mmh": 0.011590166663636572,
+      "cloud": "FEW020",
+      "rain": 0.15580206493741486,
+      "rain_mmh": 0.15580206493741486,
       "trends": [],
       "badge": "MME 1100Z Shift",
       "metrics": {
@@ -187,8 +187,8 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 011100\nTAF WAWP 011100Z 0112/0212 08006G20KT 9999 FEW025=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
+    "taf_text": "FTID40 WAWP 011100\nTAF WAWP 011100Z 0112/0212 08006G18KT 6000 FEW020=",
+    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang sedang. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
     "warnings": [
       "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen.",
       "Rain/gust event-window diagnostics are observe-only during metric audit; they do not alter weights or TAF change groups."
@@ -248,7 +248,7 @@
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 307.26
+      "observation_hourly_age_hours": 311.04
     }
   },
   "1700": {
@@ -257,7 +257,7 @@
     "issued_day": 1,
     "base_group": {
       "dir": "100",
-      "spd": "06",
+      "spd": "05",
       "gust": "22",
       "vis": "9999",
       "wx": "",
@@ -271,8 +271,8 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 011700\nTAF WAWP 011700Z 0118/0218 10006G22KT CAVOK=",
-    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
+    "taf_text": "FTID40 WAWP 011700\nTAF WAWP 011700Z 0118/0218 10005G22KT CAVOK=",
+    "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (5 KT).",
     "warnings": [
       "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen.",
       "Rain/gust event-window diagnostics are observe-only during metric audit; they do not alter weights or TAF change groups."
@@ -332,7 +332,7 @@
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 307.26
+      "observation_hourly_age_hours": 311.04
     }
   },
   "default": {
@@ -345,7 +345,7 @@
       "gust": "22",
       "vis": "9999",
       "wx": "",
-      "cloud": "FEW021",
+      "cloud": "FEW020",
       "rain": 0.0,
       "rain_mmh": 0.0,
       "trends": [],
@@ -355,7 +355,7 @@
         "leader_strat": "N/A"
       }
     },
-    "taf_text": "FTID40 WAWP 312300\nTAF WAWP 312300Z 0100/0200 11006G22KT 9999 FEW021=",
+    "taf_text": "FTID40 WAWP 312300\nTAF WAWP 312300Z 0100/0200 11006G22KT 9999 FEW020=",
     "narration": "Secara umum cuaca berawan sebagian dengan jarak pandang baik. Angin dominan bertiup dengan kecepatan ringan hingga sedang (6 KT).",
     "warnings": [
       "Hourly AWOS verification is stale; verification-driven weights and residual promotion are frozen.",
@@ -417,13 +417,13 @@
       },
       "cloud_base_source": "proxy",
       "observation_verification_status": "frozen",
-      "observation_hourly_age_hours": 307.26
+      "observation_hourly_age_hours": 311.04
     },
     "default_selection": {
       "selection_status": "selected",
       "selected_issuance": "2300",
       "selected_valid_start_wita": "2026-09-01 08:00:00",
-      "reference_utc": "2026-08-31 19:12:41",
+      "reference_utc": "2026-08-31 22:59:11",
       "minimum_fresh_models": 5,
       "coverage_hours": 6,
       "candidates": [
