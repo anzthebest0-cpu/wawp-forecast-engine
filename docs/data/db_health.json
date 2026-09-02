@@ -1,12 +1,12 @@
 {
-  "size_mb": 1775.98,
+  "size_mb": 1781.34,
   "current_forecast_records": 3072,
   "forecast_records": 3072,
-  "operational_forecast_records": 681288,
+  "operational_forecast_records": 683976,
   "historical_forecast_records": 398424,
   "observation_records": 43626,
   "observation_1min_records": 0,
-  "openmeteo_records": 1081632,
+  "openmeteo_records": 1084320,
   "runtime_qm_cdfs_enabled": 235,
   "qm_cdfs_enabled": 235,
   "qm_artifact_status": {
@@ -19,13 +19,13 @@
     "reason": null,
     "replaced_existing_cdfs": 306
   },
-  "latest_model_run_init_utc": "2026-09-02 11:00:00",
-  "latest_data_pull_utc": "2026-09-02 11:35:35",
-  "last_sync_utc": "2026-09-02 11:39:04",
+  "latest_model_run_init_utc": "2026-09-02 16:00:00",
+  "latest_data_pull_utc": "2026-09-02 16:46:13",
+  "last_sync_utc": "2026-09-02 16:49:42",
   "observation_freshness": {
     "hourly": {
       "latest_obs_utc": "2026-08-19 00:00:00",
-      "age_hours": 347.65,
+      "age_hours": 352.83,
       "status": "stale"
     },
     "minute": {
@@ -39,7 +39,7 @@
   "awos_quality": {
     "metadata": {
       "quality_contract_version": "awos-cross-grain-quality-v1-shadow",
-      "generated_at_utc": "2026-09-02 11:39:04",
+      "generated_at_utc": "2026-09-02 16:49:42",
       "mode": "observe_only",
       "promotion_eligible": false
     },
@@ -93,7 +93,7 @@
       "dewpoint_above_temperature_count": 0,
       "rows_with_derived_gust_value": 43193,
       "rows_with_positive_derived_gust": 368,
-      "age_hours": 347.65,
+      "age_hours": 352.83,
       "rain_timestamp_label": "interval_end",
       "operational_wind_source": "first WD36/WS36 pair (10-minute aviation wind)",
       "recent_gust_lookback_start_utc": "2026-06-20 00:00:00",
@@ -152,7 +152,7 @@
     "contract_version": "openmeteo-valid-time-utc-v1",
     "columns_added": [],
     "operational_rows_backfilled": 0,
-    "operational_rows_with_explicit_utc": 680520,
+    "operational_rows_with_explicit_utc": 683208,
     "historical_rows_using_utc_fallback": 398424,
     "historical_rewrite_policy": "not rewritten; historical forecast_time is already UTC",
     "index_policy": "partial index over explicit operational UTC valid times only"
@@ -160,7 +160,7 @@
   "forecast_selection": {
     "selection_contract_version": "collection-asof-clean-cycle-v1",
     "mode": "observe_only",
-    "as_of_utc": "2026-09-02 11:39:04",
+    "as_of_utc": "2026-09-02 16:49:42",
     "provider_initialization_available": false,
     "selection_basis": "latest clean WAWP collection at or before cutoff",
     "minimum_cycle_rows": 24,
@@ -173,84 +173,84 @@
     "models": [
       {
         "model": "ECMWF_HRES",
-        "candidate_cycle_count": 238,
+        "candidate_cycle_count": 239,
         "rejected_hard_anomaly_cycle_count": 14,
         "rejected_incomplete_cycle_count": 0,
-        "latest_available_scraped_at": "2026-09-02 11:35:29",
-        "selected_scraped_at": "2026-09-02 11:35:29",
-        "selected_collection_cycle_utc": "2026-09-02 11:00:00",
+        "latest_available_scraped_at": "2026-09-02 16:46:06",
+        "selected_scraped_at": "2026-09-02 16:46:06",
+        "selected_collection_cycle_utc": "2026-09-02 16:00:00",
         "selected_row_count": 384,
         "selection_changed_from_latest": false,
         "status": "selected"
       },
       {
         "model": "GFS_GLOBAL",
-        "candidate_cycle_count": 238,
+        "candidate_cycle_count": 239,
         "rejected_hard_anomaly_cycle_count": 14,
         "rejected_incomplete_cycle_count": 0,
-        "latest_available_scraped_at": "2026-09-02 11:35:30",
-        "selected_scraped_at": "2026-09-02 11:35:30",
-        "selected_collection_cycle_utc": "2026-09-02 11:00:00",
+        "latest_available_scraped_at": "2026-09-02 16:46:07",
+        "selected_scraped_at": "2026-09-02 16:46:07",
+        "selected_collection_cycle_utc": "2026-09-02 16:00:00",
         "selected_row_count": 384,
         "selection_changed_from_latest": false,
         "status": "selected"
       },
       {
         "model": "ICON_SEAMLESS",
-        "candidate_cycle_count": 237,
+        "candidate_cycle_count": 238,
         "rejected_hard_anomaly_cycle_count": 13,
         "rejected_incomplete_cycle_count": 0,
-        "latest_available_scraped_at": "2026-09-02 11:35:31",
-        "selected_scraped_at": "2026-09-02 11:35:31",
-        "selected_collection_cycle_utc": "2026-09-02 11:00:00",
+        "latest_available_scraped_at": "2026-09-02 16:46:08",
+        "selected_scraped_at": "2026-09-02 16:46:08",
+        "selected_collection_cycle_utc": "2026-09-02 16:00:00",
         "selected_row_count": 384,
         "selection_changed_from_latest": false,
         "status": "selected"
       },
       {
         "model": "GEM_GLOBAL",
-        "candidate_cycle_count": 237,
+        "candidate_cycle_count": 238,
         "rejected_hard_anomaly_cycle_count": 13,
         "rejected_incomplete_cycle_count": 0,
-        "latest_available_scraped_at": "2026-09-02 11:35:32",
-        "selected_scraped_at": "2026-09-02 11:35:32",
-        "selected_collection_cycle_utc": "2026-09-02 11:00:00",
+        "latest_available_scraped_at": "2026-09-02 16:46:10",
+        "selected_scraped_at": "2026-09-02 16:46:10",
+        "selected_collection_cycle_utc": "2026-09-02 16:00:00",
         "selected_row_count": 384,
         "selection_changed_from_latest": false,
         "status": "selected"
       },
       {
         "model": "CMA_GRAPES_GLOBAL",
-        "candidate_cycle_count": 233,
+        "candidate_cycle_count": 234,
         "rejected_hard_anomaly_cycle_count": 13,
         "rejected_incomplete_cycle_count": 0,
-        "latest_available_scraped_at": "2026-09-02 11:35:33",
-        "selected_scraped_at": "2026-09-02 11:35:33",
-        "selected_collection_cycle_utc": "2026-09-02 11:00:00",
+        "latest_available_scraped_at": "2026-09-02 16:46:11",
+        "selected_scraped_at": "2026-09-02 16:46:11",
+        "selected_collection_cycle_utc": "2026-09-02 16:00:00",
         "selected_row_count": 384,
         "selection_changed_from_latest": false,
         "status": "selected"
       },
       {
         "model": "JMA_GSM",
-        "candidate_cycle_count": 228,
+        "candidate_cycle_count": 229,
         "rejected_hard_anomaly_cycle_count": 27,
         "rejected_incomplete_cycle_count": 0,
-        "latest_available_scraped_at": "2026-09-02 11:35:34",
-        "selected_scraped_at": "2026-09-02 11:35:34",
-        "selected_collection_cycle_utc": "2026-09-02 11:00:00",
+        "latest_available_scraped_at": "2026-09-02 16:46:12",
+        "selected_scraped_at": "2026-09-02 16:46:12",
+        "selected_collection_cycle_utc": "2026-09-02 16:00:00",
         "selected_row_count": 384,
         "selection_changed_from_latest": false,
         "status": "selected"
       },
       {
         "model": "METEOFRANCE_ARPEGE_WORLD",
-        "candidate_cycle_count": 183,
+        "candidate_cycle_count": 184,
         "rejected_hard_anomaly_cycle_count": 8,
         "rejected_incomplete_cycle_count": 0,
-        "latest_available_scraped_at": "2026-09-02 11:35:35",
-        "selected_scraped_at": "2026-09-02 11:35:35",
-        "selected_collection_cycle_utc": "2026-09-02 11:00:00",
+        "latest_available_scraped_at": "2026-09-02 16:46:13",
+        "selected_scraped_at": "2026-09-02 16:46:13",
+        "selected_collection_cycle_utc": "2026-09-02 16:00:00",
         "selected_row_count": 384,
         "selection_changed_from_latest": false,
         "status": "selected"
@@ -277,10 +277,10 @@
       "openmeteo_model_id": "cma_grapes_global",
       "provider": "CMA GRAPES Global",
       "row_count": 384,
-      "latest_scraped_at": "2026-09-02 11:35:33",
-      "latest_run_init_utc": "2026-09-02 11:00:00",
-      "first_forecast_time": "2026-09-02 19:00:00",
-      "last_forecast_time": "2026-09-18 18:00:00",
+      "latest_scraped_at": "2026-09-02 16:46:11",
+      "latest_run_init_utc": "2026-09-02 16:00:00",
+      "first_forecast_time": "2026-09-03 00:00:00",
+      "last_forecast_time": "2026-09-18 23:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.11,
@@ -305,10 +305,10 @@
       "openmeteo_model_id": "ecmwf_ifs025",
       "provider": "ECMWF IFS HRES",
       "row_count": 384,
-      "latest_scraped_at": "2026-09-02 11:35:29",
-      "latest_run_init_utc": "2026-09-02 11:00:00",
-      "first_forecast_time": "2026-09-02 19:00:00",
-      "last_forecast_time": "2026-09-18 18:00:00",
+      "latest_scraped_at": "2026-09-02 16:46:06",
+      "latest_run_init_utc": "2026-09-02 16:00:00",
+      "first_forecast_time": "2026-09-03 00:00:00",
+      "last_forecast_time": "2026-09-18 23:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.11,
@@ -335,10 +335,10 @@
       "openmeteo_model_id": "gem_global",
       "provider": "CMC GEM Global",
       "row_count": 384,
-      "latest_scraped_at": "2026-09-02 11:35:32",
-      "latest_run_init_utc": "2026-09-02 11:00:00",
-      "first_forecast_time": "2026-09-02 19:00:00",
-      "last_forecast_time": "2026-09-18 18:00:00",
+      "latest_scraped_at": "2026-09-02 16:46:10",
+      "latest_run_init_utc": "2026-09-02 16:00:00",
+      "first_forecast_time": "2026-09-03 00:00:00",
+      "last_forecast_time": "2026-09-18 23:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.11,
@@ -365,10 +365,10 @@
       "openmeteo_model_id": "gfs_global",
       "provider": "NOAA GFS",
       "row_count": 384,
-      "latest_scraped_at": "2026-09-02 11:35:30",
-      "latest_run_init_utc": "2026-09-02 11:00:00",
-      "first_forecast_time": "2026-09-02 19:00:00",
-      "last_forecast_time": "2026-09-18 18:00:00",
+      "latest_scraped_at": "2026-09-02 16:46:07",
+      "latest_run_init_utc": "2026-09-02 16:00:00",
+      "first_forecast_time": "2026-09-03 00:00:00",
+      "last_forecast_time": "2026-09-18 23:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.11,
@@ -390,10 +390,10 @@
       "openmeteo_model_id": "icon_seamless",
       "provider": "DWD ICON Global at WAWP",
       "row_count": 384,
-      "latest_scraped_at": "2026-09-02 11:35:31",
-      "latest_run_init_utc": "2026-09-02 11:00:00",
-      "first_forecast_time": "2026-09-02 19:00:00",
-      "last_forecast_time": "2026-09-18 18:00:00",
+      "latest_scraped_at": "2026-09-02 16:46:08",
+      "latest_run_init_utc": "2026-09-02 16:00:00",
+      "first_forecast_time": "2026-09-03 00:00:00",
+      "last_forecast_time": "2026-09-18 23:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.11,
@@ -420,10 +420,10 @@
       "openmeteo_model_id": "jma_gsm",
       "provider": "JMA GSM",
       "row_count": 384,
-      "latest_scraped_at": "2026-09-02 11:35:34",
-      "latest_run_init_utc": "2026-09-02 11:00:00",
-      "first_forecast_time": "2026-09-02 19:00:00",
-      "last_forecast_time": "2026-09-18 18:00:00",
+      "latest_scraped_at": "2026-09-02 16:46:12",
+      "latest_run_init_utc": "2026-09-02 16:00:00",
+      "first_forecast_time": "2026-09-03 00:00:00",
+      "last_forecast_time": "2026-09-18 23:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.11,
@@ -453,10 +453,10 @@
       "openmeteo_model_id": "meteofrance_arpege_world",
       "provider": "Meteo-France ARPEGE World",
       "row_count": 384,
-      "latest_scraped_at": "2026-09-02 11:35:35",
-      "latest_run_init_utc": "2026-09-02 11:00:00",
-      "first_forecast_time": "2026-09-02 19:00:00",
-      "last_forecast_time": "2026-09-18 18:00:00",
+      "latest_scraped_at": "2026-09-02 16:46:13",
+      "latest_run_init_utc": "2026-09-02 16:00:00",
+      "first_forecast_time": "2026-09-03 00:00:00",
+      "last_forecast_time": "2026-09-18 23:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
       "age_hours": 0.11,
@@ -490,8 +490,8 @@
       "last_forecast_time": "2026-09-18 11:00:00",
       "min_lead_hours": 0.0,
       "max_lead_hours": 383.0,
-      "age_hours": 6.82,
-      "status": "fresh",
+      "age_hours": 11.99,
+      "status": "aging",
       "detected_interval_hours": 1.0,
       "expected_output_interval_hours": 1.0,
       "provider_update_frequency_hours": 6.0,
@@ -510,52 +510,52 @@
     }
   ],
   "qm_provenance": {
-    "total_values": 21896,
+    "total_values": 22176,
     "by_layer": {
-      "historical_prior": 10041,
+      "historical_prior": 9985,
       "operational_residual": 0,
-      "raw": 11855
+      "raw": 12191
     },
     "by_parameter": {
       "Temperature": {
-        "historical_prior": 1730,
+        "historical_prior": 1719,
         "operational_residual": 0,
-        "raw": 1398
+        "raw": 1449
       },
       "Dewpoint": {
-        "historical_prior": 1638,
+        "historical_prior": 1632,
         "operational_residual": 0,
-        "raw": 1490
+        "raw": 1536
       },
       "Pressure": {
-        "historical_prior": 1730,
+        "historical_prior": 1719,
         "operational_residual": 0,
-        "raw": 1398
+        "raw": 1449
       },
       "Rainfall": {
         "historical_prior": 0,
         "operational_residual": 0,
-        "raw": 3128
+        "raw": 3168
       },
       "Wind Speed": {
-        "historical_prior": 1730,
+        "historical_prior": 1719,
         "operational_residual": 0,
-        "raw": 1398
+        "raw": 1449
       },
       "Wind Dir.": {
-        "historical_prior": 1730,
+        "historical_prior": 1719,
         "operational_residual": 0,
-        "raw": 1398
+        "raw": 1449
       },
       "Wind Gust": {
-        "historical_prior": 1483,
+        "historical_prior": 1477,
         "operational_residual": 0,
-        "raw": 1645
+        "raw": 1691
       }
     },
-    "low_confidence": 1160,
-    "lead_aware_pending": 9719,
-    "operational_residual_available": 7884,
+    "low_confidence": 1147,
+    "lead_aware_pending": 9663,
+    "operational_residual_available": 7826,
     "operational_residual_mode": "observe_only",
     "artifact_status": {
       "available": true,
@@ -570,9 +570,9 @@
     "historical_prior_label": "Bias-corrected: historical prior, global, not lead-aware",
     "rainfall_note": "Rain occurrence prior may inform risk; rainfall amount correction remains strict/pending.",
     "percent_by_layer": {
-      "historical_prior": 45.86,
+      "historical_prior": 45.03,
       "operational_residual": 0.0,
-      "raw": 54.14
+      "raw": 54.97
     }
   }
 }
