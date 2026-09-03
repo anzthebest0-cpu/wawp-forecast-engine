@@ -4,6 +4,7 @@ import logging
 import shutil
 import math
 from datetime import datetime, timezone, timedelta
+import numpy as np
 import pandas as pd
 
 from src.db_manager import ForecastDB
@@ -353,6 +354,79 @@ def _blend_related_weights(global_weights: dict, related_params: list[str]) -> d
     if total <= 0:
         return {m: 1.0 / len(MODELS) for m in MODELS}
     return {m: blended[m] / total for m in MODELS}
+
+
+def _coherent_gust_consensus(
+    speed_models: dict[str, pd.Series],
+    gust_models: dict[str, pd.Series],
+    consensus_speed: pd.Series,
+    weights: dict[str, float] | None,
+    min_excess_kt: float = 10.0,
+) -> pd.DataFrame:
+    """Build gust guidance from each model's own gust-minus-wind excess.
+
+    Sustained wind and gust must not be averaged independently with unrelated
+    weight sets.  The expected gust uses all paired excesses; the event gust
+    uses only models that actually forecast an ICAO-reportable gust excess.
+    """
+    speed_df = pd.DataFrame(speed_models or {})
+    gust_df = pd.DataFrame(gust_models or {})
+    index = consensus_speed.index
+    result = pd.DataFrame(index=index)
+
+    expected_gust = []
+    event_gust = []
+    support_fraction = []
+    supporting_models = []
+    available_models = []
+
+    for timestamp in index:
+        paired = []
+        for model in sorted(set(speed_df.columns) & set(gust_df.columns)):
+            speed = speed_df.at[timestamp, model] if timestamp in speed_df.index else np.nan
+            gust = gust_df.at[timestamp, model] if timestamp in gust_df.index else np.nan
+            if pd.isna(speed) or pd.isna(gust):
+                continue
+            paired.append((model, max(0.0, float(gust) - float(speed))))
+
+        base_speed = consensus_speed.get(timestamp, np.nan)
+        if not paired or pd.isna(base_speed):
+            expected_gust.append(np.nan)
+            event_gust.append(np.nan)
+            support_fraction.append(0.0)
+            supporting_models.append(0)
+            available_models.append(len(paired))
+            continue
+
+        raw_weights = [max(0.0, float((weights or {}).get(model, 0.0) or 0.0)) for model, _ in paired]
+        if sum(raw_weights) <= 0:
+            raw_weights = [1.0] * len(paired)
+        total_weight = sum(raw_weights)
+        excesses = [excess for _, excess in paired]
+        supported = [position for position, excess in enumerate(excesses) if excess >= min_excess_kt]
+        supported_weight = sum(raw_weights[position] for position in supported)
+        mean_excess = float(np.average(excesses, weights=raw_weights))
+
+        if supported_weight > 0:
+            event_excess = float(np.average(
+                [excesses[position] for position in supported],
+                weights=[raw_weights[position] for position in supported],
+            ))
+        else:
+            event_excess = mean_excess
+
+        expected_gust.append(float(base_speed) + mean_excess)
+        event_gust.append(float(base_speed) + event_excess)
+        support_fraction.append(supported_weight / total_weight)
+        supporting_models.append(len(supported))
+        available_models.append(len(paired))
+
+    result["Wind Gust"] = expected_gust
+    result["TAF Gust"] = event_gust
+    result["Gust Support"] = support_fraction
+    result["Gust Supporting Models"] = supporting_models
+    result["Gust Available Models"] = available_models
+    return result
 
 
 def _weighted_quantile(values: list[float], weights: list[float], quantile: float) -> float:
@@ -1351,7 +1425,6 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
                     
     # Generate Consensus (needs weights!)
     from src.utils import circular_weighted_mean
-    import numpy as np
     
     consensus = pd.DataFrame(index=pd.to_datetime(df_fcst["forecast_time"].unique()).sort_values())
     consensus.index.name = "Datetime"
@@ -1403,7 +1476,7 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
             "Wind Gust": "wind_gust",
             "Wind Dir.": "wind_dir",
         }
-        if param in qm_param_map and qm_cdf_count > 0:
+        if param in qm_param_map and param != "Wind Gust" and qm_cdf_count > 0:
             for m in p_df.columns:
                 run_init = run_init_by_model.get(m)
                 if run_init:
@@ -1447,7 +1520,7 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
         elif param == "Rainfall":
             for m in p_df.columns:
                 p_df[m] = qm_mapper.transform_series(p_df[m], model=m)
-                
+
         # Apply Diurnal Bias from legacy guidance - DISABLED due to UTC/Local skewing
         # legacy_key = param_legacy_map.get(param) if 'param_legacy_map' in locals() else None
         # if legacy_key and legacy_key in legacy_params:
@@ -1509,6 +1582,20 @@ def export_all(db: ForecastDB, output_dir: str, qm_artifact_status: dict | None 
                 if not row.dropna().empty else np.nan,
                 axis=1
             )
+
+    if (
+        "Wind Speed" in consensus
+        and model_data.get("Wind Speed")
+        and model_data.get("Wind Gust")
+    ):
+        coherent_gust = _coherent_gust_consensus(
+            model_data["Wind Speed"],
+            model_data["Wind Gust"],
+            consensus["Wind Speed"],
+            global_weights.get("Wind Gust"),
+        )
+        for column in coherent_gust.columns:
+            consensus[column] = coherent_gust[column]
     db.conn.commit()
 
     if {"Temperature", "Dewpoint"}.issubset(consensus.columns):

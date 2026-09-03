@@ -8,6 +8,8 @@ from src.quantile_mapper import (
     _fit_qm_linear,
     _fit_qm_nonneg,
     _fit_qm_zero_inflated,
+    _enabled_by_validation,
+    _qm_is_runtime_safe,
     apply_qm_value,
     fit_multiparam_qm_to_db,
 )
@@ -50,6 +52,39 @@ def test_fit_qm_gamma_low_confidence_flag():
     assert qm
     assert qm["method"] in {"gamma_parametric", "nonneg_gamma_unavailable"}
     assert qm["low_confidence"] is True
+
+
+def test_gust_qm_requires_positive_skill_and_improved_bias():
+    harmful = {
+        "mae_before": 5.0,
+        "mae_after": 8.0,
+        "bias_before": 4.0,
+        "bias_after": 1.0,
+    }
+    useful = {
+        "mae_before": 5.0,
+        "mae_after": 4.0,
+        "bias_before": 3.0,
+        "bias_after": 1.0,
+    }
+
+    assert _enabled_by_validation("wind_gust", harmful) is False
+    assert _enabled_by_validation("wind_gust", useful) is True
+
+
+def test_low_confidence_gust_qm_is_blocked_at_runtime():
+    assert _qm_is_runtime_safe(
+        "wind_gust",
+        {"low_confidence": True, "skill_score": 0.4},
+    ) is False
+    assert _qm_is_runtime_safe(
+        "wind_gust",
+        {"low_confidence": False, "skill_score": -0.1},
+    ) is False
+    assert _qm_is_runtime_safe(
+        "wind_gust",
+        {"low_confidence": False, "skill_score": 0.1},
+    ) is True
 
 
 def test_fit_multiparam_qm_to_db_synthetic():
