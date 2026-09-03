@@ -2,6 +2,7 @@ import pandas as pd
 
 from src.export_dashboard_data import (
     _aviation_visibility_consensus,
+    _coherent_gust_consensus,
     _ts_proxy_components,
     _weighted_weather_code_consensus,
 )
@@ -142,12 +143,49 @@ def _base_consensus_frame(rain_values=None, gust_values=None):
         "Rain": rain_values,
         "Wind": [5.0] * len(times),
         "Wind Gust": gust_values,
+        "TAF Gust": gust_values,
+        "Gust Support": [0.0] * len(times),
+        "Gust Supporting Models": [0] * len(times),
+        "Gust Available Models": [8] * len(times),
         "Wind Dir.": [90.0] * len(times),
         "Prob Precip 1.0mm": [0.0] * len(times),
         "Low Clouds": [40.0] * len(times),
         "Mid Clouds": [20.0] * len(times),
         "Condition": ["Normal"] * len(times),
+        "Weather Code": [0.0] * len(times),
     })
+
+
+def _set_gust_support(df, indexes, support=0.75, model_count=4):
+    df.loc[indexes, "Gust Support"] = support
+    df.loc[indexes, "Gust Supporting Models"] = model_count
+    return df
+
+
+def test_coherent_gust_consensus_uses_paired_model_excess():
+    times = pd.date_range("2026-07-03 08:00:00", periods=1, freq="h")
+    speeds = {
+        "A": pd.Series([5.0], index=times),
+        "B": pd.Series([15.0], index=times),
+        "C": pd.Series([5.0], index=times),
+    }
+    gusts = {
+        "A": pd.Series([17.0], index=times),
+        "B": pd.Series([19.0], index=times),
+        "C": pd.Series([16.0], index=times),
+    }
+    result = _coherent_gust_consensus(
+        speeds,
+        gusts,
+        pd.Series([6.0], index=times),
+        {"A": 0.4, "B": 0.2, "C": 0.4},
+    ).iloc[0]
+
+    assert round(result["Wind Gust"], 1) == 16.0
+    assert round(result["TAF Gust"], 1) == 17.5
+    assert result["Gust Support"] == 0.8
+    assert result["Gust Supporting Models"] == 2
+    assert result["Gust Available Models"] == 3
 
 
 def test_event_skill_can_promote_marginal_rain_taf_group():
@@ -179,6 +217,8 @@ def test_event_skill_allows_gust_only_taf_group():
     gust_values = [8.0] * 30
     gust_values[3:5] = [18.0, 19.0]
     df = _base_consensus_frame(gust_values=gust_values)
+    _set_gust_support(df, [3, 4], support=0.60, model_count=3)
+    df.loc[[3, 4], "Weather Code"] = 95.0
     model_data = {"Rainfall": {m: pd.Series([0.0] * 30) for m in models}}
     qm_rain = {m: {i: 0.0 for i in range(30)} for m in models}
     weights = {"Rainfall": {m: 1 / len(models) for m in models}}
@@ -194,5 +234,106 @@ def test_event_skill_allows_gust_only_taf_group():
     )
 
     assert "G18KT" not in plain["taf_text"]
+    assert "TEMPO" in event_aware["taf_text"]
     assert "G18KT" in event_aware["taf_text"] or "G19KT" in event_aware["taf_text"]
     assert event_aware["event_skill_context"]["Wind Gust"]["applied"] is True
+
+
+def test_unverified_prevailing_gust_is_withheld_from_base_group():
+    models = ["ECMWF_HRES", "GFS_GLOBAL", "UKMO_GLOBAL_10KM"]
+    df = _base_consensus_frame(gust_values=[20.0] * 30)
+    _set_gust_support(df, df.index, support=0.60, model_count=3)
+    model_data = {"Rainfall": {model: pd.Series([0.0] * len(df)) for model in models}}
+    qm_rain = {model: {index: 0.0 for index in range(len(df))} for model in models}
+    weights = {"Rainfall": {model: 1 / len(models) for model in models}}
+
+    taf = generate_tafor(df, model_data, qm_rain, weights, target_issuance="2300")
+
+    assert "G20KT" not in taf["taf_text"]
+    assert taf["gust_guidance"]["base_group_active"] is False
+    assert any("withheld" in warning for warning in taf["warnings"])
+
+
+def test_strong_unverified_gust_uses_degraded_raw_mode():
+    models = ["ECMWF_HRES", "GFS_GLOBAL", "GEM_GLOBAL", "UKMO_GLOBAL_10KM"]
+    df = _base_consensus_frame(gust_values=[20.0] * 30)
+    _set_gust_support(df, df.index, support=0.75, model_count=4)
+    model_data = {"Rainfall": {model: pd.Series([0.0] * len(df)) for model in models}}
+    qm_rain = {model: {index: 0.0 for index in range(len(df))} for model in models}
+    weights = {"Rainfall": {model: 1 / len(models) for model in models}}
+
+    taf = generate_tafor(df, model_data, qm_rain, weights, target_issuance="2300")
+
+    assert "09005G20KT" in taf["taf_text"]
+    assert taf["gust_guidance"]["mode"] == "degraded_raw"
+    assert any("degraded raw-only mode" in warning for warning in taf["warnings"])
+
+
+def test_verified_prevailing_gust_is_encoded_in_base_group():
+    models = ["ECMWF_HRES", "GFS_GLOBAL", "UKMO_GLOBAL_10KM"]
+    df = _base_consensus_frame(gust_values=[20.0] * 30)
+    _set_gust_support(df, df.index)
+    model_data = {"Rainfall": {model: pd.Series([0.0] * len(df)) for model in models}}
+    qm_rain = {model: {index: 0.0 for index in range(len(df))} for model in models}
+    weights = {"Rainfall": {model: 1 / len(models) for model in models}}
+
+    taf = generate_tafor(
+        df,
+        model_data,
+        qm_rain,
+        weights,
+        target_issuance="2300",
+        event_weight_diagnostics=_event_diag("Wind Gust", models),
+    )
+
+    assert "09005G20KT" in taf["taf_text"]
+    assert taf["gust_guidance"]["base_group_active"] is True
+
+
+def test_verified_persistent_gust_onset_uses_becmg():
+    models = ["ECMWF_HRES", "GFS_GLOBAL", "UKMO_GLOBAL_10KM"]
+    gusts = [20.0] * 3 + [28.0] * 27
+    df = _base_consensus_frame(gust_values=gusts)
+    df["Wind"] = 16.0
+    _set_gust_support(df, range(3, len(df)))
+    model_data = {"Rainfall": {model: pd.Series([0.0] * len(df)) for model in models}}
+    qm_rain = {model: {index: 0.0 for index in range(len(df))} for model in models}
+    weights = {"Rainfall": {model: 1 / len(models) for model in models}}
+
+    taf = generate_tafor(
+        df,
+        model_data,
+        qm_rain,
+        weights,
+        target_issuance="2300",
+        event_weight_diagnostics=_event_diag("Wind Gust", models),
+    )
+
+    assert "BECMG" in taf["taf_text"]
+    assert "09016G28KT" in taf["taf_text"]
+
+
+def test_verified_gust_cessation_removes_gust_with_becmg():
+    models = ["ECMWF_HRES", "GFS_GLOBAL", "UKMO_GLOBAL_10KM"]
+    gusts = [28.0] * 8 + [20.0] * 22
+    df = _base_consensus_frame(gust_values=gusts)
+    df["Wind"] = 16.0
+    _set_gust_support(df, range(8))
+    model_data = {"Rainfall": {model: pd.Series([0.0] * len(df)) for model in models}}
+    qm_rain = {model: {index: 0.0 for index in range(len(df))} for model in models}
+    weights = {"Rainfall": {model: 1 / len(models) for model in models}}
+
+    taf = generate_tafor(
+        df,
+        model_data,
+        qm_rain,
+        weights,
+        target_issuance="2300",
+        event_weight_diagnostics=_event_diag("Wind Gust", models),
+    )
+
+    assert "09016G28KT" in taf["taf_text"]
+    assert any(
+        trend["type"] == "BECMG" and trend["gust"] == ""
+        for trend in taf["base_group"]["trends"]
+    )

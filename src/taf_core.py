@@ -108,12 +108,96 @@ class RainConfig:
     TS_POLICY = "broad_current"       # broad_current | direct_weather_code | strict_environmental
     BECMG_MIN_RAIN_HOURS = 1          # preserves current onset behavior by default
     BECMG_MIN_AGREEMENT = 0.10         # current BECMG floor, equal to PROB40_CUT
+    GUST_EVENT_ENABLED = False
+    GUST_GUIDANCE_MODE = "unavailable"
+    GUST_MIN_EXCESS = 10.0             # forecast maximum minus paired mean wind
+    GUST_MIN_ABSOLUTE = 15.0           # event verification threshold
+    GUST_MIN_AGREEMENT = 0.50          # weighted share of paired models
+    GUST_MIN_MODELS = 3                # independent model support floor
+    GUST_CHANGE_MIN_MEAN = 15.0        # ICAO gust-only change criterion
+    GUST_PREVAILING_LOOKAHEAD = 8
+    GUST_PREVAILING_FRACTION = 0.50
 
 
 
 # ==============================================================================
 # SOP-COMPLIANT CHANGE GROUP BUILDER
 # ==============================================================================
+
+def _gust_has_convective_support(row: dict) -> bool:
+    try:
+        weather_code = int(float(row.get("weather_code")))
+    except (TypeError, ValueError):
+        weather_code = None
+    condition = str(row.get("Condition") or "").upper()
+    condition_tokens = condition.replace("/", " ").replace("-", " ").split()
+    rain = _finite_float(row.get("rain", 0.0))
+    cape = _finite_float(row.get("cape", 0.0))
+    return (
+        weather_code in {95, 96, 99}
+        or "THUNDER" in condition
+        or any(token.startswith("TS") for token in condition_tokens)
+        or (rain >= 1.0 and cape >= 500.0)
+    )
+
+
+def _finite_float(value, default: float = 0.0) -> float:
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return default
+    return result if np.isfinite(result) else default
+
+
+def _gust_hour_supported(
+    row: dict,
+    config=None,
+    *,
+    require_enabled: bool = True,
+    for_change_group: bool = False,
+) -> bool:
+    """Return whether one hour has coherent, operationally eligible gust support."""
+    cfg = config if config is not None else RainConfig
+    if require_enabled and not bool(getattr(cfg, "GUST_EVENT_ENABLED", False)):
+        return False
+
+    speed = _finite_float(row.get("spd", row.get("Wind", 0.0)))
+    gust = _finite_float(row.get("gust", row.get("TAF Gust", 0.0)))
+    support = _finite_float(row.get("gust_support", row.get("Gust Support", 0.0)))
+    model_count = int(_finite_float(
+        row.get("gust_model_count", row.get("Gust Supporting Models", 0))
+    ))
+    candidate = (
+        gust >= float(getattr(cfg, "GUST_MIN_ABSOLUTE", 15.0))
+        and gust - speed >= float(getattr(cfg, "GUST_MIN_EXCESS", 10.0))
+        and support >= float(getattr(cfg, "GUST_MIN_AGREEMENT", 0.50))
+        and model_count >= int(getattr(cfg, "GUST_MIN_MODELS", 3))
+    )
+    if not candidate:
+        return False
+    if for_change_group and speed < float(getattr(cfg, "GUST_CHANGE_MIN_MEAN", 15.0)):
+        return _gust_has_convective_support(row)
+    return True
+
+
+def _gust_prevails_from_start(consensus_truth: list[dict], config=None) -> bool:
+    cfg = config if config is not None else RainConfig
+    lookahead = min(
+        len(consensus_truth),
+        int(getattr(cfg, "GUST_PREVAILING_LOOKAHEAD", 8)),
+    )
+    if lookahead < 2 or not _gust_hour_supported(consensus_truth[0], cfg):
+        return False
+    signals = [
+        _gust_hour_supported(consensus_truth[index], cfg)
+        for index in range(lookahead)
+    ]
+    fraction = sum(signals) / lookahead
+    return (
+        signals[0]
+        and signals[1]
+        and fraction >= float(getattr(cfg, "GUST_PREVAILING_FRACTION", 0.50))
+    )
 
 def _build_change_groups(
     consensus_truth: list[dict],
@@ -353,7 +437,16 @@ def _build_change_groups(
 
     base_spd      = consensus_truth[0]["spd"]
     base_dir_num  = consensus_truth[0]["dir_num"]
-    base_gust     = float(consensus_truth[0].get("gust", 0.0) or 0.0)
+    base_gust_active = bool(
+        consensus_truth[0].get(
+            "gust_base_active",
+            _gust_prevails_from_start(consensus_truth, _RC),
+        )
+    )
+    base_gust = (
+        float(consensus_truth[0].get("gust", 0.0) or 0.0)
+        if base_gust_active else float(base_spd)
+    )
 
     # -- helpers --------------------------------------------------------------─
 
@@ -917,22 +1010,27 @@ def _build_change_groups(
     prev_spd     = base_spd
     prev_dir_num = base_dir_num
     prev_gust    = base_gust
-    i            = 1
+    prev_gust_active = base_gust_active
+    i = 1 if base_gust_active else 0
+
+    def gust_state_at(hour: int) -> bool:
+        return _gust_hour_supported(
+            consensus_truth[hour],
+            _RC,
+            for_change_group=not prev_gust_active,
+        )
 
     while i < N:
         curr = consensus_truth[i]
         spd_delta = abs(curr["spd"] - prev_spd)
         dir_delta = circ_diff(curr["dir_num"], prev_dir_num)
         curr_gust = float(curr.get("gust", 0.0) or 0.0)
+        curr_gust_active = gust_state_at(i)
 
         # SOP Sec 12.i wind trigger criteria
         spd_trigger = spd_delta >= 10
         dir_trigger = dir_delta >= 60 and (curr["spd"] >= 10 or prev_spd >= 10)
-        gust_trigger = (
-            bool(getattr(_RC, "GUST_EVENT_ENABLED", False))
-            and curr_gust >= (float(curr["spd"]) + float(getattr(_RC, "GUST_MIN_EXCESS", 10.0)))
-            and (curr_gust - prev_gust) >= float(getattr(_RC, "GUST_TRIGGER_DELTA", 8.0))
-        )
+        gust_trigger = curr_gust_active != prev_gust_active
 
         if not (spd_trigger or dir_trigger or gust_trigger):
             i += 1
@@ -943,12 +1041,7 @@ def _build_change_groups(
         while end_h < N:
             fsd = abs(consensus_truth[end_h]["spd"] - prev_spd)
             fdd = circ_diff(consensus_truth[end_h]["dir_num"], prev_dir_num)
-            fgust = float(consensus_truth[end_h].get("gust", 0.0) or 0.0)
-            fgust_trigger = (
-                bool(getattr(_RC, "GUST_EVENT_ENABLED", False))
-                and fgust >= (float(consensus_truth[end_h]["spd"]) + float(getattr(_RC, "GUST_MIN_EXCESS", 10.0)))
-                and (fgust - prev_gust) >= float(getattr(_RC, "GUST_TRIGGER_DELTA", 8.0))
-            )
+            fgust_trigger = gust_state_at(end_h) != prev_gust_active
             if not (fsd >= 10 or (fdd >= 60 and consensus_truth[end_h]["spd"] >= 10) or fgust_trigger):
                 break
             end_h += 1
@@ -962,18 +1055,17 @@ def _build_change_groups(
             or (circ_diff(consensus_truth[fh]["dir_num"], prev_dir_num) >= 60
                 and consensus_truth[fh]["spd"] >= 10)
             or (
-                bool(getattr(_RC, "GUST_EVENT_ENABLED", False))
-                and float(consensus_truth[fh].get("gust", 0.0) or 0.0) >= (
-                    float(consensus_truth[fh]["spd"]) + float(getattr(_RC, "GUST_MIN_EXCESS", 10.0))
-                )
-                and (float(consensus_truth[fh].get("gust", 0.0) or 0.0) - prev_gust) >= float(getattr(_RC, "GUST_TRIGGER_DELTA", 8.0))
+                gust_state_at(fh) != prev_gust_active
             )
         )
         fraction = persist / (look_end - i) if look_end > i else 0.0
 
         new_dir = curr["dir"]
         new_spd = str(int(round(float(curr["spd"])))).zfill(2)
-        new_gst = str(int(round(float(curr.get("gust", 0) or 0.0)))).zfill(2)
+        new_gst = (
+            str(int(round(float(curr.get("gust", 0) or 0.0)))).zfill(2)
+            if curr_gust_active else ""
+        )
 
         MIN_LOOKAHEAD = 3
         if fraction >= 0.5 and (look_end - i) >= MIN_LOOKAHEAD:
@@ -1001,6 +1093,7 @@ def _build_change_groups(
             prev_spd     = curr["spd"]
             prev_dir_num = curr["dir_num"]
             prev_gust    = curr_gust
+            prev_gust_active = curr_gust_active
             i            = te + 1
 
         else:
@@ -1035,6 +1128,7 @@ def _build_change_groups(
                     prev_spd     = curr["spd"]
                     prev_dir_num = curr["dir_num"]
                     prev_gust    = curr_gust
+                    prev_gust_active = curr_gust_active
                     i            = te + 1
                 else:
                     i = end_h + 1

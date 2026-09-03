@@ -755,7 +755,25 @@ def _enabled_by_validation(parameter: str, scores: dict) -> bool:
         return False
     if parameter == "rain":
         return skill >= -0.02 and _bias_improved(scores)
+    if parameter == "wind_gust":
+        # Gust corrections can create an operationally significant TAF token.
+        # Bias improvement alone is not enough when total absolute error grows.
+        return skill > 0.0 and _bias_improved(scores)
     return skill >= 0.0 or _bias_improved(scores)
+
+
+def _qm_is_runtime_safe(parameter: str, qm: dict | None) -> bool:
+    """Fail closed for provisional or validation-negative gust corrections."""
+    if not qm:
+        return False
+    if parameter != "wind_gust":
+        return True
+    skill = qm.get("skill_score")
+    return (
+        not bool(qm.get("low_confidence"))
+        and skill is not None
+        and float(skill) > 0.0
+    )
 
 
 def _min_samples_for_layer(parameter: str, correction_layer: str) -> int:
@@ -929,8 +947,10 @@ def fit_multiparam_qm_to_db(conn, log_fn=print) -> dict:
                 if qm:
                     qm["n_events"] = n_events
                     scores = _score_before_after(parameter, hist_df["fcst"].to_numpy(), hist_df["obs"].to_numpy(), qm)
-                    enabled = _enabled_by_validation(parameter, scores)
                     low_conf = bool(qm.get("low_confidence", False))
+                    enabled = _enabled_by_validation(parameter, scores) and not (
+                        parameter == "wind_gust" and low_conf
+                    )
                     valid_start = str(hist_df["valid_time"].min()) if "valid_time" in hist_df else None
                     valid_end = str(hist_df["valid_time"].max()) if "valid_time" in hist_df else None
                     qm_id = _insert_qm(
@@ -974,7 +994,10 @@ def fit_multiparam_qm_to_db(conn, log_fn=print) -> dict:
                     continue
                 qm["n_events"] = op_events
                 scores = _score_before_after(parameter, fc_values, op_df["obs"].to_numpy(), qm)
-                enabled = _enabled_by_validation(parameter, scores)
+                low_conf = bool(qm.get("low_confidence", False))
+                enabled = _enabled_by_validation(parameter, scores) and not (
+                    parameter == "wind_gust" and low_conf
+                )
                 valid_start = str(op_df["valid_time"].min()) if "valid_time" in op_df else None
                 valid_end = str(op_df["valid_time"].max()) if "valid_time" in op_df else None
                 qm_id = _insert_qm(
@@ -987,7 +1010,7 @@ def fit_multiparam_qm_to_db(conn, log_fn=print) -> dict:
                     "correction_layer": LAYER_OPERATIONAL,
                     "n_samples": qm["n_samples"],
                     "n_events": op_events,
-                    "low_confidence": bool(qm.get("low_confidence", False)),
+                    "low_confidence": low_conf,
                     "skill_score": _skill_score(scores),
                     "qm_id": qm_id,
                 }
@@ -1072,7 +1095,7 @@ def apply_qm_with_layers(
         conn, model, parameter, HISTORICAL_PRIOR_BUCKET, SOURCE_CONTINUOUS, LAYER_HISTORICAL
     )
     current = raw_value
-    if hist:
+    if _qm_is_runtime_safe(parameter, hist):
         current = apply_qm_value(current, parameter, hist)
         result.update({
             "historical_prior_value": current,
@@ -1085,10 +1108,11 @@ def apply_qm_with_layers(
     op = _load_qm_by_bucket(
         conn, model, parameter, result["lead_bucket"], SOURCE_OPERATIONAL, LAYER_OPERATIONAL
     )
-    result["operational_residual_available"] = bool(op)
+    op_is_safe = _qm_is_runtime_safe(parameter, op)
+    result["operational_residual_available"] = bool(op_is_safe)
     if allow_operational_residual is None:
         allow_operational_residual = operational_residual_qm_enabled()
-    if op and allow_operational_residual:
+    if op_is_safe and allow_operational_residual:
         current = apply_qm_value(current, parameter, op)
         result.update({
             "operational_residual_value": current,

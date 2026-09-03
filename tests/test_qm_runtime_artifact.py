@@ -108,13 +108,13 @@ def test_operational_residual_requires_explicit_promotion(tmp_path):
     ))
     conn.commit()
 
-    observe_only = apply_qm_with_layers(25.0, "ECMWF_HRES", "temperature", 48.0, conn=conn)
+    observe_only = apply_qm_with_layers(25.0, "ECMWF_HRES", "temperature", 49.0, conn=conn)
     assert observe_only["operational_residual_available"] is True
     assert observe_only["correction_layer_used"] == "historical_prior"
     assert observe_only["final_value"] == 26.0
 
     promoted = apply_qm_with_layers(
-        25.0, "ECMWF_HRES", "temperature", 48.0,
+        25.0, "ECMWF_HRES", "temperature", 49.0,
         conn=conn, allow_operational_residual=True,
     )
     assert promoted["correction_layer_used"] == "operational_residual"

@@ -3,7 +3,12 @@ import json
 import math
 from datetime import datetime, timedelta
 import pandas as pd
-from src.taf_core import RainConfig, _build_change_groups
+from src.taf_core import (
+    RainConfig,
+    _build_change_groups,
+    _gust_hour_supported,
+    _gust_prevails_from_start,
+)
 from src.vis_cloud_proxy import build_hourly_vis_cloud, get_weather_phenomenon
 
 
@@ -76,7 +81,11 @@ def _event_aware_config(event_context: dict):
         EventAwareRainConfig.PROB40_CUT = max(0.07, RainConfig.PROB40_CUT * (1.0 - confidence_relax))
         EventAwareRainConfig.PROB30_CUT = max(0.02, RainConfig.PROB30_CUT)
 
-    EventAwareRainConfig.GUST_EVENT_ENABLED = gust_strength > 0
+    EventAwareRainConfig.GUST_EVENT_ENABLED = True
+    EventAwareRainConfig.GUST_GUIDANCE_MODE = "verified" if gust_strength > 0 else "degraded_raw"
+    if gust_strength <= 0:
+        EventAwareRainConfig.GUST_MIN_AGREEMENT = 0.70
+        EventAwareRainConfig.GUST_MIN_MODELS = 4
     EventAwareRainConfig.GUST_TRIGGER_DELTA = max(6.0, 8.0 - (2.0 * gust_strength))
     EventAwareRainConfig.GUST_MIN_EXCESS = 10.0
     return EventAwareRainConfig
@@ -119,7 +128,7 @@ def _build_taf_text(bg: dict, v_start, iss_day: int, iss_utc: str) -> str:
         wind = '00000KT'
     else:
         wind_dir = 'VRB' if d == 'VRB' else d.zfill(3)
-        if int(g) >= int(s) + 10:
+        if bool(bg.get('gust_allowed', False)) and int(g) >= int(s) + 10:
             wind = f"{wind_dir}{s}G{g}KT"
         else:
             wind = f"{wind_dir}{s}KT"
@@ -258,7 +267,12 @@ def generate_tafor(
             "relative_humidity_pct": row["Humidity"] if pd.notna(row.get("Humidity")) else 80.0,
             "rain": row["Rain"] if pd.notna(row.get("Rain")) else 0.0,
             "spd": row["Wind"] if pd.notna(row.get("Wind")) else 0.0,
-            "gust": row["Wind Gust"] if "Wind Gust" in row and pd.notna(row.get("Wind Gust")) else 0.0,
+            "gust": row["TAF Gust"] if "TAF Gust" in row and pd.notna(row.get("TAF Gust")) else (
+                row["Wind Gust"] if "Wind Gust" in row and pd.notna(row.get("Wind Gust")) else 0.0
+            ),
+            "gust_support": row["Gust Support"] if "Gust Support" in row and pd.notna(row.get("Gust Support")) else 0.0,
+            "gust_model_count": row["Gust Supporting Models"] if "Gust Supporting Models" in row and pd.notna(row.get("Gust Supporting Models")) else 0,
+            "gust_available_models": row["Gust Available Models"] if "Gust Available Models" in row and pd.notna(row.get("Gust Available Models")) else 0,
             "prob_precip_10": row["Precip Probability"] if "Precip Probability" in row and pd.notna(row.get("Precip Probability")) else (
                 row["Prob Precip 1.0mm"] if "Prob Precip 1.0mm" in row and pd.notna(row.get("Prob Precip 1.0mm")) else 0.0
             ),
@@ -281,6 +295,9 @@ def generate_tafor(
             "Condition": hour_data["Condition"],
             "spd": hour_data["spd"],
             "gust": hour_data["gust"],
+            "gust_support": hour_data["gust_support"],
+            "gust_model_count": hour_data["gust_model_count"],
+            "gust_available_models": hour_data["gust_available_models"],
             "prob_precip_10": hour_data["prob_precip_10"],
             "dir_num": float(row["Wind Dir."]) if pd.notna(row.get("Wind Dir.")) else 0.0,
             "dir": f"{int(round(float(row['Wind Dir.']) / 10.0) * 10):03d}" if pd.notna(row.get("Wind Dir.")) and round(float(row["Wind Dir."]) / 10.0) * 10 < 360 else ("360" if pd.notna(row.get("Wind Dir.")) else "000"),
@@ -364,6 +381,22 @@ def generate_tafor(
         # verified gust eligibility) for every other setting.
         taf_config = _overlay_shadow_policy(event_config, experimental_taf_config)
 
+    base_gust_active = _gust_prevails_from_start(consensus_truth, taf_config)
+    consensus_truth[0]["gust_base_active"] = base_gust_active
+    has_automatic_gust_candidate = any(
+        _gust_hour_supported(row, taf_config, require_enabled=False)
+        for row in consensus_truth
+    )
+    advisory_config = type(
+        "AdvisoryGustConfig",
+        (taf_config,),
+        {"GUST_MIN_AGREEMENT": 0.50, "GUST_MIN_MODELS": 3},
+    )
+    has_advisory_gust_candidate = any(
+        _gust_hour_supported(row, advisory_config, require_enabled=False)
+        for row in consensus_truth
+    )
+
     # Generate change groups
     change_group_weights = model_weights.get("Rainfall", model_weights) if isinstance(model_weights, dict) else model_weights
     trends, warnings = _build_change_groups(
@@ -390,6 +423,16 @@ def generate_tafor(
             "Gust groups allowed by event-window skill"
             + (f" from {models}" if models else "")
             + f" (strength {event_context['Wind Gust'].get('strength', 0):.2f})."
+        )
+    elif has_automatic_gust_candidate:
+        warnings.append(
+            "Gust guidance is in degraded raw-only mode: automatic groups require at least 70% "
+            "weighted support from four paired models and do not use gust QM."
+        )
+    elif has_advisory_gust_candidate:
+        warnings.append(
+            "Automatic gust groups withheld because gust-event verification is not operationally eligible; "
+            "model support did not meet the stricter degraded-mode gate."
         )
     warnings = list(warnings or []) + taf_notes
     
@@ -427,7 +470,8 @@ def generate_tafor(
     best_guess = {
         'dir': d_str,
         'spd': _format_wind_speed(first_row.get('spd')),
-        'gust': _format_wind_speed(first_row.get('gust')),
+        'gust': _format_wind_speed(first_row.get('gust')) if base_gust_active else '00',
+        'gust_allowed': base_gust_active,
         'vis': first_row['vis'],
         'wx': base_wx,
         'cloud': first_row['cloud'],
@@ -452,4 +496,15 @@ def generate_tafor(
         "narration": narration_text,
         "warnings": warnings,
         "event_skill_context": event_context,
+        "gust_guidance": {
+            "base_group_active": base_gust_active,
+            "automatic_groups_enabled": bool(getattr(taf_config, "GUST_EVENT_ENABLED", False)),
+            "mode": str(getattr(taf_config, "GUST_GUIDANCE_MODE", "unavailable")),
+            "coherent_candidate_present": has_advisory_gust_candidate,
+            "automatic_candidate_present": has_automatic_gust_candidate,
+            "source": "paired raw-model gust excess",
+            "minimum_excess_kt": float(getattr(taf_config, "GUST_MIN_EXCESS", 10.0)),
+            "minimum_weighted_support": float(getattr(taf_config, "GUST_MIN_AGREEMENT", 0.50)),
+            "minimum_supporting_models": int(getattr(taf_config, "GUST_MIN_MODELS", 3)),
+        },
     }
