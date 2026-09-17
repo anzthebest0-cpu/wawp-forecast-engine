@@ -57,8 +57,10 @@ public class MainActivity extends Activity {
 
         LinearLayout buttons = new LinearLayout(this); buttons.setOrientation(LinearLayout.VERTICAL);
         Button start = button("START MONITORING"); Button stop = button("STOP MONITORING");
-        Button test = button("TEST 14 KT ALARM"); Button ack = button("ACKNOWLEDGE ALERT");
-        buttons.addView(start); buttons.addView(stop); buttons.addView(test); buttons.addView(ack); root.addView(buttons);
+        Button test = button("TEST 14 KT PRE-ALERT SOUND");
+        Button testWarning = button("TEST 15 KT WARNING SOUND");
+        Button ack = button("ACKNOWLEDGE ALERT / STOP SOUND");
+        buttons.addView(start); buttons.addView(stop); buttons.addView(test); buttons.addView(testWarning); buttons.addView(ack); root.addView(buttons);
 
         TextView h = tv("Recent events", 18, true); h.setPadding(0, dp(18), 0, dp(6)); root.addView(h);
         history = tv("", 13, false); history.setBackgroundColor(Color.rgb(245,245,245)); history.setPadding(dp(12),dp(12),dp(12),dp(12)); root.addView(history);
@@ -66,6 +68,7 @@ public class MainActivity extends Activity {
         start.setOnClickListener(v -> action(WindMonitorService.ACTION_START));
         stop.setOnClickListener(v -> action(WindMonitorService.ACTION_STOP));
         test.setOnClickListener(v -> action(WindMonitorService.ACTION_TEST));
+        testWarning.setOnClickListener(v -> action(WindMonitorService.ACTION_TEST_WARNING));
         ack.setOnClickListener(v -> action(WindMonitorService.ACTION_ACK));
         return sc;
     }
