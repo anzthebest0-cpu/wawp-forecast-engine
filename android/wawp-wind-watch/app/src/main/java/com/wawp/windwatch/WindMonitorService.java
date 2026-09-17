@@ -15,6 +15,8 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -27,20 +29,26 @@ public class WindMonitorService extends Service {
     static final String ACTION_ACK = "com.wawp.windwatch.ACK";
     static final String ACTION_TEST = "com.wawp.windwatch.TEST";
     static final String ACTION_TEST_WARNING = "com.wawp.windwatch.TEST_WARNING";
+
     static final String PREF = "wind_watch_state";
+    static final String PREF_ALARM_URI = "alarm_uri";
+    static final String PREF_ALARM_NAME = "alarm_name";
+
     static final double PRE_ALERT_KT = 14.0;
     static final double WARNING_KT = 15.0;
     static final double FAST_POLL_KT = 12.0;
     static final long NORMAL_POLL_MS = 10_000L;
     static final long FAST_POLL_MS = 5_000L;
-    static final long STALE_AFTER_MS = 180_000L;
+    // AWOSNet currently shows a normal publication delay close to 2-3 minutes.
+    // Five minutes avoids the false stale/fresh flapping seen with the old 180 s limit.
+    static final long STALE_AFTER_MS = 5 * 60_000L;
     static final double RESET_KT = 12.0;
     static final long RESET_HOLD_MS = 10 * 60_000L;
 
     private static final String CH_MONITOR = "monitor";
-    // Version channel IDs so Android does not preserve an older silent channel setup.
-    private static final String CH_PRE = "prealert_v2";
-    private static final String CH_WARN = "warning_v2";
+    // Audio is played by MediaPlayer so a user-selected local sound can be used.
+    private static final String CH_PRE = "prealert_v3";
+    private static final String CH_WARN = "warning_v3";
     private static final String CH_DATA = "data_problem";
     private static final int N_MONITOR = 100, N_PRE = 1400, N_WARN = 1500, N_DATA = 1600;
 
@@ -53,7 +61,9 @@ public class WindMonitorService extends Service {
     private long belowResetSince = -1L;
     private boolean dataProblemNotified = false;
     private MediaPlayer alarmPlayer;
+    private Vibrator vibrator;
     private boolean warningSoundActive = false;
+
     enum AlertState { NORMAL, PRE_ALERT, WARNING }
 
     @Override public void onCreate() {
@@ -66,6 +76,7 @@ public class WindMonitorService extends Service {
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WAWPWindWatch:monitor");
         wakeLock.setReferenceCounted(false);
+        vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
@@ -84,6 +95,7 @@ public class WindMonitorService extends Service {
             db.add("TEST", "Test 15 KT repeating warning sound started");
             return START_STICKY;
         }
+
         startForeground(N_MONITOR, monitorNotification("Starting AWOS monitoring…"));
         if (!wakeLock.isHeld()) wakeLock.acquire();
         getSharedPreferences(PREF, MODE_PRIVATE).edit().putBoolean("monitoring", true).apply();
@@ -183,6 +195,7 @@ public class WindMonitorService extends Service {
     }
 
     private float finiteFloat(double d) { return Double.isFinite(d) ? (float)d : Float.NaN; }
+
     private void updateMonitorNotification(AwosClient.Observation o, long nextPoll) {
         String text = "Wind " + windText(o) + " • " + (nextPoll / 1000) + "s polling • " + alertState.name();
         ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).notify(N_MONITOR, monitorNotification(text));
@@ -237,6 +250,7 @@ public class WindMonitorService extends Service {
             alarmPlayer = buildAlarmPlayer(false);
             if (alarmPlayer != null) {
                 alarmPlayer.start();
+                vibratePreAlert();
                 // Pre-alert is intentionally brief; the 15 KT alarm is the repeating one.
                 if (worker != null) worker.postDelayed(() -> {
                     if (!warningSoundActive) stopAlarmSound();
@@ -253,7 +267,10 @@ public class WindMonitorService extends Service {
         warningSoundActive = true;
         try {
             alarmPlayer = buildAlarmPlayer(true);
-            if (alarmPlayer != null) alarmPlayer.start();
+            if (alarmPlayer != null) {
+                alarmPlayer.start();
+                vibrateWarning();
+            }
         } catch (Exception e) {
             db.add("AUDIO", "Could not start 15 KT warning sound: " + shortMessage(e));
             stopAlarmSound();
@@ -261,9 +278,7 @@ public class WindMonitorService extends Service {
     }
 
     private MediaPlayer buildAlarmPlayer(boolean looping) throws Exception {
-        Uri alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-        if (alarmUri == null) alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        if (alarmUri == null) return null;
+        Uri alarmUri = selectedAlarmUri();
         MediaPlayer p = new MediaPlayer();
         AudioAttributes aa = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_ALARM)
@@ -272,16 +287,58 @@ public class WindMonitorService extends Service {
         p.setAudioAttributes(aa);
         p.setDataSource(this, alarmUri);
         p.setLooping(looping);
-        p.prepare();
-        return p;
+        p.setVolume(1.0f, 1.0f);
+        try {
+            p.prepare();
+            return p;
+        } catch (Exception customError) {
+            try { p.release(); } catch (Exception ignored) { }
+            // If a previously selected local file was moved/deleted, fall back to the device alarm.
+            Uri fallback = defaultAlarmUri();
+            MediaPlayer q = new MediaPlayer();
+            q.setAudioAttributes(aa);
+            q.setDataSource(this, fallback);
+            q.setLooping(looping);
+            q.setVolume(1.0f, 1.0f);
+            q.prepare();
+            db.add("AUDIO", "Selected alarm unavailable; used device default alarm");
+            return q;
+        }
+    }
+
+    private Uri selectedAlarmUri() {
+        String saved = getSharedPreferences(PREF, MODE_PRIVATE).getString(PREF_ALARM_URI, "");
+        if (saved != null && !saved.trim().isEmpty()) {
+            try { return Uri.parse(saved); } catch (Exception ignored) { }
+        }
+        return defaultAlarmUri();
+    }
+
+    private Uri defaultAlarmUri() {
+        Uri alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        if (alarmUri == null) alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+        if (alarmUri == null) alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        return alarmUri;
+    }
+
+    private void vibratePreAlert() {
+        if (vibrator != null && vibrator.hasVibrator()) {
+            vibrator.vibrate(VibrationEffect.createWaveform(new long[]{0, 450, 180, 450, 180, 450}, -1));
+        }
+    }
+
+    private void vibrateWarning() {
+        if (vibrator != null && vibrator.hasVibrator()) {
+            // Repeat until ACK/STOP/reset. Index 1 repeats from the first long vibration.
+            vibrator.vibrate(VibrationEffect.createWaveform(new long[]{0, 1000, 300, 1000, 300, 1000, 700}, 1));
+        }
     }
 
     private void stopAlarmSound() {
         warningSoundActive = false;
+        if (vibrator != null) vibrator.cancel();
         if (alarmPlayer != null) {
-            try {
-                if (alarmPlayer.isPlaying()) alarmPlayer.stop();
-            } catch (Exception ignored) { }
+            try { if (alarmPlayer.isPlaying()) alarmPlayer.stop(); } catch (Exception ignored) { }
             try { alarmPlayer.release(); } catch (Exception ignored) { }
             alarmPlayer = null;
         }
@@ -301,40 +358,54 @@ public class WindMonitorService extends Service {
         if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
         getSharedPreferences(PREF, MODE_PRIVATE).edit().putBoolean("monitoring", false).putString("status", "STOPPED").apply();
         db.add("SYSTEM", "Monitoring stopped");
-        stopForeground(STOP_FOREGROUND_REMOVE); stopSelf();
+        stopForeground(STOP_FOREGROUND_REMOVE);
+        stopSelf();
     }
 
     private void createChannels() {
         NotificationManager nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
         NotificationChannel monitor = new NotificationChannel(CH_MONITOR, "WAWP monitoring", NotificationManager.IMPORTANCE_LOW);
-        monitor.setSound(null, null); nm.createNotificationChannel(monitor);
-        Uri alarm = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-        AudioAttributes aa = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build();
-        NotificationChannel pre = new NotificationChannel(CH_PRE, "14 KT pre-alert (audible)", NotificationManager.IMPORTANCE_HIGH);
-        pre.enableVibration(true); pre.setVibrationPattern(new long[]{0,300,200,300}); pre.setSound(alarm, aa); nm.createNotificationChannel(pre);
-        NotificationChannel warn = new NotificationChannel(CH_WARN, "15 KT warning (audible)", NotificationManager.IMPORTANCE_HIGH);
-        warn.enableVibration(true); warn.setVibrationPattern(new long[]{0,700,200,700,200,700}); warn.setSound(alarm, aa); nm.createNotificationChannel(warn);
+        monitor.setSound(null, null);
+        nm.createNotificationChannel(monitor);
+
+        // Sound is handled directly by MediaPlayer so local files can be selected and looped.
+        NotificationChannel pre = new NotificationChannel(CH_PRE, "14 KT pre-alert", NotificationManager.IMPORTANCE_HIGH);
+        pre.enableVibration(false);
+        pre.setSound(null, null);
+        nm.createNotificationChannel(pre);
+
+        NotificationChannel warn = new NotificationChannel(CH_WARN, "15 KT warning", NotificationManager.IMPORTANCE_HIGH);
+        warn.enableVibration(false);
+        warn.setSound(null, null);
+        nm.createNotificationChannel(warn);
+
         NotificationChannel data = new NotificationChannel(CH_DATA, "AWOS source problems", NotificationManager.IMPORTANCE_HIGH);
-        data.enableVibration(true); nm.createNotificationChannel(data);
+        data.enableVibration(true);
+        nm.createNotificationChannel(data);
     }
 
     private String windText(AwosClient.Observation o) {
         return fmtDir(o.windDirection) + "/" + fmt(o.windSpeed) + "KT" + (Double.isFinite(o.windGust) ? " G" + fmt(o.windGust) : "");
     }
+
     private static String fmt(double d) { return Double.isFinite(d) ? String.format(Locale.US, "%.0f", d) : "--"; }
     private static String fmtDir(double d) { return Double.isFinite(d) ? String.format(Locale.US, "%03.0f°", d) : "---°"; }
-    private static String shortMessage(Throwable t) { String m=t.getMessage(); return m==null?t.getClass().getSimpleName():m; }
+    private static String shortMessage(Throwable t) { String m = t.getMessage(); return m == null ? t.getClass().getSimpleName() : m; }
+
     private static String utc(long epoch) {
         if (epoch <= 0) return "time unknown";
-        SimpleDateFormat f = new SimpleDateFormat("dd HH:mm:ss'Z'", Locale.US); f.setTimeZone(TimeZone.getTimeZone("UTC"));
+        SimpleDateFormat f = new SimpleDateFormat("dd HH:mm:ss'Z'", Locale.US);
+        f.setTimeZone(TimeZone.getTimeZone("UTC"));
         return f.format(new Date(epoch));
     }
+
     @Override public void onDestroy() {
         if (worker != null) worker.removeCallbacksAndMessages(null);
-        stopAlarmSound();
         if (workerThread != null) workerThread.quitSafely();
+        stopAlarmSound();
         if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
         super.onDestroy();
     }
+
     @Override public IBinder onBind(Intent intent) { return null; }
 }
