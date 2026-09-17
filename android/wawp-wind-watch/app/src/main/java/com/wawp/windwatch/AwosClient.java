@@ -96,8 +96,10 @@ final class AwosClient {
 
     private static double number(String s) {
         try {
-            if (s == null || s.isBlank() || s.contains("/") || s.contains("#") || s.contains("*")) return Double.NaN;
-            return Double.parseDouble(s.replaceAll("[^0-9.+-]", ""));
+            if (s == null || s.trim().isEmpty() || s.contains("/") || s.contains("#") || s.contains("*")) return Double.NaN;
+            String cleaned = s.replaceAll("[^0-9.+-]", "");
+            if (cleaned.isEmpty()) return Double.NaN;
+            return Double.parseDouble(cleaned);
         } catch (Exception e) {
             return Double.NaN;
         }
