@@ -8,6 +8,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioAttributes;
+import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Handler;
@@ -25,6 +26,7 @@ public class WindMonitorService extends Service {
     static final String ACTION_STOP = "com.wawp.windwatch.STOP";
     static final String ACTION_ACK = "com.wawp.windwatch.ACK";
     static final String ACTION_TEST = "com.wawp.windwatch.TEST";
+    static final String ACTION_TEST_WARNING = "com.wawp.windwatch.TEST_WARNING";
     static final String PREF = "wind_watch_state";
     static final double PRE_ALERT_KT = 14.0;
     static final double WARNING_KT = 15.0;
@@ -36,8 +38,9 @@ public class WindMonitorService extends Service {
     static final long RESET_HOLD_MS = 10 * 60_000L;
 
     private static final String CH_MONITOR = "monitor";
-    private static final String CH_PRE = "prealert";
-    private static final String CH_WARN = "warning";
+    // Version channel IDs so Android does not preserve an older silent channel setup.
+    private static final String CH_PRE = "prealert_v2";
+    private static final String CH_WARN = "warning_v2";
     private static final String CH_DATA = "data_problem";
     private static final int N_MONITOR = 100, N_PRE = 1400, N_WARN = 1500, N_DATA = 1600;
 
@@ -49,6 +52,8 @@ public class WindMonitorService extends Service {
     private AlertState alertState = AlertState.NORMAL;
     private long belowResetSince = -1L;
     private boolean dataProblemNotified = false;
+    private MediaPlayer alarmPlayer;
+    private boolean warningSoundActive = false;
     enum AlertState { NORMAL, PRE_ALERT, WARNING }
 
     @Override public void onCreate() {
@@ -69,7 +74,14 @@ public class WindMonitorService extends Service {
         if (ACTION_ACK.equals(action)) { ack(); return START_STICKY; }
         if (ACTION_TEST.equals(action)) {
             showThresholdAlert(false, 14.0, 11.0, 14.0, 100.0, "TEST ONLY");
-            db.add("TEST", "Test pre-alert notification sent");
+            playPreAlertSound();
+            db.add("TEST", "Test 14 KT pre-alert sound sent");
+            return START_STICKY;
+        }
+        if (ACTION_TEST_WARNING.equals(action)) {
+            showThresholdAlert(true, 15.0, 12.0, 15.0, 100.0, "TEST ONLY");
+            startWarningSound();
+            db.add("TEST", "Test 15 KT repeating warning sound started");
             return START_STICKY;
         }
         startForeground(N_MONITOR, monitorNotification("Starting AWOS monitoring…"));
@@ -125,7 +137,8 @@ public class WindMonitorService extends Service {
             if (alertState != AlertState.WARNING) {
                 alertState = AlertState.WARNING;
                 showThresholdAlert(true, metric, o.windSpeed, o.windGust, o.windDirection, utc(o.observationEpochMs));
-                db.add("WARNING", "15 KT criterion reached; metric=" + fmt(metric) + " KT");
+                startWarningSound();
+                db.add("WARNING", "15 KT criterion reached; repeating alarm started; metric=" + fmt(metric) + " KT");
             }
             return;
         }
@@ -134,7 +147,8 @@ public class WindMonitorService extends Service {
             if (alertState == AlertState.NORMAL) {
                 alertState = AlertState.PRE_ALERT;
                 showThresholdAlert(false, metric, o.windSpeed, o.windGust, o.windDirection, utc(o.observationEpochMs));
-                db.add("PRE", "14 KT pre-alert reached; metric=" + fmt(metric) + " KT");
+                playPreAlertSound();
+                db.add("PRE", "14 KT pre-alert reached; audible alert sent; metric=" + fmt(metric) + " KT");
             }
             return;
         }
@@ -144,6 +158,7 @@ public class WindMonitorService extends Service {
                 AlertState previous = alertState;
                 alertState = AlertState.NORMAL;
                 belowResetSince = -1L;
+                stopAlarmSound();
                 NotificationManager nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
                 nm.cancel(N_PRE); nm.cancel(N_WARN);
                 db.add("RESET", "Alert re-armed after <=12 KT for 10 minutes (from " + previous.name() + ")");
@@ -215,15 +230,74 @@ public class WindMonitorService extends Service {
         ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).notify(N_DATA, n);
     }
 
+    private void playPreAlertSound() {
+        stopAlarmSound();
+        warningSoundActive = false;
+        try {
+            alarmPlayer = buildAlarmPlayer(false);
+            if (alarmPlayer != null) {
+                alarmPlayer.start();
+                // Pre-alert is intentionally brief; the 15 KT alarm is the repeating one.
+                if (worker != null) worker.postDelayed(() -> {
+                    if (!warningSoundActive) stopAlarmSound();
+                }, 4_000L);
+            }
+        } catch (Exception e) {
+            db.add("AUDIO", "Could not play 14 KT sound: " + shortMessage(e));
+            stopAlarmSound();
+        }
+    }
+
+    private void startWarningSound() {
+        stopAlarmSound();
+        warningSoundActive = true;
+        try {
+            alarmPlayer = buildAlarmPlayer(true);
+            if (alarmPlayer != null) alarmPlayer.start();
+        } catch (Exception e) {
+            db.add("AUDIO", "Could not start 15 KT warning sound: " + shortMessage(e));
+            stopAlarmSound();
+        }
+    }
+
+    private MediaPlayer buildAlarmPlayer(boolean looping) throws Exception {
+        Uri alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        if (alarmUri == null) alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        if (alarmUri == null) return null;
+        MediaPlayer p = new MediaPlayer();
+        AudioAttributes aa = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+        p.setAudioAttributes(aa);
+        p.setDataSource(this, alarmUri);
+        p.setLooping(looping);
+        p.prepare();
+        return p;
+    }
+
+    private void stopAlarmSound() {
+        warningSoundActive = false;
+        if (alarmPlayer != null) {
+            try {
+                if (alarmPlayer.isPlaying()) alarmPlayer.stop();
+            } catch (Exception ignored) { }
+            try { alarmPlayer.release(); } catch (Exception ignored) { }
+            alarmPlayer = null;
+        }
+    }
+
     private void ack() {
+        stopAlarmSound();
         NotificationManager nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
         nm.cancel(N_PRE); nm.cancel(N_WARN);
         getSharedPreferences(PREF, MODE_PRIVATE).edit().putLong("last_ack_ms", System.currentTimeMillis()).apply();
-        db.add("ACK", "Current phone alert acknowledged");
+        db.add("ACK", "Current phone alert acknowledged; alarm sound stopped");
     }
 
     private void stopMonitoring() {
         if (worker != null) worker.removeCallbacksAndMessages(null);
+        stopAlarmSound();
         if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
         getSharedPreferences(PREF, MODE_PRIVATE).edit().putBoolean("monitoring", false).putString("status", "STOPPED").apply();
         db.add("SYSTEM", "Monitoring stopped");
@@ -236,9 +310,9 @@ public class WindMonitorService extends Service {
         monitor.setSound(null, null); nm.createNotificationChannel(monitor);
         Uri alarm = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
         AudioAttributes aa = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build();
-        NotificationChannel pre = new NotificationChannel(CH_PRE, "14 KT pre-alert", NotificationManager.IMPORTANCE_HIGH);
+        NotificationChannel pre = new NotificationChannel(CH_PRE, "14 KT pre-alert (audible)", NotificationManager.IMPORTANCE_HIGH);
         pre.enableVibration(true); pre.setVibrationPattern(new long[]{0,300,200,300}); pre.setSound(alarm, aa); nm.createNotificationChannel(pre);
-        NotificationChannel warn = new NotificationChannel(CH_WARN, "15 KT warning", NotificationManager.IMPORTANCE_HIGH);
+        NotificationChannel warn = new NotificationChannel(CH_WARN, "15 KT warning (audible)", NotificationManager.IMPORTANCE_HIGH);
         warn.enableVibration(true); warn.setVibrationPattern(new long[]{0,700,200,700,200,700}); warn.setSound(alarm, aa); nm.createNotificationChannel(warn);
         NotificationChannel data = new NotificationChannel(CH_DATA, "AWOS source problems", NotificationManager.IMPORTANCE_HIGH);
         data.enableVibration(true); nm.createNotificationChannel(data);
@@ -257,6 +331,7 @@ public class WindMonitorService extends Service {
     }
     @Override public void onDestroy() {
         if (worker != null) worker.removeCallbacksAndMessages(null);
+        stopAlarmSound();
         if (workerThread != null) workerThread.quitSafely();
         if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
         super.onDestroy();
