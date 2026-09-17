@@ -52,7 +52,7 @@ final class AwosClient {
             conn.setReadTimeout(5000);
             conn.setUseCaches(false);
             conn.setRequestProperty("Cache-Control", "no-cache");
-            conn.setRequestProperty("User-Agent", "WAWP-Wind-Watch/0.1");
+            conn.setRequestProperty("User-Agent", "WAWP-Wind-Watch/0.2");
 
             Observation o = new Observation();
             o.httpCode = conn.getResponseCode();
@@ -69,7 +69,10 @@ final class AwosClient {
                         String key = name.trim().toLowerCase(Locale.US);
                         if (key.equals("airportidentifier") || key.equals("date") || key.equals("time") ||
                                 key.equals("twominutewindspeed") || key.equals("twominutewinddirection") || key.equals("windgust")) {
-                            apply(o, key, parser.nextText());
+                            // AWOSNet exposes measurements as value="..." attributes on self-closing tags.
+                            // Example: <twoMinuteWindSpeed value="5" units="knots" ... />
+                            String raw = parser.getAttributeValue(null, "value");
+                            apply(o, key, raw);
                         }
                     }
                 }
