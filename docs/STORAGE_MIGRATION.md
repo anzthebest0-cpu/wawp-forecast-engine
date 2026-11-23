@@ -123,6 +123,27 @@ chat or committing them. The workflow forces the designated root folder ID.
 See [rclone Drive setup](https://rclone.org/drive/) and
 [rclone copyto](https://rclone.org/commands/rclone_copyto/).
 
+For the Windows station computer, `scripts/configure_archive_drive.ps1`
+automates the one-time setup, with explicit consent for installation,
+Google authorization, and the GitHub secret transfer:
+
+```powershell
+powershell -NoProfile -File .\scripts\configure_archive_drive.ps1 -FolderId '<parent-folder-id>'
+```
+
+Use a dedicated archival Google account where practical: the Google Drive
+OAuth scope allows access to the authorized account's Drive, whereas the
+root folder ID limits the destination used by the archive worker. The script
+checks that the expected `incremental/` directory exists and that a test file
+can be uploaded and downloaded byte-exactly. It stores the dedicated
+configuration locally outside the repository, then sends it directly to
+GitHub Actions as a secret. Do not share that local file or its contents.
+The script applies the `archive-connection-test` label to draft PR #4 to
+trigger an isolated Actions workflow. That workflow installs rclone, checks
+the configured folder, and performs a second byte-exact upload/readback into
+`connection-tests/`. It never opens or modifies the production database.
+Review the PR's Checks tab for a successful run before any archival cutover.
+
 The archive step is opt-in through the repository Actions variable
 `WAWP_INCREMENTAL_ARCHIVE_ENABLED=true`. It is left disabled until the remote
 configuration and a restore exercise are verified. Without any credential,
