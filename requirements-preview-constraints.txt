@@ -1,0 +1,10 @@
+# Numerical/test versions used by the successful local phase-1 replay.
+# This constrains the preview workflow only; legacy production stays paused.
+pandas==2.2.3
+numpy==2.3.5
+scikit-learn==1.8.0
+scipy==1.17.0
+matplotlib==3.10.8
+openpyxl==3.1.5
+pytest==9.2.0
+reportlab==4.4.9
