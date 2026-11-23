@@ -141,11 +141,12 @@ def fetch_model(model_name: str, model_id: str, forecast_days: int = 16) -> tupl
             values = hourly.get(name) or []
             return values[idx] if idx < len(values) else default
 
-        rain = h("rain", 0.0) or 0.0
-        showers = h("showers", 0.0) or 0.0
-        snowfall = h("snowfall", 0.0) or 0.0
+        showers = h("showers")
+        snowfall = h("snowfall")
         precipitation = h("precipitation")
-        total_rain = float(precipitation) if precipitation is not None else float(rain) + float(showers) + float(snowfall)
+        # Provider total is water equivalent in mm; missing is not dry.
+        # Snowfall is snow depth (cm), so it cannot be added as mm.
+        total_rain = float(precipitation) if precipitation is not None else None
         precip_prob = h("precipitation_probability")
         om = {
             "location": LOCATION_NAME,

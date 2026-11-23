@@ -172,6 +172,16 @@ function renderWeightDriftChart() {
     draw();
 }
 
+function previewIsCurrent(manifest, now = Date.now()) {
+    if (!manifest || manifest.contract !== 'raw-model-preview-v1' || manifest.status !== 'model_only') return false;
+    const start = Date.parse(manifest.as_of_utc), end = Date.parse(manifest.expires_at_utc);
+    return Number.isFinite(start) && Number.isFinite(end) && start <= now && now < end;
+}
+
+function displayNumber(value, decimals = 1, suffix = '') {
+    return value === null || value === undefined || !Number.isFinite(Number(value)) ? '—' : Number(value).toFixed(decimals) + suffix;
+}
+
 function updatePullStatus(timestamp) {
     const statusEl = document.getElementById('pull-status');
     if (!statusEl) return;
@@ -287,9 +297,7 @@ async function loadDashboard() {
         const perf = results[2].status === 'fulfilled' ? results[2].value : null;
         const guidanceJson = results[3].status === 'fulfilled' ? results[3].value : {data: []};
         const data = guidanceJson.data || [];
-        const generatedAt = guidanceJson.metadata
-            ? (guidanceJson.metadata.latest_data_pull_utc || guidanceJson.metadata.generated_at || guidanceJson.metadata.latest_model_run_init_utc)
-            : (intel.valid_start || "Unknown");
+        const generatedAt = guidanceJson.metadata?.latest_data_pull_utc || "Unknown";
 
         // Filter data to only show current and future hours
         const now = new Date();
@@ -297,10 +305,24 @@ async function loadDashboard() {
         const witaHourStr = localNow.toISOString().replace('T', ' ').substring(0, 13) + ':00:00';
         
         const futureData = data.filter(d => d.Datetime >= witaHourStr);
-        const renderData = futureData.length > 0 ? futureData : data;
+        const previewManifest = guidanceJson.metadata?.preview_manifest;
+        const currentPreview = previewIsCurrent(previewManifest) && futureData.length > 0;
+        const renderData = currentPreview ? futureData : [];
+        const safetyBanner = document.getElementById('preview-safety-banner');
+        if (safetyBanner) safetyBanner.textContent = currentPreview
+            ? `RAW MODEL PREVIEW — ${Object.keys(previewManifest.models || {}).length} fresh model collections; unverified equal-model mean, not an operational forecast. TAF withheld. Expires ${previewManifest.expires_at_utc}. Historical verification remains research-only.`
+            : 'EXPIRED OR UNAVAILABLE — no current model guidance. Automated TAF withheld. Historical verification is research-only.';
+        if (currentPreview) setTimeout(() => {
+            if (safetyBanner) safetyBanner.textContent = 'EXPIRED — current guidance unavailable. Reloading…';
+            for (const id of ['tab-meteogram', 'tab-spread', 'tab-matrix', 'tab-models']) {
+                const el = document.getElementById(id); if (el) el.replaceChildren();
+            }
+            window.location.reload();
+        }, Math.max(0, Date.parse(previewManifest.expires_at_utc) - Date.now()));
 
         const clim_data = results[4].status === 'fulfilled' ? results[4].value : null;
-        const modelsData = results[5].status === 'fulfilled' ? results[5].value : null;
+        const modelsData = currentPreview && results[5].status === 'fulfilled' &&
+            JSON.stringify(results[5].value?.Preview_Manifest) === JSON.stringify(previewManifest) ? results[5].value : null;
         const diurnalData = results[8].status === 'fulfilled' ? results[8].value : null;
         const workflowData = results[9].status === 'fulfilled' ? results[9].value : null;
         const residualData = results[10].status === 'fulfilled' ? results[10].value : null;
@@ -329,19 +351,18 @@ async function loadDashboard() {
             const observationFreshness = healthData.observation_freshness || {};
             const hourlyObservation = observationFreshness.hourly || {};
             if (obsFreshnessElem) {
-                const age = hourlyObservation.age_hours;
-                obsFreshnessElem.innerText = hourlyObservation.status
-                    ? `${hourlyObservation.status}${age !== null && age !== undefined ? ` (${age.toFixed(1)} h)` : ''}`
-                    : 'Unknown';
-                obsFreshnessElem.style.color = hourlyObservation.status === 'fresh'
-                    ? 'var(--green)' : (hourlyObservation.status === 'stale' ? 'var(--red)' : 'var(--amber)');
+                const stamp = hourlyObservation.latest_obs_utc;
+                const parsed = stamp ? Date.parse(stamp.replace(' ', 'T') + (stamp.endsWith('Z') || stamp.includes('+') ? '' : 'Z')) : NaN;
+                const age = (Date.now() - parsed) / 36e5;
+                obsFreshnessElem.innerText = Number.isFinite(age) && age >= 0
+                    ? `Last archived hourly observation (${age.toFixed(1)} h ago)` : 'Unknown';
+                obsFreshnessElem.style.color = 'var(--amber)';
             }
             if (verificationElem) {
-                const frozen = observationFreshness.verification_status === 'frozen';
-                verificationElem.innerText = frozen ? 'Frozen: stale AWOS' : 'Active';
-                verificationElem.style.color = frozen ? 'var(--amber)' : 'var(--green)';
+                verificationElem.innerText = 'Historical verification only — frozen pending review';
+                verificationElem.style.color = 'var(--amber)';
             }
-            setupHealthFreshness(healthData.model_freshness || []);
+            setupHealthFreshness([]); // precomputed legacy status is not current evidence
             setupSelectionAndObservationQuality(
                 healthData.forecast_selection || {},
                 healthData.awos_quality || {}
@@ -390,157 +411,25 @@ async function loadDashboard() {
         }
         startShiftCountdown();
         
-        renderThunderstormProxy(guidanceJson.metadata?.ts_proxy, renderData);
+        renderThunderstormProxy(null, []);
 
         // 1. Update Header
         document.getElementById('update-time').innerText = generatedAt + " UTC";
-        updatePullStatus(generatedAt);
+        updatePullStatus(currentPreview ? generatedAt : 'Unknown');
         
-        function renderIntel(intelObj) {
-            document.getElementById('taf-text-display').innerText = intelObj.taf_text || "TAF Unavailable";
-            
-            const bg = intelObj.base_group;
-            const provenance = intelObj.provenance || {};
-            const provenanceNote = provenance.fresh_model_count !== undefined
-                ? `TAF provenance: ${provenance.fresh_model_count} fresh models over ${provenance.coverage_hours} h; ${provenance.direct_visibility_model_count || 0} direct visibility sources; cloud base is proxy-derived.`
-                : '';
-            const warnings = [...(intelObj.warnings || [])];
-            if (provenanceNote) warnings.unshift(provenanceNote);
-            if(!bg) {
-                document.getElementById('taf-warnings').innerHTML = warnings.map(w => `<div style="color:var(--amber); margin-top:10px;">${w}</div>`).join('');
-                const narrationBox = document.getElementById('taf-narration');
-                if (narrationBox) narrationBox.innerText = intelObj.narration || "Narasi tidak tersedia untuk saat ini.";
-                return;
-            }
-            const bgHtml = `
-                <div class="param-card">
-                    <div class="param-label">Wind Direction</div>
-                    <div class="param-value">${bg.dir}°</div>
-                </div>
-                <div class="param-card">
-                    <div class="param-label">Wind Speed</div>
-                    <div class="param-value">${bg.spd} kt</div>
-                </div>
-                <div class="param-card">
-                    <div class="param-label">Visibility</div>
-                    <div class="param-value">${bg.vis} m</div>
-                </div>
-                <div class="param-card">
-                    <div class="param-label">Weather</div>
-                    <div class="param-value">${bg.wx || '-'}</div>
-                </div>
-                <div class="param-card">
-                    <div class="param-label">Cloud</div>
-                    <div class="param-value">${bg.cloud || '-'}</div>
-                </div>
-            `;
-            document.getElementById('bg-params').innerHTML = bgHtml;
-            const badge = document.getElementById('consensus-badge');
-            if(badge) badge.innerText = bg.badge || "MME Consensus";
-            
-            if(warnings && warnings.length > 0) {
-                document.getElementById('taf-warnings').innerHTML = warnings.map(w => `<div style="color:var(--amber); margin-top:10px;">⚠️ ${w}</div>`).join('');
-            } else {
-                document.getElementById('taf-warnings').innerHTML = '';
-            }
-            
-            // Populate Narration
-            const narrationBox = document.getElementById('taf-narration');
-            if (narrationBox) {
-                narrationBox.innerText = intelObj.narration || "Narasi tidak tersedia untuk saat ini.";
-            }
-
-            // Create manual edit boxes
-            const tafLines = (intelObj.taf_text || "").split('\n');
-            const manualContainer = document.getElementById('taf-manual-boxes');
-            if(manualContainer) {
-                manualContainer.innerHTML = '';
-                tafLines.forEach(line => {
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.value = line;
-                    input.className = 'manual-taf-input';
-                    input.style.width = '100%';
-                    input.style.padding = '8px';
-                    input.style.background = 'var(--bg-tertiary)';
-                    input.style.color = 'var(--text-primary)';
-                    input.style.border = '1px solid var(--border-glass)';
-                    input.style.borderRadius = '4px';
-                    manualContainer.appendChild(input);
-                });
-            }
+        // All automated drafts, including legacy and experimental payloads,
+        // are withheld in the raw-model preview release.
+        document.getElementById('taf-text-display').textContent = 'Automated TAF withheld pending independent meteorological validation.';
+        document.getElementById('bg-params').replaceChildren();
+        document.getElementById('taf-warnings').textContent = 'Use station observations, authorized forecasts and forecaster judgement.';
+        document.getElementById('taf-manual-boxes').replaceChildren();
+        for (const id of ['toggle-manual-btn', 'copy-taf-btn', 'taf-issuance-select']) {
+            const el = document.getElementById(id); if (el) { el.disabled = true; el.hidden = true; }
         }
-
-        function shadowIssuanceFor(selection) {
-            if (selection !== 'default') return selection;
-            return intelData.default?.default_selection?.selected_issuance || null;
-        }
-
-        function renderShadowTAF(selection) {
-            const panel = document.getElementById('shadow-taf-panel');
-            const select = document.getElementById('shadow-taf-config-select');
-            const status = document.getElementById('shadow-taf-status');
-            const note = document.getElementById('shadow-taf-config-note');
-            const display = document.getElementById('shadow-taf-text');
-            if (!panel || !select || !status || !note || !display || !shadowTafData?.issuances) return;
-
-            const issuance = shadowIssuanceFor(selection);
-            const alternatives = issuance ? shadowTafData.issuances[issuance] : null;
-            if (!alternatives || Object.keys(alternatives).length === 0) {
-                panel.hidden = true;
-                return;
-            }
-
-            panel.hidden = false;
-            const keys = (shadowTafData.config_order || Object.keys(alternatives))
-                .filter(key => alternatives[key]);
-            const previous = select.value;
-            select.replaceChildren();
-            keys.forEach(key => {
-                const option = document.createElement('option');
-                option.value = key;
-                option.textContent = alternatives[key].config?.label || key;
-                select.appendChild(option);
-            });
-            select.value = keys.includes(previous) ? previous : keys[0];
-
-            const renderSelected = () => {
-                const alternative = alternatives[select.value];
-                const config = alternative?.config || {};
-                const guidance = alternative?.guidance || {};
-                status.textContent = `Shadow only for ${issuance}Z. It cannot alter the validated default, copied draft, or issuance selection.`;
-                note.textContent = config.description || 'Configuration details are unavailable.';
-                display.textContent = guidance.taf_text || 'No shadow guidance was generated for this issuance.';
-            };
-            select.onchange = renderSelected;
-            renderSelected();
-        }
-        
-        renderIntel(intel);
-        renderShadowTAF(currentIssuance);
-        
-        const tafSelect = document.getElementById('taf-issuance-select');
-        if(tafSelect) {
-            const defaultSelection = intelData.default?.default_selection;
-            const selectedIssuance = defaultSelection?.selected_issuance;
-            const defaultOption = tafSelect.querySelector('option[value="default"]');
-            if (defaultOption && selectedIssuance) {
-                defaultOption.textContent = `Validated Default (${selectedIssuance}Z)`;
-            } else if (defaultOption && defaultSelection?.selection_status === 'suppressed') {
-                defaultOption.textContent = 'Validated Default (suppressed)';
-            } else if (defaultOption) {
-                defaultOption.textContent = 'Validated Default (awaiting pipeline)';
-                defaultOption.disabled = true;
-            }
-            tafSelect.value = currentIssuance;
-            tafSelect.addEventListener('change', (e) => {
-                currentIssuance = e.target.value;
-                if(intelData[currentIssuance]) {
-                    renderIntel(intelData[currentIssuance]);
-                }
-                renderShadowTAF(currentIssuance);
-            });
-        }
+        const narration = document.getElementById('taf-narration');
+        if (narration) narration.textContent = 'Automated TAF unavailable.';
+        const shadowPanel = document.getElementById('shadow-taf-panel');
+        if (shadowPanel) shadowPanel.hidden = true;
 
         
         // 3. Weighter Tab
@@ -606,17 +495,21 @@ async function loadDashboard() {
             tempData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Temperature]),
             dewData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Dewpoint]),
             windData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Wind]),
-            gustData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Gust || 0]),
+            gustData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Gust ?? null]),
             rainData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Rain]),
-            windDirData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Wind Dir.'] || 0]),
-            highCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['High Clouds'] || 0]),
-            midCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Mid Clouds'] || 0]),
-            lowCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Low Clouds'] || 0]),
-            condData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Condition || 'Normal'])
+            windDirData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Wind Dir.'] ?? null]),
+            highCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['High Clouds'] ?? null]),
+            midCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Mid Clouds'] ?? null]),
+            lowCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Low Clouds'] ?? null]),
+            condData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Condition ?? null])
         };
         
         // Initialize charts using the new TITAN_BASE design system
-        initTitanCharts(chartData);
+        if (currentPreview) initTitanCharts(chartData);
+        else for (const id of ['tab-meteogram', 'tab-spread', 'tab-matrix', 'tab-models']) {
+            const panel = document.getElementById(id);
+            if (panel) { const notice = document.createElement('p'); notice.textContent = 'Current model guidance unavailable.'; panel.prepend(notice); }
+        }
         
         // 5. Matrix Tab
         const tbody = document.querySelector("#data-table tbody");
@@ -624,16 +517,16 @@ async function loadDashboard() {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>
-                    ${d.Datetime.substring(11, 16)}<br>
-                    <span style="font-size:0.8em; color:var(--text-secondary)">+${idx}h</span>
+                    ${d.Datetime.substring(0, 16)} WITA<br>
+                    <span style="font-size:0.8em; color:var(--text-secondary)">${d.Model_Count ?? '—'} models</span>
                 </td>
-                <td style="color: #ef4444">${Number(d.Temperature).toFixed(1)}</td>
-                <td style="color: #3b82f6">${Number(d.Dewpoint).toFixed(1)}</td>
-                <td style="color: #a855f7">${Number(d.Pressure).toFixed(1)}</td>
-                <td>${Number(d['Wind Dir.'] || 0).toFixed(0)}°</td>
-                <td style="color: #10b981">${Number(d.Wind).toFixed(1)}</td>
-                <td style="color: #0ea5e9">${Number(d.Rain).toFixed(1)}</td>
-                <td>${Number(d['Precip Probability'] || d['Prob Precip 1.0mm'] || 0) > 0 ? Number(d['Precip Probability'] || d['Prob Precip 1.0mm']).toFixed(1) + '%' : '-'}</td>
+                <td style="color: #ef4444">${displayNumber(d.Temperature)}</td>
+                <td style="color: #3b82f6">${displayNumber(d.Dewpoint)}</td>
+                <td style="color: #a855f7">${displayNumber(d.Pressure)}</td>
+                <td>${displayNumber(d['Wind Dir.'], 0, '°')}</td>
+                <td style="color: #10b981">${displayNumber(d.Wind)}</td>
+                <td style="color: #0ea5e9">${displayNumber(d.Rain)}</td>
+                <td>${displayNumber(d['Precip Probability'], 1, '%')}</td>
                 <td>${d.Condition || '-'}</td>
             `;
             tbody.appendChild(tr);
@@ -825,7 +718,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
             for (const [model, modelVals] of Object.entries(modelsData['Temperature'] || {})) {
                 const temp = modelsData['Temperature'][model]?.[t];
                 const dew = modelsData['Dewpoint']?.[model]?.[t];
-                if (temp !== undefined && dew !== undefined) {
+                if (temp !== undefined && temp !== null && dew !== undefined && dew !== null) {
                     vals.push(Math.max(0, temp - dew));
                 }
             }
@@ -1827,14 +1720,14 @@ function setupIndividualModels(modelsData, timeLabels) {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${dt.substring(11, 16)}</td>
-                    <td style="color: #ef4444">${Number(temp).toFixed(1)}</td>
-                    <td style="color: #3b82f6">${Number(dew).toFixed(1)}</td>
-                    <td style="color: #a855f7">${pres !== undefined ? Number(pres).toFixed(1) : '-'}</td>
-                    <td>${windDir !== undefined ? Number(windDir).toFixed(0) + '°' : '-'}</td>
-                    <td style="color: #10b981">${windSpd !== undefined ? Number(windSpd).toFixed(1) : '-'}</td>
-                    <td style="color: #f59e0b">${gust !== undefined ? Number(gust).toFixed(1) : '-'}</td>
-                    <td style="color: #6366f1">${rain !== undefined ? Number(rain).toFixed(1) : '-'}</td>
-                    <td>${probRain !== undefined && probRain > 0 ? Number(probRain).toFixed(1) + '%' : '-'}</td>
+                    <td style="color: #ef4444">${displayNumber(temp)}</td>
+                    <td style="color: #3b82f6">${displayNumber(dew)}</td>
+                    <td style="color: #a855f7">${displayNumber(pres)}</td>
+                    <td>${displayNumber(windDir, 0, '°')}</td>
+                    <td style="color: #10b981">${displayNumber(windSpd)}</td>
+                    <td style="color: #f59e0b">${displayNumber(gust)}</td>
+                    <td style="color: #6366f1">${displayNumber(rain)}</td>
+                    <td>${displayNumber(probRain, 1, '%')}</td>
                 `;
                 tbody.appendChild(tr);
             }
@@ -1849,68 +1742,8 @@ function setupIndividualModels(modelsData, timeLabels) {
     renderModel(modelSelect.value);
 }
 
-// Copy TAF button logic
 document.addEventListener('DOMContentLoaded', () => {
-    let isManualOverride = false;
-    
-    const toggleBtn = document.getElementById('toggle-manual-btn');
-    const tafTextDisplay = document.getElementById('taf-text-display');
-    const tafManualBoxes = document.getElementById('taf-manual-boxes');
-    
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-            isManualOverride = !isManualOverride;
-            if (isManualOverride) {
-                toggleBtn.innerText = 'Cancel Manual';
-                toggleBtn.style.color = 'var(--amber)';
-                toggleBtn.style.borderColor = 'var(--amber)';
-                tafTextDisplay.style.display = 'none';
-                tafManualBoxes.style.display = 'flex';
-            } else {
-                toggleBtn.innerText = 'Manual Override';
-                toggleBtn.style.color = 'var(--text-secondary)';
-                toggleBtn.style.borderColor = 'var(--border-glass)';
-                tafTextDisplay.style.display = 'block';
-                tafManualBoxes.style.display = 'none';
-            }
-        });
-    }
-
-    const copyBtn = document.getElementById('copy-taf-btn');
-    if (copyBtn) {
-        copyBtn.addEventListener('click', async () => {
-            let tafText = "";
-            if (isManualOverride) {
-                const inputs = tafManualBoxes.querySelectorAll('.manual-taf-input');
-                const lines = [];
-                inputs.forEach(input => {
-                    if (input.value.trim() !== "") {
-                        lines.push(input.value.trim());
-                    }
-                });
-                tafText = lines.join('\n');
-            } else {
-                tafText = document.getElementById('taf-text-display').innerText;
-            }
-            
-            try {
-                await navigator.clipboard.writeText(tafText);
-                const originalText = copyBtn.innerText;
-                copyBtn.innerText = 'Copied!';
-                copyBtn.style.background = 'var(--green-glow)';
-                copyBtn.style.color = 'var(--green)';
-                copyBtn.style.borderColor = 'rgba(0, 230, 118, 0.25)';
-                setTimeout(() => {
-                    copyBtn.innerText = originalText;
-                    copyBtn.style.background = 'var(--cyan-glow)';
-                    copyBtn.style.color = 'var(--cyan)';
-                    copyBtn.style.borderColor = 'rgba(0, 212, 255, 0.25)';
-                }, 2000);
-            } catch (err) {
-                console.error('Failed to copy text: ', err);
-            }
-        });
-    }
+    // No automated TAF copy or manual override handlers in preview mode.
 
     // AWOS Upload Logic (GitHub API Direct - INSECURE)
     const patInput = document.getElementById('github-pat-input');

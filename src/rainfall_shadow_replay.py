@@ -42,7 +42,7 @@ ACTIVE_MODELS = (
 # The Historical Forecast API is a stitched stream. These values describe the
 # provider guidance behind its hourly output grid, not a recoverable run lead.
 NATIVE_CADENCE_HOURS = {
-    "ECMWF_HRES": 1,
+    "ECMWF_HRES": 3,  # Legacy key resolves to IFS 0.25 open data; stitched leads unknown.
     "GFS_GLOBAL": 1,
     "ICON_SEAMLESS": 1,
     "GEM_GLOBAL": 3,

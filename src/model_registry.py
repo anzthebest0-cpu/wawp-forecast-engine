@@ -29,9 +29,9 @@ HOURLY_OUTPUT_NOTE = "Open-Meteo hourly output grid; native model step/update fr
 
 MODEL_REGISTRY: dict[str, ModelMetadata] = {
     "ECMWF_HRES": ModelMetadata(
-        "ECMWF_HRES", "ecmwf_ifs025", "ECMWF IFS HRES", 1.0, 6.0, 360, "high", HOURLY_OUTPUT_NOTE,
-        "1h through 90h, 3h after 90h, 6h after 144h",
-        "Open-Meteo interpolates non-hourly long-lead steps to its hourly response grid.",
+        "ECMWF_HRES", "ecmwf_ifs025", "ECMWF IFS 0.25° Open-Data (legacy archive key ECMWF_HRES)", 1.0, 6.0, 360, "low", HOURLY_OUTPUT_NOTE,
+        "3h through 144h, 6h after 144h",
+        "Open-Meteo interpolates native 3/6-hourly steps to the hourly response grid; open data has additional dissemination delay. Not IFS HRES 9 km.",
     ),
     "GFS_GLOBAL": ModelMetadata(
         "GFS_GLOBAL", "gfs_global", "NOAA GFS", 1.0, 6.0, 384, "high", HOURLY_OUTPUT_NOTE,

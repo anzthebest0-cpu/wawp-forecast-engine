@@ -46,12 +46,13 @@
     </nav>
 
     <main class="content">
+        <div id="preview-safety-banner" role="status" style="padding:16px;margin-bottom:18px;border:2px solid var(--amber);border-radius:8px;color:var(--amber);font-weight:600;">MODEL PREVIEW ONLY — current guidance unavailable until freshness is established. Automated TAF withheld. Historical verification is not current operational skill.</div>
         <!-- Tab 1: Intelligence -->
         <section id="tab-intel" class="tab-pane active">
             <div class="header-bar">
                 <h2>Operational Intelligence</h2>
                 <div>
-                    <select id="taf-issuance-select" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px; margin-right: 15px;">
+                    <select id="taf-issuance-select" disabled hidden style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px; margin-right: 15px;">
                         <option value="default">Validated Default</option>
                         <option value="2300">2300Z Shift</option>
                         <option value="0500">0500Z Shift</option>
@@ -71,13 +72,13 @@
                 <!-- TAF Editor Panel -->
                 <div class="panel taf-panel">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-4);">
-                        <h3 style="margin-bottom: 0;">Draft TAF</h3>
+                        <h3 style="margin-bottom: 0;">Automated TAF (withheld)</h3>
                         <div>
-                            <button id="toggle-manual-btn" style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border-glass); padding: 4px 12px; border-radius: var(--r-sm); cursor: pointer; font-size: var(--ts-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; transition: all var(--t-base); margin-right: 8px;">Manual Override</button>
-                            <button id="copy-taf-btn" style="background: var(--cyan-glow); color: var(--cyan); border: 1px solid rgba(0, 212, 255, 0.25); padding: 4px 12px; border-radius: var(--r-sm); cursor: pointer; font-size: var(--ts-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; transition: all var(--t-base);">Copy</button>
+                            <button id="toggle-manual-btn" disabled hidden>Manual Override</button>
+                            <button id="copy-taf-btn" disabled hidden>Copy</button>
                         </div>
                     </div>
-                    <div class="taf-content" id="taf-text-display">Loading TAF...</div>
+                    <div class="taf-content" id="taf-text-display">Automated TAF withheld pending independent validation.</div>
                     <div id="taf-manual-boxes" style="display:none; flex-direction:column; gap:8px;"></div>
                     <div class="warnings" id="taf-warnings"></div>
                 </div>
@@ -233,7 +234,7 @@
             <div style="margin-bottom: 15px;">
                 <label for="model-select" style="color:var(--text-secondary); margin-right:10px;">Select Model:</label>
                 <select id="model-select" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px;">
-                    <option value="ECMWF_HRES">ECMWF_HRES</option>
+                    <option value="ECMWF_HRES">ECMWF IFS 0.25° (open data)</option>
                     <option value="GFS_GLOBAL">GFS_GLOBAL</option>
                     <option value="ICON_SEAMLESS">ICON_SEAMLESS</option>
                     <option value="GEM_GLOBAL">GEM_GLOBAL</option>
@@ -776,6 +777,6 @@
         
     </main>
 
-    <script src="dashboard.js?v=3.2"></script>
+    <script src="dashboard.js?v=4.0-preview-safety"></script>
 </body>
 </html>

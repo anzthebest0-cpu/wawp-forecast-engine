@@ -1,0 +1,87 @@
+name: WAWP Model Preview Safety
+
+on:
+  pull_request:
+    types: [labeled]
+    branches: [main]
+  push:
+    branches: [main]
+    paths: ['.github/workflows/wawp_model_preview_safety.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  rehearse:
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'meteorological-preview-safety' &&
+       github.event.label.name == 'model-preview-validation') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+       vars.WAWP_LIVE_PIPELINE_ENABLED != 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install and test
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y zstd rclone
+          python -m pip install -r requirements.txt -c requirements-preview-constraints.txt
+          PYTHONPATH=. python -m pytest -q
+          node --check docs/dashboard.js
+      - name: Restore verified production checkpoint for read-only replay
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/wawp-preview"
+          mkdir -p "$work"
+          asset='wawp_forecasts-45206519366-1.db.zst'
+          gh release download latest-db --pattern "$asset" --dir "$work"
+          gh release download latest-db --pattern "$asset.json" --dir "$work"
+          printf '%s  %s\n' '96cff9544501828db36a62aaad54d2fe536739d5705a87a51be267531419deaa' "$work/$asset" | sha256sum -c
+          python -m src.storage_snapshot restore "$work/$asset" "$work/source.db"
+      - name: Historical and expired production snapshot replay
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/wawp-preview"
+          PYTHONPATH=. python scripts/replay_model_preview.py --database "$work/source.db" --directory "$work/historical" --as-of 2026-09-15T17:16:35+00:00 --expect model_only
+          PYTHONPATH=. python scripts/replay_model_preview.py --database "$work/source.db" --directory "$work/expired" --expect unavailable
+      - name: Package safety-only dashboard (no live forecasts)
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/wawp-preview"
+          cp -a docs "$work/safe-pages"
+          # Preserve all historical data in source control. Replace only the
+          # active forecast payloads in the publishable artifact with explicit
+          # unavailable states; never deploy old encoded TAFs.
+          PYTHONPATH=. python scripts/replay_model_preview.py --database "$work/source.db" --directory "$work/safe-pages/data" --expect unavailable
+          python -m src.model_preview_gate --database "$work/source.db" --directory "$work/safe-pages/data" --report "$work/safety-gate.json"
+      - name: Upload explicitly unavailable Pages artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/wawp-preview/safe-pages
+  deploy-safety-hold:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.WAWP_LIVE_PIPELINE_ENABLED != 'true'
+    needs: rehearse
+    permissions:
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy safety notice only
+        id: deployment
+        uses: actions/deploy-pages@v4
