@@ -8,6 +8,10 @@ pipeline run. The complete raw one-minute AWOS archive is valuable, but keeping
 millions of raw rows in that same rolling asset makes the operational workflow
 slow and vulnerable to failed uploads.
 
+The compressed-checkpoint workflow uses `--retain-raw-minutes`, retaining all
+observations as well as the hourly derived values. See [Storage migration](STORAGE_MIGRATION.md)
+for backup verification and the staged archive experiments.
+
 The compaction tool first creates a separate candidate database. The production
 workflow promotes that candidate only after its validation succeeds; it never
 edits the restored release file in place.
@@ -23,7 +27,7 @@ edits the restored release file in place.
   inputs.
 - Every index and table schema required by the live pipeline.
 
-## What it excludes from the rolling asset
+## Legacy compact mode
 
 `awos_observations_1min` is retained as an empty compatibility table. Its raw
 historical rows remain in the original database and in the supplied monthly
@@ -41,7 +45,7 @@ silently substituted when the minute source has no gust observations.
 Run this locally to inspect or rebuild a candidate outside GitHub:
 
 ```powershell
-python src/build_compact_operational_db.py --source wawp_forecasts.db
+python src/build_compact_operational_db.py --source wawp_forecasts.db --retain-raw-minutes
 ```
 
 The result and its JSON validation report are written below
@@ -57,8 +61,9 @@ restore release database
   -> build and validate compact candidate
   -> replace runner-local working copy with candidate
   -> run the normal forecast/QM/dashboard pipeline on the candidate
-  -> integrity-check and upload new compact release asset
-  -> retain the immediately previous release asset as rollback
+  -> integrity-check, losslessly compress and upload the checkpoint
+  -> verify the downloaded asset and publish its checksum manifest
+  -> retain prior assets for rollback
 ```
 
 This means the ordinary pipeline is the fresh operational smoke test for the
@@ -81,8 +86,8 @@ artifact for seven days.
 5. The normal pipeline runs successfully against the candidate, producing its
    dashboard export, QM handling, weights, and TAF guidance.
 6. The new release asset uploads successfully.
-7. The immediately previous release asset remains available as rollback; the
-   complete raw-minute archive remains outside the rolling release database.
+7. Prior release assets remain available as rollback; minute records present
+   in the source are also present in the compressed checkpoint.
 
 ## Recovery
 

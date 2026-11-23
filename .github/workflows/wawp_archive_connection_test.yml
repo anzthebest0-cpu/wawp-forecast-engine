@@ -1,0 +1,60 @@
+name: WAWP Archive Connection Test
+
+on:
+  pull_request:
+    types: [labeled]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wawp-archive-connection-test
+  cancel-in-progress: false
+
+jobs:
+  google-drive-roundtrip:
+    # Only the owner-controlled migration branch/PR can invoke the secret
+    # before merging. Manual runs are limited to the default branch afterward.
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.number == 4 &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'storage-migration-lossless' &&
+       github.event.label.name == 'archive-connection-test') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Install rclone
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rclone
+      - name: Verify authorized Drive upload and readback
+        env:
+          WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
+          WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "$WAWP_RCLONE_CONFIG" ] || [ -z "$WAWP_ARCHIVE_FOLDER_ID" ]; then
+            echo "::error::Archive secret or folder variable not configured."
+            exit 1
+          fi
+          umask 077
+          export RCLONE_CONFIG="$RUNNER_TEMP/wawp-archive-test.conf"
+          export RCLONE_CONFIG_WAWP_ROOT_FOLDER_ID="$WAWP_ARCHIVE_FOLDER_ID"
+          trap 'rm -f "$RCLONE_CONFIG"' EXIT
+          printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
+          unset WAWP_RCLONE_CONFIG
+          directories=$(rclone lsf wawp: --dirs-only)
+          grep -Fxq 'incremental/' <<< "$directories"
+          proof="github-run-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.txt"
+          printf 'WAWP archive connection test %s\n' "$proof" > "$RUNNER_TEMP/$proof"
+          target="wawp:connection-tests/$proof"
+          rclone copyto --immutable --checksum "$RUNNER_TEMP/$proof" "$target"
+          rclone copyto --immutable --checksum "$target" "$RUNNER_TEMP/readback-$proof"
+          cmp "$RUNNER_TEMP/$proof" "$RUNNER_TEMP/readback-$proof"
+          echo "PASS: Google Drive upload and byte-exact readback."
+          sha256sum "$RUNNER_TEMP/$proof"
+

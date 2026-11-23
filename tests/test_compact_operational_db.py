@@ -96,3 +96,20 @@ def test_compact_candidate_can_be_compacted_again(tmp_path):
         assert conn.execute(f"SELECT COUNT(*) FROM {RETENTION_TABLE}").fetchone()[0] == 1
     finally:
         conn.close()
+
+
+def test_lossless_compaction_preserves_minutes_and_high_water(tmp_path):
+    source = tmp_path / "source.db"
+    candidate = tmp_path / "candidate.db"
+    _make_source(source)
+    with sqlite3.connect(source) as conn:
+        conn.execute("INSERT INTO sqlite_sequence(name,seq) VALUES ('awos_observations',100)")
+        before = conn.execute("SELECT * FROM awos_observations_1min ORDER BY id").fetchall()
+    report = build_compact_operational_db(source, candidate, retain_raw_minutes=True)
+    assert report["valid"]
+    assert report["raw_minute_candidate_rows"] == 2
+    with sqlite3.connect(candidate) as conn:
+        assert conn.execute("SELECT * FROM awos_observations_1min ORDER BY id").fetchall() == before
+        assert conn.execute("SELECT seq FROM sqlite_sequence WHERE name='awos_observations'").fetchall() == [(100,)]
+        conn.execute("INSERT INTO awos_observations(obs_time) VALUES ('2026-07-01 02:00:00')")
+        assert conn.execute("SELECT MAX(id) FROM awos_observations").fetchone() == (101,)

@@ -21,14 +21,16 @@ permissions:
   pages: write
   id-token: write
 
-# The rolling release asset is a shared mutable archive. Never let two runners
-# download the same copy and race to replace it.
-concurrency:
-  group: wawp-engine-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   run-pipeline:
+    # Deliberate fail-closed hold while storage is migrated and stale/unsafe
+    # aviation guidance safeguards are reviewed. Never enable merely because
+    # a storage rehearsal passes.
+    if: github.ref == 'refs/heads/main' && vars.WAWP_LIVE_PIPELINE_ENABLED == 'true'
+    # Preserve the previous main workflow's mutex across the cutover.
+    concurrency:
+      group: wawp-engine-refs/heads/main
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -43,7 +45,7 @@ jobs:
         run: |
           # Use apt-get for linux dependencies (Chrome for Selenium)
           sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
+          sudo apt-get install -y google-chrome-stable zstd
           pip install -r requirements.txt
 
       - name: Download Database from Release
@@ -52,24 +54,31 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view latest-db > /dev/null 2>&1; then
-            asset_name="$(gh release view latest-db --json assets --jq '[.assets[] | select(.name | test("^wawp_forecasts(?:-[0-9]+-[0-9]+)?\\.db$"))] | sort_by(.updatedAt) | last | .name // empty')"
+            release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/latest-db" --jq .id)"
+            gh api --paginate "repos/$GITHUB_REPOSITORY/releases/$release_id/assets?per_page=100" | jq -s '.' > release-assets.json
+            asset_name="$(python -m src.storage_snapshot select release-assets.json)"
             if [ -z "$asset_name" ]; then
               echo "Rolling release latest-db exists but contains no recoverable forecast database asset."
               echo "Restore a verified local database to the release before running the pipeline again."
               exit 1
             fi
             echo "Restoring rolling forecast database from release"
-            gh release download latest-db --pattern "$asset_name" --dir . --clobber
-            if [ "$asset_name" != "wawp_forecasts.db" ]; then
-              mv "$asset_name" wawp_forecasts.db
+            gh release download latest-db --pattern "$asset_name" --dir .
+            python -m src.storage_snapshot verify-asset release-assets.json "$asset_name"
+            if [[ "$asset_name" == *.db.zst ]]; then
+              gh release download latest-db --pattern "$asset_name.json" --dir .
+              python -m src.storage_snapshot verify-asset release-assets.json "$asset_name.json"
+              python -m src.storage_snapshot restore "$asset_name" wawp_forecasts.db
+            else
+              if [ "$asset_name" != "wawp_forecasts.db" ]; then
+                mv "$asset_name" wawp_forecasts.db
+              fi
+              python -c "from pathlib import Path; from src.storage_snapshot import integrity_check; integrity_check(Path('wawp_forecasts.db'))"
             fi
             test -s wawp_forecasts.db
-            python -c "import sqlite3, sys; db = sqlite3.connect('wawp_forecasts.db'); result = db.execute('PRAGMA integrity_check').fetchone()[0]; db.close(); print('SQLite integrity:', result); sys.exit(0 if result == 'ok' else 1)"
-            echo "RESTORED_DB_ASSET=$asset_name" >> "$GITHUB_ENV"
           else
             echo "No rolling database release exists; creating the one-time bootstrap release"
             gh release create latest-db --title "Latest Forecast Database" --notes "Rolling database archive created by the WAWP pipeline."
-            echo "RESTORED_DB_ASSET=" >> "$GITHUB_ENV"
           fi
 
       - name: Download AWOS Source Inbox
@@ -120,7 +129,8 @@ jobs:
           mkdir -p "$candidate_dir"
           python src/build_compact_operational_db.py \
             --source wawp_forecasts.db \
-            --output "$candidate_db"
+            --output "$candidate_db" \
+            --retain-raw-minutes
           python - <<'PY'
           import json
           from pathlib import Path
@@ -140,6 +150,8 @@ jobs:
         run: python run_pipeline.py
 
       - name: Validate Publication Candidate
+        id: publication_gate
+        continue-on-error: true
         run: |
           set -euo pipefail
           python -m src.pipeline_publication_gate \
@@ -175,6 +187,41 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
+      - name: Archive Completed Forecast History
+        if: vars.WAWP_INCREMENTAL_ARCHIVE_ENABLED == 'true'
+        continue-on-error: true
+        timeout-minutes: 45
+        env:
+          WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
+          WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "$WAWP_RCLONE_CONFIG" ] || [ -z "$WAWP_ARCHIVE_FOLDER_ID" ]; then
+            echo "::error::Archive credentials or folder ID missing; keeping the full checkpoint."
+            exit 1
+          fi
+          sudo apt-get install -y rclone
+          umask 077
+          export RCLONE_CONFIG="$RUNNER_TEMP/wawp-rclone.conf"
+          export RCLONE_CONFIG_WAWP_ROOT_FOLDER_ID="$WAWP_ARCHIVE_FOLDER_ID"
+          trap 'rm -f "$RCLONE_CONFIG"' EXIT
+          printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
+          unset WAWP_RCLONE_CONFIG
+          python -m src.storage_incremental_archive \
+            --database wawp_forecasts.db \
+            --remote wawp:incremental \
+            --work artifacts/incremental-archive \
+            --report artifacts/validation/incremental_archive.json
+
+      - name: Upload Archive Report
+        if: always() && vars.WAWP_INCREMENTAL_ARCHIVE_ENABLED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-report-${{ github.run_id }}
+          path: artifacts/validation/incremental_archive.json
+          retention-days: 30
+          if-no-files-found: warn
+
       - name: Validate and Upload Database to Release
         timeout-minutes: 45
         env:
@@ -182,21 +229,28 @@ jobs:
         run: |
           set -euo pipefail
           test -s wawp_forecasts.db
-          python -c "import sqlite3, sys; db = sqlite3.connect('wawp_forecasts.db'); result = db.execute('PRAGMA integrity_check').fetchone()[0]; db.close(); print('SQLite integrity:', result); sys.exit(0 if result == 'ok' else 1)"
-          asset_name="wawp_forecasts-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.db"
-          cp wawp_forecasts.db "$asset_name"
+          asset_name="wawp_forecasts-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.db.zst"
+          python -m src.storage_snapshot pack wawp_forecasts.db "$asset_name"
+          # GitHub requires every individual release asset to be below 2 GiB.
+          test "$(stat -c %s "$asset_name")" -lt 2147483648
+          # Commit marker last: an interrupted data upload cannot be selected.
           gh release upload latest-db "$asset_name"
-          # Keep the newly uploaded compact DB and the immediately previous
-          # release asset. Delete only older rolling database assets.
-          while IFS= read -r existing_asset; do
-            if [[ ! "$existing_asset" =~ ^wawp_forecasts(-[0-9]+-[0-9]+)?\.db$ ]]; then
-              continue
-            fi
-            if [ "$existing_asset" = "$asset_name" ] || [ "$existing_asset" = "${RESTORED_DB_ASSET:-}" ]; then
-              continue
-            fi
-            gh release delete-asset latest-db "$existing_asset" --yes || echo "Could not remove stale database asset $existing_asset; it remains available."
-          done < <(gh release view latest-db --json assets --jq '.assets[].name')
+          mkdir -p artifacts/storage-verification
+          gh release download latest-db --pattern "$asset_name" --dir artifacts/storage-verification
+          cmp "$asset_name" "artifacts/storage-verification/$asset_name"
+          gh release upload latest-db "$asset_name.json"
+          gh release download latest-db --pattern "$asset_name.json" --dir artifacts/storage-verification
+          cmp "$asset_name.json" "artifacts/storage-verification/$asset_name.json"
+          # Preserve the existing baseline release assets until independent archive
+          # replication and restoration have been demonstrated.
+
+      # A TAF publication failure must leave the newly collected DB recoverable;
+      # it must still prevent committing and deploying the guidance.
+      - name: Require Valid Publication Candidate
+        if: steps.publication_gate.outcome != 'success'
+        run: |
+          echo "::error::Publication candidate failed validation. Dashboard deployment blocked."
+          exit 1
 
       - name: Commit and Push Dashboard Data
         run: |

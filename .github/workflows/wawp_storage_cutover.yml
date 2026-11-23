@@ -1,0 +1,113 @@
+name: WAWP Storage-Only Cutover
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/wawp_storage_cutover.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  promote-verified-checkpoint:
+    if: github.ref == 'refs/heads/main' && vars.WAWP_LIVE_PIPELINE_ENABLED != 'true'
+    concurrency:
+      group: wawp-engine-refs/heads/main
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install and test archive tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y rclone zstd unzip
+          python -m pip install -r requirements.txt
+          PYTHONPATH=. python -m pytest -q tests/test_storage_incremental_archive.py tests/test_storage_migration.py tests/test_storage_cutover.py
+      - name: Verify selected release still equals rehearsed source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/wawp-cutover"
+          mkdir -p "$work/source" "$work/parts" artifacts/storage-cutover
+          release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/latest-db" --jq .id)"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases/$release_id/assets?per_page=100" | jq -s '.' > "$work/release-assets.json"
+          PYTHONPATH=. python scripts/promote_verified_storage.py --release-assets "$work/release-assets.json" --check-release-only
+      - name: Promote verified history and checkpoint into private production Drive folders
+        env:
+          WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
+          WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$WAWP_RCLONE_CONFIG" && test -n "$WAWP_ARCHIVE_FOLDER_ID"
+          umask 077
+          export RCLONE_CONFIG="$RUNNER_TEMP/wawp-cutover.conf"
+          export RCLONE_CONFIG_WAWP_ROOT_FOLDER_ID="$WAWP_ARCHIVE_FOLDER_ID"
+          trap 'rm -f "$RCLONE_CONFIG"' EXIT
+          printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
+          unset WAWP_RCLONE_CONFIG
+          work="$RUNNER_TEMP/wawp-cutover"
+          for part in 00 01 02; do
+            name="WAWP_Baseline_2026-09-15_verified.zip.part$part"
+            rclone copyto --immutable --checksum "wawp:$name" "$work/parts/$name"
+          done
+          cat "$work/parts/"*.part00 "$work/parts/"*.part01 "$work/parts/"*.part02 > "$work/baseline.zip"
+          printf '%s  %s\n' '4db827147a685794de287df3bd3b41b9d2c89bcc36eb00305db70ac4f790f54e' "$work/baseline.zip" | sha256sum -c
+          unzip -q "$work/baseline.zip" -d "$work/source"
+          python -m src.storage_snapshot restore "$work/source/migration-verified.db.zst" "$work/baseline.db"
+          asset="wawp_forecasts-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.db.zst"
+          PYTHONPATH=. python scripts/promote_verified_storage.py \
+            --release-assets "$work/release-assets.json" --source "$work/baseline.db" \
+            --output "$work/$asset" --work "$work/promotion" \
+            --report artifacts/storage-cutover/promotion.json
+      - name: Publish verified rolling release checkpoint without touching previous assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/wawp-cutover"
+          asset="wawp_forecasts-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.db.zst"
+          test "$(stat -c %s "$work/$asset")" -lt 2147483648
+          release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/latest-db" --jq .id)"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases/$release_id/assets?per_page=100" | jq -s '.' > "$work/before-upload.json"
+          PYTHONPATH=. python scripts/promote_verified_storage.py --release-assets "$work/before-upload.json" --check-release-only
+          gh release upload latest-db "$work/$asset"
+          mkdir "$work/release-readback"
+          gh release download latest-db --pattern "$asset" --dir "$work/release-readback"
+          cmp "$work/$asset" "$work/release-readback/$asset"
+          # Publish the commit marker only after the data asset has been read back.
+          gh release upload latest-db "$work/$asset.json"
+          gh release download latest-db --pattern "$asset.json" --dir "$work/release-readback"
+          cmp "$work/$asset.json" "$work/release-readback/$asset.json"
+          python -m src.storage_snapshot restore "$work/release-readback/$asset" "$work/release-readback/recovered.db"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases/$release_id/assets?per_page=100" | jq -s '.' > "$work/after-upload.json"
+          test "$(python -m src.storage_snapshot select "$work/after-upload.json")" = "$asset"
+          python -m src.storage_snapshot verify-asset "$work/after-upload.json" "$work/$asset"
+          python -m src.storage_snapshot verify-asset "$work/after-upload.json" "$work/$asset.json"
+          python - "$work/before-upload.json" "$work/after-upload.json" "$asset" <<'PY'
+          import json, sys
+          from pathlib import Path
+          def assets(path):
+              return {a['id']: (a['name'],a['size'],a.get('digest'),a['state']) for p in json.loads(Path(path).read_text()) for a in p}
+          before, after = assets(sys.argv[1]), assets(sys.argv[2])
+          if any(after.get(k) != v for k,v in before.items()):
+              raise SystemExit('Original release asset changed during cutover')
+          Path('artifacts/storage-cutover/release.json').write_text(json.dumps({'status':'passed','selected':sys.argv[3], 'original_assets_preserved':len(before)}, indent=2)+'\n')
+          PY
+          echo 'PASS: verified new rolling checkpoint selected; original release assets preserved.'
+      - name: Publish validation metadata only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storage-cutover-${{ github.run_id }}
+          path: artifacts/storage-cutover/*.json
+          retention-days: 30
+          if-no-files-found: warn

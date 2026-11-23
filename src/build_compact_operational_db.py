@@ -1,17 +1,16 @@
 """Build a reversible compact candidate for the rolling operational database.
 
 The rolling GitHub Release database must be small enough to restore, validate,
-and upload reliably.  Raw one-minute AWOS observations are valuable source
-data, but they are not required by the runtime pipeline: the operational
-hourly table already retains its derived maximum gust value.  This tool copies
-every table and index to a new SQLite database, except that it keeps
-``awos_observations_1min`` as an empty compatible table.
+and upload reliably. This tool copies every table and index to a new SQLite
+database. The legacy compact mode keeps an empty raw-minute table; the
+lossless rolling-checkpoint mode also copies all raw minute observations.
+Raw minutes provide evidence for quality checks and gust reconstruction.
 
 It never modifies the source database and does not publish anything.  A report
 is emitted only after row-count parity for every retained table is verified.
 
 Example:
-    python src/build_compact_operational_db.py --source wawp_forecasts.db
+    python src/build_compact_operational_db.py --source wawp_forecasts.db --retain-raw-minutes
 """
 from __future__ import annotations
 
@@ -92,7 +91,7 @@ def _summary_metrics(conn: sqlite3.Connection) -> dict[str, Any]:
     return metrics
 
 
-def _validate(source: Path, candidate: Path) -> dict[str, Any]:
+def _validate(source: Path, candidate: Path, *, retain_raw_minutes: bool = False) -> dict[str, Any]:
     source_conn = _connect_readonly(source)
     candidate_conn = _connect_readonly(candidate)
     try:
@@ -111,12 +110,13 @@ def _validate(source: Path, candidate: Path) -> dict[str, Any]:
         raw_source_rows = source_counts.get(RAW_MINUTE_TABLE, 0)
         raw_candidate_rows = candidate_counts.get(RAW_MINUTE_TABLE)
         parity_ok = retained_source_counts == retained_candidate_counts
-        raw_table_ok = raw_candidate_rows == 0
+        expected_raw_rows = raw_source_rows if retain_raw_minutes else 0
+        raw_table_ok = raw_candidate_rows == expected_raw_rows
         retention_row = candidate_conn.execute(
             f"SELECT source_raw_minute_rows, retained_raw_minute_rows "
             f"FROM {_quote(RETENTION_TABLE)} WHERE id = 1"
         ).fetchone()
-        manifest_ok = retention_row == (raw_source_rows, 0)
+        manifest_ok = retention_row == (raw_source_rows, expected_raw_rows)
 
         return {
             "valid": parity_ok and raw_table_ok and manifest_ok,
@@ -138,7 +138,10 @@ def _validate(source: Path, candidate: Path) -> dict[str, Any]:
         source_conn.close()
 
 
-def build_compact_operational_db(source: Path, destination: Path, *, overwrite: bool = False) -> dict[str, Any]:
+def build_compact_operational_db(
+    source: Path, destination: Path, *, overwrite: bool = False,
+    retain_raw_minutes: bool = False,
+) -> dict[str, Any]:
     """Create and validate a compact candidate without modifying ``source``."""
     source = source.resolve()
     destination = destination.resolve()
@@ -182,18 +185,24 @@ def build_compact_operational_db(source: Path, destination: Path, *, overwrite: 
             candidate_conn.execute(ddl)
 
         for table_name, _table, _ddl in table_rows:
-            if table_name == RAW_MINUTE_TABLE:
+            if table_name == RAW_MINUTE_TABLE and not retain_raw_minutes:
                 continue
             candidate_conn.execute(
                 f"INSERT INTO main.{_quote(table_name)} SELECT * FROM source_db.{_quote(table_name)}"
             )
 
+        # sqlite_sequence has no UNIQUE(name) constraint. Copying explicit IDs
+        # already populates it; replacing by name used to produce duplicates.
         sequence_rows = candidate_conn.execute(
-            "SELECT name, seq FROM source_db.sqlite_sequence WHERE name <> ?", (RAW_MINUTE_TABLE,)
+            "SELECT name, MAX(seq) FROM source_db.sqlite_sequence GROUP BY name"
         ).fetchall()
-        if sequence_rows:
-            candidate_conn.executemany(
-                "INSERT OR REPLACE INTO sqlite_sequence(name, seq) VALUES (?, ?)", sequence_rows
+        for name, sequence in sequence_rows:
+            current = candidate_conn.execute(
+                "SELECT COALESCE(MAX(seq),0) FROM sqlite_sequence WHERE name=?", (name,)
+            ).fetchone()[0]
+            candidate_conn.execute("DELETE FROM sqlite_sequence WHERE name=?", (name,))
+            candidate_conn.execute(
+                "INSERT INTO sqlite_sequence(name,seq) VALUES (?,?)", (name, max(current, sequence))
             )
 
         for _name, table_name, ddl in index_rows:
@@ -226,8 +235,12 @@ def build_compact_operational_db(source: Path, destination: Path, *, overwrite: 
                 source.stat().st_size,
                 RAW_MINUTE_TABLE,
                 source_counts.get(RAW_MINUTE_TABLE, 0),
-                0,
-                "Raw minute AWOS remains outside the rolling operational database; hourly derived gusts remain in awos_observations.",
+                source_counts.get(RAW_MINUTE_TABLE, 0) if retain_raw_minutes else 0,
+                (
+                    "Retained all raw minute and hourly observations."
+                    if retain_raw_minutes else
+                    "Raw minute AWOS remains outside the rolling operational database; hourly derived gusts remain in awos_observations."
+                ),
             ),
         )
         candidate_conn.commit()
@@ -240,12 +253,12 @@ def build_compact_operational_db(source: Path, destination: Path, *, overwrite: 
     # Close it before atomically renaming the staging database on Windows.
     candidate_conn.close()
 
-    report = _validate(source, staging)
+    report = _validate(source, staging, retain_raw_minutes=retain_raw_minutes)
     if not report["valid"]:
         raise RuntimeError(f"Candidate validation failed: {json.dumps(report, sort_keys=True)}")
 
     os.replace(staging, destination)
-    report = _validate(source, destination)
+    report = _validate(source, destination, retain_raw_minutes=retain_raw_minutes)
     if not report["valid"]:
         raise RuntimeError(f"Candidate validation failed after finalization: {json.dumps(report, sort_keys=True)}")
     return report
@@ -262,9 +275,12 @@ def main() -> None:
     )
     parser.add_argument("--report", type=Path, default=None)
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--retain-raw-minutes", action="store_true")
     args = parser.parse_args()
 
-    report = build_compact_operational_db(args.source, args.output, overwrite=args.overwrite)
+    report = build_compact_operational_db(
+        args.source, args.output, overwrite=args.overwrite, retain_raw_minutes=args.retain_raw_minutes
+    )
     report["built_at_utc"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     report_path = args.report or args.output.with_suffix(args.output.suffix + ".report.json")
     report_path.parent.mkdir(parents=True, exist_ok=True)
