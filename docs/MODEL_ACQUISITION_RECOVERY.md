@@ -43,3 +43,9 @@ the existing preview expiry policy permits only previously verified unexpired
 collections, never an expired fallback. The legacy live pipeline remains on
 hold. Live publication, checkpoint retention, independent AWOS ingestion and
 verification-based calibration promotion are separate follow-up stages.
+
+## Reviewed production model-only refresh
+
+The hosted rehearsal ([run 45218898608](https://github.com/anzthebest0-cpu/wawp-forecast-engine/actions/runs/45218898608)) passed all 155 tests, accepted eight provider feeds and appended 1,264 native rows. All eleven original table row hashes matched. Its source bundle is retained privately as historical evidence, not promoted after expiry.
+
+After merge of PR #6, the separate **WAWP Model-Only Refresh** workflow obtains a new bounded collection, verifies private source evidence and the append-only candidate, independently recovers a compressed checkpoint from Drive and GitHub if new rows were accepted, and deploys the exact model-only preview artifact. If no new rows are accepted, it does not advance the rolling release; the preview can only display unexpired fallback or explicit unavailability. No automated TAF, QM retraining, verification-weight promotion or legacy pipeline activation is permitted. Subsequent runs are explicitly manual through workflow dispatch. Regular scheduling and storage-retention policy are separate follow-up decisions. All prior release assets and archive data are preserved.
