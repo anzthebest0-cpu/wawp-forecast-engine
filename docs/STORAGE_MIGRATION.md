@@ -144,6 +144,21 @@ the configured folder, and performs a second byte-exact upload/readback into
 `connection-tests/`. It never opens or modifies the production database.
 Review the PR's Checks tab for a successful run before any archival cutover.
 
+### Real historical recovery rehearsal
+
+Label draft PR #4 `archive-validation-test` to execute the separate historical
+validation workflow. It retrieves the three existing private Drive backup
+parts, validates the pinned ZIP and original database hashes, applies the
+incremental worker to a disposable copy, then independently downloads the
+historical segment and operational checkpoint from `validation/run-<id>-<attempt>/`.
+The rehearsal verifies the complete original table set and schema, the
+retained/archived union, original SQLite sequence entries, retry idempotence,
+and byte-exact checkpoint restoration. A frozen-clock product replay compares
+the baseline and recovered operational DB. Only validation metadata is attached
+to the Actions run; no DB or observation payload is published to GitHub. Test
+objects remain isolated from the production `incremental/` prefix, and no
+release, Pages, production repository variable, or live DB is changed.
+
 The archive step is opt-in through the repository Actions variable
 `WAWP_INCREMENTAL_ARCHIVE_ENABLED=true`. It is left disabled until the remote
 configuration and a restore exercise are verified. Without any credential,
