@@ -1,0 +1,204 @@
+name: WAWP Model-Only Refresh
+
+on:
+  pull_request:
+    types: [labeled, closed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.ref == 'refs/heads/main' && 'wawp-engine-refs/heads/main' || 'wawp-model-refresh-lint' }}
+  cancel-in-progress: false
+
+jobs:
+  check-workflow:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'labeled' &&
+      github.event.pull_request.number == 6 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'model-acquisition-recovery' &&
+      github.event.label.name == 'model-refresh-dry-run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate shell blocks without credentials or provider requests
+        run: |
+          set -euo pipefail
+          python -m pip install PyYAML
+          python - <<'PY'
+          import pathlib, subprocess, yaml
+          data = yaml.safe_load(pathlib.Path('.github/workflows/wawp_model_only_refresh.yml').read_text())
+          for job in data['jobs'].values():
+              for step in job.get('steps', []):
+                  if 'run' in step:
+                      subprocess.run(['bash','-n'], input=step['run'], text=True, check=True)
+          print('PASS: all workflow shell blocks parse')
+          PY
+  model-only:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      vars.WAWP_LIVE_PIPELINE_ENABLED != 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'pull_request' &&
+        github.event.action == 'closed' &&
+        github.event.pull_request.merged == true &&
+        github.event.pull_request.number == 6 &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.head.ref == 'model-acquisition-recovery'))
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install and validate tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y rclone zstd
+          python -m pip install -r requirements.txt -c requirements-preview-constraints.txt
+          PYTHONPATH=. python -m pytest -q
+      - name: Restore current rolling database
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/wawp-model-refresh"
+          mkdir -p "$work" artifacts/model-refresh
+          release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/latest-db" --jq .id)"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases/$release_id/assets?per_page=100" | jq -s '.' > "$work/release.json"
+          asset="$(python -m src.storage_snapshot select "$work/release.json")"
+          [[ "$asset" == *.db.zst ]]
+          printf '%s\n' "$asset" > "$work/original-asset.txt"
+          gh release download latest-db --pattern "$asset" --dir "$work"
+          gh release download latest-db --pattern "$asset.json" --dir "$work"
+          python -m src.storage_snapshot verify-asset "$work/release.json" "$work/$asset"
+          python -m src.storage_snapshot verify-asset "$work/release.json" "$work/$asset.json"
+          python -m src.storage_snapshot restore "$work/$asset" "$work/original.db"
+          sha256sum "$work/original.db" > "$work/original.sha256"
+          cp "$work/original.db" "$work/candidate.db"
+      - name: Collect new verified source data and archive evidence
+        env:
+          WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
+          WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$WAWP_RCLONE_CONFIG" && test -n "$WAWP_ARCHIVE_FOLDER_ID"
+          umask 077
+          export RCLONE_CONFIG="$RUNNER_TEMP/wawp-refresh.conf"
+          export RCLONE_CONFIG_WAWP_ROOT_FOLDER_ID="$WAWP_ARCHIVE_FOLDER_ID"
+          trap 'rm -f "$RCLONE_CONFIG"' EXIT
+          printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
+          unset WAWP_RCLONE_CONFIG
+          work="$RUNNER_TEMP/wawp-model-refresh"
+          PYTHONPATH=. python scripts/collect_model_preview.py \
+            --database "$work/candidate.db" --directory "$work/preview" --work "$work/source-evidence" \
+            --remote "wawp:source-responses/run-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --report artifacts/model-refresh/acquisition.json --budget-seconds 240
+          sha256sum -c "$work/original.sha256"
+          PYTHONPATH=. python scripts/verify_preview_append.py --baseline "$work/original.db" --candidate "$work/candidate.db" \
+            --acquisition-report artifacts/model-refresh/acquisition.json --output artifacts/model-refresh/append-verification.json
+          # No new evidence means no replacement checkpoint. The current
+          # dashboard still obeys the absolute expiry gate.
+          if jq -e '.inserted_native_rows > 0' artifacts/model-refresh/acquisition.json >/dev/null; then
+            asset="wawp_forecasts-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.db.zst"
+            python -m src.storage_snapshot pack "$work/candidate.db" "$work/$asset"
+            PYTHONPATH=. python - "$work/$asset" "$work/checkpoint-verification" <<'PY'
+          import sys
+          from pathlib import Path
+          from src.storage_incremental_archive import replicate
+          from src.storage_snapshot import restore, file_digest
+          p,w=map(Path,sys.argv[1:]);w.mkdir()
+          copy=replicate(p,'wawp:checkpoints',w)
+          manifest=restore(copy,w/'recovered.db')
+          if file_digest(w/'recovered.db') != manifest['database_sha256']:
+              raise ValueError('Drive checkpoint restore mismatch')
+          print('PASS: new rolling checkpoint independently recovered from Drive')
+          PY
+            printf '%s\n' "$asset" > "$work/new-asset.txt"
+          fi
+      - name: Publish verified rolling checkpoint if new data were accepted
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/wawp-model-refresh"
+          test -f "$work/new-asset.txt" || exit 0
+          asset="$(<"$work/new-asset.txt")"
+          release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/latest-db" --jq .id)"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases/$release_id/assets?per_page=100" | jq -s '.' > "$work/before.json"
+          test "$(python -m src.storage_snapshot select "$work/before.json")" = "$(<"$work/original-asset.txt")"
+          test "$(stat -c %s "$work/$asset")" -lt 2147483648
+          gh release upload latest-db "$work/$asset"
+          mkdir "$work/release-readback"
+          gh release download latest-db --pattern "$asset" --dir "$work/release-readback"
+          cmp "$work/$asset" "$work/release-readback/$asset"
+          gh release upload latest-db "$work/$asset.json"
+          gh release download latest-db --pattern "$asset.json" --dir "$work/release-readback"
+          cmp "$work/$asset.json" "$work/release-readback/$asset.json"
+          python -m src.storage_snapshot restore "$work/release-readback/$asset" "$work/release-readback/recovered.db"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases/$release_id/assets?per_page=100" | jq -s '.' > "$work/after.json"
+          test "$(python -m src.storage_snapshot select "$work/after.json")" = "$asset"
+          python -m src.storage_snapshot verify-asset "$work/after.json" "$work/$asset"
+          python -m src.storage_snapshot verify-asset "$work/after.json" "$work/$asset.json"
+          python - "$work/before.json" "$work/after.json" <<'PY'
+          import json,sys
+          from pathlib import Path
+          def assets(p):
+              return {a['id']:(a['name'],a['size'],a.get('digest'),a['state']) for page in json.loads(Path(p).read_text()) for a in page}
+          before,after=map(assets,sys.argv[1:])
+          if any(after.get(k)!=v for k,v in before.items()):
+              raise ValueError('Original release asset changed')
+          print('PASS: new release checkpoint selected; prior assets preserved.')
+          PY
+      - name: Independently gate and package model-only Pages
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/wawp-model-refresh"
+          cp -a docs "$work/model-pages"
+          # Re-evaluate absolute freshness at packaging time.
+          PYTHONPATH=. python scripts/replay_model_preview.py --database "$work/candidate.db" --directory "$work/model-pages/data"
+          python -m src.model_preview_gate --database "$work/candidate.db" --directory "$work/model-pages/data" --report artifacts/model-refresh/publication.json
+      - name: Upload exact gated Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/wawp-model-refresh/model-pages
+      - name: Upload verification metadata only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-refresh-${{ github.run_id }}
+          path: artifacts/model-refresh/*.json
+          retention-days: 30
+          if-no-files-found: warn
+  deploy-model-only:
+    if: github.ref == 'refs/heads/main' && vars.WAWP_LIVE_PIPELINE_ENABLED != 'true'
+    needs: model-only
+    permissions:
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy raw model preview only
+        id: deployment
+        uses: actions/deploy-pages@v4
