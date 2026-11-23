@@ -137,11 +137,10 @@ def _rows_from_payload(model_name: str, payload: dict) -> list[dict]:
     for idx, time_str in enumerate(times):
         # Historical backfill is requested in UTC so this joins AWOS obs_time.
         forecast_time = pd.to_datetime(time_str).strftime("%Y-%m-%d %H:%M:%S")
-        rain = h("rain", idx, 0.0) or 0.0
-        showers = h("showers", idx, 0.0) or 0.0
+        showers = h("showers", idx)
         precipitation = h("precipitation", idx, None)
-        snowfall = h("snowfall", idx, 0.0) or 0.0
-        total_rain = float(precipitation) if precipitation is not None else float(rain) + float(showers) + float(snowfall)
+        snowfall = h("snowfall", idx)
+        total_rain = float(precipitation) if precipitation is not None else None
         rows.append({
             "location": LOCATION_NAME,
             "model": model_name,
