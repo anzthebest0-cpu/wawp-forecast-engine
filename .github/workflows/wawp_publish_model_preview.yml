@@ -1,0 +1,131 @@
+name: WAWP Publish Verified Model Preview
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/wawp_publish_model_preview.yml']
+  pull_request:
+    types: [labeled]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.ref == 'refs/heads/main' && 'wawp-engine-refs/heads/main' || 'wawp-preview-publication-lint' }}
+  cancel-in-progress: false
+
+jobs:
+  check-workflow:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'model-preview-publication-only' &&
+      github.event.label.name == 'publication-workflow-check'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Validate shell script blocks
+        run: |
+          python -m pip install PyYAML
+          python - <<'PY'
+          import pathlib,subprocess,yaml
+          workflow=yaml.safe_load(pathlib.Path('.github/workflows/wawp_publish_model_preview.yml').read_text())
+          for job in workflow['jobs'].values():
+              for step in job.get('steps',[]):
+                  if 'run' in step:
+                      subprocess.run(['bash','-n'],input=step['run'],text=True,check=True)
+          print('PASS: all workflow shell blocks parse')
+          PY
+  package:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.WAWP_LIVE_PIPELINE_ENABLED != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install preview requirements
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y zstd
+          python -m pip install -r requirements.txt -c requirements-preview-constraints.txt
+      - name: Restore verified latest rolling checkpoint read-only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/wawp-publish-only"
+          mkdir -p "$work" artifacts/model-publication
+          release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/latest-db" --jq .id)"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases/$release_id/assets?per_page=100" | jq -s '.' > "$work/release.json"
+          asset="$(python -m src.storage_snapshot select "$work/release.json")"
+          [[ "$asset" == *.db.zst ]]
+          gh release download latest-db --pattern "$asset" --dir "$work"
+          gh release download latest-db --pattern "$asset.json" --dir "$work"
+          python -m src.storage_snapshot verify-asset "$work/release.json" "$work/$asset"
+          python -m src.storage_snapshot verify-asset "$work/release.json" "$work/$asset.json"
+          python -m src.storage_snapshot restore "$work/$asset" "$work/source.db"
+          sha256sum "$work/source.db" > "$work/source.sha256"
+      - name: Rebuild and independently gate exact Pages artifact
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/wawp-publish-only"
+          cp -a docs "$work/model-pages"
+          PYTHONPATH=. python scripts/replay_model_preview.py --database "$work/source.db" --directory "$work/model-pages/data"
+          python -m src.model_preview_gate --database "$work/source.db" --directory "$work/model-pages/data" --report artifacts/model-publication/gate.json
+          sha256sum -c "$work/source.sha256"
+          echo "Preview outcome: $(jq -r .status artifacts/model-publication/gate.json)"
+      - name: Upload gated Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/wawp-publish-only/model-pages
+      - name: Upload gate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publication-gate-${{ github.run_id }}
+          path: artifacts/model-publication/gate.json
+          if-no-files-found: warn
+          retention-days: 30
+  deploy:
+    needs: package
+    permissions:
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy verified model-only preview
+        id: deployment
+        uses: actions/deploy-pages@v4
+  report-status:
+    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.WAWP_LIVE_PIPELINE_ENABLED != 'true'
+    needs: [package, deploy]
+    permissions:
+      statuses: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record actual Pages deployment outcome
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_RESULT: ${{ needs.package.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+        run: |
+          set -euo pipefail
+          state=failure
+          if [ "$PACKAGE_RESULT" = success ] && [ "$DEPLOY_RESULT" = success ]; then state=success; fi
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state="$state" -f context='wawp/model-preview-pages' \
+            -f description="Package $PACKAGE_RESULT; deploy $DEPLOY_RESULT" \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null
