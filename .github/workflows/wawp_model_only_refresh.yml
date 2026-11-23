@@ -114,6 +114,16 @@ jobs:
           work="$RUNNER_TEMP/wawp-model-refresh"
           # Backpressure if previous managed retirement failed repeatedly.
           # Only the rolling subfolder is inspected, never original backups.
+          rclone about wawp: --json > "$work/drive-capacity.json"
+          python - "$work/drive-capacity.json" <<'PY'
+          import json,sys
+          from pathlib import Path
+          quota=json.loads(Path(sys.argv[1]).read_text())
+          free=quota.get('free')
+          if free is not None and free < 1024**3:
+              raise SystemExit('Drive storage headroom under 1 GiB; review managed Trash/quota before refreshing')
+          print('Drive capacity preflight passed (unlimited or sufficient reported space)')
+          PY
           rclone mkdir wawp:checkpoints/rolling
           rclone lsf wawp:checkpoints/rolling --files-only > "$work/rolling-inventory.txt"
           python - "$work/rolling-inventory.txt" <<'PY'

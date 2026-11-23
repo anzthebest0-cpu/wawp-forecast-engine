@@ -42,11 +42,15 @@ The publisher accepts only the gated model-only preview with TAF withheld.
 - If retention cannot be verified, keep the candidate and report a warning;
   the currently valid model preview may still publish. Six active
   managed payloads trigger backpressure and require review before any
-  further acquisition. No source-response or historical-table row is
+  further acquisition. The Drive capacity preflight also requires at least
+  1 GiB reported free space where a quota is provided. No source-response or historical-table row is
   discarded in order to bound checkpoint copies.
 
 At the initial 74 MB checkpoint size the active managed generations occupy
 roughly 222 MB per backend, plus pinned pre-policy assets. The full database
 can still grow as forecast history grows; this avoids multiplying identical
 historical data in every checkpoint without deleting scientific history.
-Native-archive partitioning and quota monitoring remain separate work.
+At four ~74 MB checkpoints/day, a 30-day Trash window can temporarily hold
+roughly 8.9 GB of superseded payloads before Google removes them. Do not
+empty all Trash; review targeted managed files and quota as needed.
+Native-archive partitioning and longer-term quota tuning remain separate work.
