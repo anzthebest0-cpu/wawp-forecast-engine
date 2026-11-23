@@ -159,6 +159,38 @@ to the Actions run; no DB or observation payload is published to GitHub. Test
 objects remain isolated from the production `incremental/` prefix, and no
 release, Pages, production repository variable, or live DB is changed.
 
+### Approved storage-only cutover
+
+The 23 November 2026 [real Drive rehearsal](https://github.com/anzthebest0-cpu/wawp-forecast-engine/actions/runs/45202071449)
+passed the full table/sequence reconstruction and all 20 top-level product
+comparisons (only the physical DB-size field was excluded). The original
+2,145,767,424-byte DB became a 706,105,344-byte operational DB and a
+73,925,976-byte compressed checkpoint; 6,934,272 retired ledger/legacy rows
+were recoverable from a verified immutable 142,052,090-byte segment.
+
+The `WAWP Storage-Only Cutover` workflow runs once when this workflow is
+introduced to main, and can be manually retried from main if it fails.
+It refuses to run if the live pipeline was enabled, or if the selected
+rolling release no longer matches the exact hash and size rehearsed.
+It promotes the pinned validated backup into `incremental/`, restores it
+independently, changes only the archival receipt in the tested operational
+copy, and re-verifies the complete original table union and sequences.
+It preserves a verified checkpoint copy in `checkpoints/`, then uploads the
+same checkpoint to `latest-db`, verifies downloaded bytes and restored
+SQLite, publishes its manifest last, and confirms selection of the new
+checkpoint. All older release assets and validation objects remain unchanged.
+The workflow does not acquire forecasts, retrain calibration, or deploy Pages.
+
+The main forecast job now requires `WAWP_LIVE_PIPELINE_ENABLED=true` to run,
+including scheduled and manual runs. The variable is deliberately unset
+until fresh-data/TAF safeguards have been implemented and independently
+validated. Its concurrency group is shared with the old main workflow and
+the storage-only cutover, preventing racing release writes. Do not set the
+live variable just because storage promotion passes. Do not remove previous
+release assets or validation objects until a separate retention and rollback
+procedure is approved; rollback uses the still-preserved original release
+or the verified baseline archive, with forecasting kept on hold.
+
 The archive step is opt-in through the repository Actions variable
 `WAWP_INCREMENTAL_ARCHIVE_ENABLED=true`. It is left disabled until the remote
 configuration and a restore exercise are verified. Without any credential,

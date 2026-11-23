@@ -21,15 +21,16 @@ permissions:
   pages: write
   id-token: write
 
-# The rolling release asset is a shared mutable archive. Never let two runners
-# download the same copy and race to replace it.
-concurrency:
-  group: wawp-engine-production
-  cancel-in-progress: false
-
 jobs:
   run-pipeline:
-    if: github.ref == 'refs/heads/main'
+    # Deliberate fail-closed hold while storage is migrated and stale/unsafe
+    # aviation guidance safeguards are reviewed. Never enable merely because
+    # a storage rehearsal passes.
+    if: github.ref == 'refs/heads/main' && vars.WAWP_LIVE_PIPELINE_ENABLED == 'true'
+    # Preserve the previous main workflow's mutex across the cutover.
+    concurrency:
+      group: wawp-engine-refs/heads/main
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
