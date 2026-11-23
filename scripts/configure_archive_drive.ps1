@@ -107,9 +107,14 @@ finally {
 
 $ExistingSecrets = & gh secret list --repo $Repository --json name --jq '.[].name'
 Assert-NativeSuccess 'Repository secret inventory'
-$ExistingVariables = & gh variable list --repo $Repository --json name,value --jq '.[] | select(.name=="WAWP_INCREMENTAL_ARCHIVE_ENABLED") | .value'
+$VariableJson = & gh variable list --repo $Repository --json name,value
 Assert-NativeSuccess 'Production archival status check'
-if ($ExistingVariables -eq 'true') {
+# Parse JSON in PowerShell to avoid Windows PowerShell 5.1 stripping
+# embedded double quotes from jq expressions passed to native executables.
+$ExistingVariables = ConvertFrom-Json -InputObject ($VariableJson -join [Environment]::NewLine)
+if (@($ExistingVariables | Where-Object {
+    $_.name -eq 'WAWP_INCREMENTAL_ARCHIVE_ENABLED' -and $_.value -eq 'true'
+}).Count -gt 0) {
     throw 'Production archival is already enabled. Stop and review the live configuration before replacing credentials.'
 }
 if ('WAWP_ARCHIVE_RCLONE_CONFIG' -in $ExistingSecrets) {
