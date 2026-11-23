@@ -66,6 +66,102 @@ The normal pipeline would rebuild that table. A separate incremental pairing
 worker and an approved-artifact promotion mechanism must be implemented and
 tested before activating the split checkpoint in the scheduled workflow.
 
+## Incremental archive worker
+
+After the pipeline finishes, the optional archive step processes the oldest
+correction ledger runs and older legacy forecast collections. It keeps all
+native forecasts, observations, training pairs and live CDFs available to the
+existing calculations. It retains the latest recorded ledger run, the current
+native cohort (including a fallback when older), and the latest legacy run for
+each model and location.
+
+The worker writes an independent SQLite segment with the original IDs,
+values, nulls and schema, plus a snapshot of the current CDF table and the
+source checksum. A CDF snapshot records the current source state; it does not
+resolve historical ledger IDs whose original CDF was already lost.
+The segment is verified, losslessly compressed and named by the SHA-256 of
+its compressed bytes.
+
+The worker then:
+
+1. Uploads the immutable segment and downloads it again for SHA-256 comparison.
+2. Uploads its manifest as a commit marker and verifies the retrieved manifest.
+3. Restores and integrity-checks the retrieved segment.
+4. In a single SQLite transaction, verifies the source and every retiring
+   partition, records the archive receipt in `wawp_archive_segments`, and
+   removes only the verified archived IDs.
+5. Reclaims the local free pages and prepares a normal rolling checkpoint.
+
+An interrupted upload or mismatch leaves the source rows in the rolling DB.
+A retry of identical input reuses the same immutable object and a no-op cycle
+does not create a remote object. A run interrupted before publishing its
+checkpoint can leave a remote segment without a checkpoint receipt. Preserve
+such segments for recovery; a later reconciliation can determine duplicates
+by exact row identities and source hashes. Existing release checkpoints are
+never deleted by this worker. The next stage must establish native forecast
+and observation revision archival and approved checkpoint-generation retention
+before pruning release assets or evicting the complete native archive.
+
+### Google Drive configuration
+
+The designated destination is the private WAWP Forecast Engine folder.
+Incremental objects will be stored in its private `incremental` subfolder.
+Set the parent folder's ID as repository Actions variable
+`WAWP_ARCHIVE_FOLDER_ID` instead of publishing the ID in source code.
+The ChatGPT-connected Drive account is used for the manually verified backups.
+GitHub Actions is a separate execution environment and needs its own authorized
+Google OAuth configuration.
+
+On the authorized account's machine, install rclone and configure a dedicated
+remote named `wawp` using the Google Drive backend. Use an OAuth identity
+approved for unattended access to that folder. Set the remote's root folder ID
+to the folder ID above. Verify read/write access with a small temporary test
+file before deployment. Use the resulting configuration as the repository
+Actions secret `WAWP_ARCHIVE_RCLONE_CONFIG` in GitHub Settings → Secrets and
+variables → Actions. Avoid sending the OAuth token or the configuration in
+chat or committing them. The workflow forces the designated root folder ID.
+See [rclone Drive setup](https://rclone.org/drive/) and
+[rclone copyto](https://rclone.org/commands/rclone_copyto/).
+
+The archive step is opt-in through the repository Actions variable
+`WAWP_INCREMENTAL_ARCHIVE_ENABLED=true`. It is left disabled until the remote
+configuration and a restore exercise are verified. Without any credential,
+run a local integration exercise on a disposable DB:
+
+```bash
+python -m src.storage_incremental_archive \
+  --database disposable-copy.db \
+  --remote /absolute/path/to/test-archive \
+  --work artifacts/archival-test \
+  --report artifacts/archival-test/report.json
+```
+
+If archival transfer fails, the pipeline preserves the complete checkpoint
+and reports the archive failure. A failed publication gate can also preserve
+a structurally sound DB checkpoint for subsequent recovery; it still blocks
+the dashboard commit and Pages deployment.
+
+### Validation on the September 15 snapshot
+
+The first exercise used a disposable copy of the 975,970,304-byte
+ledger-separated baseline. The next two exercises advanced synthetic cycle
+keys on copied rows to isolate storage behavior from model quality changes.
+
+| Exercise | Legacy rows archived | Correction rows archived | Compressed delta | Operational database after archival |
+| --- | ---: | ---: | ---: | ---: |
+| Existing historical legacy data | 784,128 | 0 | 24,469,976 B | 706,949,120 B |
+| Simulated next cycle | 2,688 | 18,432 | 561,018 B | 706,949,120 B |
+| Simulated second cycle | 2,688 | 18,432 | 555,573 B | 706,949,120 B |
+
+For all three exercises the remotely restored rows and the retained rows had
+the same ordered logical hashes as their pre-archive union. Native forecast,
+AWOS, training and CDF row hashes were unchanged by archival. Repeating an
+already archived cycle created no additional objects. Fault-injection tests
+confirmed that a corrupt download, changed source, or schema trigger prevents
+eviction, and an interrupted transfer can be retried against its existing
+immutable data object. The transport in these exercises was rclone against an
+independent local test directory, not the configured Google Drive account.
+
 ## Reproducibility and activation
 
 ```bash

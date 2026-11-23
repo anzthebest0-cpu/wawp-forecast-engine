@@ -149,6 +149,8 @@ jobs:
         run: python run_pipeline.py
 
       - name: Validate Publication Candidate
+        id: publication_gate
+        continue-on-error: true
         run: |
           set -euo pipefail
           python -m src.pipeline_publication_gate \
@@ -184,6 +186,41 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
+      - name: Archive Completed Forecast History
+        if: vars.WAWP_INCREMENTAL_ARCHIVE_ENABLED == 'true'
+        continue-on-error: true
+        timeout-minutes: 45
+        env:
+          WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
+          WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "$WAWP_RCLONE_CONFIG" ] || [ -z "$WAWP_ARCHIVE_FOLDER_ID" ]; then
+            echo "::error::Archive credentials or folder ID missing; keeping the full checkpoint."
+            exit 1
+          fi
+          sudo apt-get install -y rclone
+          umask 077
+          export RCLONE_CONFIG="$RUNNER_TEMP/wawp-rclone.conf"
+          export RCLONE_CONFIG_WAWP_ROOT_FOLDER_ID="$WAWP_ARCHIVE_FOLDER_ID"
+          trap 'rm -f "$RCLONE_CONFIG"' EXIT
+          printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
+          unset WAWP_RCLONE_CONFIG
+          python -m src.storage_incremental_archive \
+            --database wawp_forecasts.db \
+            --remote wawp:incremental \
+            --work artifacts/incremental-archive \
+            --report artifacts/validation/incremental_archive.json
+
+      - name: Upload Archive Report
+        if: always() && vars.WAWP_INCREMENTAL_ARCHIVE_ENABLED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-report-${{ github.run_id }}
+          path: artifacts/validation/incremental_archive.json
+          retention-days: 30
+          if-no-files-found: warn
+
       - name: Validate and Upload Database to Release
         timeout-minutes: 45
         env:
@@ -205,6 +242,14 @@ jobs:
           cmp "$asset_name.json" "artifacts/storage-verification/$asset_name.json"
           # Preserve the existing baseline release assets until independent archive
           # replication and restoration have been demonstrated.
+
+      # A TAF publication failure must leave the newly collected DB recoverable;
+      # it must still prevent committing and deploying the guidance.
+      - name: Require Valid Publication Candidate
+        if: steps.publication_gate.outcome != 'success'
+        run: |
+          echo "::error::Publication candidate failed validation. Dashboard deployment blocked."
+          exit 1
 
       - name: Commit and Push Dashboard Data
         run: |
