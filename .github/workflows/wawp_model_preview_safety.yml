@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y zstd
+          sudo apt-get install -y zstd rclone
           python -m pip install -r requirements.txt -c requirements-preview-constraints.txt
           PYTHONPATH=. python -m pytest -q
           node --check docs/dashboard.js
