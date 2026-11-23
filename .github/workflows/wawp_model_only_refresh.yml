@@ -1,8 +1,13 @@
 name: WAWP Model-Only Refresh
 
 on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/wawp_model_only_refresh.yml']
+  schedule:
+    - cron: '30 0,6,12,18 * * *' # 08:30, 14:30, 20:30, 02:30 WITA
   pull_request:
-    types: [labeled, closed]
+    types: [labeled]
     branches: [main]
   workflow_dispatch:
 
@@ -18,10 +23,9 @@ jobs:
     if: >-
       github.event_name == 'pull_request' &&
       github.event.action == 'labeled' &&
-      github.event.pull_request.number == 6 &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'model-acquisition-recovery' &&
-      github.event.label.name == 'model-refresh-dry-run'
+      github.event.pull_request.head.ref == 'scheduled-model-refresh-retention' &&
+      github.event.label.name == 'retention-validation'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -45,17 +49,17 @@ jobs:
                       subprocess.run(['bash','-n'], input=step['run'], text=True, check=True)
           print('PASS: all workflow shell blocks parse')
           PY
+      - name: Regression tests (local transport only)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rclone zstd
+          python -m pip install -r requirements.txt -c requirements-preview-constraints.txt
+          PYTHONPATH=. python -m pytest -q
   model-only:
     if: >-
       github.ref == 'refs/heads/main' &&
       vars.WAWP_LIVE_PIPELINE_ENABLED != 'true' &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.event_name == 'pull_request' &&
-        github.event.action == 'closed' &&
-        github.event.pull_request.merged == true &&
-        github.event.pull_request.number == 6 &&
-        github.event.pull_request.head.repo.full_name == github.repository &&
-        github.event.pull_request.head.ref == 'model-acquisition-recovery'))
+      (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event_name == 'push')
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -108,6 +112,28 @@ jobs:
           printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
           unset WAWP_RCLONE_CONFIG
           work="$RUNNER_TEMP/wawp-model-refresh"
+          # Backpressure if previous managed retirement failed repeatedly.
+          # Only the rolling subfolder is inspected, never original backups.
+          rclone about wawp: --json > "$work/drive-capacity.json"
+          python - "$work/drive-capacity.json" <<'PY'
+          import json,sys
+          from pathlib import Path
+          quota=json.loads(Path(sys.argv[1]).read_text())
+          free=quota.get('free')
+          if free is not None and free < 1024**3:
+              raise SystemExit('Drive storage headroom under 1 GiB; review managed Trash/quota before refreshing')
+          print('Drive capacity preflight passed (unlimited or sufficient reported space)')
+          PY
+          rclone mkdir wawp:checkpoints/rolling
+          rclone lsf wawp:checkpoints/rolling --files-only > "$work/rolling-inventory.txt"
+          python - "$work/rolling-inventory.txt" <<'PY'
+          import re,sys
+          from pathlib import Path
+          names=Path(sys.argv[1]).read_text().splitlines()
+          n=sum(bool(re.fullmatch(r'wawp_forecasts-\d+-\d+\.db\.zst',x)) for x in names)
+          if n >= 6:
+              raise SystemExit('Managed rolling checkpoint backlog: review retention before collecting more')
+          PY
           PYTHONPATH=. python scripts/collect_model_preview.py \
             --database "$work/candidate.db" --directory "$work/preview" --work "$work/source-evidence" \
             --remote "wawp:source-responses/run-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
@@ -126,7 +152,7 @@ jobs:
           from src.storage_incremental_archive import replicate
           from src.storage_snapshot import restore, file_digest
           p,w=map(Path,sys.argv[1:]);w.mkdir()
-          copy=replicate(p,'wawp:checkpoints',w)
+          copy=replicate(p,'wawp:checkpoints/rolling',w)
           manifest=restore(copy,w/'recovered.db')
           if file_digest(w/'recovered.db') != manifest['database_sha256']:
               raise ValueError('Drive checkpoint restore mismatch')
@@ -168,6 +194,31 @@ jobs:
               raise ValueError('Original release asset changed')
           print('PASS: new release checkpoint selected; prior assets preserved.')
           PY
+      - name: Register and retire only redundant managed checkpoints
+        id: retention
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
+          WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/wawp-model-refresh"
+          test -f "$work/new-asset.txt" || exit 0
+          test -n "$WAWP_RCLONE_CONFIG" && test -n "$WAWP_ARCHIVE_FOLDER_ID"
+          umask 077
+          export RCLONE_CONFIG="$RUNNER_TEMP/wawp-retention.conf"
+          export RCLONE_CONFIG_WAWP_ROOT_FOLDER_ID="$WAWP_ARCHIVE_FOLDER_ID"
+          trap 'rm -f "$RCLONE_CONFIG"' EXIT
+          printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
+          unset WAWP_RCLONE_CONFIG
+          asset="$(<"$work/new-asset.txt")"
+          release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/latest-db" --jq .id)"
+          PYTHONPATH=. python -m src.checkpoint_retention --repo "$GITHUB_REPOSITORY" --release-id "$release_id" \
+            --checkpoint "$work/$asset" --database "$work/candidate.db" --report artifacts/model-refresh/retention.json
+      - name: Flag retention failure without suppressing safe preview
+        if: steps.retention.outcome == 'failure'
+        run: echo '::warning::Checkpoint retention requires review. The verified current checkpoint remains valid; the backlog limit prevents unbounded growth.'
       - name: Independently gate and package model-only Pages
         run: |
           set -euo pipefail
