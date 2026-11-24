@@ -30,7 +30,7 @@ UTC = timezone.utc
 IFS_MODELS = ("ECMWF_HRES", IFS_9KM_MODEL)
 
 
-def run_plan(start: date, end: date, gap_start: date):
+def run_plan(start: date, end: date, gap_start: date, cycle_hours=None):
     """Before gap_start retrieve both IFS variants; afterward all nine feeds."""
     day = start
     while day <= end:
@@ -38,6 +38,8 @@ def run_plan(start: date, end: date, gap_start: date):
             if day < gap_start and model not in IFS_MODELS:
                 continue
             for hour in range(0, 24, int(meta.provider_update_frequency_hours)):
+                if cycle_hours is not None and hour not in cycle_hours:
+                    continue
                 yield model, datetime(day.year, day.month, day.day, hour, tzinfo=UTC)
         day += timedelta(days=1)
 
@@ -152,12 +154,12 @@ def fetch_one(model, run, pacer):
     return {**info,"status":"transport_error","reason":error},None
 
 
-def recover_batch(start,end,gap_start,out,*,workers=1,interval=1.5,resume=()):
+def recover_batch(start,end,gap_start,out,*,workers=1,interval=1.5,resume=(),cycle_hours=None):
     out=Path(out)
     if out.exists():
         raise FileExistsError(out)
     out.parent.mkdir(parents=True,exist_ok=True)
-    planned=list(run_plan(start,end,gap_start))
+    planned=list(run_plan(start,end,gap_start,cycle_hours))
     target={(model,run.isoformat()) for model,run in planned}
     prior={}
     for previous in resume:
@@ -193,6 +195,7 @@ def recover_batch(start,end,gap_start,out,*,workers=1,interval=1.5,resume=()):
         manifest={"contract":CONTRACT,"location":LOCATION_NAME,"start_date":str(start),"end_date":str(end),
                   "gap_start":str(gap_start),"policy":"provider archived run initialization, not observed historic dissemination time; no live DB writes",
                   "records":sorted(records,key=lambda x:(x["initialization_utc"],x["model"]))}
+        if cycle_hours is not None:manifest['cycle_hours']=list(cycle_hours)
         z.writestr("manifest.json",json.dumps(manifest,separators=(",",":"),ensure_ascii=False))
     verify_bundle(out)
     print(f"VERIFIED {out.name}: {accepted}/{len(planned)} accepted, {out.stat().st_size} bytes",flush=True)
@@ -204,7 +207,9 @@ def verify_bundle(path):
         data=json.loads(z.read("manifest.json"))
         records=data["records"]
         keys={(r["model"],r["initialization_utc"]) for r in records}
-        expected={(model,run.isoformat()) for model,run in run_plan(date.fromisoformat(data["start_date"]),date.fromisoformat(data["end_date"]),date.fromisoformat(data["gap_start"]))}
+        hours=data.get('cycle_hours')
+        if hours is not None and hours!=[0,12]:raise ValueError('unsupported common-cycle cohort')
+        expected={(model,run.isoformat()) for model,run in run_plan(date.fromisoformat(data["start_date"]),date.fromisoformat(data["end_date"]),date.fromisoformat(data["gap_start"]),hours)}
         assert data["contract"]==CONTRACT and keys==expected and len(keys)==len(records)
         members={"manifest.json"}
         for r in records:
@@ -228,10 +233,11 @@ def main():
     p.add_argument("--workers",type=int,default=1)
     p.add_argument("--interval",type=float,default=1.5)
     p.add_argument("--resume",type=Path,action="append",default=[])
+    p.add_argument("--common-cycles",action="store_true",help="Restrict the plan to 00/12 UTC for comparable nine-model research")
     args=p.parse_args()
     if not 1<=args.workers<=8 or args.interval<0.75 or args.end<args.start or (args.end-args.start).days>13:
         p.error("Use 1–8 workers, at least 0.75 s request spacing, no more than 14 days per batch")
-    report=recover_batch(args.start,args.end,args.gap_start,args.output,workers=args.workers,interval=args.interval,resume=args.resume)
+    report=recover_batch(args.start,args.end,args.gap_start,args.output,workers=args.workers,interval=args.interval,resume=args.resume,cycle_hours=(0,12) if args.common_cycles else None)
     if any(r['status'] in {'rate_limited','not_attempted_rate_limit'} for r in report['records']):
         raise SystemExit(75)
 
