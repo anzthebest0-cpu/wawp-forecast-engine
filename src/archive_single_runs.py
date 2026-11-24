@@ -154,33 +154,42 @@ def fetch_one(model, run, pacer):
     return {**info,"status":"transport_error","reason":error},None
 
 
-def recover_batch(start,end,gap_start,out,*,workers=1,interval=1.5,resume=(),cycle_hours=None):
+def recover_batch(start,end,gap_start,out,*,workers=1,interval=1.5,resume=(),cycle_hours=None,retry_keys=None):
     out=Path(out)
     if out.exists():
         raise FileExistsError(out)
     out.parent.mkdir(parents=True,exist_ok=True)
     planned=list(run_plan(start,end,gap_start,cycle_hours))
     target={(model,run.isoformat()) for model,run in planned}
-    prior={}
+    prior={}; failures={}
     for previous in resume:
         manifest=verify_bundle(previous)
         for record in manifest['records']:
             key=(record['model'],record['initialization_utc'])
-            if key not in target or record['status']!='accepted':
-                continue
+            if key not in target:continue
+            if record['status']!='accepted':
+                failures[key]=record;continue
             if key in prior and prior[key][0]['sha256']!=record['sha256']:
                 raise ValueError(f'conflicting archived responses for {key}; retain and audit originals')
             prior[key]=(record,previous)
-    pending=[(model,run) for model,run in planned if (model,run.isoformat()) not in prior]
+    missing=target-prior.keys()
+    if retry_keys is not None:
+        retry_keys=set(retry_keys)
+        if not retry_keys<=target or not (missing-retry_keys)<=failures.keys():
+            raise ValueError('targeted retry requires original failure evidence for every skipped missing key')
+    else:retry_keys=missing
+    pending=[(model,run) for model,run in planned if (model,run.isoformat()) in missing&retry_keys]
     pacer=Pacer(interval)
-    records=[]
+    records=[failures[key] for key in sorted(missing-retry_keys)]
     with zipfile.ZipFile(out,"x",compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z, ThreadPoolExecutor(max_workers=workers) as executor:
         for info,previous in prior.values():
             with zipfile.ZipFile(previous) as source:
                 z.writestr(info['member'],source.read(info['member']))
             records.append(info)
         futures={executor.submit(fetch_one,model,run,pacer):(model,run) for model,run in pending}
-        done=accepted=len(prior)
+        accepted=len(prior)
+        # records includes carried failures and prior accepted entries.
+        done=len(records)
         for future in as_completed(futures):
             info,body=future.result()
             done+=1
@@ -196,6 +205,7 @@ def recover_batch(start,end,gap_start,out,*,workers=1,interval=1.5,resume=(),cyc
                   "gap_start":str(gap_start),"policy":"provider archived run initialization, not observed historic dissemination time; no live DB writes",
                   "records":sorted(records,key=lambda x:(x["initialization_utc"],x["model"]))}
         if cycle_hours is not None:manifest['cycle_hours']=list(cycle_hours)
+        if missing-retry_keys:manifest['carried_previous_failure_count']=len(missing-retry_keys)
         z.writestr("manifest.json",json.dumps(manifest,separators=(",",":"),ensure_ascii=False))
     verify_bundle(out)
     print(f"VERIFIED {out.name}: {accepted}/{len(planned)} accepted, {out.stat().st_size} bytes",flush=True)
