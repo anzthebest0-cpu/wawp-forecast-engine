@@ -1,0 +1,94 @@
+name: WAWP Historical Single Runs Recovery
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/wawp_recover_single_runs.yml']
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wawp-historical-single-runs
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'codex/historical-single-runs-recovery' &&
+      github.event.label.name == 'single-runs-validation'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test without provider or Drive credentials
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y rclone zstd
+          python -m pip install -r requirements.txt -c requirements-preview-constraints.txt
+          PYTHONPATH=. python -m pytest -q
+  recover:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate recovery tooling
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y rclone zstd
+          python -m pip install -r requirements.txt -c requirements-preview-constraints.txt
+          PYTHONPATH=. python -m pytest -q tests/test_archive_single_runs.py
+      - name: Restore provider archives to isolated Drive folder
+        env:
+          WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
+          WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$WAWP_RCLONE_CONFIG" && test -n "$WAWP_ARCHIVE_FOLDER_ID"
+          umask 077
+          export RCLONE_CONFIG="$RUNNER_TEMP/wawp-single-runs.conf"
+          export RCLONE_CONFIG_WAWP_ROOT_FOLDER_ID="$WAWP_ARCHIVE_FOLDER_ID"
+          trap 'rm -f "$RCLONE_CONFIG"' EXIT
+          printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
+          unset WAWP_RCLONE_CONFIG
+          mkdir -p "$RUNNER_TEMP/single-runs" artifacts/single-runs
+          rclone about wawp: --json > "$RUNNER_TEMP/single-runs/quota.json"
+          python - "$RUNNER_TEMP/single-runs/quota.json" <<'PY'
+          import json,sys
+          q=json.load(open(sys.argv[1]))
+          if q.get('free') is not None and q['free']<1024**3:
+              raise SystemExit('Drive storage headroom under 1 GiB; recovery withheld')
+          PY
+          PYTHONPATH=. python scripts/recover_forecast_archive.py \
+            --work "$RUNNER_TEMP/single-runs" \
+            --remote 'wawp:historical-single-runs' \
+            --execution-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --report artifacts/single-runs/recovery.json
+      - name: Unclassified missing data report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: single-runs-recovery-${{ github.run_id }}
+          path: artifacts/single-runs/*.json
+          retention-days: 30
+          if-no-files-found: warn
