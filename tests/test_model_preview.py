@@ -97,3 +97,30 @@ def test_ecmwf_feed_metadata_no_longer_claims_native_hres():
     assert model["openmeteo_id"] == "ecmwf_ifs025"
     assert "0.25°" in model["provider"] and model["native_temporal_resolution"].startswith("3h")
     assert NATIVE_CADENCE_HOURS["ECMWF_HRES"] == 3
+
+
+def test_ifs_9km_is_independent_and_does_not_double_weight_ecmwf(tmp_path):
+    import sqlite3
+    from src.model_registry import MODEL_REGISTRY, PREVIEW_MODEL_REGISTRY, IFS_9KM_MODEL
+    from src.model_acquisition import request_url
+    assert IFS_9KM_MODEL not in MODEL_REGISTRY
+    assert PREVIEW_MODEL_REGISTRY[IFS_9KM_MODEL].openmeteo_id == "ecmwf_ifs"
+    assert PREVIEW_MODEL_REGISTRY["ECMWF_HRES"].openmeteo_id == "ecmwf_ifs025"
+    assert "models=ecmwf_ifs&" in request_url(IFS_9KM_MODEL, ["temperature_2m"])
+    path = tmp_path / "independent.db"
+    db = ForecastDB(str(path))
+    try:
+        db.ingest_openmeteo_rows(list(_rows("ECMWF_HRES", precipitation=1.0)) +
+                                [dict(r, temperature=40.0, precipitation=20.0) for r in _rows(IFS_9KM_MODEL)])
+    finally:
+        db.close()
+    out = tmp_path / "preview"
+    models = ("ECMWF_HRES", IFS_9KM_MODEL)
+    with closing(sqlite3.connect(path)) as conn:
+        manifest = export_preview(conn, out, now=NOW, models=models)
+    assert set(manifest["models"]) == set(models)
+    guidance = json.loads((out / "taf_guidance.json").read_text())
+    individual = json.loads((out / "individual_models.json").read_text())
+    assert all(r["Temperature"] == 28.0 and r["Rain"] == 1.0 and r["Model_Count"] == 1 for r in guidance["data"])
+    assert set(individual["Temperature"][IFS_9KM_MODEL].values()) == {40.0}
+    assert validate(path, out, models=models, now=NOW)["passed"]
