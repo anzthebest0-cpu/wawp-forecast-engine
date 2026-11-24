@@ -76,3 +76,18 @@ def test_source_capture_preserves_exact_bytes(tmp_path):
     m,rows=s.capture_source(INIT,tmp_path/'test.zip',fetcher=fake)
     assert len(m['records'])==9 and len(rows)==8
     assert ('GEM_GLOBAL',INIT) not in rows
+
+
+def test_diurnal_bias_additive_with_time_of_day_shrinkage():
+    rows=[]
+    for d in range(1,15):
+        rows.extend([(INIT-timedelta(days=d),1010.,[1012.]*7),(INIT-timedelta(days=d)+timedelta(hours=6),1010.,[1010.]*7)])
+    assert s.fit_predict(rows,[1014.]*7,s.CORE,'pressure_msl','diurnal_bias',INIT)==pytest.approx(1012.5)
+    assert s.fit_predict(rows,[1014.]*7,s.CORE,'pressure_msl','diurnal_bias',INIT+timedelta(hours=6))==pytest.approx(1013.5)
+    assert s.fit_predict(rows,[1014.]*7,s.CORE,'pressure_msl','diurnal_bias',INIT+timedelta(hours=3))==pytest.approx(1013.)
+    obs,hist,current=fixture();r=s.build_forecast(INIT,INIT+timedelta(hours=8,minutes=20),'a'*64,current,hist,obs,{},{});diurnal=[x for x in r['rows'] if x['method']=='diurnal_bias']
+    assert diurnal and {x['parameter'] for x in diurnal}==set(s.DIURNAL_WINDOWS)
+    assert all(x['window_days']==s.DIURNAL_WINDOWS[x['parameter']][x['lead_bucket']] for x in diurnal)
+    assert any(x['method']=='median_bias' for x in r['rows']) and any(x['method']=='mae_weighted' for x in r['rows'])
+    bad=json.loads(json.dumps(r));next(x for x in bad['rows'] if x['method']=='diurnal_bias')['window_days']=45
+    with pytest.raises(ValueError):s.validate_forecast(bad)

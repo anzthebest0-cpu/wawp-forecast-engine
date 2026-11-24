@@ -26,6 +26,7 @@ IFS={'ECMWF_HRES','ECMWF_IFS_9KM'}
 PARAMS={'temperature_2m':('°C',-10,55),'dew_point_2m':('°C',-30,45),'pressure_msl':('hPa',850,1100),'wind_speed_10m':('kn',0,150),'wind_direction_10m':('°',0,360),'precipitation':('mm',0,300)}
 GROUPS={'12-24h':(12,18,24),'30-48h':(30,36,42,48),'54-72h':(54,60,66,72),'78-96h':(78,84,90,96)}
 CONFIG={'temperature_2m':('quantile_map','GEM_GLOBAL'),'pressure_msl':('median_bias','JMA_GSM'),'dew_point_2m':('mae_weighted','JMA_GSM'),'wind_speed_10m':('mean_bias',None),'wind_direction_10m':('mae_weighted',None)}
+DIURNAL_WINDOWS={'pressure_msl':dict(zip(GROUPS,(21,14,7,7))),'dew_point_2m':dict.fromkeys(GROUPS,14)}
 SOURCE_CONTRACT='wawp-shadow-source-v1'
 FORECAST_CONTRACT='wawp-prospective-shadow-v1'
 
@@ -173,13 +174,18 @@ def training_cases(runs,obs,members,var,group,init,days):
 def eligible(rows,days):return len(rows)>=40 and len({r[0].date() for r in rows})>=math.ceil(.7*days)
 
 
-def fit_predict(rows,x,members,var,method):
+def fit_predict(rows,x,members,var,method,valid=None):
     y=np.array([r[1] for r in rows]);X=np.array([r[2] for r in rows]);x=np.array(x);base=family(members);circ=var=='wind_direction_10m'
     err=wrap(X-y[:,None]) if circ else X-y[:,None]
     if method=='mae_weighted':
         w=base/np.maximum(np.mean(abs(err),axis=0),1e-6);w/=w.sum();return aggregate(x,.5*base+.5*w,circ)
     if method=='mean_bias':z=x-np.mean(err,axis=0)
     elif method=='median_bias':z=x-np.median(err,axis=0)
+    elif method=='diurnal_bias':
+        if valid is None or var not in DIURNAL_WINDOWS:raise ValueError('diurnal target required')
+        mean=err.mean(axis=0);local_hour=(valid.hour+8)%24
+        sub=err[np.array([(r[0].hour+8)%24==local_hour for r in rows])]
+        z=x-(.5*mean+.5*sub.mean(axis=0) if len(sub)>=12 else mean)
     elif method=='quantile_map':
         q=np.linspace(.05,.95,19);yp=np.quantile(y,q);z=[]
         for i in range(len(x)):
@@ -227,15 +233,17 @@ def build_forecast(init,issued,source,current,history,obs,obs_inventory,train_in
                     if None in x:withheld[f'{var}:{len(members)}_feed_missing']+=1;continue
                     raw=aggregate(x,family(members),circ)
                     if raw is None:continue
-                    for days in (14,30):
+                    methods=[(method,days) for days in (14,30)]
+                    if members==CORE and var in DIURNAL_WINDOWS:methods.append(('diurnal_bias',DIURNAL_WINDOWS[var][group]))
+                    for method_name,days in methods:
                         k=(group,var,members,days)
                         if k not in cache:cache[k]=training_cases(history,obs,members,var,group,init,days) if fresh and fresh_by_var[var] else []
                         tr=cache[k]
                         if not eligible(tr,days):withheld[f'{var}:{len(members)}_{days}d_training_unavailable']+=1;continue
-                        value=fit_predict(tr,x,members,var,method)
+                        value=fit_predict(tr,x,members,var,method_name,valid)
                         if value is None or scalar(value,var) is None:withheld[f'{var}:invalid_candidate']+=1;continue
-                        name=f'{method}_{len(members)}_{extra if len(members)>len(CORE) else "core"}_{days}d'
-                        rows.append({**common,'candidate':name,'members':list(members),'method':method,'window_days':days,'prediction':value,'raw_same_cohort':raw,'training_n':len(tr),'training_days':len({a[0].date() for a in tr}),'training_last_valid_utc':timestamp(max(a[0] for a in tr))})
+                        name=f'{method_name}_{len(members)}_{extra if len(members)>len(CORE) else "core"}_{days}d'
+                        rows.append({**common,'candidate':name,'members':list(members),'method':method_name,'window_days':days,'prediction':value,'raw_same_cohort':raw,'training_n':len(tr),'training_days':len({a[0].date() for a in tr}),'training_last_valid_utc':timestamp(max(a[0] for a in tr))})
     report={'contract':FORECAST_CONTRACT,'status':'research_only_not_operational','initialization_utc':timestamp(init),'issued_at_utc':timestamp(issued),'source_sha256':source,'source_models':sorted(m for m,_ in current),'latest_training_observation_utc':timestamp(latest) if latest else None,'awos_freshness_gate_passed':fresh,'observation_sha256':obs_inventory,'training_archive_sha256':train_inventory,'rows':rows,'withheld':dict(withheld)}
     validate_forecast(report)
     return report
@@ -262,7 +270,9 @@ def validate_forecast(data):
             if members!=CORE or r['method']!='family_equal' or r['window_days'] is not None or r['prediction']!=r['raw_core'] or r['prediction']!=r['raw_same_cohort']:raise ValueError('raw baseline inconsistent')
         else:
             method,extra=CONFIG[var];days=r['window_days'];allowed=[CORE]+([CORE+(extra,)] if extra else [])
-            if members not in allowed or r['method']!=method or days not in (14,30) or r['training_n']<40 or r['training_days']<math.ceil(.7*days) or not data['awos_freshness_gate_passed'] or parse_time(r['training_last_valid_utc'])>=init:raise ValueError('unqualified or future training data')
+            original=members in allowed and r['method']==method and days in (14,30)
+            diurnal=members==CORE and r['method']=='diurnal_bias' and var in DIURNAL_WINDOWS and days==DIURNAL_WINDOWS[var][r['lead_bucket']]
+            if not (original or diurnal) or r['training_n']<40 or r['training_days']<math.ceil(.7*days) or not data['awos_freshness_gate_passed'] or parse_time(r['training_last_valid_utc'])>=init:raise ValueError('unqualified or future training data')
     return data
 
 

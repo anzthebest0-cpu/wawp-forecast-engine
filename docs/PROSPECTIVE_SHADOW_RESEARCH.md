@@ -25,4 +25,6 @@ Keep the station's original `000HLY.YYYYMM.dat` file in `awos-inbox` updated as 
 
 ## Review
 
+November 25 retrospective follow-up: add core-only local-hour-conditioned mean bias candidates for pressure (21/14/7/7 days by the four lead bands) and dew point (14 days across bands). The bias is half all-hour and half matching local-hour when at least 12 matching rows exist, otherwise all-hour. Prior candidates and immutable forecasts remain valid and unchanged. The retrospective improvement is not proof of prospective skill; no automatic promotion.
+
 Inspect actual source coverage, candidate eligibility, and paired scores on an independent prospective period (initial review after at least 30 days, longer if rain events or matched samples are insufficient). Consider actual receipt lead and weather regimes; do not promote solely on aggregate retrospective rankings. No automatic promotion, TAF generation, gust calibration, or operational warning decision is authorized by this workflow.
