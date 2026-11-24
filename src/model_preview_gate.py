@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from src.model_preview import CONTRACT, WINDOWS, preview_payloads, selection_manifest, utc
-from src.model_registry import MODEL_REGISTRY
+from src.model_registry import PREVIEW_MODEL_REGISTRY as MODEL_REGISTRY
 
 
 def validate(database, directory, *, now=None, models=tuple(MODEL_REGISTRY)):

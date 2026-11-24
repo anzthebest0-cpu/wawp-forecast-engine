@@ -15,7 +15,7 @@ import pandas as pd
 
 from src.db_manager import LOCATION_NAME
 from src.forecast_selection import select_latest_clean_collections
-from src.model_registry import MODEL_REGISTRY, model_metadata_dict
+from src.model_registry import PREVIEW_MODEL_REGISTRY as MODEL_REGISTRY, PREVIEW_ONLY_MODELS, model_metadata_dict
 
 CONTRACT = "raw-model-preview-v1"
 WINDOWS = ("2300", "0500", "1100", "1700", "default")
@@ -129,7 +129,10 @@ def preview_payloads(frame, manifest):
         for model, group in frame.groupby("model") if not frame.empty else []:
             raw_col = "precipitation" if col == "rain" else col
             individual[name][model] = {str(row["forecast_time"]): scalar(row.get(raw_col)) for _, row in group.iterrows()}
-    for timestamp, group in frame.groupby("forecast_time", sort=True) if not frame.empty else []:
+    # Keep the correlated IFS variant visible as independent research guidance,
+    # without silently increasing ECMWF's contribution to the raw mean.
+    mean_frame = frame.loc[~frame["model"].isin(PREVIEW_ONLY_MODELS)] if not frame.empty else frame
+    for timestamp, group in mean_frame.groupby("forecast_time", sort=True) if not mean_frame.empty else []:
         record = {"Datetime": str(timestamp), "Model_Count": int(group["model"].nunique()), "Field_Model_Count": {}}
         for name, col in FIELDS.items():
             if name == "Weather Code":
@@ -144,7 +147,7 @@ def preview_payloads(frame, manifest):
     individual["Data_Pull"] = {m: v["scraped_at_utc"] for m, v in manifest["models"].items()}
     individual["Model_Metadata"] = {m: model_metadata_dict(m) for m in manifest["models"]}
     individual["Preview_Manifest"] = manifest
-    return {"metadata": {"preview_manifest": manifest, "method": "raw equal model mean; unverified research preview",
+    return {"metadata": {"preview_manifest": manifest, "method": "raw equal model mean of original model set; IFS 9 km shown independently; unverified research preview",
                          "generated_at": manifest["as_of_utc"], "latest_data_pull_utc": max(individual["Data_Pull"].values(), default=None)},
             "data": records}, individual
 

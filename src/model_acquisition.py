@@ -17,7 +17,7 @@ from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
-from src.model_registry import MODEL_REGISTRY
+from src.model_registry import PREVIEW_MODEL_REGISTRY as MODEL_REGISTRY
 from src.scrape_openmeteo import LATITUDE, LONGITUDE, LOCATION_NAME, OPENMETEO_FORECAST_URL
 
 CONTRACT = "openmeteo-immutable-receipt-v1"

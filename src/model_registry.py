@@ -70,6 +70,20 @@ MODEL_REGISTRY: dict[str, ModelMetadata] = {
     ),
 }
 
+# A related IFS feed is collected and displayed independently, but does not
+# enter the existing ensemble/QM registry until verified against observations.
+IFS_9KM_MODEL = "ECMWF_IFS_9KM"
+PREVIEW_ONLY_MODELS = frozenset({IFS_9KM_MODEL})
+PREVIEW_MODEL_REGISTRY = {
+    **MODEL_REGISTRY,
+    IFS_9KM_MODEL: ModelMetadata(
+        IFS_9KM_MODEL, "ecmwf_ifs", "ECMWF IFS HRES 9 km (O1280)",
+        1.0, 6.0, 360, "high", HOURLY_OUTPUT_NOTE,
+        "1h through 90h, 3h after 90h, 6h after 144h",
+        "Separate research-preview feed; do not double-weight with IFS 0.25°.",
+    ),
+}
+
 
 PARAMETER_SOURCES: dict[str, dict[str, Any]] = {
     "temperature_2m": {"dashboard": "Temperature", "verification_interval": "hourly"},
@@ -98,7 +112,7 @@ PARAMETER_SOURCES: dict[str, dict[str, Any]] = {
 
 
 def get_model_metadata(model: str) -> ModelMetadata | None:
-    return MODEL_REGISTRY.get(model)
+    return PREVIEW_MODEL_REGISTRY.get(model)
 
 
 def model_metadata_dict(model: str) -> dict[str, Any]:

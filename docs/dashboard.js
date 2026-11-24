@@ -310,7 +310,7 @@ async function loadDashboard() {
         const renderData = currentPreview ? futureData : [];
         const safetyBanner = document.getElementById('preview-safety-banner');
         if (safetyBanner) safetyBanner.textContent = currentPreview
-            ? `RAW MODEL PREVIEW — ${Object.keys(previewManifest.models || {}).length} fresh model collections; unverified equal-model mean, not an operational forecast. TAF withheld. Expires ${previewManifest.expires_at_utc}. Historical verification remains research-only.`
+            ? `RAW MODEL PREVIEW — ${Object.keys(previewManifest.models || {}).length} fresh model collections; unverified equal-model mean of original models (IFS 9 km independent), not an operational forecast. TAF withheld. Expires ${previewManifest.expires_at_utc}. Historical verification remains research-only.`
             : 'EXPIRED OR UNAVAILABLE — no current model guidance. Automated TAF withheld. Historical verification is research-only.';
         if (currentPreview) setTimeout(() => {
             if (safetyBanner) safetyBanner.textContent = 'EXPIRED — current guidance unavailable. Reloading…';
