@@ -24,7 +24,14 @@ def main():
     p.add_argument('--remote',required=True)
     p.add_argument('--execution-id',required=True)
     p.add_argument('--report',type=Path,required=True)
+    p.add_argument('--start',type=date.fromisoformat,default=START)
+    p.add_argument('--end',type=date.fromisoformat,default=END)
+    p.add_argument('--gap-start',type=date.fromisoformat,default=GAP)
+    p.add_argument('--common-cycles',action='store_true')
     args=p.parse_args()
+    if args.end<args.start or (args.end-args.start).days>100:
+        p.error('maximum 101 inclusive dates per job')
+    cycles=(0,12) if args.common_cycles else None
     work=args.work; prior=work/'prior'; output=work/'new'; readback=work/'readback'
     for d in (prior,output,readback):d.mkdir(parents=True,exist_ok=True)
     remote=args.remote.rstrip('/')
@@ -44,8 +51,8 @@ def main():
             outcomes[key]=rec['status']
 
     for f in archives: register(f)
-    expected={(m,r.isoformat()) for m,r in run_plan(START,END,GAP)}
-    report={'contract':'wawp-archive-recovery-report-v1','expected_runs':len(expected),'batches':[], 'status':'running'}
+    expected={(m,r.isoformat()) for m,r in run_plan(args.start,args.end,args.gap_start,cycles)}
+    report={'contract':'wawp-archive-recovery-report-v1','start':str(args.start),'end':str(args.end),'common_cycles':args.common_cycles,'expected_runs':len(expected),'batches':[], 'status':'running'}
     started=time.monotonic()
 
     def save(status):
@@ -59,21 +66,21 @@ def main():
 
     # Two paced workers, well below the pilot concurrency limit. Stop on 429.
     # Small batches bound time between independent Drive readbacks.
-    d=START
-    while d<=END:
+    d=args.start
+    while d<=args.end:
         if time.monotonic()-started>270*60:
             save('paused_runner_time_budget')
             print('Runner time budget reached; resume the workflow. Accepted batches remain verified.',flush=True)
             return
-        end=min(d+timedelta(days=6 if d<GAP else 2),END)
-        if d<GAP<=end:end=GAP-timedelta(days=1)
-        keys={(m,r.isoformat()) for m,r in run_plan(d,end,GAP)}
+        end=min(d+timedelta(days=6 if d<args.gap_start else 2),args.end)
+        if d<args.gap_start<=end:end=args.gap_start-timedelta(days=1)
+        keys={(m,r.isoformat()) for m,r in run_plan(d,end,args.gap_start,cycles)}
         if keys<=accepted.keys():
             print(f'Already verified: {d} through {end}',flush=True)
             d=end+timedelta(days=1);continue
         name=f'single-runs-{d:%Y%m%d}-{end:%Y%m%d}-{args.execution_id}.zip'
         path=output/name
-        manifest=recover_batch(d,end,GAP,path,workers=2,interval=1.5,resume=archives)
+        manifest=recover_batch(d,end,args.gap_start,path,workers=2,interval=1.5,resume=archives,cycle_hours=cycles)
         target=f'{remote}/{name}'
         rclone('copyto',str(path),target,'--immutable','--transfers','1')
         copied=readback/name
