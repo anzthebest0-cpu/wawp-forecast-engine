@@ -33,3 +33,24 @@ Archive initialization is not historical dissemination time. Actual availability
 and real-time input compatibility require separate shadow verification.
 
 Provider documentation: https://open-meteo.com/en/docs/single-runs-api
+
+## Targeted archive repair (24 November 2026)
+
+The first full extension accepted 2,838 of 3,276 planned common-cycle keys.
+The 438 missing keys comprised 59 transport, 211 unavailable, and 168
+validation failures. Of the last group, 161 were GEM. Direct representative
+queries of GEM 2026-05-29, 2026-07-15 and 2026-08-15 00 UTC returned
+241 time labels but zero temperature, wind speed, MSL pressure or
+precipitation values. Other sampled rejected runs likewise had genuinely
+missing core data (IFS 9 km 2026-06-23 00 UTC, and CMA 2026-04-12 12 UTC
+with only six temperature and wind values). Do not relax the quality gate.
+
+The targeted repair retries only transport (including prior rate-limit
+pauses) and non-GEM validation errors; original accepted responses are
+reused byte-for-byte. Deterministic failures are carried in new manifests
+with original reasons. The bounded main push uses targeted mode, while a
+manual dispatch with `retry_only: false` remains available for a deliberate
+full retry if provider archive coverage improves. Evaluate the earlier
+period with a predeclared common seven-feed cohort if GEM/JMA coverage is
+insufficient, and report the nine-feed cohort separately. No operational
+weights or TAF generation are changed by archive repair.

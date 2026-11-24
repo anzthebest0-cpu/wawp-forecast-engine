@@ -82,3 +82,22 @@ def test_common_cycle_manifest_resumes_legacy_full_cycles(tmp_path,monkeypatch):
     assert len(calls)==34
     report=a.verify_bundle(second)
     assert len(report['records'])==18 and report['cycle_hours']==[0,12]
+
+
+def test_targeted_retry_carries_failures_and_never_retrieves_accepted(tmp_path,monkeypatch):
+    calls=[];day=date(2026,5,19);first=tmp_path/'old.zip';second=tmp_path/'repair.zip'
+    def fake(model,run,pacer):
+        calls.append((model,run));b=fake_payload(run)
+        info={'model':model,'provider_model_id':a.PREVIEW_MODEL_REGISTRY[model].openmeteo_id,'initialization_utc':run.isoformat(),'request_url':a.request_url(model,run)}
+        if model=='GEM_GLOBAL':return {**info,'status':'validation_rejected','reason':'insufficient primary data'},None
+        if model=='GFS_GLOBAL' and len(calls)<=18:return {**info,'status':'transport_error','reason':'timeout'},None
+        return {**info,'status':'accepted','retrieved_at_utc':'2026-11-24T00:00:00+00:00','payload_bytes':len(b),'sha256':hashlib.sha256(b).hexdigest(),**a.inspect_response(b,model,run)},b
+    monkeypatch.setattr(a,'fetch_one',fake)
+    old=a.recover_batch(day,day,day,first,cycle_hours=(0,12))
+    keys={(r['model'],r['initialization_utc']) for r in old['records'] if r['status']=='transport_error'}
+    assert len(keys)==2 and len(calls)==18
+    new=a.recover_batch(day,day,day,second,resume=[first],cycle_hours=(0,12),retry_keys=keys)
+    assert len(calls)==20 and new['carried_previous_failure_count']==2
+    assert sum(r['status']=='accepted' for r in new['records'])==16
+    assert all(r['status']=='validation_rejected' for r in new['records'] if r['model']=='GEM_GLOBAL')
+    a.verify_bundle(second)

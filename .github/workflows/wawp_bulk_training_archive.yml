@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths: ['.github/workflows/wawp_bulk_training_archive.yml']
   workflow_dispatch:
+    inputs:
+      retry_only:
+        description: 'Retry transport and non-GEM validation gaps only'
+        type: boolean
+        default: true
   pull_request:
     types: [labeled]
     branches: [main]
@@ -21,8 +26,10 @@ jobs:
     if: >-
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'codex/bulk-calibration-training-archive' &&
-      github.event.label.name == 'bulk-training-validation'
+      ((github.event.pull_request.head.ref == 'codex/bulk-calibration-training-archive' &&
+        github.event.label.name == 'bulk-training-validation') ||
+       (github.event.pull_request.head.ref == 'codex/targeted-bulk-archive-repair' &&
+        github.event.label.name == 'bulk-repair-validation'))
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -76,6 +83,7 @@ jobs:
           START: ${{ matrix.start }}
           END: ${{ matrix.end }}
           PHASE: ${{ matrix.phase }}
+          RETRY_ONLY: ${{ github.event_name == 'push' || inputs.retry_only }}
         run: |
           set -euo pipefail
           test -n "$WAWP_RCLONE_CONFIG" && test -n "$WAWP_ARCHIVE_FOLDER_ID"
@@ -93,7 +101,9 @@ jobs:
           if q.get('free') is not None and q['free']<1024**3:
               raise SystemExit('Drive headroom under 1 GiB; archive recovery withheld')
           PY
-          PYTHONPATH=. python scripts/recover_forecast_archive.py \
+          retry_args=()
+          if [[ "$RETRY_ONLY" == 'true' ]]; then retry_args+=(--retry-recoverable-only); fi
+          PYTHONPATH=. python scripts/recover_forecast_archive.py "${retry_args[@]}" \
             --start "$START" --end "$END" --gap-start "$START" --common-cycles \
             --work "$RUNNER_TEMP/bulk-training" --remote 'wawp:historical-single-runs' \
             --execution-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$PHASE" \
