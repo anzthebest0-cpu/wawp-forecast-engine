@@ -919,6 +919,7 @@ function renderVerification() {
     if(!lbMetrics) return;
     
     if (window.currentVerifySub === 'verify-skill') {
+        renderHistoricalScorecard(lbMetrics);
         // Temperature MAE
         const tempMetrics = lbMetrics['Temperature']?.overall;
         if (tempMetrics && Object.keys(tempMetrics).length > 0) {
@@ -1053,6 +1054,9 @@ function renderVerification() {
     else if (window.currentVerifySub === 'verify-diurnal') {
         const param = document.getElementById('diurnal-param-select').value;
         const dData = lbMetrics[param]?.diurnal_bias;
+        const legacyBias=document.getElementById('verify-diurnal-chart');
+        legacyBias.textContent='Legacy diurnal bias plot withheld: the historical exporter filled absent hourly groups and circular errors with zero. Per-hour counts are not exported, so true zero bias cannot be distinguished from missing evidence.';
+        return; // preserve archive; do not reinterpret placeholder values
         if (dData && Object.keys(dData).length > 0) {
             const hours = Array.from({length: 24}, (_, i) => i.toString());
             const models = Object.keys(lbMetrics[param].overall || {});
@@ -1091,8 +1095,8 @@ function renderVerification() {
                     <p><strong>Diebold-Mariano Stat (DM):</strong> ${Number(sigData.fused.dm_stat).toFixed(3)}</p>
                     <p><strong>P-Value:</strong> ${Number(sigData.fused.p_value).toFixed(4)}</p>
                     <p><strong>Newey-West Bandwidth:</strong> ${sigData.fused.nw_bandwidth}</p>
-                    <p style="margin-top: 10px; font-weight: bold; color: ${sigData.fused.p_value < 0.05 ? 'var(--green)' : 'var(--amber)'};">
-                        ${sigData.fused.p_value < 0.05 ? '[OK] Weighted ensemble significantly better than equal weighting (p < 0.05)' : '[WARN] Improvement is not statistically significant'}
+                    <p style="margin-top: 10px; font-weight: bold; color: var(--text-secondary);">
+                        ${TitanResearch.significance(sigData.fused.p_value)}
                     </p>
                 </div>
             `;
@@ -1319,24 +1323,8 @@ function setupDiurnalClimatology(clim) {
     const fmt = (v, d=1) => (v === null || v === undefined || Number.isNaN(Number(v))) ? '-' : Number(v).toFixed(d);
     const roundValue = (v, d=1) => (v === null || v === undefined || Number.isNaN(Number(v))) ? null : Number(Number(v).toFixed(d));
     const roundArray = (arr, d=1) => (arr || []).map(v => roundValue(v, d));
-    const peakHour = (arr) => {
-        if (!arr || !arr.length) return null;
-        let bestIdx = -1;
-        let bestVal = -Infinity;
-        arr.forEach((v, idx) => {
-            const n = Number(v);
-            if (!Number.isNaN(n) && n > bestVal) {
-                bestVal = n;
-                bestIdx = idx;
-            }
-        });
-        return bestIdx < 0 ? null : bestIdx;
-    };
-    const meanValid = (arr) => {
-        const vals = (arr || []).map(Number).filter(v => !Number.isNaN(v));
-        if (!vals.length) return null;
-        return vals.reduce((a, b) => a + b, 0) / vals.length;
-    };
+    const peakHour = TitanResearch.peak;
+    const meanValid = TitanResearch.mean;
     const hours = Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`);
     const tempStats = clim.climatology?.temperature?.stats || {};
     const dewStats = clim.climatology?.dewpoint?.stats || {};
@@ -1460,46 +1448,11 @@ function setupDiurnalClimatology(clim) {
         ],
         chart: { ...baseAxis.chart, height: 320 },
         stroke: { width: [3, 0], curve: 'smooth' },
-        colors: ['#a855f7', '#64748b']
+        colors: ['#a855f7', '#64748b'],
+        yaxis:[{seriesName:'Proxy Score',title:{text:'Proxy score (unitless)'}},{seriesName:'High-Risk Frequency %',opposite:true,min:0,max:100,title:{text:'Frequency (%)'}}]
     });
 
-    if(clim.wind_rose?.sectors) {
-        const roseAll = clim.wind_rose.all || [];
-        const roseFreq = roseAll.length
-            ? roseAll.map(d => Number(fmt(d.freq_pct, 2)))
-            : (clim.wind_rose.wet || []).map(d => Number(fmt(d.freq_pct, 2)));
-        const roseColors = [
-            '#38bdf8', '#22d3ee', '#2dd4bf', '#34d399',
-            '#a3e635', '#facc15', '#fb923c', '#f97316',
-            '#ef4444', '#f43f5e', '#e879f9', '#c084fc',
-            '#818cf8', '#60a5fa', '#0ea5e9', '#06b6d4'
-        ];
-        renderChart('#chart-wind-rose', {
-            series: roseFreq,
-            chart: { type: 'polarArea', height: 390, background: 'transparent', toolbar: { show: false } },
-            labels: clim.wind_rose.sectors,
-            stroke: { colors: ['rgba(15,23,42,0.75)'], width: 1 },
-            fill: { opacity: 0.86 },
-            colors: roseColors,
-            theme: { mode: 'dark' },
-            legend: { position: 'right', labels: { colors: '#94a3b8' } },
-            yaxis: { labels: { formatter: value => `${Number(value).toFixed(1)}%` } },
-            plotOptions: {
-                polarArea: {
-                    rings: { strokeWidth: 1, strokeColor: 'rgba(148,163,184,0.22)' },
-                    spokes: { strokeWidth: 1, connectorColors: 'rgba(148,163,184,0.22)' }
-                }
-            },
-            tooltip: {
-                y: {
-                    formatter: (value, opts) => {
-                        const detail = roseAll[opts.seriesIndex] || {};
-                        return `${Number(value).toFixed(2)}% | mean ${fmt(detail.mean_speed_kt)} kt | gust ${fmt(detail.gust_event_pct)}%`;
-                    }
-                }
-            }
-        });
-    }
+    renderDirectionTable(clim);
 
     const rainMatrix = clim.monthly_hourly_matrices?.rain_1h?.matrix;
     if (rainMatrix) {
@@ -1519,12 +1472,12 @@ function setupDiurnalClimatology(clim) {
                     enableShades: false,
                     colorScale: {
                         ranges: [
-                            { from: 0, to: 0.05, color: '#111827', name: 'Dry' },
-                            { from: 0.06, to: 0.5, color: '#0ea5e9', name: 'Light' },
-                            { from: 0.51, to: 1.5, color: '#22c55e', name: 'Wet' },
-                            { from: 1.51, to: 3, color: '#facc15', name: 'Mod' },
-                            { from: 3.01, to: 7, color: '#f97316', name: 'Heavy' },
-                            { from: 7.01, to: 999, color: '#ef4444', name: 'Extreme' }
+                            { from: 0, to: 0.05, color: '#111827', name: '0–0.05 mm' },
+                            { from: 0.06, to: 0.5, color: '#0ea5e9', name: '0.06–0.5 mm' },
+                            { from: 0.51, to: 1.5, color: '#22c55e', name: '0.51–1.5 mm' },
+                            { from: 1.51, to: 3, color: '#facc15', name: '1.51–3 mm' },
+                            { from: 3.01, to: 7, color: '#f97316', name: '3.01–7 mm' },
+                            { from: 7.01, to: 999, color: '#ef4444', name: '>7 mm' }
                         ]
                     }
                 }

@@ -1,0 +1,13 @@
+'use strict';
+const assert=require('node:assert/strict');
+const r=require('../docs/research-ui.js');
+assert.equal(r.mean([null,0,4]),2);
+assert.equal(r.mean([null,undefined]),null);
+assert.equal(r.peak([null,0,0]),1);
+assert.equal(r.peak([null,undefined]),null);
+assert.equal(r.metricText(null),'—');
+assert.equal(r.metricText(0),'0.000');
+assert.match(r.significance(0.01),/Direction of improvement is not established/);
+assert.match(r.significance(0.9),/not establish equivalence/);
+assert.match(r.significance(null),/unavailable/);
+console.log('Historical presentation checks passed');

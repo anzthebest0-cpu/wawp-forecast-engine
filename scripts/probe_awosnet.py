@@ -39,11 +39,11 @@ def inspect_payload(body):
     return result
 
 def probe(scheme, endpoint, timeout, capture_dir=None):
-    url = f"{scheme}://{HOST}/{endpoint}"
+    url = f"{scheme}://{HOST}/{endpoint}?t={int(datetime.now(timezone.utc).timestamp()*1000)}"
     out = {"endpoint": url, "checked_at_utc": datetime.now(timezone.utc).isoformat()}
     opener = urllib.request.build_opener(NoRedirect())
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "TITAN-AWOSnet-connectivity-probe/1.0", "Accept": "application/xml,text/plain,text/html"})
+        req = urllib.request.Request(url, headers={"User-Agent": "TITAN-AWOSnet-connectivity-probe/1.1", "Cache-Control": "no-cache", "Accept": "application/xml,text/plain,text/html"})
         with opener.open(req, timeout=timeout) as response:
             body = response.read(LIMIT + 1)
             out.update(status=response.status, content_type=response.headers.get_content_type())

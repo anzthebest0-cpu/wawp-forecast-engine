@@ -15,8 +15,9 @@
     <script src="preview-ui.js?v=1"></script>
     <script src="analysis-workspace.js?v=1"></script>
     <script src="observation-ui.js?v=1"></script>
+    <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=3.2-workstation"></script>
-    <link rel="stylesheet" href="style.css?v=4.4-workstation">
+    <link rel="stylesheet" href="style.css?v=4.5-workstation">
 </head>
 <body>
 
@@ -404,7 +405,7 @@
         <!-- Tab 6: Climatology Engine -->
         <section id="tab-climatology" class="tab-pane">
             <div class="header-bar">
-                <h2>Diurnal Climatology</h2>
+                <h2>Historical Diurnal Climatology</h2><p class="section-note">Archive-derived descriptive statistics, not a current forecast or a 30-year climate normal. Hours are WITA; sample coverage varies. Fog/low-cloud indicators are proxies, not verified visibility observations.</p>
             </div>
 
             <div class="intel-grid" style="margin-bottom: 20px;">
@@ -430,11 +431,11 @@
                     </div>
                     <div class="clim-quicklook" id="clim-quicklook">
                         <div class="clim-quicklook-card">
-                            <div class="param-label">Daily Temp Range</div>
+                            <div class="param-label">Range of hourly means</div>
                             <div class="param-value" id="clim-temp-range">--</div>
                         </div>
                         <div class="clim-quicklook-card">
-                            <div class="param-label">Wet-Hour Freq</div>
+                            <div class="param-label">Mean hourly wet frequency</div>
                             <div class="param-value" id="clim-wet-freq">--</div>
                         </div>
                         <div class="clim-quicklook-card">
@@ -442,7 +443,7 @@
                             <div class="param-value" id="clim-peak-rain">--</div>
                         </div>
                         <div class="clim-quicklook-card">
-                            <div class="param-label">Mean Wind</div>
+                            <div class="param-label">Mean of hourly wind means</div>
                             <div class="param-value" id="clim-mean-wind">--</div>
                         </div>
                         <div class="clim-quicklook-card">
@@ -457,7 +458,7 @@
                 </div>
 
                 <div class="panel taf-panel">
-                    <h3>Operational Briefing</h3>
+                    <h3>Historical climatology briefing</h3>
                     <div class="taf-content" id="climatology-text">Loading climatology...</div>
                 </div>
             </div>
@@ -515,11 +516,11 @@
                     <div id="clim-fog-chart"></div>
                 </div>
                 <div class="panel chart-panel">
-                    <h3>Wind Rose</h3>
+                    <h3>Wind direction distribution</h3><p class="section-note">All-condition archive frequencies by sector. No speed-class or calm-frequency reconstruction is made from these aggregates.</p>
                     <div id="chart-wind-rose"></div>
                 </div>
                 <div class="panel chart-panel">
-                    <h3>Monthly-Hourly Rain Heatmap</h3>
+                    <h3>Monthly-Hourly Mean Rain</h3><p class="section-note">Mean hourly accumulation, mm; color bins describe means, not heavy-rain event categories. Missing is unavailable, not zero.</p>
                     <div id="clim-rain-heatmap"></div>
                 </div>
             </div>
@@ -731,12 +732,13 @@
 
         <!-- Tab 9: Live Verification -->
         <section id="tab-verify" class="tab-pane">
+            <h2>Historical verification — frozen research</h2><p class="section-note">Archived scores are not current operational skill. The legacy export omits paired sample counts, confidence intervals and exact per-model coverage; comparisons may use different samples. No model promotion or ranking is inferred.</p>
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 10px; margin-bottom: 20px;">
                 <div style="display: flex; gap: 15px;">
                     <button class="verify-subtab active" data-sub="verify-skill">Skill Analysis</button>
                     <button class="verify-subtab" data-sub="verify-leadtime">Lead-Time Accuracy</button>
                     <button class="verify-subtab" data-sub="verify-significancy">Statistical Significance</button>
-                    <button class="verify-subtab" data-sub="verify-diurnal">Diurnal Bias</button>
+                    <button class="verify-subtab" data-sub="verify-diurnal">Diurnal Bias (legacy)</button>
                 </div>
                 
                 <div style="display: flex; gap: 10px; align-items: center;">
@@ -750,6 +752,7 @@
             
             <!-- Skill Analysis Sub-tab -->
             <div id="verify-skill" class="verify-content active">
+                <div class="panel"><h3>Archived metric scorecard</h3><p class="section-note">MAE/RMSE lower is better; bias is forecast minus observation; HSS/CSI are dimensionless event scores. Legacy event thresholds and common-sample comparability must be checked before interpretation. — = missing.</p><div id="historical-scorecard" class="preview-scroll">No archived metrics loaded.</div></div>
                 <div class="intel-grid">
                     <div class="panel chart-panel">
                         <h3>Temperature Accuracy (MAE)</h3>
@@ -845,6 +848,6 @@
         
     </main>
 
-    <script src="dashboard.js?v=4.4-workstation"></script>
+    <script src="dashboard.js?v=4.5-workstation"></script>
 </body>
 </html>
