@@ -1,7 +1,7 @@
 name: TITAN model cycle and 96h metadata discovery
 on:
   push:
-    branches: [codex/titan-cycle-discovery]
+    branches: [codex/titan-cycle-discovery-v2]
     paths: ['scripts/pilot_cycle_discovery.py','scripts/test_cycle_discovery.py','.github/workflows/titan_cycle_discovery.yml']
 permissions:
   contents: read
