@@ -114,5 +114,21 @@ def test_nighttime_spread_is_derived_and_never_visibility():
     assert all('visibility' not in a['parameter'] for a in r['rows'])
     bad=json.loads(json.dumps(r));next(a for a in bad['rows'] if a['candidate']==s.SPREAD_CANDIDATE)['parameter']='wind_speed_10m'
     with pytest.raises(ValueError):s.validate_forecast(bad)
-    bad=json.loads(json.dumps(r));next(x for x in bad['rows'] if x['candidate']==s.WIND_HOURLY_CANDIDATE)['method']='mean_bias'
+
+
+def test_west_sector_adaptive_frequency_and_blend():
+    obs,hist,current=fixture();issued=INIT+timedelta(hours=8,minutes=20)
+    assert s.west_sector(0,None)==0 and s.west_sector(3,None) is None and s.west_sector(None,270) is None
+    assert s.west_sector(2,225)==1 and s.west_sector(2,315)==1 and s.west_sector(2,316)==0
+    for o in obs.values():o['wind_direction_10m']=270
+    f=s.build_forecast(INIT,issued,'a'*64,current,hist,obs,{},{});rows=[r for r in f['rows'] if r['parameter']==s.WEST_SECTOR]
+    assert rows and len(rows)==176 and all(r['training_n']==30 and r['raw_core']==pytest.approx(0.) for r in rows)
+    assert all(r['prediction']==pytest.approx(1. if r['method']=='local_frequency' else .75) for r in rows)
+    assert all(s.parse_time(r['training_last_valid_utc'])<INIT for r in rows)
+    bad=json.loads(json.dumps(f));next(r for r in bad['rows'] if r['candidate']=='blend25_model75_recent30_sector')['prediction']=.6
+    with pytest.raises(ValueError):s.validate_forecast(bad)
+    target=INIT+timedelta(hours=9);obs[target]={**obs_at(target),'wind_direction_10m':270}
+    v=s.verify_forecasts([f],obs,target,{})
+    z=next(r for r in v['scores'] if r['parameter']==s.WEST_SECTOR and r['candidate']=='blend25_model75_recent30_sector');assert z['metric']=='Brier' and z['candidate_loss']==pytest.approx(.0625) and z['paired_core_raw_loss']==pytest.approx(1.)
+    bad=json.loads(json.dumps(f));next(x for x in bad['rows'] if x['candidate']==s.WIND_HOURLY_CANDIDATE)['method']='mean_bias'
     with pytest.raises(ValueError):s.validate_forecast(bad)
