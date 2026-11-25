@@ -31,6 +31,8 @@ WIND_HOURLY_GROUPS={'9-24h-hourly':tuple(range(9,25)),'25-48h-hourly':tuple(rang
 WIND_HOURLY_CANDIDATE='diurnal_bias_7_core_14d_hourly'
 SPREAD='temperature_dewpoint_spread_2m'
 SPREAD_CANDIDATE='diurnal_spread_7_core_14d_night_hourly'
+WEST_SECTOR='west_sector_225_315_ge2kt'
+WEST_CANDIDATES={'recent30_sector_frequency':'local_frequency','blend25_model75_recent30_sector':'vote_frequency_blend'}
 SOURCE_CONTRACT='wawp-shadow-source-v1'
 FORECAST_CONTRACT='wawp-prospective-shadow-v1'
 
@@ -53,7 +55,7 @@ def cycle_key(init):return init.strftime('%Y%m%d%HZ')
 
 
 def scalar(v,var):
-    lo,hi=(0,85) if var==SPREAD else PARAMS[var][1:]
+    lo,hi=(0,85) if var==SPREAD else (0,1) if var==WEST_SECTOR else PARAMS[var][1:]
     return float(v) if isinstance(v,(int,float)) and not isinstance(v,bool) and math.isfinite(v) and lo<=v<=hi else None
 
 
@@ -129,7 +131,15 @@ def read_obs(folder):
     return obs,inventory
 
 
+def west_sector(speed,direction):
+    if speed is None:return None
+    if speed<2:return 0.
+    return float(225<=direction%360<=315) if direction is not None else None
+
+
 def obs_at(obs,t,var):
+    if var==WEST_SECTOR:
+        return west_sector(obs_at(obs,t,'wind_speed_10m'),scalar(obs.get(t,{}).get('wind_direction_10m'),'wind_direction_10m'))
     if var==SPREAD:
         a=obs_at(obs,t,'temperature_2m');b=obs_at(obs,t,'dew_point_2m')
         return scalar(a-b,SPREAD) if a is not None and b is not None else None
@@ -282,6 +292,27 @@ def build_forecast(init,issued,source,current,history,obs,obs_inventory,train_in
             raw=aggregate(x,family(CORE));value=fit_predict(tr,x,CORE,var,'diurnal_bias',valid)
             if scalar(value,var) is None:withheld['temperature_dewpoint_spread:invalid_candidate']+=1;continue
             rows.append({'parameter':var,'lead_bucket':group,'lead_hours':lead,'valid_utc':timestamp(valid),'receipt_lead_hours':(valid-issued).total_seconds()/3600,'raw_core':raw,'persistence':same_hour_persistence(obs,valid,init-timedelta(microseconds=1),var),'candidate':SPREAD_CANDIDATE,'members':list(CORE),'method':'diurnal_bias','window_days':days,'prediction':value,'raw_same_cohort':raw,'training_n':len(tr),'training_days':len({a[0].date() for a in tr}),'training_last_valid_utc':timestamp(max(a[0] for a in tr))})
+    # Experimental west-sector event score, based on the explicit 25/75 replay.
+    var=WEST_SECTOR;days=30;recent=any(t<init and issued-t<=timedelta(hours=48) and obs_at(obs,t,var) is not None for t in obs)
+    climate={h:[(t,obs_at(obs,t,var)) for t in sorted(obs) if init-timedelta(days=days)<=t<init and (t.hour+8)%24==h and obs_at(obs,t,var) is not None] for h in range(24)} if fresh and recent else {}
+    for group,leads in WIND_HOURLY_GROUPS.items():
+        for lead in leads:
+            valid=init+timedelta(hours=lead)
+            if valid<=issued:continue
+            states=[]
+            for model in CORE:
+                sp=forecast_at(current,model,init,lead,'wind_speed_10m');data=current.get((model,init));dr=None
+                if data:
+                    p=data[1];a=p['hourly'].get('wind_direction_10m')
+                    if a and lead<len(a) and p['hourly_units'].get('wind_direction_10m')=='°':dr=scalar(a[lead],'wind_direction_10m')
+                states.append(west_sector(sp,dr) if sp is not None and dr is not None else None)
+            if None in states:withheld['west_sector:core_missing']+=1;continue
+            raw=aggregate(states,family(CORE));tr=climate.get((valid.hour+8)%24,[])
+            if len(tr)<15:withheld['west_sector:recent30_training_unavailable']+=1;continue
+            freq=sum(v for _,v in tr)/len(tr)
+            for name,method in WEST_CANDIDATES.items():
+                value=freq if method=='local_frequency' else .25*raw+.75*freq
+                rows.append({'parameter':var,'lead_bucket':group,'lead_hours':lead,'valid_utc':timestamp(valid),'receipt_lead_hours':(valid-issued).total_seconds()/3600,'raw_core':raw,'persistence':same_hour_persistence(obs,valid,init-timedelta(microseconds=1),var),'candidate':name,'members':list(CORE),'method':method,'window_days':days,'prediction':value,'raw_same_cohort':raw,'local_frequency':freq,'training_n':len(tr),'training_days':len({t.date() for t,_ in tr}),'training_last_valid_utc':timestamp(max(t for t,_ in tr))})
     report={'contract':FORECAST_CONTRACT,'status':'research_only_not_operational','initialization_utc':timestamp(init),'issued_at_utc':timestamp(issued),'source_sha256':source,'source_models':sorted(m for m,_ in current),'latest_training_observation_utc':timestamp(latest) if latest else None,'awos_freshness_gate_passed':fresh,'observation_sha256':obs_inventory,'training_archive_sha256':train_inventory,'rows':rows,'withheld':dict(withheld)}
     validate_forecast(report)
     return report
@@ -298,13 +329,19 @@ def validate_forecast(data):
         keys.add(key)
         var=r['parameter'];members=tuple(r['members'])
         hourly=r['lead_bucket'] in WIND_HOURLY_GROUPS
-        if var not in {*PARAMS,SPREAD} or r['lead_hours'] not in (GROUPS|WIND_HOURLY_GROUPS).get(r['lead_bucket'],()) or not set(members)<=set(data['source_models']):raise ValueError('invalid forecast parameter, lead or members')
-        if hourly and (var,r['candidate']) not in (('wind_speed_10m',WIND_HOURLY_CANDIDATE),(SPREAD,SPREAD_CANDIDATE)):raise ValueError('unexpected hourly research candidate')
-        if not hourly and (r['candidate'] in (WIND_HOURLY_CANDIDATE,SPREAD_CANDIDATE) or var==SPREAD):raise ValueError('hourly candidate outside hourly bucket')
+        if var not in {*PARAMS,SPREAD,WEST_SECTOR} or r['lead_hours'] not in (GROUPS|WIND_HOURLY_GROUPS).get(r['lead_bucket'],()) or not set(members)<=set(data['source_models']):raise ValueError('invalid forecast parameter, lead or members')
+        if hourly and (var,r['candidate']) not in (('wind_speed_10m',WIND_HOURLY_CANDIDATE),(SPREAD,SPREAD_CANDIDATE),*((WEST_SECTOR,name) for name in WEST_CANDIDATES)):raise ValueError('unexpected hourly research candidate')
+        if not hourly and (r['candidate'] in (WIND_HOURLY_CANDIDATE,SPREAD_CANDIDATE,*WEST_CANDIDATES) or var in (SPREAD,WEST_SECTOR)):raise ValueError('hourly candidate outside hourly bucket')
         if var==SPREAD and ((t.hour+8)%24 not in (*range(19,24),*range(0,8)) or any(scalar(r[k],SPREAD) is None for k in ('raw_core','raw_same_cohort'))):raise ValueError('invalid nighttime spread row')
         if r['parameter']=='precipitation' and (r['candidate']!='raw_core' or t-timedelta(hours=6)<issued):raise ValueError('unsafe rain forecast')
         if not all(math.isfinite(r[k]) for k in ('prediction','raw_core','raw_same_cohort','receipt_lead_hours')):raise ValueError('invalid numeric forecast')
         if abs(r['receipt_lead_hours']-(t-issued).total_seconds()/3600)>1e-8:raise ValueError('actual receipt lead mismatch')
+        if var==WEST_SECTOR:
+            freq=r.get('local_frequency');method=WEST_CANDIDATES.get(r['candidate'])
+            if not hourly or members!=CORE or method!=r['method'] or scalar(freq,var) is None or any(scalar(r[k],var) is None for k in ('prediction','raw_core','raw_same_cohort')) or r['raw_core']!=r['raw_same_cohort'] or r['window_days']!=30 or not 15<=r['training_n']<=30 or not 15<=r['training_days']<=30 or not data['awos_freshness_gate_passed']:raise ValueError('invalid west-sector research row')
+            last=parse_time(r['training_last_valid_utc']);expected=freq if method=='local_frequency' else .25*r['raw_core']+.75*freq
+            if not init-timedelta(days=30)<=last<init or last.hour!=t.hour or abs(r['prediction']-expected)>1e-10:raise ValueError('invalid west-sector formula or training time')
+            continue
         if var=='precipitation':
             if any(not 0<=r[k]<=1 for k in ('prediction','raw_core','raw_same_cohort')):raise ValueError('invalid rain probability')
         elif scalar(r['prediction'],var) is None:raise ValueError('outside research validity range')
@@ -331,11 +368,11 @@ def verify_forecasts(forecasts,obs,now,obs_inventory):
             if valid>now:pending+=1;continue
             actual=obs_at(obs,valid,var)
             if actual is None:pending+=1;continue
-            rain=var=='precipitation';circ=var=='wind_direction_10m';actual=float(actual>=1) if rain else actual
-            def loss(x):return (x-actual)**2 if rain else abs(wrap(x-actual) if circ else x-actual)
+            rain=var=='precipitation';binary=rain or var==WEST_SECTOR;circ=var=='wind_direction_10m';actual=float(actual>=1) if rain else actual
+            def loss(x):return (x-actual)**2 if binary else abs(wrap(x-actual) if circ else x-actual)
             p=r.get('persistence');groups[(var,r['candidate'],r['lead_bucket'])].append((valid,loss(r['prediction']),loss(r['raw_same_cohort']),loss(r['raw_core']),loss(p) if p is not None else None,actual))
     scores=[]
     for (var,candidate,group),v in sorted(groups.items()):
         arr=np.array([a[1:4] for a in v]);pv=[a for a in v if a[4] is not None]
-        scores.append({'parameter':var,'candidate':candidate,'lead_bucket':group,'metric':'Brier' if var=='precipitation' else 'MAE','n':len(v),'distinct_valid_times':len({a[0] for a in v}),'distinct_days':len({a[0].date() for a in v}),'event_pairs':sum(a[5]>=1 for a in v) if var=='precipitation' else None,'candidate_loss':float(arr[:,0].mean()),'paired_same_cohort_raw_loss':float(arr[:,1].mean()),'paired_core_raw_loss':float(arr[:,2].mean()),'persistence_n':len(pv),'paired_persistence_loss':float(np.mean([a[4] for a in pv])) if pv else None,'candidate_loss_on_persistence_pairs':float(np.mean([a[1] for a in pv])) if pv else None})
+        scores.append({'parameter':var,'candidate':candidate,'lead_bucket':group,'metric':'Brier' if var in ('precipitation',WEST_SECTOR) else 'MAE','n':len(v),'distinct_valid_times':len({a[0] for a in v}),'distinct_days':len({a[0].date() for a in v}),'event_pairs':sum(a[5]>=1 for a in v) if var in ('precipitation',WEST_SECTOR) else None,'candidate_loss':float(arr[:,0].mean()),'paired_same_cohort_raw_loss':float(arr[:,1].mean()),'paired_core_raw_loss':float(arr[:,2].mean()),'persistence_n':len(pv),'paired_persistence_loss':float(np.mean([a[4] for a in pv])) if pv else None,'candidate_loss_on_persistence_pairs':float(np.mean([a[1] for a in pv])) if pv else None})
     return {'contract':'wawp-shadow-verification-v1','as_of_utc':timestamp(now),'initializations':len(seen),'pending_or_unobserved_rows':pending,'observation_sha256':obs_inventory,'scores':scores,'status':'research_only_no_automatic_promotion'}

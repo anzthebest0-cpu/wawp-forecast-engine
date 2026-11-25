@@ -25,6 +25,8 @@ Keep the station's original `000HLY.YYYYMM.dat` file in `awos-inbox` updated as 
 
 ## Review
 
+Adaptive west-sector research: on the hourly 9–96h grid, compare same-local-hour 30-day observed frequency (minimum 15 distinct hourly labels, strict pre-initialization cutoff) and fixed 25% raw family vote + 75% frequency for 225–315° wind at >=2 kt. Calm valid observed speed is a non-event; missing speed or qualifying speed with missing direction is unknown. All seven model feeds and recent AWOS required. Brier verification on paired raw/frequency/blend rows; no calibrated warning probability or deterministic TAF shift. Historical month climatology remains a retrospective benchmark, not bundled station data in the public repository. Visibility is excluded.
+
 Add a distinct 14-day diurnal temperature-minus-dewpoint spread candidate for 19–07 WITA, hourly 9–96 h bands; preserve exact paired raw spread and same-hour persistence strictly before initialization. Both constituent fields must be valid, nonnegative spread, and all seven members available. This is a derived near-saturation research diagnostic, **not a fog or visibility forecast**. No visibility, TAF or operational output changes.
 
 Expanded April–November replay follow-up: retain all existing wind candidates and add a distinct 14-day local-hour-conditioned wind-speed correction on the hourly 9–24/25–48/49–72/73–96 h grid. Training and verification use those hourly bands rather than the earlier six-hour sample. Each candidate row embeds its own exact paired raw seven-model baseline. Missing/stale observations or inadequate training withhold the candidate; old archives remain readable. No operational wind or TAF changes.
