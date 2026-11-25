@@ -320,7 +320,7 @@ async function loadDashboard() {
         const localNow = new Date(now.getTime() + (8 * 60 * 60 * 1000));
         const witaHourStr = localNow.toISOString().replace('T', ' ').substring(0, 13) + ':00:00';
         
-        const futureData = Array.isArray(data) ? data.filter(d => d && Number.isFinite(previewValidEpoch(d.Datetime)) && d.Datetime >= witaHourStr) : [];
+        const futureData = Array.isArray(data) ? data.filter(d => d && Number.isFinite(previewValidEpoch(d.Datetime))) : [];
         const previewManifest = guidanceJson.metadata?.preview_manifest;
         const candidateRows = TitanPreview.windowRows(futureData,now.getTime(),titanPreviewSettings().hours);
         const currentPreview = previewIsCurrent(previewManifest) && candidateRows.length > 0;
@@ -1604,7 +1604,12 @@ function setupIndividualModels(modelsData, timeLabels) {
     const modelSelect = document.getElementById('model-select');
     const tbody = document.querySelector('#model-table tbody');
     if(!modelSelect || !tbody) return;
-    
+    const keys=['Temperature','Dewpoint','Pressure','Wind Dir.','Wind Speed','Wind Gust','Rainfall','Precip Probability','Prob Precip 1.0mm'];
+    const present=[...new Set(keys.flatMap(k=>Object.keys(modelsData[k]||{})))];
+    const names={ECMWF_HRES:'ECMWF IFS 0.25°',ECMWF_IFS_9KM:'ECMWF IFS HRES 9 km (independent)',GFS_GLOBAL:'NOAA GFS Global',ICON_SEAMLESS:'DWD ICON Seamless',GEM_GLOBAL:'ECCC GEM Global',CMA_GRAPES_GLOBAL:'CMA GRAPES Global',JMA_GSM:'JMA GSM',METEOFRANCE_ARPEGE_WORLD:'Météo-France ARPEGE World',UKMO_GLOBAL_10KM:'UKMO Global 10 km'};
+    modelSelect.replaceChildren();
+    for(const key of present){const opt=document.createElement('option');opt.value=key;opt.textContent=names[key]||key;modelSelect.append(opt);}
+    modelSelect.disabled=!present.length;
     function renderModel(modelName) {
         tbody.innerHTML = '';
         if(!timeLabels) return;
@@ -1632,11 +1637,11 @@ function setupIndividualModels(modelsData, timeLabels) {
             }
         }
         if (cadenceBadge) {
-            const output = meta.expected_output_interval_hours ?? 1;
-            const update = meta.provider_update_frequency_hours ?? '-';
+            const output = meta.expected_output_interval_hours;
+            const update = meta.provider_update_frequency_hours;
             const provider = meta.provider || 'Unknown provider';
             const note = meta.hourly_output_note || 'Open-Meteo hourly output grid; provider update frequency may differ.';
-            cadenceBadge.innerText = `${provider} | Output grid: ${output}h | Provider update: ${update}h | ${note}`;
+            cadenceBadge.innerText = `${provider} | Output grid: ${output==null?'Not reported':output+' h'} | Provider update: ${update==null?'Not reported':update+' h'} | ${meta.hourly_output_note || 'Native time step and update frequency may differ; inspect provider metadata.'}`;
         }
         
         timeLabels.forEach(dt => {

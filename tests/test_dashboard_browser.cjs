@@ -54,6 +54,7 @@ async function fixture(browser,mode,viewport){
     await open('tab-meteogram');
     await loc('#chart-temp .apexcharts-svg').first().waitFor({timeout:15000});
     await loc('#chart-ttd .apexcharts-svg').first().waitFor({timeout:15000});
+    assert.match(await loc('#chart-temp').textContent(),/Valid time · UTC/);
     assert.equal(await loc('.wind-barb-cell').count(),12);
     await page.screenshot({path:'browser-audit/'+mode+'-meteogram-'+viewport.width+'.png',fullPage:false});
     await open('tab-spread');
@@ -91,7 +92,7 @@ async function fixture(browser,mode,viewport){
   assert.match(await loc('#historical-scorecard').textContent(),/Not exported/);
   await loc('[data-sub="verify-significancy"]').click();
   assert.match(await loc('#verify-significancy-content').textContent(),/Direction of improvement is not established/);
-  for(const id of ['tab-weighter','tab-models','tab-climatology','tab-persistency','tab-health'])await open(id);
+  for(const id of ['tab-weighter','tab-models','tab-climatology','tab-persistency','tab-health']){await open(id);if(id==='tab-models'&&mode==='fresh')assert.deepEqual(await loc('#model-select option').evaluateAll(els=>els.map(e=>e.value)),['ECMWF_HRES','GFS_GLOBAL']);}
   await page.screenshot({path:'browser-audit/'+mode+'-'+viewport.width+'.png',fullPage:false});
   assert.deepEqual(errors,[],'uncaught browser exceptions');
   await page.close();

@@ -10,6 +10,9 @@ on:
       - 'tests/test_dashboard_browser.cjs'
       - 'tests/build_dashboard_preview.cjs'
       - 'tests/test_dashboard_preview.cjs'
+      - 'tests/build_connected_preview.cjs'
+      - 'tests/test_connected_preview.cjs'
+      - 'scripts/serve_connected_preview.py'
       - 'tests/probe_awosnet_browser.cjs'
       - 'tests/test_analysis_workspace.js'
       - 'tests/test_observation_ui.js'
@@ -29,6 +32,9 @@ on:
       - 'tests/test_dashboard_browser.cjs'
       - 'tests/build_dashboard_preview.cjs'
       - 'tests/test_dashboard_preview.cjs'
+      - 'tests/build_connected_preview.cjs'
+      - 'tests/test_connected_preview.cjs'
+      - 'scripts/serve_connected_preview.py'
       - 'tests/probe_awosnet_browser.cjs'
       - 'tests/test_analysis_workspace.js'
       - 'tests/test_observation_ui.js'
@@ -107,6 +113,18 @@ jobs:
         with:
           name: TITAN-interactive-preview
           path: dashboard-preview/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Build connected review package
+        run: node tests/build_connected_preview.cjs
+      - name: Check actual published data from connected browser preview
+        continue-on-error: true
+        run: node tests/test_connected_preview.cjs
+      - name: Upload connected review package
+        uses: actions/upload-artifact@v4
+        with:
+          name: TITAN-connected-preview
+          path: dashboard-connected-preview/
           if-no-files-found: error
           retention-days: 14
       - name: Upload browser audit screenshots

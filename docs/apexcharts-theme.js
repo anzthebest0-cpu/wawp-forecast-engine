@@ -1,7 +1,8 @@
 // Preview valid times are timezone-naive WITA by the raw-model export contract.
 function previewValidEpoch(value) { return TitanPreview.epoch(value); }
 function previewWitaLabel(epoch, dateOnly = false) { return titanPreviewLabel(epoch,dateOnly); }
-const previewXAxis = () => ({ type:'datetime', labels:{datetimeUTC:true, formatter:(_value, timestamp)=>previewWitaLabel(timestamp), style:{colors:'#94a3b8'}} });
+const previewAxisLabel=(_value,timestamp)=>previewWitaLabel(timestamp,true);
+const previewXAxis = () => ({ type:'datetime', tickAmount:6, labels:{datetimeUTC:true, formatter:previewAxisLabel, hideOverlappingLabels:true, rotate:0, trim:false, style:{colors:'#475569',fontSize:'10px'}},title:{text:'Valid time · '+titanPreviewSettings().zone} });
 
 /**
  * ABSOLUTE TITAN — ApexCharts Theme Configuration
@@ -57,8 +58,10 @@ const TITAN_BASE = {
 
   xaxis: {
     type: 'datetime',
+    tickAmount:6, title:{text:'Valid time · '+titanPreviewSettings().zone},
     labels: {
-      formatter: (_value, timestamp) => previewWitaLabel(timestamp),
+      formatter: previewAxisLabel,
+      hideOverlappingLabels:true, rotate:0, trim:false,
       style: {
         colors:     TITAN_COLORS.text,
         fontSize:   '10px',
@@ -136,7 +139,7 @@ const CHART_TEMP_OPTIONS = {
   },
 
   title: {
-    text:   'TEMPERATURE / DEWPOINT',
+    text:   'TEMPERATURE / DEWPOINT (°C)',
     align:  'left',
     style: {
       fontSize:   '10px',
@@ -209,7 +212,7 @@ const CHART_WIND_OPTIONS = {
   },
 
   title: {
-    text:   'WIND SPEED',
+    text:   'WIND SPEED / GUST (kt)',
     align:  'left',
     style: {
       fontSize:   '10px',
@@ -345,7 +348,7 @@ const CHART_RAIN_OPTIONS = {
   },
 
   title: {
-    text:   'PRECIPITATION',
+    text:   'HOURLY MODEL PRECIPITATION (mm)',
     align:  'left',
     style: {
       fontSize:   '10px',

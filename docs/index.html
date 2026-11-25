@@ -17,7 +17,7 @@
     <meta name="titan-awos-proxy" content="">
     <script src="observation-ui.js?v=3"></script>
     <script src="research-ui.js?v=1"></script>
-    <script src="apexcharts-theme.js?v=3.3-audit"></script>
+    <script src="apexcharts-theme.js?v=3.4-labels"></script>
     <link rel="stylesheet" href="style.css?v=4.6-audit">
 </head>
 <body>
@@ -291,17 +291,7 @@
             <h2>Individual Models</h2><p class="section-note">Raw individual forecasts. Valid times: <span data-preview-zone>WITA (UTC+8)</span>; model collection timestamps are UTC.</p>
             <div style="margin-bottom: 15px;">
                 <label for="model-select" style="color:var(--text-secondary); margin-right:10px;">Select Model:</label>
-                <select id="model-select" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px;">
-                    <option value="ECMWF_HRES">ECMWF IFS 0.25° (open data)</option>
-                    <option value="ECMWF_IFS_9KM">ECMWF IFS HRES 9 km (independent research preview)</option>
-                    <option value="GFS_GLOBAL">GFS_GLOBAL</option>
-                    <option value="ICON_SEAMLESS">ICON_SEAMLESS</option>
-                    <option value="GEM_GLOBAL">GEM_GLOBAL</option>
-                    <option value="CMA_GRAPES_GLOBAL">CMA_GRAPES_GLOBAL</option>
-                    <option value="JMA_GSM">JMA_GSM</option>
-                    <option value="METEOFRANCE_ARPEGE_WORLD">METEOFRANCE_ARPEGE_WORLD</option>
-                    <option value="UKMO_GLOBAL_10KM">UKMO_GLOBAL_10KM</option>
-                </select>
+                <select id="model-select" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px;"><option value="">Waiting for matching model data</option></select>
                 <span id="model-init-badge" style="margin-left: 15px; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-glass);">Data pull: Unknown</span>
             </div>
             <div id="model-cadence-badge" style="margin-bottom: 15px; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem; color: var(--text-secondary); background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass);">
@@ -838,6 +828,6 @@
         
     </main>
 
-    <script src="dashboard.js?v=4.7-audit"></script>
+    <script src="dashboard.js?v=4.8-labels"></script>
 </body>
 </html>
