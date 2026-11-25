@@ -1,0 +1,26 @@
+name: TITAN multimodel spatial metadata pilot
+on:
+  push:
+    branches: [codex/titan-multimodel-spatial-pilot]
+    paths: ['scripts/probe_ecmwf_spatial_indexes.py', '.github/workflows/titan_multimodel_spatial_pilot.yml']
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Inventory official ECMWF field indexes and byte costs
+        run: python scripts/probe_ecmwf_spatial_indexes.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ecmwf-spatial-index-inventory
+          path: multimodel-inventory.json
+          if-no-files-found: error
+          retention-days: 7
