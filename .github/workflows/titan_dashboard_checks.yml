@@ -14,6 +14,7 @@ on:
       - 'tests/test_connected_preview.cjs'
       - 'scripts/serve_connected_preview.py'
       - 'tests/probe_awosnet_browser.cjs'
+      - 'tests/probe_sigwx_sources.cjs'
       - 'tests/test_analysis_workspace.js'
       - 'tests/test_observation_ui.js'
       - 'scripts/probe_awosnet.py'
@@ -36,6 +37,7 @@ on:
       - 'tests/test_connected_preview.cjs'
       - 'scripts/serve_connected_preview.py'
       - 'tests/probe_awosnet_browser.cjs'
+      - 'tests/probe_sigwx_sources.cjs'
       - 'tests/test_analysis_workspace.js'
       - 'tests/test_observation_ui.js'
       - 'scripts/probe_awosnet.py'
@@ -97,6 +99,9 @@ jobs:
       - name: Explicitly requested direct browser AWOSnet test
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[awos-direct-test]')
         run: node tests/probe_awosnet_browser.cjs
+      - name: Explicitly requested BMKG SIGWX source diagnostic
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[sigwx-source-test]')
+        run: node tests/probe_sigwx_sources.cjs
       - name: Run isolated Chromium dashboard smoke tests
         run: |
           python -m http.server 8765 --bind 127.0.0.1 --directory docs > /tmp/titan-http.log 2>&1 &

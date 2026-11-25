@@ -1,0 +1,3 @@
+# SIGWX source integration investigation
+
+Official medium and high level pages have date selectors, but the exact chart delivery paths and cross-origin embedding behavior are not yet verified. Run the one-shot browser diagnostic only on an explicitly requested push containing [sigwx-source-test]. It inspects date options, image dimensions, provider requests, response headers and cross-origin iframe behavior; no chart archive or persistent weather data. Until results confirm the delivery contract, the verified official source links remain in TITAN. No generated date-path guesses or bypass of browser policies.
