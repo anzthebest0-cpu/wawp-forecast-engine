@@ -1,0 +1,30 @@
+name: TITAN model vertical profile diagnostics
+on:
+  push:
+    branches: [codex/titan-vertical-profile-pilot]
+    paths: ['scripts/pilot_vertical_profiles.py', '.github/workflows/titan_vertical_profile_pilot.yml']
+permissions:
+  contents: read
+jobs:
+  experiment:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile scripts/pilot_vertical_profiles.py
+      - run: python -m pip install "eccodes>=2.42,<3" "metpy>=1.7,<2" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3"
+      - run: python scripts/pilot_vertical_profiles.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-vertical-profile-review
+          path: |
+            vertical-profile-pilot/*.png
+            vertical-profile-pilot/manifest.json
+          retention-days: 7
+          if-no-files-found: warn
