@@ -55,7 +55,7 @@ def decode_message(data,key,lead,dx):
 
 def read_gfs(lead):
     url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?"
-    q={"dir":"/gfs.20261125/00/atmos","file":f"gfs.t00z.pgrb2.0p25.f{lead:03d}","subregion":"","leftlon":110,"rightlon":132,"toplat":5,"bottomlat":-10","lev_surface":"on"}
+    q={"dir":"/gfs.20261125/00/atmos","file":f"gfs.t00z.pgrb2.0p25.f{lead:03d}","subregion":"","leftlon":110,"rightlon":132,"toplat":5,"bottomlat":-10,"lev_surface":"on"}
     q.update({f"lev_{p}_mb":"on" for p in (925,850,700,500,200)})
     q.update({f"var_{v}":"on" for v in ("UGRD","VGRD","SPFH","TMP","PRES","CAPE","CIN")})
     url+=urllib.parse.urlencode(q)

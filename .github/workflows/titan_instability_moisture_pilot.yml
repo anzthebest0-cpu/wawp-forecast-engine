@@ -17,6 +17,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install "eccodes>=2.42,<3" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3"
+      - name: Syntax preflight
+        run: python -m py_compile scripts/pilot_instability_moisture.py scripts/pilot_circulation_comparison.py scripts/pilot_pwv_reflectivity.py scripts/pilot_regional_gfs.py
       - run: python scripts/pilot_instability_moisture.py
       - uses: actions/upload-artifact@v4
         if: always()
