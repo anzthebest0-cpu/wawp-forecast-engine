@@ -1,0 +1,82 @@
+name: TITAN full spatial forecast pipeline rehearsal
+on:
+  push:
+    branches: [codex/titan-full-spatial-pilot]
+permissions:
+  contents: read
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/test_cycle_discovery.py
+      - run: python scripts/pilot_cycle_discovery.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-full-discovery
+          path: cycle-discovery.json
+          retention-days: 7
+  acquire:
+    needs: discover
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        model: [gfs, ifs-025, ifs-010, aifs-025, icon]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-full-discovery
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install "eccodes>=2.42,<3" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3" "metpy>=1.7,<2" scipy pillow
+      - run: python scripts/test_spatial_rain_windows.py
+      - run: python scripts/pilot_full_spatial_acquire.py ${{ matrix.model }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-full-cache-${{ matrix.model }}
+          path: |
+            regional-cache/manifest.json
+            regional-cache/*.npz
+          retention-days: 7
+          if-no-files-found: error
+  render:
+    needs: acquire
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [pwv, circulation, dynamics, vertical, rain, icon]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-cache-*
+          path: cache-inputs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install "eccodes>=2.42,<3" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3" "metpy>=1.7,<2" scipy pillow
+      - run: python scripts/pilot_full_spatial_render.py ${{ matrix.group }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-full-render-${{ matrix.group }}
+          path: rendered/
+          retention-days: 7
+          if-no-files-found: error
