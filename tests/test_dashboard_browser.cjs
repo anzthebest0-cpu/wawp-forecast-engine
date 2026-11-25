@@ -63,6 +63,10 @@ async function fixture(browser,mode,viewport){
       for(const id of ['spread-temp','spread-t-td','spread-wind']) await loc('#'+id+' .apexcharts-svg').first().waitFor({timeout:15000});
       assert.ok(await loc('.rain-model-table .rain-missing').count()>0);
       assert.ok(await loc('.rain-model-table .rain-zero').count()>0);
+      const scroll=loc('#spread-rain .preview-scroll');
+      const layout=await scroll.evaluate(e=>{const first=e.querySelector('tbody th');e.scrollLeft=0;const initial=first.getBoundingClientRect().left;e.scrollLeft=300;const current=first.getBoundingClientRect().left;return {scroll:e.scrollLeft,delta:Math.abs(current-initial),bg:getComputedStyle(first).backgroundColor,width:first.getBoundingClientRect().width};});
+      assert.ok(layout.scroll>0);assert.ok(layout.delta<5);assert.ok(!layout.bg.includes('rgba')&&!layout.bg.includes('transparent'));assert.ok(layout.width>=112);
+      await page.screenshot({path:'browser-audit/'+mode+'-rain-scroll-'+viewport.width+'.png'});
     }else assert.match(await loc('#tab-spread').textContent(),/Matching individual model payload unavailable/);
   }
   await open('tab-regional');
@@ -74,13 +78,7 @@ async function fixture(browser,mode,viewport){
   assert.equal(await loc('#aviation-product-sources a[href$="sigwx_medium_level.php"]').count(),1);
   assert.equal(await loc('#aviation-product-sources a[href$="sigwx_high_level.php"]').count(),1);
   assert.equal(await loc('#regional-chart-type').count(),0);
-  await loc('#sigwx-medium-url').fill("https://web-aviation.bmkg.go.id/storage/photos/2/sigwx_202611251200.png?v=1795587495605");
-  await loc('#sigwx-medium-load').click();
-  await page.waitForFunction(()=>document.getElementById('sigwx-medium-status').textContent.includes('Image unavailable'));
-  await loc('#sigwx-medium-file').setInputFiles({name:'synthetic.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jZ1sAAAAASUVORK5CYII=','base64')});
-  await page.waitForFunction(()=>!document.getElementById('sigwx-medium-image').hidden);
-  await loc('#sigwx-medium-clear').click();
-  assert.equal(await loc('#sigwx-medium-image').getAttribute('src'),null);
+  assert.equal(await loc('#sigwx-image-panel').count(),0);
   await page.screenshot({path:'browser-audit/'+mode+'-analysis-'+viewport.width+'.png',fullPage:false});
   await open('tab-intel');
   if(mode==='mismatch'){
@@ -88,7 +86,7 @@ async function fixture(browser,mode,viewport){
     assert.equal(awosRequests,1);assert.match(await loc('#obs-poll-status').textContent(),/60 s/);
     await loc('#obs-refresh').click();await page.waitForFunction(()=>document.getElementById('obs-status').textContent.includes('proxy'));
     await loc('#obs-auto').uncheck();assert.match(await loc('#obs-poll-status').textContent(),/paused/);
-  }else assert.match(await loc('#obs-status').textContent(),/Not connected/);
+  }else {assert.match(await loc('#obs-status').textContent(),/not configured/);assert.equal(await loc('#obs-live-controls').isVisible(),false);}
   await loc('#obs-file').setInputFiles({name:'test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({schema:'titan-local-awos-v1',station:'WAWP',source:'AWOSnet',observed_at_utc:iso(now-1000).slice(0,19)+'Z',wind_average_minutes:2,wind_reference:'true',units_confirmed:true,wind_speed_kt:0,altimeter_setting_hpa:1012.5,rain_current_hour_mm:0,source_epoch_offset_seconds:28900}))});
   await page.waitForFunction(()=>document.getElementById('obs-wind_speed_kt').textContent==='0 kt');
   assert.equal(await loc('#obs-altimeter_setting_hpa').textContent(),'1012.5 hPa');
@@ -100,6 +98,9 @@ async function fixture(browser,mode,viewport){
   await open('tab-verify');
   await loc('#historical-scorecard table').waitFor();
   assert.match(await loc('#historical-scorecard').textContent(),/Not exported/);
+  await loc('[data-sub="verify-leadtime"]').click();
+  assert.match(await loc('#verify-leadtime-chart').textContent(),/No validated lead-time/);
+  assert.equal(await loc('#verify-leadtime-chart .apexcharts-svg').count(),0);
   await loc('[data-sub="verify-significancy"]').click();
   assert.match(await loc('#verify-significancy-content').textContent(),/Direction of improvement is not established/);
   for(const id of ['tab-weighter','tab-models','tab-climatology','tab-persistency','tab-health']){await open(id);if(id==='tab-models'&&mode==='fresh')assert.deepEqual(await loc('#model-select option').evaluateAll(els=>els.map(e=>e.value)),['ECMWF_HRES','GFS_GLOBAL']);}

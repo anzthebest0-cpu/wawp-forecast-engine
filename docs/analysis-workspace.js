@@ -205,21 +205,7 @@ const sources=[
 ];
 const scales=[{id:'global',title:'Global / intraseasonal',question:'Is the large-scale background favorable for convection?'},{id:'synoptic',title:'Synoptic',question:'What circulation and moisture patterns could influence Kolaka?'},{id:'meso',title:'Mesoscale',question:'Is the regional atmosphere supporting organized convection?'},{id:'local',title:'Local / airport',question:'What is actually happening near WAWP?'}];
 const forScale=id=>sources.filter(x=>x.scale===id);
-function sigwxURL(raw,level){
-    if(typeof raw!=='string'||raw.length>600||!['medium','high'].includes(level))throw Error('Invalid chart address.');
-    const u=new URL(raw.trim());
-    if(!['http:','https:'].includes(u.protocol)||u.hostname!=='web-aviation.bmkg.go.id'||u.port||u.username||u.password||u.hash)throw Error('Use an official BMKG image address only.');
-    const pattern=level==='medium'?/^\/storage\/photos\/2\/sigwx_(\d{12})\.png$/:/^\/model\/highsigwx\/(\d{8})_(\d{4})_[A-Z0-9]{4,12}_[A-Z]{4}\.png$/;
-    const m=pattern.exec(u.pathname);if(!m)throw Error('Address does not match the selected SIGWX product.');
-    const key=level==='medium'?'v':'id',entries=[...u.searchParams];
-    if(entries.length>1||entries.some(([k,v])=>k!==key||!/^\d{1,16}$/.test(v)))throw Error('Unexpected chart query parameter.');
-    const code=level==='medium'?m[1]:m[1]+m[2];
-    const iso=code.slice(0,4)+'-'+code.slice(4,6)+'-'+code.slice(6,8)+'T'+code.slice(8,10)+':'+code.slice(10,12)+':00Z';
-    const t=Date.parse(iso);if(!Number.isFinite(t)||new Date(t).toISOString().slice(0,19)+'Z'!==iso)throw Error('Invalid filename date.');
-    const upgraded=u.protocol==='http:';u.protocol='https:';
-    return {url:u.href,upgraded,filenameTime:iso.slice(0,16).replace('T',' ')};
-}
-const api={sources,scales,forScale,sigwxURL};
+const api={sources,scales,forScale};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.TitanAnalysis=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
 function setupAnalysisWorkspace(){
@@ -255,18 +241,4 @@ function setupAnalysisWorkspace(){
     document.getElementById('analysis-image-refresh').addEventListener('click',()=>{if(selected)showImage(selected);});
     document.getElementById('analysis-image-full').addEventListener('click',()=>{if(selected)window.open(selected.image,'_blank','noopener,noreferrer');});
     render('global');
-    setupSigwxImagePanels();
-}
-function setupSigwxImagePanels(){
-    for(const level of ['medium','high']){
-        const el=s=>document.getElementById('sigwx-'+level+'-'+s),input=el('url'),file=el('file'),img=el('image'),status=el('status'),original=el('original');
-        if(!input||!file||!img||!status||!original)continue;
-        let objectURL=null,version=0;
-        const clear=()=>{version++;img.onload=null;img.onerror=null;img.hidden=true;img.removeAttribute('src');original.hidden=true;original.removeAttribute('href');if(objectURL){URL.revokeObjectURL(objectURL);objectURL=null;}};
-        const show=(url,note)=>{const token=++version;img.onload=()=>{if(token!==version)return;img.hidden=false;status.textContent=note+' Image loaded; manually verify printed validity.';};img.onerror=()=>{if(token!==version)return;img.hidden=true;status.textContent='Image unavailable. Open original provider or choose a local chart; no old image retained.';};status.textContent=note+' Requesting image…';img.src=url;};
-        el('load').addEventListener('click',()=>{clear();file.value='';try{const item=TitanAnalysis.sigwxURL(input.value,level);original.href=item.url;original.hidden=false;show(item.url,'Filename timestamp: '+item.filenameTime+' (not independently verified valid time).'+(item.upgraded?' Trying HTTPS instead of HTTP.':''));}catch(e){status.textContent=e.message;}});
-        file.addEventListener('change',()=>{clear();input.value='';const f=file.files[0];if(!f){status.textContent='No chart selected.';return;}if(!['image/png','image/jpeg'].includes(f.type)||f.size>10485760){status.textContent='Select a PNG or JPEG up to 10 MiB.';return;}objectURL=URL.createObjectURL(f);show(objectURL,'Local chart; source and validity not independently verified.');});
-        el('clear').addEventListener('click',()=>{clear();input.value='';file.value='';status.textContent='No chart selected.';});
-        window.addEventListener('pagehide',clear);
-    }
 }

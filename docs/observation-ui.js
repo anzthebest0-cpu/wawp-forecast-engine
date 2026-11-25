@@ -53,10 +53,10 @@ function setupObservationPanel(){
     const stamp=t=>new Date(t).toISOString().slice(0,19)+'Z';
     const render=()=>{
         const now=Date.now(),a=sample?TitanObservation.age(sample.at,now,5):null,r=metar?TitanObservation.age(metar.at,now,60):null;
-        el('obs-status').textContent=sourceError||(!sample?'Not connected — no local snapshot loaded':a.state==='recent'?'Recent '+sampleSource+' snapshot · '+a.minutes+' min old':'Stale or invalid snapshot — values withheld');
+        el('obs-status').textContent=sourceError||(!sample?(endpoint?'Not connected — awaiting verified snapshot':'Not connected — live AWOSnet is not configured'):a.state==='recent'?'Recent '+sampleSource+' snapshot · '+a.minutes+' min old':'Stale or invalid snapshot — values withheld');
         el('obs-time').textContent=sample?'Confirmed source display clock: '+stamp(sample.at):'Sensor observation time: —';
         el('obs-retrieved').textContent=retrievedAt!==null?'Retrieved at: '+stamp(retrievedAt):'';
-        el('obs-poll-status').textContent=!endpoint?'Automatic retrieval not configured':!enabled?'Automatic retrieval paused':document.visibilityState!=='visible'?'Paused while browser tab is hidden':'Automatic retrieval every 60 s while visible';
+        el('obs-poll-status').textContent=!endpoint?'Live feed unavailable in TITAN: AWOSnet serves HTTP; a permitted HTTPS relay is required. Open AWOSnet directly or import a local snapshot.':!enabled?'Automatic retrieval paused':document.visibilityState!=='visible'?'Paused while browser tab is hidden':'Automatic retrieval every 60 s while visible';
         el('obs-epoch-note').textContent=sample&&sample.epochOffset!==null?'Raw XML epoch offset from display clock: '+sample.epochOffset+' s. Not used as UTC observation time.':'';
         for(const [key,unit] of fields){
             const v=sample&&a.state==='recent'?sample.values[key]:null;
@@ -76,9 +76,9 @@ function setupObservationPanel(){
         finally{clearTimeout(deadline);if(token===generation){controller=null;render();if(visible())timer=setTimeout(poll,60000);}}
     };
     const pause=()=>{enabled=false;stop();render();};
-    el('obs-refresh').disabled=!endpoint;el('obs-auto').disabled=!endpoint;
-    el('obs-refresh').addEventListener('click',()=>{if(!endpoint)return;enabled=true;el('obs-auto').checked=true;stop();poll();});
-    el('obs-auto').checked=enabled;el('obs-auto').addEventListener('change',()=>{enabled=el('obs-auto').checked;stop();render();if(visible())poll();});
+    el('obs-live-controls').hidden=!endpoint;el('obs-refresh').disabled=!endpoint;el('obs-auto').disabled=!endpoint;
+    el('obs-refresh').addEventListener('click',()=>{if(!endpoint)return;++importVersion;enabled=true;el('obs-auto').checked=true;stop();poll();});
+    el('obs-auto').checked=enabled;el('obs-auto').addEventListener('change',()=>{enabled=el('obs-auto').checked;if(enabled)++importVersion;stop();render();if(visible())poll();});
     document.addEventListener('visibilitychange',()=>{stop();render();if(visible())poll();});
     window.addEventListener('pagehide',stop);window.addEventListener('pageshow',e=>{if(e.persisted&&visible())poll();});
     el('obs-file').addEventListener('change',async e=>{
