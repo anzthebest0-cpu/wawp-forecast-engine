@@ -7,7 +7,7 @@ ROOT="https://data.ecmwf.int/forecasts"
 CYCLE="20261125000000"
 LEADS=(0,6,12)
 FIELDS={("u","925"),("v","925"),("u","850"),("v","850"),("r","850"),("r","700"),("sp","sfc"),("msl","sfc")}
-EXTRA={("t","925"),("t","850"),("t","700"),("t","500"),("q","925"),("q","850"),("q","700"),("z","500"),("u","200"),("v","200"),("cape","sfc"),("cin","sfc"),("tp","sfc")}
+EXTRA={("t","925"),("t","850"),("t","700"),("t","500"),("q","925"),("q","850"),("q","700"),("z","500"),("u","200"),("v","200"),("cape","sfc"),("cin","sfc"),("tp","sfc"),("tcwv","sfc"),("tcw","sfc"),("ttr","sfc"),("mucape","sfc"),("tciw","sfc"),("tclw","sfc"),("tcrw","sfc"),("tcc","sfc")}
 def fetch(url):
     req=urllib.request.Request(url,headers={"User-Agent":"TITAN-WAWP-regional-pilot/1.0"})
     with urllib.request.urlopen(req,timeout=30) as res:
