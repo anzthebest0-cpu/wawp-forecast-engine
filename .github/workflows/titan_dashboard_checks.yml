@@ -1,0 +1,32 @@
+name: TITAN Dashboard Checks
+on:
+  push:
+    branches:
+      - codex/titan-dashboard-phase1
+    paths:
+      - 'docs/**'
+      - 'tests/test_preview_ui.js'
+      - '.github/workflows/titan_dashboard_checks.yml'
+  pull_request:
+    paths:
+      - 'docs/index.html'
+      - 'docs/*.js'
+      - 'docs/style.css'
+      - 'tests/test_preview_ui.js'
+      - '.github/workflows/titan_dashboard_checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  presentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          node --check docs/preview-ui.js
+          node --check docs/apexcharts-theme.js
+          node --check docs/dashboard.js
+      - name: Check preview presentation helpers
+        run: node tests/test_preview_ui.js
