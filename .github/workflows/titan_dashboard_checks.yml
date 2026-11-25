@@ -72,6 +72,9 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright@1.51.1 apexcharts@3.54.1
           npx playwright install --with-deps chromium
+      - name: Explicitly requested read-only AWOSnet connectivity diagnostic
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[awosnet-probe]')
+        run: python scripts/probe_awosnet.py --allow-http --timeout 5
       - name: Run isolated Chromium dashboard smoke tests
         run: |
           python -m http.server 8765 --bind 127.0.0.1 --directory docs > /tmp/titan-http.log 2>&1 &

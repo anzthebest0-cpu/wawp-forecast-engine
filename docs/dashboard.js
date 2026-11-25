@@ -674,115 +674,42 @@ function setupSpreadCharts(modelsData, timeLabels) {
         if (el) el.innerHTML = '';
     });
 
-    const getPercentile = (dataArr, p) => {
-        if(dataArr.length === 0) return null;
-        dataArr.sort((a,b) => a-b);
-        const index = (dataArr.length - 1) * p;
-        const lower = Math.floor(index);
-        const upper = Math.ceil(index);
-        const weight = index - lower;
-        if(upper >= dataArr.length) return dataArr[lower];
-        return dataArr[lower] * (1 - weight) + dataArr[upper] * weight;
+    const percentile=(vals,p)=>{
+        if(!vals.length)return null;
+        const sorted=[...vals].sort((a,b)=>a-b), i=(sorted.length-1)*p, lo=Math.floor(i),hi=Math.ceil(i);
+        return sorted[lo]+(sorted[hi]-sorted[lo])*(i-lo);
     };
-
-    const createPlumeSeries = (param) => {
-        const rangeMaxMin = [];
-        const rangeIQR = [];
-        const medLine = [];
-        
-        for (const t of spreadTimeLabels) {
-            const ts = previewValidEpoch(t);
-            const vals = [];
-            for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
-                if (modelVals[t] !== undefined && modelVals[t] !== null) {
-                    vals.push(modelVals[t]);
-                }
-            }
-            if (vals.length > 0) {
-                rangeMaxMin.push({ x: ts, y: [getPercentile(vals, 0.0), getPercentile(vals, 1.0)] });
-                rangeIQR.push({ x: ts, y: [getPercentile(vals, 0.25), getPercentile(vals, 0.75)] });
-                medLine.push({ x: ts, y: getPercentile(vals, 0.50) });
-            }
+    const makeDistribution=(param,paired=false)=>spreadTimeLabels.map(t=>{
+        const vals=[];
+        for(const [model,values] of Object.entries(modelsData[param]||{})){
+            const v=TitanPreview.numeric(values?.[t]);
+            if(v===null)continue;
+            if(paired){const dew=TitanPreview.numeric(modelsData.Dewpoint?.[model]?.[t]);if(dew===null)continue;vals.push(v-dew);}
+            else vals.push(v);
         }
-        return [
-            { name: 'Min-Max Range', type: 'rangeArea', data: rangeMaxMin },
-            { name: 'Interquartile Range', type: 'rangeArea', data: rangeIQR },
-            { name: 'Median', type: 'line', data: medLine }
-        ];
-    };
-
-    const createBarSeries = (param) => {
-        const series = [];
-        for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
-            const dataPts = [];
-            for (const t of spreadTimeLabels) {
-                const ts = previewValidEpoch(t);
-                if (modelVals[t] !== undefined && modelVals[t] !== null) {
-                    dataPts.push([ts, modelVals[t]]);
-                }
-            }
-            series.push({ name: model, data: dataPts, type: 'bar' });
-        }
-        return series;
-    };
-
-    const spreadOptions = (title, yAxisLabel, isBar=false) => ({
-        ...TITAN_BASE,
-        chart: { ...TITAN_BASE.chart, type: isBar ? 'bar' : 'area', height: 280, stacked: false, animations: { enabled: false } },
-        title: { text: title, style: { fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' } },
-        stroke: { curve: 'smooth', width: isBar ? 0 : [0, 0, 2] },
-        dataLabels: { enabled: false },
-        tooltip: { enabled: true, shared: false, x: {formatter: value=>previewWitaLabel(value)} },
-        markers: { size: 0 },
-        xaxis: previewXAxis(),
-        yaxis: { title: { text: yAxisLabel }, labels: { style: { colors: 'var(--text-secondary)' }, formatter: (val) => val.toFixed(1) } },
-        legend: { position: 'top' },
-        fill: isBar ? { opacity: 0.85 } : { opacity: [0.15, 0.4, 1] }
+        return {x:previewValidEpoch(t),vals};
     });
-
-    const tempOptions = spreadOptions('Temperature Plume (°C)', '°C');
-    tempOptions.colors = ['#ef4444', '#ef4444', '#ef4444'];
-    new ApexCharts(document.querySelector('#spread-temp'), { ...tempOptions, series: createPlumeSeries('Temperature') }).render();
-    
-    // T - Td Spread (Fog Risk) Plume
-    const createSpreadTTdPlume = () => {
-        const rangeMaxMin = [];
-        const rangeIQR = [];
-        const medLine = [];
-        for (const t of spreadTimeLabels) {
-            const ts = previewValidEpoch(t);
-            const vals = [];
-            for (const [model, modelVals] of Object.entries(modelsData['Temperature'] || {})) {
-                const temp = modelsData['Temperature'][model]?.[t];
-                const dew = modelsData['Dewpoint']?.[model]?.[t];
-                if (temp !== undefined && temp !== null && dew !== undefined && dew !== null) {
-                    vals.push(Math.max(0, temp - dew));
-                }
-            }
-            if (vals.length > 0) {
-                rangeMaxMin.push({ x: ts, y: [getPercentile(vals, 0.0), getPercentile(vals, 1.0)] });
-                rangeIQR.push({ x: ts, y: [getPercentile(vals, 0.25), getPercentile(vals, 0.75)] });
-                medLine.push({ x: ts, y: getPercentile(vals, 0.50) });
-            }
-        }
-        return [
-            { name: 'Min-Max Range', type: 'rangeArea', data: rangeMaxMin },
-            { name: 'Interquartile Range', type: 'rangeArea', data: rangeIQR },
-            { name: 'Median', type: 'line', data: medLine }
-        ];
+    const draw=(id,title,unit,param,paired=false)=>{
+        const el=document.getElementById(id),points=makeDistribution(param,paired);
+        if(!points.some(p=>p.vals.length)){el.textContent='No matched model values.';return;}
+        const series=[['Minimum',0],['P25',.25],['Median',.5],['P75',.75],['Maximum',1]].map(([name,p])=>({name,data:points.map(d=>[d.x,percentile(d.vals,p)])}));
+        const note=document.createElement('p');note.className='section-note';
+        const counts=points.map(d=>d.vals.length);
+        note.textContent='Contributing models per hour: '+Math.min(...counts)+'–'+Math.max(...counts)+'. Quantiles are descriptive; with one model all five lines coincide.';
+        el.append(note);
+        const mount=document.createElement('div');el.append(mount);
+        const chart=new ApexCharts(mount,{
+            ...TITAN_BASE,chart:{...TITAN_BASE.chart,id:id+'-distribution',type:'line',height:280,animations:{enabled:false}},
+            title:{text:title},series,colors:['#94a3b8','#38bdf8','#0ea5e9','#38bdf8','#94a3b8'],
+            stroke:{curve:'straight',width:[1,1.5,3,1.5,1],dashArray:[4,2,0,2,4]},
+            dataLabels:{enabled:false},xaxis:previewXAxis(),tooltip:{...TITAN_BASE.tooltip,shared:true},
+            yaxis:{title:{text:unit},labels:{formatter:v=>Number.isFinite(v)?v.toFixed(1):'—'}}
+        });
+        chart.render().catch(err=>{console.error('Distribution render failed: '+id,err);mount.textContent='Chart rendering failed; use individual model table.';});
     };
-    
-    const ttdContainer = document.querySelector('#spread-t-td');
-    if (ttdContainer) {
-        const ttdOptions = spreadOptions('T − Td model distribution (°C)', '°C');
-        ttdOptions.colors = ['#a855f7', '#a855f7', '#a855f7'];
-        new ApexCharts(ttdContainer, { ...ttdOptions, series: createSpreadTTdPlume() }).render();
-    }
-    
-    const windOptions = spreadOptions('Wind Speed Plume (kt)', 'kt');
-    windOptions.colors = ['#10b981', '#10b981', '#10b981'];
-    new ApexCharts(document.querySelector('#spread-wind'), { ...windOptions, series: createPlumeSeries('Wind Speed') }).render();
-    
+    draw('spread-temp','Temperature model distribution','°C','Temperature');
+    draw('spread-t-td','Temperature − dewpoint distribution','°C','Temperature',true);
+    draw('spread-wind','Wind speed model distribution','kt','Wind Speed');
     renderRainHeatmap(modelsData,spreadTimeLabels);
 }
 

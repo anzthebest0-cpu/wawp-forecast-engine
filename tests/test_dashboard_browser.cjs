@@ -16,7 +16,8 @@ const archive={metrics:{Month:{Temperature:{overall:{ECMWF_HRES:{MAE:1,RMSE:1.2,
 async function fixture(browser,mode,viewport){
   const page=await browser.newPage({viewport});
   const errors=[];
-  page.on('pageerror',e=>errors.push(e.message));
+  page.on('pageerror',e=>{errors.push(e.stack||e.message);console.error('PAGE ERROR',mode,e.stack||e.message);});
+  page.on('console',m=>{if(m.type()==='error'&&!/Failed to load resource|net::ERR_FAILED/.test(m.text()))console.log('BROWSER CONSOLE',mode,m.text());});
   await page.route('**/*',async route=>{
     const u=new URL(route.request().url());
     if(u.hostname==='cdn.jsdelivr.net'&&u.pathname.includes('apexcharts'))return route.fulfill({path:require.resolve('apexcharts/dist/apexcharts.min.js'),contentType:'application/javascript'});
@@ -50,9 +51,11 @@ async function fixture(browser,mode,viewport){
     await loc('#chart-temp .apexcharts-svg').first().waitFor({timeout:15000});
     await loc('#chart-ttd .apexcharts-svg').first().waitFor({timeout:15000});
     assert.equal(await loc('.wind-barb-cell').count(),12);
+    await page.screenshot({path:'browser-audit/'+mode+'-meteogram-'+viewport.width+'.png',fullPage:false});
     await open('tab-spread');
     if(mode==='fresh'){
       await loc('.rain-model-table').waitFor();
+      for(const id of ['spread-temp','spread-t-td','spread-wind']) await loc('#'+id+' .apexcharts-svg').first().waitFor({timeout:15000});
       assert.ok(await loc('.rain-model-table .rain-missing').count()>0);
       assert.ok(await loc('.rain-model-table .rain-zero').count()>0);
     }else assert.match(await loc('#tab-spread').textContent(),/Matching individual model payload unavailable/);
@@ -63,20 +66,22 @@ async function fixture(browser,mode,viewport){
   await loc('#analysis-scales button[data-scale="global"]').click();
   await loc('#analysis-cards button').first().click();
   await page.waitForFunction(()=>document.getElementById('analysis-image-status').textContent.includes('unavailable'));
+  await page.screenshot({path:'browser-audit/'+mode+'-analysis-'+viewport.width+'.png',fullPage:false});
   await open('tab-intel');
   assert.match(await loc('#obs-status').textContent(),/Not connected/);
   await loc('#obs-file').setInputFiles({name:'test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({schema:'titan-local-awos-v1',station:'WAWP',source:'AWOSnet',observed_at_utc:iso(now-1000).slice(0,19)+'Z',wind_average_minutes:2,wind_reference:'true',units_confirmed:true,wind_speed_kt:0}))});
   await page.waitForFunction(()=>document.getElementById('obs-wind_speed_kt').textContent==='0 kt');
   await loc('#obs-clear').click();
   assert.equal(await loc('#obs-wind_speed_kt').textContent(),'—');
+  await page.screenshot({path:'browser-audit/'+mode+'-overview-'+viewport.width+'.png',fullPage:false});
   await open('tab-verify');
   await loc('#historical-scorecard table').waitFor();
   assert.match(await loc('#historical-scorecard').textContent(),/Not exported/);
   await loc('[data-sub="verify-significancy"]').click();
   assert.match(await loc('#verify-significancy-content').textContent(),/Direction of improvement is not established/);
   for(const id of ['tab-weighter','tab-models','tab-climatology','tab-persistency','tab-health'])await open(id);
-  assert.deepEqual(errors,[],'uncaught browser exceptions');
   await page.screenshot({path:'browser-audit/'+mode+'-'+viewport.width+'.png',fullPage:false});
+  assert.deepEqual(errors,[],'uncaught browser exceptions');
   await page.close();
 }
 (async()=>{fs.mkdirSync('browser-audit',{recursive:true});const browser=await chromium.launch({headless:true});try{await fixture(browser,'fresh',{width:1440,height:900});await fixture(browser,'expired',{width:390,height:844});await fixture(browser,'mismatch',{width:1280,height:800});console.log('PASS: isolated Chromium dashboard fixture scenarios');}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
