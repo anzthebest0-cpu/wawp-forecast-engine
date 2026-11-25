@@ -1,0 +1,63 @@
+name: TITAN consolidated spatial review
+on:
+  push:
+    branches: [codex/titan-spatial-review]
+    paths: ['scripts/build_spatial_review.py', 'scripts/titan_spatial_review.html', '.github/workflows/titan_spatial_review.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-pwv-reflectivity-review
+          run-id: '45601637928'
+          github-token: ${{ github.token }}
+          path: review-inputs/pwv
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-circulation-comparison-review
+          run-id: '45601978661'
+          github-token: ${{ github.token }}
+          path: review-inputs/circulation
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-instability-moisture-three-domains
+          run-id: '45605768347'
+          github-token: ${{ github.token }}
+          path: review-inputs/dynamics
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-mucape-repair-three-domains
+          run-id: '45610101731'
+          github-token: ${{ github.token }}
+          path: review-inputs/mucape
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-rain-gust-review
+          run-id: '45610038533'
+          github-token: ${{ github.token }}
+          path: review-inputs/rain
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-vertical-profile-review
+          run-id: '45612267808'
+          github-token: ${{ github.token }}
+          path: review-inputs/vertical
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile scripts/build_spatial_review.py
+      - run: python -m pip install pillow
+      - run: python scripts/build_spatial_review.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-spatial-review-offline
+          path: titan-spatial-review/
+          retention-days: 7
