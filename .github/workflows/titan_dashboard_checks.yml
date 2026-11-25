@@ -15,6 +15,7 @@ on:
       - 'scripts/serve_connected_preview.py'
       - 'tests/probe_awosnet_browser.cjs'
       - 'tests/probe_sigwx_sources.cjs'
+      - 'tests/probe_sigwx_images.cjs'
       - 'tests/test_analysis_workspace.js'
       - 'tests/test_observation_ui.js'
       - 'scripts/probe_awosnet.py'
@@ -38,6 +39,7 @@ on:
       - 'scripts/serve_connected_preview.py'
       - 'tests/probe_awosnet_browser.cjs'
       - 'tests/probe_sigwx_sources.cjs'
+      - 'tests/probe_sigwx_images.cjs'
       - 'tests/test_analysis_workspace.js'
       - 'tests/test_observation_ui.js'
       - 'scripts/probe_awosnet.py'
@@ -102,6 +104,9 @@ jobs:
       - name: Explicitly requested BMKG SIGWX source diagnostic
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[sigwx-source-test]')
         run: node tests/probe_sigwx_sources.cjs
+      - name: Explicitly requested exact SIGWX image diagnostic
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[sigwx-image-test]')
+        run: node tests/probe_sigwx_images.cjs
       - name: Run isolated Chromium dashboard smoke tests
         run: |
           python -m http.server 8765 --bind 127.0.0.1 --directory docs > /tmp/titan-http.log 2>&1 &

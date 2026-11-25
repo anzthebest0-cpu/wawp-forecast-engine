@@ -74,6 +74,13 @@ async function fixture(browser,mode,viewport){
   assert.equal(await loc('#aviation-product-sources a[href$="sigwx_medium_level.php"]').count(),1);
   assert.equal(await loc('#aviation-product-sources a[href$="sigwx_high_level.php"]').count(),1);
   assert.equal(await loc('#regional-chart-type').count(),0);
+  await loc('#sigwx-medium-url').fill("https://web-aviation.bmkg.go.id/storage/photos/2/sigwx_202611251200.png?v=1795587495605");
+  await loc('#sigwx-medium-load').click();
+  await page.waitForFunction(()=>document.getElementById('sigwx-medium-status').textContent.includes('Image unavailable'));
+  await loc('#sigwx-medium-file').setInputFiles({name:'synthetic.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jZ1sAAAAASUVORK5CYII=','base64')});
+  await page.waitForFunction(()=>!document.getElementById('sigwx-medium-image').hidden);
+  await loc('#sigwx-medium-clear').click();
+  assert.equal(await loc('#sigwx-medium-image').getAttribute('src'),null);
   await page.screenshot({path:'browser-audit/'+mode+'-analysis-'+viewport.width+'.png',fullPage:false});
   await open('tab-intel');
   if(mode==='mismatch'){

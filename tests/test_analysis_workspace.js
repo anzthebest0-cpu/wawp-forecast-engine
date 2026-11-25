@@ -22,3 +22,8 @@ assert.ok(html.includes('https://web-aviation.bmkg.go.id/web/sigwx_high_level.ph
 assert.ok(!html.includes('rason_wind_streamlines'));
 for(const id of ['enso','sst','mjo'])assert.equal(a.sources.find(x=>x.id===id).image,null);
 console.log('TITAN analysis catalog and markup checks passed');
+
+const med="https://web-aviation.bmkg.go.id/storage/photos/2/sigwx_202611251200.png?v=1795587495605",high="https://web-aviation.bmkg.go.id/model/highsigwx/20261126_0000_PGGE05_EGRR.png?id=3615522";
+assert.equal(a.sigwxURL(med.replace('https:','http:'),'medium').url,med);
+assert.equal(a.sigwxURL(high,'high').filenameTime,'2026-11-26 00:00');
+for(const bad of ['https://example.com/x.png',med.replace('20261125','20261131'),med+'&x=1',high,med.replace('https://','https://user@')])assert.throws(()=>a.sigwxURL(bad,'medium'));
