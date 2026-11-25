@@ -91,6 +91,7 @@ def main():
         issued=datetime.now(UTC);data['issued_at_utc']=s.timestamp(issued)
         data['rows']=[r for r in data['rows'] if s.parse_time(r['valid_utc'])>issued and (r['parameter']!='precipitation' or s.parse_time(r['valid_utc'])-timedelta(hours=6)>=issued)]
         for r in data['rows']:r['receipt_lead_hours']=(s.parse_time(r['valid_utc'])-issued).total_seconds()/3600
+        s.attach_integrated(data)
         s.validate_forecast(data)
         body=(json.dumps(data,indent=2,allow_nan=False)+'\n').encode();name=f'shadow-forecast-{cycle}-{s.digest(body)}.json';path=dirs['new']/name
         path.write_bytes(body);publish(path,fc,dirs['readback']);forecasts.append(data);existing=data;new=True
@@ -104,6 +105,9 @@ def main():
     vpath=json_file(dirs['new']/f'shadow-verification-{args.execution_id}.json',verification);publish(vpath,ver,dirs['readback'])
     # Public action artifact contains counts only, not station data or forecasts.
     status={'status':'research_only_no_promotion','initialization_utc':existing['initialization_utc'],'new_forecast':new,'source_models':len(existing['source_models']),'raw_rows':sum(r['candidate']=='raw_core' for r in existing['rows']),'candidate_rows':sum(r['candidate']!='raw_core' for r in existing['rows']),'awos_freshness_gate_passed':existing['awos_freshness_gate_passed'],'latest_training_observation_utc':existing['latest_training_observation_utc'],'pending_or_unobserved_rows':verification['pending_or_unobserved_rows'],'scored_groups':len(verification['scores']),'withheld':existing['withheld']}
+    status['integrated']={k:v for k,v in verification['integrated'].items() if k not in ('scores','joint_scores')}
+    status['integrated']['current_cycle_vectors']=len(existing.get('integrated',{}).get('vectors',[]))
+    status['integrated']['current_cycle_all_fits_active']=sum(all(f['active'] for f in v['fits'].values()) for v in existing.get('integrated',{}).get('vectors',[]))
     args.report.parent.mkdir(parents=True,exist_ok=True);json_file(args.report,status);print(json.dumps(status),flush=True)
 
 
