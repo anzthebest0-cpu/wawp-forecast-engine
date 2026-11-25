@@ -1,0 +1,82 @@
+'use strict';
+// Isolated browser fixture: synthetic data never published or committed to docs/data.
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root='http://127.0.0.1:8765';
+const now=Date.now(),hour=Math.floor(now/3600000)*3600000;
+const iso=t=>new Date(t).toISOString();
+const wita=t=>iso(t+8*3600000).slice(0,19).replace('T',' ');
+const manifest={contract:'raw-model-preview-v1',status:'model_only',as_of_utc:iso(now-60000),expires_at_utc:iso(now+3600000),models:{ECMWF_HRES:{},GFS_GLOBAL:{}},taf_status:'withheld_pending_independent_validation'};
+const rows=Array.from({length:30},(_,i)=>({Datetime:wita(hour+i*3600000),Temperature:30-i%3,Dewpoint:24,Wind:5+i%4,Gust:i===3?null:12,Rain:i===2?null:i%4,Pressure:1011,'Wind Dir.':240,'High Clouds':20,'Mid Clouds':40,'Low Clouds':i===4?null:60,Model_Count:2}));
+const values=Object.fromEntries(rows.map((r,i)=>[r.Datetime,i===2?null:i%4]));
+const individual={Preview_Manifest:manifest,Temperature:{ECMWF_HRES:Object.fromEntries(rows.map(r=>[r.Datetime,r.Temperature]))},Dewpoint:{ECMWF_HRES:Object.fromEntries(rows.map(r=>[r.Datetime,r.Dewpoint]))},'Wind Speed':{ECMWF_HRES:Object.fromEntries(rows.map(r=>[r.Datetime,r.Wind]))},Rainfall:{ECMWF_HRES:values,GFS_GLOBAL:values},Model_Metadata:{}};
+const archive={metrics:{Month:{Temperature:{overall:{ECMWF_HRES:{MAE:1,RMSE:1.2,Bias:0.2}}},Rainfall:{overall:{ECMWF_HRES:{HSS:.3,CSI:.4}},significance:{fused:{dm_stat:1,p_value:.01,nw_bandwidth:4}}}}}};
+async function fixture(browser,mode,viewport){
+  const page=await browser.newPage({viewport});
+  const errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.route('**/*',async route=>{
+    const u=new URL(route.request().url());
+    if(u.hostname==='cdn.jsdelivr.net'&&u.pathname.includes('apexcharts'))return route.fulfill({path:require.resolve('apexcharts/dist/apexcharts.min.js'),contentType:'application/javascript'});
+    if(u.origin!==root)return route.abort();
+    if(!u.pathname.startsWith('/data/'))return route.continue();
+    const name=u.pathname.split('/').pop();
+    let data={};
+    if(name==='taf_guidance.json')data={metadata:{preview_manifest:mode==='expired'?{...manifest,expires_at_utc:iso(now-1000)}:manifest,latest_data_pull_utc:iso(now-60000)},data:rows};
+    else if(name==='individual_models.json')data=mode==='mismatch'?{...individual,Preview_Manifest:{...manifest,as_of_utc:iso(now-120000)}}:individual;
+    else if(name==='latest_weights.json')data={weights:{}};
+    else if(name==='latest_performance.json')data=archive;
+    else if(name==='tafor_intel.json')data={default:{taf_text:'FIXTURE MUST NEVER DISPLAY'}};
+    else return route.fulfill({status:404,body:'Unavailable fixture'});
+    return route.fulfill({json:data});
+  });
+  await page.goto(root+'/?hours=12&tz=UTC#tab-matrix');
+  const loc=s=>page.locator(s);
+  await page.waitForFunction(()=>!document.getElementById('preview-safety-banner').textContent.includes('until freshness'));
+  await page.waitForFunction(()=>!document.getElementById('update-time').textContent.includes('Loading'));
+  assert.match(await loc('#taf-text-display').textContent(),/withheld/i);
+  assert.equal(await loc('#github-pat-input').count(),0);
+  const open=async id=>{await loc('.nav-links [data-tab="'+id+'"]').click();await loc('#'+id).waitFor({state:'visible'});};
+  if(mode==='expired'){
+    assert.match(await loc('#preview-safety-banner').textContent(),/EXPIRED OR UNAVAILABLE/);
+    assert.equal(await loc('#data-table tbody tr').count(),0);
+  }else{
+    await loc('#data-table tbody tr').first().waitFor();
+    assert.equal(await loc('#data-table tbody tr').count(),12);
+    assert.match(await loc('#data-table tbody tr').first().textContent(),/UTC/);
+    await open('tab-meteogram');
+    await loc('#chart-temp .apexcharts-svg').first().waitFor({timeout:15000});
+    await loc('#chart-ttd .apexcharts-svg').first().waitFor({timeout:15000});
+    assert.equal(await loc('.wind-barb-cell').count(),12);
+    await open('tab-spread');
+    if(mode==='fresh'){
+      await loc('.rain-model-table').waitFor();
+      assert.ok(await loc('.rain-model-table .rain-missing').count()>0);
+      assert.ok(await loc('.rain-model-table .rain-zero').count()>0);
+    }else assert.match(await loc('#tab-spread').textContent(),/Matching individual model payload unavailable/);
+  }
+  await open('tab-regional');
+  await loc('#analysis-scales button[data-scale="local"]').click();
+  assert.equal(await loc('#analysis-cards article').count(),4);
+  await loc('#analysis-scales button[data-scale="global"]').click();
+  await loc('#analysis-cards button').first().click();
+  await page.waitForFunction(()=>document.getElementById('analysis-image-status').textContent.includes('unavailable'));
+  await open('tab-intel');
+  assert.match(await loc('#obs-status').textContent(),/Not connected/);
+  await loc('#obs-file').setInputFiles({name:'test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({schema:'titan-local-awos-v1',station:'WAWP',source:'AWOSnet',observed_at_utc:iso(now-1000).slice(0,19)+'Z',wind_average_minutes:2,wind_reference:'true',units_confirmed:true,wind_speed_kt:0}))});
+  await page.waitForFunction(()=>document.getElementById('obs-wind_speed_kt').textContent==='0 kt');
+  await loc('#obs-clear').click();
+  assert.equal(await loc('#obs-wind_speed_kt').textContent(),'—');
+  await open('tab-verify');
+  await loc('#historical-scorecard table').waitFor();
+  assert.match(await loc('#historical-scorecard').textContent(),/Not exported/);
+  await loc('[data-sub="verify-significancy"]').click();
+  assert.match(await loc('#verify-significancy-content').textContent(),/Direction of improvement is not established/);
+  for(const id of ['tab-weighter','tab-models','tab-climatology','tab-persistency','tab-health'])await open(id);
+  assert.deepEqual(errors,[],'uncaught browser exceptions');
+  await page.screenshot({path:'browser-audit/'+mode+'-'+viewport.width+'.png',fullPage:false});
+  await page.close();
+}
+(async()=>{fs.mkdirSync('browser-audit',{recursive:true});const browser=await chromium.launch({headless:true});try{await fixture(browser,'fresh',{width:1440,height:900});await fixture(browser,'expired',{width:390,height:844});await fixture(browser,'mismatch',{width:1280,height:800});console.log('PASS: isolated Chromium dashboard fixture scenarios');}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

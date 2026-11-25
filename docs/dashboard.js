@@ -4,6 +4,22 @@ let pendingSpreadTimeLabels = [];
 let spreadChartsRendered = false;
 let pendingWeightHistoryText = null;
 let weightDriftChart = null;
+let pendingPreviewChartData = null;
+let previewChartsRendered = false;
+function renderPreviewChartsIfVisible() {
+    if (!pendingPreviewChartData || previewChartsRendered || !document.getElementById('tab-meteogram')?.classList.contains('active')) return;
+    if (!previewIsCurrent(pendingPreviewChartData.manifest)) return;
+    previewChartsRendered = true;
+    try {
+        if (typeof ApexCharts !== 'function') throw Error('Chart library unavailable');
+        initTitanCharts(pendingPreviewChartData.chartData);
+        renderWindBarbs(pendingPreviewChartData.rows);
+    } catch (err) {
+        const panel=document.getElementById('tab-meteogram');
+        panel.replaceChildren();const note=document.createElement('p');note.textContent='Meteogram unavailable. Use the hourly matrix and individual model tab if available.';panel.append(note);
+        console.error('Meteogram render failed',err);
+    }
+}
 
 const WEIGHT_DRIFT_COLORS = ['#0ea5e9', '#0284c7', '#f5a623', '#d97706', '#ec4899', '#be185d', '#10b981', '#94a3b8'];
 const WEIGHT_DRIFT_MODEL_LABELS = {
@@ -192,9 +208,8 @@ function updatePullStatus(timestamp) {
         return;
     }
 
-    const normalized = timestamp.endsWith('Z')
-        ? timestamp
-        : timestamp.replace(' ', 'T') + 'Z';
+    const raw = String(timestamp).trim().replace(' ', 'T');
+    const normalized = /(?:Z|[+-]\d{2}:\d{2})$/.test(raw) ? raw : raw + 'Z';
     const pulledAt = new Date(normalized);
     if (Number.isNaN(pulledAt.getTime())) {
         statusEl.innerText = "Pull time unknown";
@@ -202,7 +217,8 @@ function updatePullStatus(timestamp) {
         return;
     }
 
-    const ageHours = Math.max(0, (Date.now() - pulledAt.getTime()) / 36e5);
+    const ageHours = (Date.now() - pulledAt.getTime()) / 36e5;
+    if (ageHours < 0) {statusEl.innerText='Future pull time';statusEl.className='pull-status stale';return;}
     if (ageHours <= 3) {
         statusEl.innerText = "Fresh";
         statusEl.className = "pull-status fresh";
@@ -289,13 +305,13 @@ async function loadDashboard() {
             })
         ]);
         
-        const intelData = results[0].status === 'fulfilled' ? results[0].value : {};
+        const intelData = results[0].status === 'fulfilled' && results[0].value ? results[0].value : {};
         const hasValidatedDefault = intelData.default?.default_selection?.selection_status === 'selected';
         let currentIssuance = hasValidatedDefault ? "default" : "2300";
         let intel = intelData[currentIssuance] || intelData || {};
-        const weights = results[1].status === 'fulfilled' ? results[1].value : {weights: {}};
+        const weights = results[1].status === 'fulfilled' && results[1].value ? results[1].value : {weights: {}};
         const perf = results[2].status === 'fulfilled' ? results[2].value : null;
-        const guidanceJson = results[3].status === 'fulfilled' ? results[3].value : {data: []};
+        const guidanceJson = results[3].status === 'fulfilled' && results[3].value ? results[3].value : {data: []};
         const data = guidanceJson.data || [];
         const generatedAt = guidanceJson.metadata?.latest_data_pull_utc || "Unknown";
 
@@ -304,10 +320,11 @@ async function loadDashboard() {
         const localNow = new Date(now.getTime() + (8 * 60 * 60 * 1000));
         const witaHourStr = localNow.toISOString().replace('T', ' ').substring(0, 13) + ':00:00';
         
-        const futureData = data.filter(d => d.Datetime >= witaHourStr);
+        const futureData = Array.isArray(data) ? data.filter(d => d && Number.isFinite(previewValidEpoch(d.Datetime)) && d.Datetime >= witaHourStr) : [];
         const previewManifest = guidanceJson.metadata?.preview_manifest;
-        const currentPreview = previewIsCurrent(previewManifest) && futureData.length > 0;
-        const renderData = currentPreview ? TitanPreview.windowRows(futureData,now.getTime(),titanPreviewSettings().hours) : [];
+        const candidateRows = TitanPreview.windowRows(futureData,now.getTime(),titanPreviewSettings().hours);
+        const currentPreview = previewIsCurrent(previewManifest) && candidateRows.length > 0;
+        const renderData = currentPreview ? candidateRows : [];
         const safetyBanner = document.getElementById('preview-safety-banner');
         if (safetyBanner) safetyBanner.textContent = currentPreview
             ? `RAW MODEL PREVIEW — ${Object.keys(previewManifest.models || {}).length} fresh model collections; unverified equal-model mean of original models (IFS 9 km independent), not an operational forecast. TAF withheld. Expires ${previewManifest.expires_at_utc}. Historical verification remains research-only.`
@@ -317,6 +334,7 @@ async function loadDashboard() {
             for (const id of ['tab-meteogram', 'tab-spread', 'tab-matrix', 'tab-models']) {
                 const el = document.getElementById(id); if (el) el.replaceChildren();
             }
+            pendingPreviewChartData=null;pendingSpreadModelsData=null;pendingSpreadTimeLabels=[];
             window.location.reload();
         }, Math.max(0, Date.parse(previewManifest.expires_at_utc) - Date.now()));
 
@@ -392,7 +410,7 @@ async function loadDashboard() {
                 }
                 target.setUTCHours(next, 0, 0, 0);
                 
-                const diff = target - now;
+                const diff = Math.max(0, target - now);
                 const hrs = Math.floor(diff / 3600000);
                 const mins = Math.floor((diff % 3600000) / 60000);
                 const secs = Math.floor((diff % 60000) / 1000);
@@ -466,7 +484,7 @@ async function loadDashboard() {
                 </div>
             `;
         }
-        for (const [param, modelWeights] of Object.entries(weights.weights)) {
+        for (const [param, modelWeights] of Object.entries(weights.weights || {})) {
             wHtml += `<div class="weight-card"><h3 style="color:var(--accent); margin-top:0;">${param} Weights</h3>`;
             const sortedModels = Object.entries(modelWeights).sort((a,b) => b[1] - a[1]);
             for (const [model, weight] of sortedModels) {
@@ -508,7 +526,7 @@ async function loadDashboard() {
         };
         
         // Initialize charts using the new TITAN_BASE design system
-        if (currentPreview && renderData.length) { initTitanCharts(chartData); renderWindBarbs(renderData); }
+        if (currentPreview && renderData.length) { pendingPreviewChartData={chartData,rows:renderData,manifest:previewManifest}; renderPreviewChartsIfVisible(); }
         else for (const id of ['tab-meteogram', 'tab-spread', 'tab-matrix', 'tab-models']) {
             const panel = document.getElementById(id);
             if (panel) { const notice = document.createElement('p'); notice.textContent = 'Current model guidance unavailable.'; panel.prepend(notice); }
@@ -537,7 +555,7 @@ async function loadDashboard() {
         });
         
         // 5.5 Individual Models
-        if (modelsData && renderData) {
+        if (modelsData && renderData.length) {
             setupIndividualModels(modelsData, renderData.map(d=>d.Datetime));
             pendingSpreadModelsData = modelsData;
             pendingSpreadTimeLabels = renderData.map(d=>d.Datetime).slice(0, SPREAD_MAX_HOURS);
@@ -547,6 +565,7 @@ async function loadDashboard() {
             }
         }
         
+        else if (currentPreview) { for(const id of ['tab-spread','tab-models']) {const p=document.getElementById(id);if(p){const n=document.createElement('p');n.className='section-note';n.textContent='Matching individual model payload unavailable.';p.prepend(n);}} }
         // 6. Regional & Climatology
         try {
             setupRegionalCharts();
@@ -562,7 +581,7 @@ async function loadDashboard() {
         }
         try {
             if (workflowData && (!healthData || !(healthData.model_freshness || []).length)) {
-                setupHealthFreshness(workflowData.model_freshness || []);
+                setupHealthFreshness([]); // never promote legacy freshness rows to current evidence
             }
         } catch (sectionError) {
             console.error("System workflow fallback failed", sectionError);
@@ -586,7 +605,10 @@ async function loadDashboard() {
         document.getElementById('update-time').innerText = "Load failed: " + (e.message || e);
         updatePullStatus("Unknown");
         const tafDisplay = document.getElementById('taf-text-display');
-        if (tafDisplay) tafDisplay.innerText = e.stack || e;
+        if (tafDisplay) tafDisplay.textContent = 'Automated TAF withheld. Dashboard data load failed.';
+        pendingPreviewChartData=null;pendingSpreadModelsData=null;pendingSpreadTimeLabels=[];
+        const banner=document.getElementById('preview-safety-banner');if(banner)banner.textContent='UNAVAILABLE — dashboard data load failed. Automated TAF withheld.';
+        for(const id of ['tab-meteogram','tab-spread','tab-matrix','tab-models']){const panel=document.getElementById(id);if(panel){panel.replaceChildren();const note=document.createElement('p');note.textContent='Current model guidance unavailable.';panel.append(note);}}
     }
 }
 
@@ -600,8 +622,9 @@ function switchTab(tabId) {
     if(window.location.hash !== '#'+tabId) window.history.replaceState(null,'','#'+tabId);
     setTimeout(()=>window.dispatchEvent(new Event('resize')),0);
 
+    if (tabId === 'tab-meteogram') renderPreviewChartsIfVisible();
     if (tabId === 'tab-spread' && pendingSpreadModelsData && !spreadChartsRendered) {
-        setupSpreadCharts(pendingSpreadModelsData, pendingSpreadTimeLabels);
+        try { setupSpreadCharts(pendingSpreadModelsData, pendingSpreadTimeLabels); } catch (err) { console.error('Spread render failed',err); renderRainHeatmap(pendingSpreadModelsData,pendingSpreadTimeLabels); }
     }
     if (tabId === 'tab-weighter') {
         if (weightDriftChart) {
@@ -635,7 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.querySelectorAll('[data-open-tab]').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.getAttribute('data-open-tab'))));
     const initialTab = window.location.hash.slice(1);
-    if (/^tab-[a-z]+$/.test(initialTab) && document.getElementById(initialTab)) switchTab(initialTab);
+    if (/^tab-[a-z]+$/.test(initialTab) && document.getElementById(initialTab) && document.querySelector('.nav-links li[data-tab="'+initialTab+'"]')) switchTab(initialTab);
     
     setupPreviewControls();
     setupAnalysisWorkspace();
@@ -1725,107 +1748,7 @@ function setupIndividualModels(modelsData, timeLabels) {
     renderModel(modelSelect.value);
 }
 
+// Remove legacy browser-stored credentials even though the upload form is gone.
 document.addEventListener('DOMContentLoaded', () => {
-    // No automated TAF copy or manual override handlers in preview mode.
-
-    // AWOS Upload Logic (GitHub API Direct - INSECURE)
-    const patInput = document.getElementById('github-pat-input');
-    const awosInput = document.getElementById('awos-file-input');
-    const uploadBtn = document.getElementById('upload-awos-btn');
-    const statusDiv = document.getElementById('upload-status');
-
-    if (patInput) {
-        try { localStorage.removeItem('gh_wawp_pat'); } catch (_) {}
-        patInput.value = '';
-    }
-
-    if (uploadBtn && patInput && awosInput) {
-        uploadBtn.addEventListener('click', async () => {
-            const token = patInput.value.trim();
-            if (!token) {
-                showStatus('Error: GitHub Token is required.', 'var(--amber)');
-                return;
-            }
-            if (!awosInput.files || awosInput.files.length === 0) {
-                showStatus('Error: Please select a .dat file.', 'var(--amber)');
-                return;
-            }
-            
-            const file = awosInput.files[0];
-            uploadBtn.innerText = 'Uploading...';
-            uploadBtn.disabled = true;
-            showStatus('Reading file...', 'var(--text-secondary)');
-            
-            try {
-                // Read as base64
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = async () => {
-                    const base64Content = reader.result.split(',')[1];
-                    
-                    // GitHub API push
-                    const repoOwner = "anzthebest0-cpu";
-                    const repoName = "wawp-forecast-engine";
-                    const path = "data/raw_obs/latest.dat";
-                    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}`;
-                    
-                    // Get current file SHA if exists to overwrite
-                    let sha = null;
-                    try {
-                        const getRes = await fetch(apiUrl, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        if (getRes.ok) {
-                            const getJson = await getRes.json();
-                            sha = getJson.sha;
-                        }
-                    } catch(e) {}
-                    
-                    const payload = {
-                        message: `Upload manual AWOS observation: ${file.name}`,
-                        content: base64Content,
-                        branch: "main"
-                    };
-                    if (sha) payload.sha = sha;
-                    
-                    const putRes = await fetch(apiUrl, {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    if (putRes.ok) {
-                        showStatus('Upload Successful! GitHub Actions triggered.', 'var(--green)');
-                        setTimeout(() => {
-                            uploadBtn.innerText = 'Upload to GitHub & Trigger Verification';
-                            uploadBtn.disabled = false;
-                            awosInput.value = '';
-                        }, 3000);
-                    } else {
-                        const errText = await putRes.text();
-                        showStatus(`Upload Failed: ${putRes.status}`, 'var(--crimson)');
-                        console.error(errText);
-                        uploadBtn.innerText = 'Upload to GitHub & Trigger Verification';
-                        uploadBtn.disabled = false;
-                    }
-                };
-            } catch(e) {
-                showStatus(`Error: ${e.message}`, 'var(--crimson)');
-                uploadBtn.innerText = 'Upload to GitHub & Trigger Verification';
-                uploadBtn.disabled = false;
-            }
-        });
-    }
-    
-    function showStatus(msg, color) {
-        if (!statusDiv) return;
-        statusDiv.style.display = 'block';
-        statusDiv.innerText = msg;
-        statusDiv.style.color = color;
-        statusDiv.style.border = `1px solid ${color}`;
-        statusDiv.style.background = 'rgba(255, 255, 255, 0.05)';
-    }
+    try { localStorage.removeItem('gh_wawp_pat'); } catch (_) {}
 });

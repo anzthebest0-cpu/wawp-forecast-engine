@@ -6,6 +6,7 @@ on:
     paths:
       - 'docs/**'
       - 'tests/test_preview_ui.js'
+      - 'tests/test_dashboard_browser.cjs'
       - 'tests/test_analysis_workspace.js'
       - 'tests/test_observation_ui.js'
       - 'scripts/probe_awosnet.py'
@@ -20,6 +21,7 @@ on:
       - 'docs/*.js'
       - 'docs/style.css'
       - 'tests/test_preview_ui.js'
+      - 'tests/test_dashboard_browser.cjs'
       - 'tests/test_analysis_workspace.js'
       - 'tests/test_observation_ui.js'
       - 'scripts/probe_awosnet.py'
@@ -55,3 +57,33 @@ jobs:
         run: |
           python -m unittest discover -s tests -p test_probe_awosnet.py
           python -m unittest discover -s tests -p test_normalize_awosnet_xml.py
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned browser test dependencies
+        run: |
+          npm install --no-save --package-lock=false playwright@1.51.1 apexcharts@3.54.1
+          npx playwright install --with-deps chromium
+      - name: Run isolated Chromium dashboard smoke tests
+        run: |
+          python -m http.server 8765 --bind 127.0.0.1 --directory docs > /tmp/titan-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for attempt in $(seq 1 20); do curl -fsS http://127.0.0.1:8765/ >/dev/null && break; sleep 1; done
+          node tests/test_dashboard_browser.cjs
+      - name: Upload browser audit screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-browser-audit
+          path: browser-audit/
+          if-no-files-found: warn
+          retention-days: 7

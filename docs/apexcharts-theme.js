@@ -269,7 +269,7 @@ const CHART_WIND_OPTIONS = {
     {
       labels: {
         style: { colors: TITAN_COLORS.text, fontSize: '10px', fontFamily: TITAN_COLORS.font },
-        formatter: (v) => v !== undefined ? `${v.toFixed(0)}kt` : '',
+        formatter: (v) => Number.isFinite(v) ? `${v.toFixed(0)}kt` : '—',
       },
       tickAmount: 4,
       min: 0,
@@ -282,10 +282,11 @@ const CHART_WIND_OPTIONS = {
   ],
   
   tooltip: {
+    ...TITAN_BASE.tooltip,
     theme: 'light',
     y: [
-      { formatter: (v) => `${v.toFixed(2)} kt` },
-      { formatter: (v) => `${v.toFixed(2)} kt` }
+      { formatter: (v) => Number.isFinite(v) ? `${v.toFixed(2)} kt` : '—' },
+      { formatter: (v) => Number.isFinite(v) ? `${v.toFixed(2)} kt` : '—' }
     ]
   }
 };
@@ -399,7 +400,7 @@ const CHART_RAIN_OPTIONS = {
         fontSize:   '10px',
         fontFamily: TITAN_COLORS.font,
       },
-      formatter: (v) => `${v.toFixed(1)}mm`,
+      formatter: (v) => Number.isFinite(v) ? `${v.toFixed(1)}mm` : '—',
     },
     tickAmount: 3,
     min: 0,

@@ -11,13 +11,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
     <script src="preview-ui.js?v=1"></script>
     <script src="analysis-workspace.js?v=1"></script>
     <script src="observation-ui.js?v=1"></script>
     <script src="research-ui.js?v=1"></script>
-    <script src="apexcharts-theme.js?v=3.2-workstation"></script>
-    <link rel="stylesheet" href="style.css?v=4.5-workstation">
+    <script src="apexcharts-theme.js?v=3.3-audit"></script>
+    <link rel="stylesheet" href="style.css?v=4.6-audit">
 </head>
 <body>
 
@@ -577,29 +577,9 @@
                     </div>
                 </div>
 
-                <!-- AWOS Upload Widget -->
                 <div class="panel">
-                    <h3>Manual AWOS Ingestion</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 20px;">Upload local AWOS `.dat` files to the central GitHub repository for authorized archive processing. Historical verification remains frozen.</p>
-                    
-                    <div style="display: flex; flex-direction: column; gap: 15px;">
-                        <div>
-                            <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9em;">GitHub Access Token (PAT)</label>
-                            <input type="password" id="github-pat-input" placeholder="ghp_xxxxxxxxxxxx" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--col-border); border-radius: 4px; color: var(--text-primary);">
-                            <div style="font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;">Not saved. Enter a restricted, short-lived token only on a trusted device; prefer the authorized ingestion workflow.</div>
-                        </div>
-                        
-                        <div>
-                            <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9em;">AWOS Data File (.dat)</label>
-                            <input type="file" id="awos-file-input" accept=".dat" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--col-border); border-radius: 4px; color: var(--text-primary);">
-                        </div>
-                        
-                        <button id="upload-awos-btn" style="background: var(--cyan-glow); color: var(--cyan); border: 1px solid rgba(0, 212, 255, 0.25); padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: all 0.2s;">
-                            Upload to GitHub archive
-                        </button>
-                        
-                        <div id="upload-status" style="display:none; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center;"></div>
-                    </div>
+                    <h3>Authorized AWOS archive ingestion</h3>
+                    <p class="section-note">Public Pages is read-only. Do not enter GitHub tokens or upload raw station files here. Use the established authorized station archive workflow outside the dashboard. Local snapshot import remains available on Forecaster Overview and stays in browser memory.</p>
                 </div>
             </div>
 
@@ -848,6 +828,6 @@
         
     </main>
 
-    <script src="dashboard.js?v=4.5-workstation"></script>
+    <script src="dashboard.js?v=4.6-audit"></script>
 </body>
 </html>
