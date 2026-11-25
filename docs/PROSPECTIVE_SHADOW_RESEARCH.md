@@ -25,6 +25,8 @@ Keep the station's original `000HLY.YYYYMM.dat` file in `awos-inbox` updated as 
 
 ## Review
 
+Add a distinct 14-day diurnal temperature-minus-dewpoint spread candidate for 19–07 WITA, hourly 9–96 h bands; preserve exact paired raw spread and same-hour persistence strictly before initialization. Both constituent fields must be valid, nonnegative spread, and all seven members available. This is a derived near-saturation research diagnostic, **not a fog or visibility forecast**. No visibility, TAF or operational output changes.
+
 Expanded April–November replay follow-up: retain all existing wind candidates and add a distinct 14-day local-hour-conditioned wind-speed correction on the hourly 9–24/25–48/49–72/73–96 h grid. Training and verification use those hourly bands rather than the earlier six-hour sample. Each candidate row embeds its own exact paired raw seven-model baseline. Missing/stale observations or inadequate training withhold the candidate; old archives remain readable. No operational wind or TAF changes.
 
 November 25 retrospective follow-up: add core-only local-hour-conditioned mean bias candidates for pressure (21/14/7/7 days by the four lead bands) and dew point (14 days across bands). The bias is half all-hour and half matching local-hour when at least 12 matching rows exist, otherwise all-hour. Prior candidates and immutable forecasts remain valid and unchanged. The retrospective improvement is not proof of prospective skill; no automatic promotion.

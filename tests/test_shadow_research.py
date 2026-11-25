@@ -85,7 +85,7 @@ def test_diurnal_bias_additive_with_time_of_day_shrinkage():
     assert s.fit_predict(rows,[1014.]*7,s.CORE,'pressure_msl','diurnal_bias',INIT)==pytest.approx(1012.5)
     assert s.fit_predict(rows,[1014.]*7,s.CORE,'pressure_msl','diurnal_bias',INIT+timedelta(hours=6))==pytest.approx(1013.5)
     assert s.fit_predict(rows,[1014.]*7,s.CORE,'pressure_msl','diurnal_bias',INIT+timedelta(hours=3))==pytest.approx(1013.)
-    obs,hist,current=fixture();r=s.build_forecast(INIT,INIT+timedelta(hours=8,minutes=20),'a'*64,current,hist,obs,{},{});diurnal=[x for x in r['rows'] if x['method']=='diurnal_bias' and x['parameter']!='wind_speed_10m']
+    obs,hist,current=fixture();r=s.build_forecast(INIT,INIT+timedelta(hours=8,minutes=20),'a'*64,current,hist,obs,{},{});diurnal=[x for x in r['rows'] if x['method']=='diurnal_bias' and x['parameter'] in s.DIURNAL_WINDOWS]
     assert diurnal and {x['parameter'] for x in diurnal}==set(s.DIURNAL_WINDOWS)
     assert all(x['window_days']==s.DIURNAL_WINDOWS[x['parameter']][x['lead_bucket']] for x in diurnal)
     assert any(x['method']=='median_bias' for x in r['rows']) and any(x['method']=='mae_weighted' for x in r['rows'])
@@ -101,6 +101,18 @@ def test_hourly_diurnal_wind_matches_replay_and_keeps_paired_raw():
     assert all(s.parse_time(x['training_last_valid_utc'])<INIT for x in w)
     assert all(x['lead_hours'] in s.WIND_HOURLY_GROUPS[x['lead_bucket']] for x in w)
     bad=json.loads(json.dumps(r));next(x for x in bad['rows'] if x['candidate']==s.WIND_HOURLY_CANDIDATE)['window_days']=7
+    with pytest.raises(ValueError):s.validate_forecast(bad)
+
+
+def test_nighttime_spread_is_derived_and_never_visibility():
+    obs,hist,current=fixture();issued=INIT+timedelta(hours=8,minutes=20)
+    r=s.build_forecast(INIT,issued,'a'*64,current,hist,obs,{},{});x=[a for a in r['rows'] if a['candidate']==s.SPREAD_CANDIDATE]
+    assert x and all(a['parameter']==s.SPREAD and 0<=a['prediction']<=85 for a in x)
+    assert all(a['prediction']==pytest.approx(5.) and a['raw_core']==pytest.approx(6.) for a in x)
+    assert all((s.parse_time(a['valid_utc']).hour+8)%24 in (*range(19,24),*range(0,8)) for a in x)
+    assert all(s.parse_time(a['training_last_valid_utc'])<INIT for a in x)
+    assert all('visibility' not in a['parameter'] for a in r['rows'])
+    bad=json.loads(json.dumps(r));next(a for a in bad['rows'] if a['candidate']==s.SPREAD_CANDIDATE)['parameter']='wind_speed_10m'
     with pytest.raises(ValueError):s.validate_forecast(bad)
     bad=json.loads(json.dumps(r));next(x for x in bad['rows'] if x['candidate']==s.WIND_HOURLY_CANDIDATE)['method']='mean_bias'
     with pytest.raises(ValueError):s.validate_forecast(bad)
