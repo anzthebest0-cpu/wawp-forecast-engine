@@ -192,26 +192,23 @@ PRODUCTS={
 "freeze":("Lowest resolved warm-to-cold 0°C crossing, geopotential height MSL","m",[1000,2000,3000,3500,4000,4500,4750,5000,5250,5500,6000,7000],"viridis"),
 "z500":("500 hPa geopotential height","gpm",list(range(5500,6051,25)),"viridis")}
 def plot(data,lead,product,domain):
-    title,unit,levels,cmap=PRODUCTS[product];bounds=DOMAINS[domain]
+    from spatial_v3_style import figure,base,finish,raster,save
+    title,unit,levels,cmap=PRODUCTS[product]
+    if product=="li":title="Approximate surface-based Lifted Index\n2 m parcel at model surface pressure"
+    if product=="freeze":title="Resolved freezing height (geopotential height MSL)";levels=list(range(4000,6001,200))
+    if product=="z500":levels=list(range(5820,5961,10));cmap="viridis"
     labels=[m[0] for m in MODELS]
-    fig,axes=plt.subplots(1 if len(labels)<=2 else 2,min(2,len(labels)),figsize=(8*min(2,len(labels)),5.6*(1 if len(labels)<=2 else 2)),layout="constrained",squeeze=False)
-    for ax,label in zip(axes.flat,labels):
-        ax.set_title(label)
-        m=Basemap(projection="cyl",llcrnrlon=bounds[0],urcrnrlon=bounds[1],llcrnrlat=bounds[2],urcrnrlat=bounds[3],resolution="i",ax=ax)
-        ax.set_facecolor("#d0d0d0")
+    fig,axes,norm=figure(len(labels),title,domain,lead,INIT,"NOAA/NCEP and ECMWF open data",unit,levels,cmap)
+    for ax,label in zip(axes,labels):
+        m=base(ax,domain);ax.set_title(label,fontsize=11)
         if label in data and product in data[label][0]:
-            d,dx=data[label];x=np.linspace(110,132,round(22/dx)+1);y=np.linspace(-10,5,round(15/dx)+1)
-            fill=ax.contourf(x,y,np.ma.masked_invalid(d[product]),levels=levels,cmap=cmap,extend="both")
-            fig.colorbar(fill,ax=ax,orientation="horizontal",shrink=.85,label=unit)
-        else:ax.text(.5,.5,"UNAVAILABLE",ha="center",va="center",transform=ax.transAxes)
-        m.drawcoastlines(linewidth=.7);m.drawcountries(linewidth=.4)
-        step=5 if domain=="regional" else 2 if domain=="sulawesi" else 1
-        m.drawparallels(np.arange(-10,6,step),labels=[1,0,0,0],fontsize=8,linewidth=.3)
-        m.drawmeridians(np.arange(110,133,step),labels=[0,0,0,1],fontsize=8,linewidth=.3)
-        ax.set_xlim(bounds[:2]);ax.set_ylim(bounds[2:]);ax.plot(121.525,-4.338,"k*",ms=8);ax.annotate("WAWP",(121.525,-4.338),xytext=(4,5),textcoords="offset points",fontsize=8)
-    valid=INIT+timedelta(hours=lead)
-    fig.suptitle(f"{title} | {domain} | H+{lead} valid {valid:%d %b %Y %HZ}\nInit {INIT:%d %b %Y %HZ} · NOAA/NCEP and ECMWF · Research only · Zoom does not improve resolution",fontsize=13)
-    fig.savefig(OUT/f"{product}_{domain}_f{lead:03d}.png",dpi=115);plt.close(fig)
+            d,dx=data[label];x=np.linspace(110,132,round(22/dx)+1);y=np.linspace(-10,5,round(15/dx)+1);a=d[product];raster(ax,x,y,a,norm,cmap)
+            if product=="z500":
+                lev=np.arange(np.ceil(np.nanmin(a)/10)*10,np.floor(np.nanmax(a)/10)*10+1,10)
+                if len(lev):ax.clabel(ax.contour(x,y,a,levels=lev,colors="#253440",linewidths=.5),fmt="%.0f",fontsize=7)
+        else:ax.text(.5,.5,"UNAVAILABLE",ha="center",transform=ax.transAxes)
+        finish(ax,m,domain)
+    save(fig,OUT/f"{product}_{domain}_f{lead:03d}.png")
 
 def main():
     OUT.mkdir(exist_ok=False);manifest={"cycle":INIT.isoformat(),"domains":DOMAINS,"leads":{},"notes":"Approximate 2m surface parcel LI; 850hPa SI; liquid pseudoadiabatic integration checked against sampled MetPy scalar solutions; freezing is a resolved pressure-level crossing, not exact first crossing or icing forecast; geopotential height MSL. No observed profiles."};fail=0

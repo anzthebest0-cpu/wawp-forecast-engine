@@ -1,0 +1,48 @@
+name: TITAN spatial V3 cartographic regeneration
+on:
+  push:
+    branches: [codex/titan-spatial-v3]
+    paths: ['scripts/spatial_v3_style.py','scripts/pilot_*.py','.github/workflows/titan_spatial_v3.yml']
+permissions:
+  contents: read
+jobs:
+  render:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: pwv
+            script: scripts/pilot_pwv_reflectivity.py
+          - group: circulation
+            script: scripts/pilot_circulation_comparison.py
+          - group: dynamics
+            script: scripts/pilot_instability_moisture.py
+          - group: rain
+            script: scripts/pilot_rain_gust.py
+          - group: vertical
+            script: scripts/pilot_vertical_profiles.py
+          - group: icon
+            script: scripts/pilot_icon_native.py
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile scripts/spatial_v3_style.py ${{ matrix.script }}
+      - run: python -m pip install "eccodes>=2.42,<3" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3" "metpy>=1.7,<2" scipy
+      - run: python ${{ matrix.script }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-v3-${{ matrix.group }}
+          path: |
+            *pilot/*.png
+            *pilot/manifest.json
+            circulation-comparison/*.png
+            circulation-comparison/manifest.json
+          retention-days: 7
+          if-no-files-found: error

@@ -153,26 +153,17 @@ PRODUCTS={
 "cin":("GFS surface-based CIN","J kg⁻¹",[-400,-200,-100,-75,-50,-25,-10,0],"Blues_r"),
 "mucape":("IFS most-unstable CAPE (not SBCAPE)","J kg⁻¹",[0,100,250,500,1000,1500,2000,3000,4000,6000],"YlOrRd")}
 def plot(data,lead,product,domain):
-    title,unit,levels,cmap=PRODUCTS[product];bounds=DOMAINS[domain]
+    from spatial_v3_style import figure,base,finish,raster,save
+    title,unit,levels,cmap=PRODUCTS[product]
     labels=[m[0] for m in MODELS if (product not in ("cape","cin","mucape") or (product in ("cape","cin") and m[1] is None) or (product=="mucape" and m[1]=="ifs"))]
-    fig,axes=plt.subplots(1 if len(labels)<=2 else 2,min(2,len(labels)),figsize=(8*min(2,len(labels)),5.6*(1 if len(labels)<=2 else 2)),layout="constrained",squeeze=False)
-    for ax,label in zip(axes.flat,labels):
-        ax.set_title(label)
-        m=Basemap(projection="cyl",llcrnrlon=bounds[0],urcrnrlon=bounds[1],llcrnrlat=bounds[2],urcrnrlat=bounds[3],resolution="i",ax=ax)
-        ax.set_facecolor("#d0d0d0")
+    fig,axes,norm=figure(len(labels),title,domain,lead,INIT,"NOAA/NCEP and ECMWF open data",unit,levels,cmap)
+    for ax,label in zip(axes,labels):
+        m=base(ax,domain);ax.set_title(label,fontsize=11)
         if label in data and product in data[label][0]:
-            d,dx=data[label];x=np.linspace(110,132,round(22/dx)+1);y=np.linspace(-10,5,round(15/dx)+1)
-            fill=ax.contourf(x,y,np.ma.masked_invalid(d[product]),levels=levels,cmap=cmap,extend="both")
-            fig.colorbar(fill,ax=ax,orientation="horizontal",shrink=.85,label=unit)
+            d,dx=data[label];x=np.linspace(110,132,round(22/dx)+1);y=np.linspace(-10,5,round(15/dx)+1);raster(ax,x,y,d[product],norm,cmap)
         else:ax.text(.5,.5,"UNAVAILABLE",ha="center",va="center",transform=ax.transAxes)
-        m.drawcoastlines(linewidth=.7);m.drawcountries(linewidth=.4)
-        step=5 if domain=="regional" else 2 if domain=="sulawesi" else 1
-        m.drawparallels(np.arange(-10,6,step),labels=[1,0,0,0],fontsize=8,linewidth=.3)
-        m.drawmeridians(np.arange(110,133,step),labels=[0,0,0,1],fontsize=8,linewidth=.3)
-        ax.set_xlim(bounds[:2]);ax.set_ylim(bounds[2:]);ax.plot(121.525,-4.338,"k*",ms=8);ax.annotate("WAWP",(121.525,-4.338),xytext=(4,5),textcoords="offset points",fontsize=8)
-    valid=INIT+timedelta(hours=lead)
-    fig.suptitle(f"{title} | {domain} | H+{lead} valid {valid:%d %b %Y %HZ}\nInit {INIT:%d %b %Y %HZ} · NOAA/NCEP and ECMWF · Research only · Zoom does not improve resolution",fontsize=13)
-    fig.savefig(OUT/f"{product}_{domain}_f{lead:03d}.png",dpi=115);plt.close(fig)
+        finish(ax,m,domain)
+    save(fig,OUT/f"{product}_{domain}_f{lead:03d}.png")
 
 def main():
     OUT.mkdir(exist_ok=False);manifest={"cycle":INIT.isoformat(),"domains":DOMAINS,"leads":{},"notes":"Pressure-surface moisture convergence, not vertically integrated; GFS SBCAPE/CIN distinct from IFS MUCAPE. K-index masks subfreezing lower levels. No inferred AIFS CAPE."};fail=0

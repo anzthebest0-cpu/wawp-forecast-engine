@@ -72,38 +72,45 @@ def coord(v,meta,axis):
     if axis=="lon" and (v.min()<-360 or v.max()>360):raise ValueError("Longitude bounds")
     return v if axis=="lat" else v%360
 def normalize(param,v,m):
-    u=m["units"];short=m["shortName"]
+    u=m["units"];short=m["shortName"].lower()
     if param=="TQV":
-        if short not in ("tqv","tcwv","pwat") or u not in ("kg m**-2","kg m-2","kg/m^2"):raise ValueError("PWV identity/units "+str(m))
+        if short!="tqv" or m["paramId"]!=500038 or m["typeOfLevel"]!="surface" or u not in ("kg m**-2","kg m-2","kg/m^2"):raise ValueError("PWV identity/units "+str(m))
         lo,hi=0,120
     elif param=="PMSL":
-        if short not in ("msl","pmsl","prmsl") or u!="Pa":raise ValueError("MSLP identity/units")
+        if short not in ("msl","pmsl","prmsl") or m["paramId"]!=260074 or m["typeOfLevel"]!="meanSea" or u!="Pa":raise ValueError("MSLP identity/units")
         v=v/100;lo,hi=850,1100
     else:
-        if short not in ("cape","cape_ml","capeml") or u not in ("J kg**-1","J/kg"):raise ValueError("CAPE identity/units "+str(m))
+        if short!="cape_ml" or m["paramId"]!=500153 or u not in ("J kg**-1","J kg-1","J/kg"):raise ValueError("CAPE identity/units "+str(m))
         lo,hi=-.1,15000
     if not np.isfinite(v).any() or np.any(np.isfinite(v)&((v<lo)|(v>hi))):raise ValueError("Field range")
     return v
 def plot(param,x,y,v,lead):
-    for name,b in DOMAINS.items():
-        fig,ax=plt.subplots(figsize=(10,7),layout="constrained")
-        m=Basemap(projection="cyl",llcrnrlon=b[0],urcrnrlon=b[1],llcrnrlat=b[2],urcrnrlat=b[3],resolution="i",ax=ax)
-        s=(x>=b[0])&(x<=b[1])&(y>=b[2])&(y<=b[3])&np.isfinite(v)
-        if s.sum()<10:raise ValueError("Insufficient native cells")
-        lo,hi,cmap={"TQV":(10,80,"YlGnBu"),"PMSL":(980,1032,"RdBu_r"),"CAPE_ML":(0,4000,"YlOrRd")}[param]
-        # Cell-center visualization, no false regular-grid or invented cell geometry.
-        p=ax.scatter(x[s],y[s],c=v[s],s=5 if name=="regional" else 12 if name=="sulawesi" else 28,marker=".",cmap=cmap,vmin=lo,vmax=hi,linewidths=0)
-        fig.colorbar(p,ax=ax,orientation="horizontal",shrink=.85,label=FIELDS[param][1])
-        m.drawcoastlines(linewidth=.7);m.drawcountries(linewidth=.4)
-        step=5 if name=="regional" else 2 if name=="sulawesi" else 1
-        m.drawparallels(np.arange(-10,6,step),labels=[1,0,0,0],fontsize=8);m.drawmeridians(np.arange(110,133,step),labels=[0,0,0,1],fontsize=8)
-        ax.plot(121.525,-4.338,"k*",ms=9);ax.annotate("WAWP",(121.525,-4.338),xytext=(4,4),textcoords="offset points",fontsize=8)
-        ax.set_xlim(b[:2]);ax.set_ylim(b[2:])
-        fig.suptitle(f"DWD ICON native cells · {FIELDS[param][0]} · {name}\nInit {INIT:%d %b %Y %HZ} · H+{lead} · valid {INIT+timedelta(hours=lead):%d %b %Y %HZ} · research only")
-        fig.savefig(OUT/f"{param}_{name}_f{lead:03d}.png",dpi=120);plt.close(fig)
+    from spatial_v3_style import figure,base,finish,raster,save
+    from scipy.spatial import cKDTree
+    # Nearest native cell centre, not exact triangular geometry. Restrict to
+    # regional support; no smoothing or interpolation beyond a distance bound.
+    coords=np.column_stack((x*np.cos(np.deg2rad(-2.5)),y))
+    tree=cKDTree(coords)
+    # 0.05° display mesh samples the approximately 13 km native field;
+    # does not increase model resolution. Native-cell nearest neighbour only.
+    gx=np.linspace(110,132,441);gy=np.linspace(-10,5,301);xx,yy=np.meshgrid(gx,gy)
+    distance,index=tree.query(np.column_stack((xx.ravel()*np.cos(np.deg2rad(-2.5)),yy.ravel())))
+    nearest=v[index].reshape(xx.shape);nearest[distance.reshape(xx.shape)>.16]=np.nan
+    # Check self-query identity and sampled source-value conservation.
+    nd,ni=tree.query(coords[::137])
+    if np.any(nd>1e-10) or not np.array_equal(v[ni],v[::137],equal_nan=True):raise ValueError("Nearest native-cell identity check failed")
+    finite=np.isfinite(nearest)
+    if not finite.any() or np.nanmin(nearest)<np.nanmin(v) or np.nanmax(nearest)>np.nanmax(v):raise ValueError("Remap value QC")
+    print("ICON_REMAP_QC",param,lead,int(finite.sum()),float(distance.max()),flush=True)
+    levels,cmap={"TQV":([10,20,30,35,40,45,50,55,60,65,70,80],"YlGnBu"),"PMSL":(list(range(990,1021,2)),"RdBu_r"),"CAPE_ML":([0,100,250,500,1000,1500,2000,3000,4000,6000],"YlOrRd")}[param]
+    for domain in DOMAINS:
+        fig,axes,norm=figure(1,"ICON "+FIELDS[param][0],domain,lead,INIT,"DWD ICON | nearest native centre on 0.05° display mesh",FIELDS[param][1],levels,cmap)
+        ax=axes[0];m=base(ax,domain);ax.set_title("Display remapping only — native resolution unchanged",fontsize=10);raster(ax,gx,gy,nearest,norm,cmap);finish(ax,m,domain)
+        save(fig,OUT/f"{param}_{domain}_f{lead:03d}.png")
+
 def main():
     OUT.mkdir(exist_ok=False)
-    manifest={"cycle":INIT.isoformat(),"fields":{},"notes":"DWD attribution; new v1 preferred, legacy only diagnostic fallback. Native cell-centre markers, no remapping. No production or storage change."}
+    manifest={"cycle":INIT.isoformat(),"fields":{},"notes":"DWD attribution; new v1 preferred, legacy only diagnostic fallback. Nearest native-cell centre display mesh, distance-limited; no smoothing or invented resolution. No production or storage change."}
     fail=0
     try:
         lat,lm=read("CLAT",0);lon,om=read("CLON",0)

@@ -110,35 +110,28 @@ def load_gfs(lead):
     finally:path.unlink(missing_ok=True)
 
 def plot(data,lead,product,p):
-    fig,axes=plt.subplots(2,2,figsize=(15,10),layout="constrained")
-    for ax,(label,_,__) in zip(axes.flat,MODELS):
-        ax.set_title(label+(" · derived RH (T ≥ 0°C)" if label.startswith("AIFS") and product=="rh" else ""))
-        if label not in data:
-            ax.text(.5,.5,"UNAVAILABLE",ha="center",va="center",transform=ax.transAxes);continue
-        d,dx=data[label];x=np.linspace(110,132,round(22/dx)+1);y=np.linspace(-10,5,round(15/dx)+1)
-        m=Basemap(projection="cyl",llcrnrlon=110,urcrnrlon=132,llcrnrlat=-10,urcrnrlat=5,resolution="l",ax=ax)
-        ax.set_facecolor("#d0d0d0")
-        if product=="wind":
-            u,v=d["u",p],d["v",p]
-            fill=ax.contourf(x,y,np.hypot(u,v),levels=[0,2,4,6,8,10,12,16,20,25,35],cmap="YlGnBu",extend="max")
-            ax.streamplot(x,y,np.ma.masked_invalid(u),np.ma.masked_invalid(v),density=1.05,color="#202b36",linewidth=.65,arrowsize=.75)
-            unit="Wind speed (m/s)"
-        elif product=="rh":
-            fill=ax.contourf(x,y,d["r",p],levels=np.arange(0,111,10),cmap="BrBG",extend="both");unit="Relative humidity (%)"
-        else:
-            a=d["msl",0];fill=ax.contourf(x,y,a,levels=np.arange(980,1033,2),cmap="RdBu_r",extend="both")
-            lev=np.arange(np.ceil(a.min()),np.floor(a.max())+1,1)
-            if len(lev):ax.clabel(ax.contour(x,y,a,levels=lev,colors="#333333",linewidths=.6),fmt="%.0f",fontsize=8)
-            unit="MSLP (hPa)"
-        fig.colorbar(fill,ax=ax,orientation="horizontal",shrink=.83,label=unit)
-        m.drawcoastlines(linewidth=.7);m.drawcountries(linewidth=.4)
-        m.drawparallels(np.arange(-10,6,5),labels=[1,0,0,0],fontsize=8,linewidth=.3)
-        m.drawmeridians(np.arange(110,133,5),labels=[0,0,0,1],fontsize=8,linewidth=.3)
-        ax.plot(121.525,-4.338,"k*",ms=9);ax.annotate("WAWP",(121.525,-4.338),xytext=(5,5),textcoords="offset points",fontsize=8)
-    valid=INIT+gfs.timedelta(hours=lead)
-    title=f"{p} hPa {product}" if p else "MSLP and 1 hPa isobars"
-    fig.suptitle(f"{title} | init {INIT:%d %b %Y %HZ} | H+{lead} | valid {valid:%d %b %Y %HZ}\nNOAA/NCEP and ECMWF open data | IFS grids share one model family | research only",fontsize=15)
-    fig.savefig(OUT/f"{product}{p or ''}_f{lead:03d}.png",dpi=125);plt.close(fig)
+    from spatial_v3_style import DOMAINS,figure,base,finish,raster,save
+    if product=="wind":title=f"{p} hPa circulation";unit="m/s";levels=[0,2,4,6,8,10,12,16,20,25,35];cmap="YlGnBu";extend="max"
+    elif product=="rh":title=f"{p} hPa relative humidity";unit="%";levels=list(range(0,111,10));cmap="BrBG";extend="both"
+    else:title="Mean sea-level pressure and 1 hPa isobars";unit="hPa";levels=list(range(990,1021,2));cmap="RdBu_r";extend="both"
+    for domain,b in DOMAINS.items():
+        fig,axes,norm=figure(len(MODELS),title,domain,lead,INIT,"NOAA/NCEP and ECMWF open data",unit,levels,cmap,extend)
+        for ax,(label,_,__) in zip(axes,MODELS):
+            m=base(ax,domain);ax.set_title(label+(" · derived RH" if label.startswith("AIFS") and product=="rh" else ""),fontsize=11)
+            if label in data:
+                d,dx=data[label];x=np.linspace(110,132,round(22/dx)+1);y=np.linspace(-10,5,round(15/dx)+1)
+                if product=="wind":
+                    u,v=d["u",p],d["v",p];raster(ax,x,y,np.hypot(u,v),norm,cmap)
+                    sx=(x>=b[0]-dx)&(x<=b[1]+dx);sy=(y>=b[2]-dx)&(y<=b[3]+dx)
+                    ax.streamplot(x[sx],y[sy],np.ma.masked_invalid(u[np.ix_(sy,sx)]),np.ma.masked_invalid(v[np.ix_(sy,sx)]),density=.9,color="#253440",linewidth=.65,arrowsize=.7)
+                elif product=="rh":raster(ax,x,y,d["r",p],norm,cmap)
+                else:
+                    a=d["msl",0];raster(ax,x,y,a,norm,cmap)
+                    lev=np.arange(np.ceil(np.nanmin(a)),np.floor(np.nanmax(a))+1,1)
+                    if len(lev):ax.clabel(ax.contour(x,y,a,levels=lev,colors="#333333",linewidths=.55),fmt="%.0f",fontsize=7)
+            else:ax.text(.5,.5,"UNAVAILABLE",transform=ax.transAxes,ha="center")
+            finish(ax,m,domain)
+        save(fig,OUT/f"{product}{p or ''}_{domain}_f{lead:03d}.png")
 
 def main():
     OUT.mkdir(exist_ok=False);manifest={"cycle":INIT.isoformat(),"leads":{}};failures=0

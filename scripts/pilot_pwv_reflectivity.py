@@ -108,32 +108,18 @@ def ifs(lead,res):
     return result,{"url":url,"index":index,"range":[offset,size],"bytes":len(data),"sha256":hashlib.sha256(data).hexdigest(),"fields":meta}
 
 def plot(panels,lead):
-    fig,axes=plt.subplots(2,2,figsize=(15,9),layout="constrained")
-    for ax,(label,kind,data) in zip(axes.flat,panels):
-        m=Basemap(projection="cyl",llcrnrlon=110,urcrnrlon=132,llcrnrlat=-10,urcrnrlat=5,resolution="l",ax=ax)
-        ax.set_title(label)
-        if data is None:
-            ax.text(.5,.5,"UNAVAILABLE",ha="center",va="center",transform=ax.transAxes);continue
-        x,y,v=data
-        if kind=="pwv":
-            fill=ax.contourf(x,y,v,levels=np.arange(10,81,5),cmap="YlGnBu",extend="both")
-            units="PWV (mm)"
-        else:
-            from matplotlib.colors import BoundaryNorm, ListedColormap
-            # Native values retained in QC; < 5 dBZ is weak/below display threshold, not missing.
-            levels=[-100,5,10,20,30,40,50,60,100]
-            cmap=ListedColormap(["#f2f2f2","#9ed7ff","#4292c6","#41ab5d","#fed976","#fd8d3c","#e31a1c","#88419d"])
-            fill=ax.pcolormesh(x,y,v,shading="nearest",cmap=cmap,norm=BoundaryNorm(levels,cmap.N))
-            units="Simulated composite reflectivity (dBZ)"
-        fig.colorbar(fill,ax=ax,orientation="horizontal",shrink=.83,label=units)
-        m.drawcoastlines(linewidth=.7);m.drawcountries(linewidth=.4)
-        m.drawparallels(np.arange(-10,6,5),labels=[1,0,0,0],fontsize=8,linewidth=.3)
-        m.drawmeridians(np.arange(110,133,5),labels=[0,0,0,1],fontsize=8,linewidth=.3)
-        ax.plot(121.525,-4.338,"k*",ms=9);ax.annotate("WAWP",(121.525,-4.338),xytext=(4,4),textcoords="offset points",fontsize=8)
-        ax.set_facecolor("#bdbdbd")
-    valid=INIT+timedelta(hours=lead)
-    fig.suptitle(f"TITAN research pilot | init {INIT:%d %b %Y %HZ} | H+{lead} | valid {valid:%d %b %Y %HZ}\nGFS and ECMWF IFS (two resolutions, one model family) | simulated radar is NOT observed radar",fontsize=14)
-    fig.savefig(OUT/f"comparison_f{lead:03d}.png",dpi=145);plt.close(fig)
+    from spatial_v3_style import DOMAINS,figure,base,finish,raster,save
+    for domain in DOMAINS:
+        for kind,product,title,unit,levels,cmap,extend in (
+            ("pwv","pwv","Precipitable water","mm",[10,20,30,35,40,45,50,55,60,65,70,80],"YlGnBu","both"),
+            ("refc","refc","GFS simulated composite reflectivity (not observed radar)","dBZ",[-20,5,10,20,30,40,50,60,80],"turbo","neither")):
+            selected=[(label,data) for label,k,data in panels if k==kind and data is not None]
+            if not selected:continue
+            fig,axes,norm=figure(len(selected),title,domain,lead,INIT,"NOAA/NCEP and ECMWF open data",unit,levels,cmap,extend)
+            for ax,(label,(x,y,v)) in zip(axes,selected):
+                m=base(ax,domain);ax.set_title(label,fontsize=11)
+                raster(ax,x,y,v,norm,cmap);finish(ax,m,domain)
+            save(fig,OUT/f"{product}_{domain}_f{lead:03d}.png")
 
 def main():
     OUT.mkdir(exist_ok=False)
