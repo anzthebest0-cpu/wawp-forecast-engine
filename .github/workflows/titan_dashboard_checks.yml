@@ -5,6 +5,7 @@ on:
       - codex/titan-dashboard-phase1
     paths:
       - 'docs/**'
+      - 'services/awos-proxy/**'
       - 'tests/test_preview_ui.js'
       - 'tests/test_dashboard_browser.cjs'
       - 'tests/test_analysis_workspace.js'
@@ -20,6 +21,7 @@ on:
       - 'docs/index.html'
       - 'docs/*.js'
       - 'docs/style.css'
+      - 'services/awos-proxy/**'
       - 'tests/test_preview_ui.js'
       - 'tests/test_dashboard_browser.cjs'
       - 'tests/test_analysis_workspace.js'
@@ -53,6 +55,11 @@ jobs:
           node tests/test_analysis_workspace.js
           node tests/test_observation_ui.js
           node tests/test_research_ui.js
+      - name: Check stateless proxy with synthetic XML
+        run: |
+          cd services/awos-proxy
+          npm install --ignore-scripts --no-audit --no-fund --package-lock=false
+          npm test
       - name: Check offline AWOSnet probe helpers
         run: |
           python -m unittest discover -s tests -p test_probe_awosnet.py

@@ -16,12 +16,16 @@ const archive={metrics:{Month:{Temperature:{overall:{ECMWF_HRES:{MAE:1,RMSE:1.2,
 async function fixture(browser,mode,viewport){
   const page=await browser.newPage({viewport});
   const errors=[];
+  let awosRequests=0;
+  const proxy='https://awos-fixture.invalid/awos';
   page.on('pageerror',e=>{errors.push(e.stack||e.message);console.error('PAGE ERROR',mode,e.stack||e.message);});
   page.on('console',m=>{if(m.type()==='error'&&!/Failed to load resource|net::ERR_FAILED/.test(m.text()))console.log('BROWSER CONSOLE',mode,m.text());});
   await page.route('**/*',async route=>{
     const u=new URL(route.request().url());
     if(u.hostname==='cdn.jsdelivr.net'&&u.pathname.includes('apexcharts'))return route.fulfill({path:require.resolve('apexcharts/dist/apexcharts.min.js'),contentType:'application/javascript'});
+    if(u.href===proxy){awosRequests++;return route.fulfill({json:{schema:'titan-local-awos-v1',station:'WAWP',source:'AWOSnet',observed_at_utc:iso(Date.now()-2000).slice(0,19)+'Z',retrieved_at_utc:iso(Date.now()-1000).slice(0,19)+'Z',wind_average_minutes:2,wind_reference:'true',units_confirmed:true,wind_speed_kt:7},headers:{'Access-Control-Allow-Origin':root}});}
     if(u.origin!==root)return route.abort();
+    if(u.pathname==='/'&&mode==='mismatch'){const body=fs.readFileSync(path.join('docs','index.html'),'utf8').replace('name="titan-awos-proxy" content=""','name="titan-awos-proxy" content="'+proxy+'"');return route.fulfill({body,contentType:'text/html'});}
     if(!u.pathname.startsWith('/data/'))return route.continue();
     const name=u.pathname.split('/').pop();
     let data={};
@@ -68,7 +72,12 @@ async function fixture(browser,mode,viewport){
   await page.waitForFunction(()=>document.getElementById('analysis-image-status').textContent.includes('unavailable'));
   await page.screenshot({path:'browser-audit/'+mode+'-analysis-'+viewport.width+'.png',fullPage:false});
   await open('tab-intel');
-  assert.match(await loc('#obs-status').textContent(),/Not connected/);
+  if(mode==='mismatch'){
+    await page.waitForFunction(()=>document.getElementById('obs-wind_speed_kt').textContent==='7 kt');
+    assert.equal(awosRequests,1);assert.match(await loc('#obs-poll-status').textContent(),/60 s/);
+    await loc('#obs-refresh').click();await page.waitForFunction(()=>document.getElementById('obs-status').textContent.includes('proxy'));
+    await loc('#obs-auto').uncheck();assert.match(await loc('#obs-poll-status').textContent(),/paused/);
+  }else assert.match(await loc('#obs-status').textContent(),/Not connected/);
   await loc('#obs-file').setInputFiles({name:'test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({schema:'titan-local-awos-v1',station:'WAWP',source:'AWOSnet',observed_at_utc:iso(now-1000).slice(0,19)+'Z',wind_average_minutes:2,wind_reference:'true',units_confirmed:true,wind_speed_kt:0,altimeter_setting_hpa:1012.5,rain_current_hour_mm:0,source_epoch_offset_seconds:28900}))});
   await page.waitForFunction(()=>document.getElementById('obs-wind_speed_kt').textContent==='0 kt');
   assert.equal(await loc('#obs-altimeter_setting_hpa').textContent(),'1012.5 hPa');

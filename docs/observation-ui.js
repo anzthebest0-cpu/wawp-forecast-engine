@@ -1,4 +1,4 @@
-/* Supplemental local observation viewer. No network ingestion or upload. */
+/* Supplemental observation viewer. On-demand proxy only when configured; no upload or persistence. */
 (function(root){
 'use strict';
 const limits={wind_speed_kt:[0,200],wind_direction_deg:[0,360],gust_kt:[0,250],temperature_c:[-50,65],dewpoint_c:[-80,65],qnh_hpa:[850,1100],altimeter_setting_hpa:[850,1100],temperature_10min_c:[-50,65],dewpoint_10min_c:[-80,65],relative_humidity_pct:[0,100],rain_current_hour_mm:[0,500],solar_wm2:[0,1600],density_altitude_ft:[-5000,30000]};
@@ -44,13 +44,19 @@ if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.Tita
 function setupObservationPanel(){
     const el=id=>document.getElementById(id);
     if(!el('obs-file'))return;
-    let sample=null,metar=null,importVersion=0,sourceError='',metarError='',reportSource='manually entered';
+    let sample=null,metar=null,importVersion=0,sourceError='',metarError='',reportSource='manually entered',sampleSource='manually imported',retrievedAt=null;
+    let endpoint=null;try{const raw=document.querySelector('meta[name="titan-awos-proxy"]')?.content;if(raw){const url=new URL(raw);if(url.protocol==='https:'&&!url.username&&!url.password&&!url.search&&!url.hash&&url.pathname==='/awos')endpoint=url.href;}}catch(_){}
+    let enabled=!!endpoint, timer=null,controller=null, generation=0;
+    const visible=()=>document.visibilityState==='visible'&&enabled;
+    const stop=()=>{generation++;clearTimeout(timer);timer=null;controller?.abort();controller=null;};
     const fields=[['wind_speed_kt',' kt'],['wind_direction_deg','°'],['gust_kt',' kt'],['temperature_c',' °C'],['dewpoint_c',' °C'],['qnh_hpa',' hPa'],['altimeter_setting_hpa',' hPa'],['temperature_10min_c',' °C'],['dewpoint_10min_c',' °C'],['relative_humidity_pct','%'],['rain_current_hour_mm',' mm'],['solar_wm2',' W/m²'],['density_altitude_ft',' ft']];
     const stamp=t=>new Date(t).toISOString().slice(0,19)+'Z';
     const render=()=>{
         const now=Date.now(),a=sample?TitanObservation.age(sample.at,now,5):null,r=metar?TitanObservation.age(metar.at,now,60):null;
-        el('obs-status').textContent=sourceError||(!sample?'Not connected — no local snapshot loaded':a.state==='recent'?'Recent manually imported snapshot · '+a.minutes+' min old':'Stale or invalid snapshot — values withheld');
+        el('obs-status').textContent=sourceError||(!sample?'Not connected — no local snapshot loaded':a.state==='recent'?'Recent '+sampleSource+' snapshot · '+a.minutes+' min old':'Stale or invalid snapshot — values withheld');
         el('obs-time').textContent=sample?'Confirmed source display clock: '+stamp(sample.at):'Sensor observation time: —';
+        el('obs-retrieved').textContent=retrievedAt!==null?'Retrieved at: '+stamp(retrievedAt):'';
+        el('obs-poll-status').textContent=!endpoint?'Automatic retrieval not configured':!enabled?'Automatic retrieval paused':document.visibilityState!=='visible'?'Paused while browser tab is hidden':'Automatic retrieval every 60 s while visible';
         el('obs-epoch-note').textContent=sample&&sample.epochOffset!==null?'Raw XML epoch offset from display clock: '+sample.epochOffset+' s. Not used as UTC observation time.':'';
         for(const [key,unit] of fields){
             const v=sample&&a.state==='recent'?sample.values[key]:null;
@@ -60,15 +66,29 @@ function setupObservationPanel(){
         el('obs-metar-time').textContent=metar?'Report observation time: '+stamp(metar.at):'Report observation time: —';
         el('obs-metar-text').textContent=metar&&r.state==='recent'?metar.text:'—';
     };
+    const ingest=(data,source)=>{sample=TitanObservation.snapshot(data,Date.now());sampleSource=source;retrievedAt=null;metar=null;metarError='';if(source==='proxy'){const t=TitanObservation.utc(data.retrieved_at_utc);if(!Number.isFinite(t)||t>Date.now()||Date.now()-t>120000||t<sample.at)throw Error('Invalid retrieval timestamp');retrievedAt=t;}if(data.metar_text&&data.metar_date_utc){try{metar=TitanObservation.report(data.metar_text,data.metar_date_utc,Math.min(Date.now(),sample.at));reportSource='AWOSnet snapshot';}catch(err){metarError='Embedded report rejected: '+err.message;}}};
+    const poll=async()=>{
+        if(!visible()||controller)return;
+        clearTimeout(timer);timer=null;const token=++generation,abort=new AbortController();controller=abort;
+        const deadline=setTimeout(()=>abort.abort(),9000);
+        try{const response=await fetch(endpoint,{cache:'no-store',credentials:'omit',redirect:'error',signal:abort.signal});if(!response.ok)throw Error('Proxy unavailable');const data=await response.json();if(token!==generation||!visible())return;ingest(data,'proxy');sourceError='';}
+        catch(_){if(token===generation){sample=null;metar=null;retrievedAt=null;sourceError='AWOSnet proxy unavailable — values withheld';}}
+        finally{clearTimeout(deadline);if(token===generation){controller=null;render();if(visible())timer=setTimeout(poll,60000);}}
+    };
+    const pause=()=>{enabled=false;stop();render();};
+    el('obs-refresh').disabled=!endpoint;el('obs-auto').disabled=!endpoint;
+    el('obs-refresh').addEventListener('click',()=>{if(!endpoint)return;enabled=true;el('obs-auto').checked=true;stop();poll();});
+    el('obs-auto').checked=enabled;el('obs-auto').addEventListener('change',()=>{enabled=el('obs-auto').checked;stop();render();if(visible())poll();});
+    document.addEventListener('visibilitychange',()=>{stop();render();if(visible())poll();});
+    window.addEventListener('pagehide',stop);window.addEventListener('pageshow',e=>{if(e.persisted&&visible())poll();});
     el('obs-file').addEventListener('change',async e=>{
-        const version=++importVersion,f=e.target.files[0];sample=null;sourceError='';metar=null;metarError='';reportSource='manually entered';render();
+        pause();el('obs-auto').checked=false;const version=++importVersion,f=e.target.files[0];sample=null;retrievedAt=null;sourceError='';metar=null;metarError='';reportSource='manually entered';render();
         if(!f)return;
         try{
             if(f.size>16384)throw Error('Snapshot exceeds 16 KB.');
             const data=JSON.parse(await f.text());
             if(version!==importVersion)return;
-            sample=TitanObservation.snapshot(data,Date.now());
-            if(data.metar_text&&data.metar_date_utc){try{metar=TitanObservation.report(data.metar_text,data.metar_date_utc,Math.min(Date.now(),sample.at));reportSource='AWOSnet snapshot';}catch(err){metarError='Embedded report rejected: '+err.message;}}
+            ingest(data,'manually imported');
         }catch(err){if(version!==importVersion)return;sourceError='Import rejected: '+err.message;sample=null;}
         render();
     });
@@ -79,6 +99,6 @@ function setupObservationPanel(){
         catch(err){metarError='Report rejected: '+err.message;}
         render();
     });
-    el('obs-clear').addEventListener('click',()=>{++importVersion;sample=null;metar=null;sourceError='';metarError='';el('obs-file').value='';el('obs-metar-input').value='';render();});
-    render();setInterval(render,10000);
+    el('obs-clear').addEventListener('click',()=>{pause();el('obs-auto').checked=false;++importVersion;sample=null;metar=null;retrievedAt=null;sourceError='';metarError='';el('obs-file').value='';el('obs-metar-input').value='';render();});
+    render();setInterval(render,10000);if(visible())poll();
 }
