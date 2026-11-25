@@ -2,7 +2,7 @@
 import json,re,shutil
 from pathlib import Path
 from PIL import Image
-SOURCES=[["pwv","45601637928","titan-pwv-reflectivity-review","15016700092"],["circulation","45601978661","titan-circulation-comparison-review","15016082649"],["dynamics","45605768347","titan-instability-moisture-three-domains","15017623521"],["mucape","45610101731","titan-mucape-repair-three-domains","15018993694"],["rain","45610038533","titan-rain-gust-review","15018449461"],["vertical","45612267808","titan-vertical-profile-review","15021211872"]]
+SOURCES=[["pwv","45601637928","titan-pwv-reflectivity-review","15016700092"],["circulation","45601978661","titan-circulation-comparison-review","15016082649"],["dynamics","45605768347","titan-instability-moisture-three-domains","15017623521"],["mucape","45610101731","titan-mucape-repair-three-domains","15018993694"],["rain","45610038533","titan-rain-gust-review","15018449461"],["vertical","45612267808","titan-vertical-profile-review","15021211872"],["icon","45614469101","titan-icon-native-review","15020154146"]]
 ROOT=Path("review-inputs")
 OUT=Path("titan-spatial-review")
 PRODUCTS={
@@ -26,6 +26,9 @@ PRODUCTS={
 "li":("Vertical profile","Approximate surface-based Lifted Index","2 m parcel at model surface pressure; not mixed-layer LI."),
 "si":("Vertical profile","Showalter Index","850 hPa parcel."),
 "freeze":("Vertical profile","Resolved freezing height","First resolved warm-to-cold pressure-level crossing; not an icing forecast."),
+"TQV":("ICON native grid","ICON precipitable water","Native cell-centre PWV; no regular-grid remapping."),
+"PMSL":("ICON native grid","ICON mean sea-level pressure","Native cell-centre MSLP; distinct from regular-grid isobars."),
+"CAPE_ML":("ICON native grid","ICON mixed-layer CAPE","Native DWD mixed-layer parcel, not GFS SBCAPE or IFS MUCAPE."),
 "z500":("Vertical profile","500 hPa geopotential height","Native geopotential height or converted geopotential.")}
 LEADS=(0,6,12)
 DOMAINS=("regional","sulawesi","kolaka")
@@ -35,6 +38,7 @@ def expected(group):
     if group=="dynamics":products=("mfc925","mfc850","flux925","shear","ki","cape","cin")
     elif group=="mucape":products=("mucape",)
     elif group=="rain":return [(p,d,h) for p in ("rain","gust_1h","gust_instant") for d in DOMAINS for h in (6,12)]
+    elif group=="icon":products=("TQV","PMSL","CAPE_ML")
     else:products=("li","si","freeze","z500")
     return [(p,d,h) for p in products for d in DOMAINS for h in LEADS]
 def main():
@@ -64,6 +68,6 @@ def main():
     (OUT/"catalog.json").write_text(json.dumps(data,indent=2))
     html=Path("scripts/titan_spatial_review.html").read_text()
     (OUT/"index.html").write_text(html.replace("__CATALOG__",json.dumps(data,ensure_ascii=False).replace("<","\\u003c")))
-    (OUT/"README.txt").write_text("Extract the whole ZIP, then open index.html in a browser. Offline charts are from 25 November 2026 00 UTC, not current guidance. Source manifests are included. No live data retrieval. External reference links require internet. Observed RASON integration deferred by user; ICON and synthetic IR not yet validated. No production deployment. Earlier GFS/IFS PWV and circulation charts have regional view only. Missing views remain unavailable, not silently substituted.")
+    (OUT/"README.txt").write_text("Extract the whole ZIP, then open index.html in a browser. Offline charts are from 25 November 2026 00 UTC, not current guidance. Source manifests are included. No live data retrieval. External reference links require internet. Observed RASON integration deferred by user; ICON PWV/MSLP/mixed-layer CAPE included; synthetic IR unresolved. No production deployment. Earlier GFS/IFS PWV and circulation charts have regional view only. Missing views remain unavailable, not silently substituted.")
     print("REVIEW_CHARTS",len(entries),"PRODUCTS",len({e["product"] for e in entries}),flush=True)
 if __name__=="__main__":main()
