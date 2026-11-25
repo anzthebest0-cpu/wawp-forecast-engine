@@ -1,0 +1,30 @@
+name: TITAN PWV and simulated radar pilot
+on:
+  push:
+    branches: [codex/titan-pwv-reflectivity-pilot]
+    paths: ['scripts/pilot_pwv_reflectivity.py', '.github/workflows/titan_pwv_reflectivity_pilot.yml']
+permissions:
+  contents: read
+jobs:
+  experiment:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install "eccodes>=2.42,<3" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3"
+      - name: Compare native PWV and test GFS composite reflectivity
+        run: python scripts/pilot_pwv_reflectivity.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-pwv-reflectivity-review
+          path: |
+            pwv-reflectivity-pilot/*.png
+            pwv-reflectivity-pilot/manifest.json
+          if-no-files-found: warn
+          retention-days: 7
