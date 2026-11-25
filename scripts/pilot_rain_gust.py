@@ -48,7 +48,13 @@ def decode(h,kind,dx,lead):
         arr*=1.9438444924
     if not np.isfinite(arr).any() or np.any(np.isfinite(arr)&((arr<-.001)|(arr>(2000 if kind=="rain" else 200)))):raise ValueError("Range QC")
     arr=np.where((arr<0)&(arr>=-.001),0,arr)
-    return {"array":arr,"start":start,"end":end,"step":step,"short":short,"units":units,"dx":dx,"level":typ,"code":[get(k) for k in ("discipline","parameterCategory","parameterNumber")]}
+    packing_error=None
+    if kind=="rain":
+        try:
+            pe=float(get("packingError"))*(1000 if units=="m" else 1)
+            if np.isfinite(pe) and 0<=pe<=1:packing_error=pe
+        except Exception:pass
+    return {"packing_error_mm":packing_error,"array":arr,"start":start,"end":end,"step":step,"short":short,"units":units,"dx":dx,"level":typ,"code":[get(k) for k in ("discipline","parameterCategory","parameterNumber")]}
 
 def gfs(lead):
     q={"dir":"/gfs.20261125/00/atmos","file":f"gfs.t00z.pgrb2.0p25.f{lead:03d}","subregion":"","leftlon":110,"rightlon":132,"toplat":5,"bottomlat":-10,"lev_surface":"on","lev_10_m_above_ground":"on","var_APCP":"on","var_GUST":"on"}
@@ -94,7 +100,16 @@ def ecmwf(model,res,lead):
     return out,meta
 
 def unique(candidates):
-    return candidates[0] if len(candidates)==1 else None
+    if not candidates:return None
+    a=candidates[0]
+    if len(candidates)==1:return a
+    keys=("start","end","step","short","units","dx","level","code")
+    for b in candidates[1:]:
+        if any(a[k]!=b[k] for k in keys) or not np.array_equal(a["array"],b["array"],equal_nan=True):
+            print("DUPLICATE_CONFLICT",json.dumps({"candidate_count":len(candidates),"start":a["start"],"end":a["end"]}),flush=True)
+            return None
+    print("IDENTICAL_DUPLICATES",len(candidates),a["start"],a["end"],flush=True)
+    return {**a,"identical_duplicate_count":len(candidates)}
 
 def rain_window(current,previous,lead):
     direct=unique([x for x in current if x["start"]==lead-6 and x["end"]==lead])
@@ -104,8 +119,21 @@ def rain_window(current,previous,lead):
         b=unique([x for x in previous if x["start"]==0 and x["end"]==6])
         if a and b and a["dx"]==b["dx"] and a["short"]==b["short"]:
             delta=a["array"]-b["array"]
-            if not np.isfinite(delta).any() or np.any(np.isfinite(delta)&(delta<-.02)):return None
-            return {**a,"array":np.where(delta<0,0,delta),"start":6,"method":"0–12h minus 0–6h same-cycle cumulative fields"}
+            finite=np.isfinite(delta)
+            if not finite.any():return None
+            # Each independently packed cumulative field can differ by its own
+            # quantization error. Do not use a guessed blanket tolerance.
+            ea,eb=a.get("packing_error_mm"),b.get("packing_error_mm")
+            tolerance=(ea+eb+1e-8) if ea is not None and eb is not None else 1e-8
+            bad=finite&(delta < -tolerance)
+            near=finite&(delta<0)&~bad
+            qc={"minimum_difference_mm":float(np.nanmin(delta)),"negative_cells":int((finite&(delta<0)).sum()),"roundoff_cells":int(near.sum()),"beyond_packing_bound_cells":int(bad.sum()),"finite_cells":int(finite.sum()),"packing_bound_mm":tolerance,"packing_errors_mm":[ea,eb]}
+            if bad.any():
+                iy,ix=np.where(bad)
+                qc["example_coordinates"]=[[float(110+x*a["dx"]),float(-10+y*a["dx"]),float(delta[y,x])] for y,x in zip(iy[:5],ix[:5])]
+            print("RAIN_DELTA_QC",json.dumps(qc),flush=True)
+            if bad.any():return None
+            return {**a,"array":np.where(near,0,delta),"start":6,"method":"0–12h minus 0–6h same-cycle cumulative fields; negative roundoff bounded by GRIB packing error","difference_qc":qc}
     return None
 
 def describe(record):
@@ -132,7 +160,7 @@ def plot(data,kind,lead,domain):
         m.drawparallels(np.arange(-10,6,step),labels=[1,0,0,0],fontsize=8,linewidth=.3)
         m.drawmeridians(np.arange(110,133,step),labels=[0,0,0,1],fontsize=8,linewidth=.3)
         ax.set_xlim(bounds[:2]);ax.set_ylim(bounds[2:]);ax.plot(121.525,-4.338,"k*",ms=8);ax.annotate("WAWP",(121.525,-4.338),xytext=(4,4),textcoords="offset points",fontsize=8)
-    title={"rain":"6-hour accumulated rainfall","gust_max":"6-hour maximum forecast gust","gust_instant":"Instantaneous forecast gust"}[kind]
+    title={"rain":"6-hour accumulated rainfall","gust_max":"6-hour maximum forecast gust","gust_1h":"Previous-hour maximum forecast gust","gust_instant":"Instantaneous forecast gust"}[kind]
     valid=INIT+timedelta(hours=lead)
     fig.suptitle(f"{title} | {domain} | end {valid:%d %b %Y %HZ}\nInit {INIT:%d %b %Y %HZ} · NOAA/NCEP and ECMWF · Research pilot",fontsize=14)
     fig.savefig(OUT/f"{kind}_{domain}_f{lead:03d}.png",dpi=115);plt.close(fig)
@@ -141,7 +169,7 @@ def main():
     OUT.mkdir(exist_ok=False);prev={};manifest={"cycle":INIT.isoformat(),"domains":DOMAINS,"leads":{}}
     count=0
     for lead in LEADS:
-        results={"rain":{},"gust_max":{},"gust_instant":{}};records={}
+        results={"rain":{},"gust_max":{},"gust_1h":{},"gust_instant":{}};records={}
         for label,model,res in MODELS:
             try:
                 fields,meta=gfs(lead) if model is None else ecmwf(model,res,lead)
@@ -149,9 +177,10 @@ def main():
                 prev[label]=fields["rain"]
                 maxgust=unique([x for x in fields["gust"] if x["step"]=="max" and x["start"]==lead-6 and x["end"]==lead])
                 instant=unique([x for x in fields["gust"] if x["step"]=="instant" and x["end"]==lead])
-                for key,val in [("rain",rain),("gust_max",maxgust),("gust_instant",instant)]:
+                onehour=unique([x for x in fields["gust"] if x["step"]=="max" and x["start"]==lead-1 and x["end"]==lead])
+                for key,val in [("rain",rain),("gust_max",maxgust),("gust_1h",onehour),("gust_instant",instant)]:
                     if val is not None:results[key][label]=val;count+=1
-                records[label]={**meta,"candidate_rain":[describe(x) for x in fields["rain"]],"candidate_gust":[describe(x) for x in fields["gust"]],"rain":describe(rain),"gust_max":describe(maxgust),"gust_instant":describe(instant)}
+                records[label]={**meta,"candidate_rain":[describe(x) for x in fields["rain"]],"candidate_gust":[describe(x) for x in fields["gust"]],"rain":describe(rain),"gust_max":describe(maxgust),"gust_1h":describe(onehour),"gust_instant":describe(instant)}
                 print("RESULT",lead,label,json.dumps(records[label]),flush=True)
             except Exception as e:records[label]={"error":str(e)};print("FAIL",lead,label,str(e),flush=True)
         manifest["leads"][str(lead)]=records
