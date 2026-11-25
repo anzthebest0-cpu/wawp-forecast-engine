@@ -1,0 +1,28 @@
+name: TITAN ICON native grid source pilot
+on:
+  push:
+    branches: [codex/titan-icon-native-pilot]
+    paths: ['scripts/pilot_icon_native.py', '.github/workflows/titan_icon_native_pilot.yml']
+permissions:
+  contents: read
+jobs:
+  experiment:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile scripts/pilot_icon_native.py
+      - run: python -m pip install "eccodes>=2.42,<3" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3"
+      - run: python scripts/pilot_icon_native.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-icon-native-review
+          path: icon-native-pilot/
+          retention-days: 7
+          if-no-files-found: warn
