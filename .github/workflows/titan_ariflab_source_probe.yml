@@ -1,0 +1,22 @@
+name: TITAN one-time Ariflab source investigation
+on:
+  push:
+    branches: [codex/titan-ariflab-source-probe]
+    paths: ['tests/probe_ariflab_sources.cjs', '.github/workflows/titan_ariflab_source_probe.yml']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --package-lock=false playwright@1.51.1
+      - run: npx playwright install --with-deps chromium
+      - name: Check public feed and image access
+        run: node tests/probe_ariflab_sources.cjs
