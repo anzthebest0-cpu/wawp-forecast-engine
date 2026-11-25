@@ -1,0 +1,30 @@
+name: TITAN observed radiosonde CAPE pilot
+on:
+  push:
+    branches: [codex/titan-observed-rason-pilot]
+    paths: ['scripts/pilot_observed_rason.py', '.github/workflows/titan_observed_rason_pilot.yml']
+permissions:
+  contents: read
+jobs:
+  pilot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile scripts/pilot_observed_rason.py
+      - run: python -m pip install "metpy>=1.7,<2" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3"
+      - run: python scripts/pilot_observed_rason.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-observed-rason-cape-review
+          path: |
+            rason-pilot/*.png
+            rason-pilot/manifest.json
+          retention-days: 7
+          if-no-files-found: warn
