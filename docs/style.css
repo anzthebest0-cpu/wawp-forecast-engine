@@ -1132,3 +1132,16 @@ tbody tr:hover td {
 /* Audit: prevent page-width overflow; keep wide tables locally scrollable. */
 .content,.intel-grid>*,.panel,.chart-panel{min-width:0;}.preview-scroll,.table-container{max-width:100%;}.header-bar{flex-wrap:wrap;gap:8px;}
 @media(max-width:600px){#tab-verify>div:first-of-type,#tab-verify>div:first-of-type>div{flex-wrap:wrap;gap:8px!important;} .preview-controls{align-items:flex-start;} .obs-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+
+/* Production hotfix: opaque sticky model names and local horizontal scroll. */
+:root{--bg-secondary:var(--col-surface-2);--bg-tertiary:var(--col-surface-3);--border-glass:var(--col-border);--font-mono:var(--font-data);--rain-sticky:#111827;--rain-sticky-head:#1e293b;}
+:root.light-mode{--rain-sticky:#f8fafc;--rain-sticky-head:#e2e8f0;}
+#spread-rain .preview-scroll{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:auto;scrollbar-color:#94a3b8 var(--col-base);isolation:isolate;}
+#spread-rain .preview-scroll:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;}
+#spread-rain .rain-model-table{table-layout:auto;width:max-content;min-width:100%;border-spacing:2px;border-collapse:separate;}
+#spread-rain .rain-model-table th,#spread-rain .rain-model-table td{min-width:94px;white-space:nowrap;}
+#spread-rain .rain-model-table th:first-child{position:sticky;left:0;min-width:164px;width:164px;max-width:164px;white-space:normal;overflow-wrap:anywhere;background:var(--rain-sticky);color:var(--text-primary);z-index:3;box-shadow:3px 0 0 var(--col-border-2);text-align:left;}
+#spread-rain .rain-model-table thead th:first-child{background:var(--rain-sticky-head);z-index:4;}
+#spread-rain .rain-model-table tbody tr:hover td.rain-zero{background:#e2e8f0;}#spread-rain .rain-model-table tbody tr:hover td.rain-r1{background:#bae6fd;}#spread-rain .rain-model-table tbody tr:hover td.rain-r2{background:#7dd3fc;}#spread-rain .rain-model-table tbody tr:hover td.rain-r3{background:#38bdf8;}#spread-rain .rain-model-table tbody tr:hover td.rain-r4{background:#0369a1;}#spread-rain .rain-model-table tbody tr:hover td.rain-r5{background:#1e3a8a;}#spread-rain .rain-model-table tbody tr:hover td.rain-missing{background:repeating-linear-gradient(135deg,#cbd5e1 0 4px,#f1f5f9 4px 8px);}
+#obs-live-controls[hidden]{display:none;}
+@media(max-width:600px){#spread-rain .rain-model-table th:first-child{min-width:112px;width:112px;max-width:112px;font-size:.7rem;}}

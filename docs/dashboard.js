@@ -764,7 +764,6 @@ function setupVerification(perfData) {
     });
     
     // Attach listeners to param selectors
-    document.getElementById('leadtime-param-select').addEventListener('change', renderVerification);
     document.getElementById('diurnal-param-select').addEventListener('change', renderVerification);
     
     renderVerification();
@@ -880,33 +879,7 @@ function renderVerification() {
         renderEventWindowVerification(lbMetrics);
     }
     else if (window.currentVerifySub === 'verify-leadtime') {
-        const param = document.getElementById('leadtime-param-select').value;
-        const ltData = lbMetrics[param]?.lead_time;
-        if (ltData && Object.keys(ltData).length > 0) {
-            const days = ["Day 1", "Day 2", "Day 3", "Day 4+"];
-            const models = Object.keys(lbMetrics[param].overall || {});
-            
-            const series = models.map(m => {
-                return {
-                    name: m,
-                    data: days.map(d => (ltData[d] && ltData[d][m]) ? ltData[d][m].RMSE : null)
-                }
-            });
-            
-            const options = {
-                series: series,
-                chart: { type: 'line', height: 350, background: 'transparent', toolbar: { show: false } },
-                stroke: { width: 3, curve: 'smooth' },
-                xaxis: { categories: days, labels: { style: { colors: '#94a3b8' } } },
-                yaxis: { title: { text: 'RMSE' }, labels: { style: { colors: '#94a3b8' } } },
-                theme: { mode: 'dark' },
-                legend: { position: 'top' }
-            };
-            document.getElementById('verify-leadtime-chart').innerHTML = '';
-            new ApexCharts(document.getElementById('verify-leadtime-chart'), options).render();
-        } else {
-            document.getElementById('verify-leadtime-chart').innerText = 'Insufficient data for Lead-Time Analysis.';
-        }
+        document.getElementById('verify-leadtime-chart').textContent='No validated lead-time results available. Missing initialization timestamps must be excluded and paired sample counts verified before this diagnostic can be restored.';
     }
     else if (window.currentVerifySub === 'verify-diurnal') {
         const param = document.getElementById('diurnal-param-select').value;
