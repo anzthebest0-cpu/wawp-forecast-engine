@@ -69,13 +69,14 @@ function renderRainHeatmap(models,times){
     const root=document.getElementById('spread-rain');if(!root)return;
     root.replaceChildren();
     const title=document.createElement('h3');title.textContent='Individual model precipitation (mm per output hour)';root.appendChild(title);
-    const note=document.createElement('p');note.className='section-note';note.textContent='Alternative forecasts, never added together. Native model time steps may differ. — = unavailable; 0 = dry model value. Descriptive color bins, not warning thresholds.';root.appendChild(note);
+    const note=document.createElement('p');note.className='section-note';note.textContent='Alternative forecasts, never added together. Native model time steps may differ. — = unavailable; 0 = dry model value. Descriptive color bins, not warning thresholds. Scroll horizontally to see later hours; model names stay fixed.';root.appendChild(note);
     const entries=Object.entries(models?.Rainfall||{});if(!entries.length||!times.length){root.append('No matching model values.');return;}
-    const wrap=document.createElement('div');wrap.className='preview-scroll';const table=document.createElement('table');table.className='rain-model-table';
+    const wrap=document.createElement('div');wrap.className='preview-scroll';wrap.tabIndex=0;wrap.setAttribute('role','region');wrap.setAttribute('aria-label','Individual model rainfall — scroll horizontally');const table=document.createElement('table');table.className='rain-model-table';
     const head=table.createTHead().insertRow();previewCell(head,'th','Model');
     times.forEach(t=>previewCell(head,'th',titanPreviewLabel(TitanPreview.epoch(t),true)));
     const body=table.createTBody();
-    entries.forEach(([name,values])=>{const row=body.insertRow();previewCell(row,'th',name);
+    const labels={CMA_GRAPES_GLOBAL:'CMA GRAPES',ECMWF_HRES:'IFS 0.25°',ECMWF_IFS_9KM:'IFS 9 km',GEM_GLOBAL:'GEM',GFS_GLOBAL:'GFS',ICON_SEAMLESS:'ICON',JMA_GSM:'JMA GSM',METEOFRANCE_ARPEGE_WORLD:'ARPEGE',UKMO_GLOBAL_10KM:'UKMO 10 km'};
+    entries.forEach(([name,values])=>{const row=body.insertRow();const th=previewCell(row,'th',labels[name]||name);th.scope='row';th.title=name;
         times.forEach(t=>{const v=TitanPreview.numeric(values?.[t]);const cls=TitanPreview.rainClass(v);const cell=previewCell(row,'td',cls==='missing'?'—':v.toFixed(1),'rain-'+cls);cell.title=name+' | '+titanPreviewLabel(TitanPreview.epoch(t))+' | '+(cls==='missing'?'Unavailable':v+' mm');});
     });
     wrap.appendChild(table);root.appendChild(wrap);

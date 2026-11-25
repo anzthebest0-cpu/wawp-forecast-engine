@@ -12,13 +12,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
-    <script src="preview-ui.js?v=1"></script>
-    <script src="analysis-workspace.js?v=3-sigwx"></script>
+    <script src="preview-ui.js?v=2-scroll"></script>
+    <script src="analysis-workspace.js?v=4-links"></script>
     <meta name="titan-awos-proxy" content="">
-    <script src="observation-ui.js?v=3"></script>
+    <script src="observation-ui.js?v=4-status"></script>
     <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=3.4-labels"></script>
-    <link rel="stylesheet" href="style.css?v=4.6-audit">
+    <link rel="stylesheet" href="style.css?v=production-hotfix1">
 </head>
 <body>
 
@@ -80,10 +80,10 @@
             
             <div class="panel observation-overview" aria-labelledby="observation-title">
                 <h3 id="observation-title">Station observations · WAWP</h3>
-                <p id="obs-status" role="status" class="section-note">Not connected — no local snapshot loaded</p>
+                <p id="obs-status" role="status" class="section-note">Not connected — live AWOSnet is not configured</p>
                 <p id="obs-time" class="section-note">Sensor observation time: —</p><p id="obs-epoch-note" class="section-note"></p>
-                <p id="obs-retrieved" class="section-note"></p><p id="obs-poll-status" class="section-note" role="status">Automatic retrieval not configured</p>
-                <div class="observation-links"><label><input id="obs-auto" type="checkbox" disabled> Auto-refresh while browser tab is visible</label><button id="obs-refresh" type="button" disabled>Refresh AWOS now</button></div>
+                <p id="obs-retrieved" class="section-note"></p><p id="obs-poll-status" class="section-note" role="status">Live AWOS connection not configured.</p>
+                <div id="obs-live-controls" class="observation-links" hidden><label><input id="obs-auto" type="checkbox" disabled> Auto-refresh while browser tab is visible</label><button id="obs-refresh" type="button" disabled>Refresh AWOS now</button></div>
                 <div class="obs-grid">
                   <div><span>2-min wind</span><strong id="obs-wind_speed_kt">—</strong></div>
                   <div><span>Direction (true)</span><strong id="obs-wind_direction_deg">—</strong></div>
@@ -359,32 +359,6 @@
                     <article class="analysis-card"><h4>WAFC CB area forecast</h4><p>Choose the available product and forecast hour; distinct from the weekly CB outlook.</p><div class="analysis-actions"><a href="https://web-aviation.bmkg.go.id/web/seccb.php" target="_blank" rel="noopener noreferrer">Open CB forecast</a><a href="https://web-aviation.bmkg.go.id/web/prediksi_cb.php" target="_blank" rel="noopener noreferrer">Weekly CB outlook</a></div></article>
                     <article class="analysis-card"><h4>Upper-air sounding and analysis</h4><p>Use sounding observations where available. Legacy gridded RASON image menu retired from TITAN because recent products are unavailable; check provider for recovery.</p><div class="analysis-actions"><a href="https://web-aviation.bmkg.go.id/maps" target="_blank" rel="noopener noreferrer">Open sounding map</a><a href="https://web-aviation.bmkg.go.id/web/upper_air.php" target="_blank" rel="noopener noreferrer">Check upper-air products</a></div></article>
                     <article class="analysis-card"><h4>SIGMET</h4><p>Check official active significant meteorological information and its validity separately from SIGWX.</p><div class="analysis-actions"><a href="https://web-aviation.bmkg.go.id/web/sigmet.php" target="_blank" rel="noopener noreferrer">Open SIGMET</a></div></article>
-                </div>
-            </div>
-            <div class="panel" id="sigwx-image-panel">
-                <h3>SIGWX chart comparison · BMKG source</h3>
-                <p class="section-note">Select a chart at the official provider, then paste its exact image address below. HTTPS retrieval only; no generated dates or IDs. If source images are blocked, select an authorized local PNG/JPEG copy. Images stay in browser memory. Verify printed valid time, coverage and flight levels yourself. No automatic freshness claim.</p>
-                <div class="analysis-grid">
-                    <article class="analysis-card">
-                        <h4>Medium Level SIGWX</h4>
-                        <label for="sigwx-medium-url">Exact provider image address</label>
-                        <input id="sigwx-medium-url" type="url" maxlength="600" placeholder="Paste BMKG image address" style="width:100%;box-sizing:border-box">
-                        <div class="analysis-actions"><button id="sigwx-medium-load" type="button">Load image</button><button id="sigwx-medium-clear" type="button">Clear</button><a href="https://web-aviation.bmkg.go.id/web/sigwx_medium_level.php" target="_blank" rel="noopener noreferrer">Select at BMKG</a></div>
-                        <label for="sigwx-medium-file">Or open local chart (PNG/JPEG, max 10 MiB)</label><input id="sigwx-medium-file" type="file" accept="image/png,image/jpeg">
-                        <p id="sigwx-medium-status" role="status" class="section-note">No chart selected.</p>
-                        <a id="sigwx-medium-original" hidden target="_blank" rel="noopener noreferrer">Open original image</a>
-                        <img id="sigwx-medium-image" hidden alt="medium level SIGWX selected chart" style="width:100%;height:auto">
-                    </article>
-                    <article class="analysis-card">
-                        <h4>High Level SIGWX</h4>
-                        <label for="sigwx-high-url">Exact provider image address</label>
-                        <input id="sigwx-high-url" type="url" maxlength="600" placeholder="Paste BMKG image address" style="width:100%;box-sizing:border-box">
-                        <div class="analysis-actions"><button id="sigwx-high-load" type="button">Load image</button><button id="sigwx-high-clear" type="button">Clear</button><a href="https://web-aviation.bmkg.go.id/web/sigwx_high_level.php" target="_blank" rel="noopener noreferrer">Select at BMKG</a></div>
-                        <label for="sigwx-high-file">Or open local chart (PNG/JPEG, max 10 MiB)</label><input id="sigwx-high-file" type="file" accept="image/png,image/jpeg">
-                        <p id="sigwx-high-status" role="status" class="section-note">No chart selected.</p>
-                        <a id="sigwx-high-original" hidden target="_blank" rel="noopener noreferrer">Open original image</a>
-                        <img id="sigwx-high-image" hidden alt="high level SIGWX selected chart" style="width:100%;height:auto">
-                    </article>
                 </div>
             </div>
             <div class="panel" id="regional-olr-panel">
@@ -766,16 +740,9 @@
             <div id="verify-leadtime" class="verify-content" style="display: none;">
                 <div class="intel-grid">
                     <div class="panel chart-panel" style="grid-column: 1 / -1;">
-                        <h3>Lead-Time Drift Analysis (RMSE)</h3>
-                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                            <select id="leadtime-param-select" style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-glass); padding: 5px; border-radius: 4px;">
-                                <option value="Temperature">Temperature</option>
-                                <option value="Rainfall">Rainfall</option>
-                                <option value="Wind Speed">Wind Speed</option>
-                                <option value="Pressure">Pressure</option>
-                            </select>
-                        </div>
-                        <div id="verify-leadtime-chart">Loading...</div>
+                        <h3>Lead-time accuracy · validation pending</h3>
+                        <p class="section-note">Lead-time RMSE withheld. The legacy exporter substitutes lead hour 0 when model initialization time is missing, and paired sample counts per lead bin are not exported. The overall historical scorecard remains available.</p>
+                        <div id="verify-leadtime-chart" role="status">No validated lead-time results available.</div>
                     </div>
                 </div>
             </div>
@@ -828,6 +795,6 @@
         
     </main>
 
-    <script src="dashboard.js?v=4.9-sources"></script>
+    <script src="dashboard.js?v=5-hotfix"></script>
 </body>
 </html>
