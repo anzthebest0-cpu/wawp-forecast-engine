@@ -64,7 +64,9 @@ def read(param,lead):
 def coord(v,meta,axis):
     u=meta["units"].lower()
     if u in ("rad","radian","radians"):v=np.degrees(v)
-    elif u not in ("degree","degrees","degrees_east","degrees_north","deg","deg e","deg n"):raise ValueError("Unknown coordinate units "+u)
+    elif u not in ("degree","degrees","degrees_east","degrees_north","deg","deg e","deg n","degree e","degree n"):raise ValueError("Unknown coordinate units "+u)
+    if axis=="lat" and (meta["shortName"]!="tlat" or meta["paramId"]!=250003 or u in ("degree e","deg e","degrees_east")):raise ValueError("Latitude identity mismatch")
+    if axis=="lon" and (meta["shortName"]!="tlon" or meta["paramId"]!=250004 or u in ("degree n","deg n","degrees_north")):raise ValueError("Longitude identity mismatch")
     if not np.isfinite(v).all():raise ValueError("Missing coordinate")
     if axis=="lat" and (v.min()<-90 or v.max()>90 or v.min()>-80 or v.max()<80):raise ValueError("Latitude bounds")
     if axis=="lon" and (v.min()<-360 or v.max()>360):raise ValueError("Longitude bounds")
