@@ -14,7 +14,7 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
     <script src="preview-ui.js?v=1"></script>
     <script src="analysis-workspace.js?v=1"></script>
-    <script src="observation-ui.js?v=1"></script>
+    <script src="observation-ui.js?v=2"></script>
     <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=3.3-audit"></script>
     <link rel="stylesheet" href="style.css?v=4.6-audit">
@@ -80,20 +80,27 @@
             <div class="panel observation-overview" aria-labelledby="observation-title">
                 <h3 id="observation-title">Station observations · WAWP</h3>
                 <p id="obs-status" role="status" class="section-note">Not connected — no local snapshot loaded</p>
-                <p id="obs-time" class="section-note">Sensor observation time: —</p>
+                <p id="obs-time" class="section-note">Sensor observation time: —</p><p id="obs-epoch-note" class="section-note"></p>
                 <div class="obs-grid">
                   <div><span>2-min wind</span><strong id="obs-wind_speed_kt">—</strong></div>
                   <div><span>Direction (true)</span><strong id="obs-wind_direction_deg">—</strong></div>
                   <div><span>Gust (source interval)</span><strong id="obs-gust_kt">—</strong></div>
                   <div><span>Temperature</span><strong id="obs-temperature_c">—</strong></div>
                   <div><span>Dewpoint</span><strong id="obs-dewpoint_c">—</strong></div>
-                  <div><span>QNH</span><strong id="obs-qnh_hpa">—</strong></div>
+                  <div><span>QNH (independently confirmed)</span><strong id="obs-qnh_hpa">—</strong></div>
+                  <div><span>Altimeter setting</span><strong id="obs-altimeter_setting_hpa">—</strong></div>
+                  <div><span>10-min temperature</span><strong id="obs-temperature_10min_c">—</strong></div>
+                  <div><span>10-min dewpoint</span><strong id="obs-dewpoint_10min_c">—</strong></div>
+                  <div><span>Relative humidity</span><strong id="obs-relative_humidity_pct">—</strong></div>
+                  <div><span>Current-hour rain (source accumulation)</span><strong id="obs-rain_current_hour_mm">—</strong></div>
+                  <div><span>Solar radiation</span><strong id="obs-solar_wm2">—</strong></div>
+                  <div><span>Density altitude</span><strong id="obs-density_altitude_ft">—</strong></div>
                 </div>
                 <details class="obs-manual"><summary>Import a locally prepared AWOSnet snapshot (JSON)</summary>
                   <p class="section-note">Authorized, manually normalized snapshot only. Confirm UTC timestamp, units and wind reference. File stays in browser memory; not uploaded or archived. Values withheld after 5 minutes (internal display policy).</p>
                   <label for="obs-file">Local snapshot file</label> <input id="obs-file" type="file" accept=".json,application/json">
                 </details>
-                <div class="obs-report"><h4>METAR / SPECI · manual entry</h4>
+                <div class="obs-report"><h4>METAR / SPECI · local snapshot or manual entry</h4>
                   <p id="obs-metar-status" role="status" class="section-note">No manually entered report</p>
                   <p id="obs-metar-time" class="section-note">Report observation time: —</p>
                   <pre id="obs-metar-text">—</pre>
@@ -106,7 +113,7 @@
                 <div class="observation-links"><button id="obs-clear" type="button">Clear local observations</button></div>
                 <p class="section-note">Manual report display checks station and time, not full code validity or authenticity. Values are supplemental only; not official live ingestion. Report display withheld after 60 minutes (internal display policy). Refresh clears local inputs.</p>
                 <div class="observation-links"><a href="http://wawp.awosnet.com/" target="_blank" rel="noopener noreferrer">Open AWOSnet</a><a href="https://web-aviation.bmkg.go.id/web/observation.php" target="_blank" rel="noopener noreferrer">BMKG Aviation observations</a><a href="https://www.bmkg.go.id/cuaca/bandara/WAWP" target="_blank" rel="noopener noreferrer">BMKG WAWP weather</a><a href="https://stamet-tolitoli.bmkg.go.id/cuaca/penerbangan?icao=WAWP" target="_blank" rel="noopener noreferrer">BMKG METAR mirror</a><button type="button" data-open-tab="tab-persistency">Observation archive</button></div>
-                <p class="observation-note">AWOSnet endpoint, access permissions, timestamps and units require verification before automated ingestion.</p>
+                <p class="observation-note">HTTP XML connectivity confirmed by a GitHub runner. Source clock, wind reference, measurement semantics and publication authorization still require confirmation. No automatic live ingestion.</p>
             </div>
             <div class="panel overview-links"><h3>Analysis shortcuts</h3><div class="observation-links"><button type="button" data-open-tab="tab-regional">Regional analysis</button><button type="button" data-open-tab="tab-meteogram">Raw model meteogram</button><button type="button" data-open-tab="tab-spread">Model disagreement</button><button type="button" data-open-tab="tab-matrix">Hourly matrix</button></div></div>
             <div class="intel-grid">

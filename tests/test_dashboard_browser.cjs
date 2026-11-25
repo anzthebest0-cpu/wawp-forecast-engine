@@ -69,8 +69,11 @@ async function fixture(browser,mode,viewport){
   await page.screenshot({path:'browser-audit/'+mode+'-analysis-'+viewport.width+'.png',fullPage:false});
   await open('tab-intel');
   assert.match(await loc('#obs-status').textContent(),/Not connected/);
-  await loc('#obs-file').setInputFiles({name:'test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({schema:'titan-local-awos-v1',station:'WAWP',source:'AWOSnet',observed_at_utc:iso(now-1000).slice(0,19)+'Z',wind_average_minutes:2,wind_reference:'true',units_confirmed:true,wind_speed_kt:0}))});
+  await loc('#obs-file').setInputFiles({name:'test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({schema:'titan-local-awos-v1',station:'WAWP',source:'AWOSnet',observed_at_utc:iso(now-1000).slice(0,19)+'Z',wind_average_minutes:2,wind_reference:'true',units_confirmed:true,wind_speed_kt:0,altimeter_setting_hpa:1012.5,rain_current_hour_mm:0,source_epoch_offset_seconds:28900}))});
   await page.waitForFunction(()=>document.getElementById('obs-wind_speed_kt').textContent==='0 kt');
+  assert.equal(await loc('#obs-altimeter_setting_hpa').textContent(),'1012.5 hPa');
+  assert.equal(await loc('#obs-rain_current_hour_mm').textContent(),'0 mm');
+  assert.match(await loc('#obs-epoch-note').textContent(),/Not used as UTC/);
   await loc('#obs-clear').click();
   assert.equal(await loc('#obs-wind_speed_kt').textContent(),'—');
   await page.screenshot({path:'browser-audit/'+mode+'-overview-'+viewport.width+'.png',fullPage:false});

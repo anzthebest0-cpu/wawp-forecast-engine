@@ -6,6 +6,11 @@ const valid={schema:'titan-local-awos-v1',station:'WAWP',source:'AWOSnet',observ
 const s=p.snapshot(valid,t);
 assert.equal(s.values.wind_speed_kt,0);
 assert.equal(s.values.gust_kt,null);
+const extended=p.snapshot({...valid,altimeter_setting_hpa:1012.5,rain_current_hour_mm:0,relative_humidity_pct:70,source_epoch_offset_seconds:28900},t);
+assert.equal(extended.values.rain_current_hour_mm,0);
+assert.equal(extended.values.altimeter_setting_hpa,1012.5);
+assert.equal(extended.epochOffset,28900);
+assert.throws(()=>p.snapshot({...valid,relative_humidity_pct:101},t));
 assert.equal(p.age(s.at,t,5).state,'recent');
 assert.equal(p.age(s.at,t+360000,5).state,'stale');
 for(const patch of [{station:'WAAA'},{wind_reference:'magnetic'},{units_confirmed:false},{wind_average_minutes:10},{observed_at_utc:'2026-11-25T04:01:00Z'},{observed_at_utc:'2026-02-30T04:00:00Z'},{wind_speed_kt:'0'},{gust_kt:-1},{dewpoint_c:40}])assert.throws(()=>p.snapshot({...valid,...patch},t));
