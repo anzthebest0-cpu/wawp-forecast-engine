@@ -1,15 +1,6 @@
 // Preview valid times are timezone-naive WITA by the raw-model export contract.
-function previewValidEpoch(value) {
-    const s = String(value ?? '').trim().replace(' ', 'T');
-    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(s)) return NaN;
-    return Date.parse(s + '+08:00');
-}
-function previewWitaLabel(epoch, dateOnly = false) {
-    if (!Number.isFinite(Number(epoch))) return '—';
-    const d = new Date(Number(epoch) + 8 * 3600000);
-    const s = d.toISOString();
-    return dateOnly ? s.slice(11,16) : s.slice(5,10) + ' ' + s.slice(11,16) + ' WITA';
-}
+function previewValidEpoch(value) { return TitanPreview.epoch(value); }
+function previewWitaLabel(epoch, dateOnly = false) { return titanPreviewLabel(epoch,dateOnly); }
 const previewXAxis = () => ({ type:'datetime', labels:{datetimeUTC:true, formatter:(_value, timestamp)=>previewWitaLabel(timestamp), style:{colors:'#94a3b8'}} });
 
 /**
@@ -498,15 +489,7 @@ function initTitanCharts(data) {
   );
   chartWind.render();
 
-  // Wind Dir (Histogram)
-  const windDirSeries = [
-    { name: 'Dir (°)', type: 'bar', data: data.windDirData || [] },
-  ];
-  const chartWindDir = new ApexCharts(
-    document.querySelector('#chart-wind-dir'),
-    { ...CHART_WIND_DIR_OPTIONS, series: windDirSeries }
-  );
-  chartWindDir.render();
+  // Wind barbs rendered by the preview UI using the matching direction and speed rows.
 
   // Rain
   const rainSeries = [{ name: 'Rain (mm)', data: data.rainData || [] }];
@@ -536,5 +519,15 @@ function initTitanCharts(data) {
     yaxis:{labels:{formatter:v=>Number.isFinite(v)?v.toFixed(1):'—'}}
   });
   chartPressure.render();
-  return { chartTemp, chartWind, chartWindDir, chartRain, chartClouds, chartPressure };
+  const extras = [
+    ['chart-rain-cumulative','titan-cumrain','Displayed hourly precipitation sum (mm)',data.cumulativeRain,'#0ea5e9','stepline'],
+    ['chart-ttd','titan-ttd','Temperature − dewpoint (°C)',data.ttdData,'#8b5cf6','straight']
+  ].map(([id,chartId,title,values,color,curve])=>{
+    const chart=new ApexCharts(document.getElementById(id),{...TITAN_BASE,
+      chart:{...TITAN_BASE.chart,id:chartId,group:'meteogram',type:'line',height:190},
+      title:{text:title},series:[{name:title,data:values||[]}],colors:[color],
+      stroke:{curve,width:2},yaxis:{labels:{formatter:v=>Number.isFinite(v)?v.toFixed(1):'—'}}});
+    chart.render();return chart;
+  });
+  return { chartTemp, chartWind, chartRain, chartClouds, chartPressure, extras };
 }

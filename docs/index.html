@@ -12,8 +12,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script src="apexcharts-theme.js?v=3.1-workstation"></script>
-    <link rel="stylesheet" href="style.css?v=4.1-workstation">
+    <script src="preview-ui.js?v=1"></script>
+    <script src="apexcharts-theme.js?v=3.2-workstation"></script>
+    <link rel="stylesheet" href="style.css?v=4.2-workstation">
 </head>
 <body>
 
@@ -50,6 +51,7 @@
     </nav>
 
     <main class="content">
+        <div class="preview-controls"><strong>Raw model view</strong><label for="preview-zone">Valid time</label><select id="preview-zone"><option value="WITA">WITA (UTC+8)</option><option value="UTC">UTC</option></select><label for="preview-hours">Horizon</label><select id="preview-hours"><option value="12">12 h</option><option value="24">24 h</option><option value="48">48 h</option><option value="96">96 h</option></select><span class="section-note">Research/archive times retain their original references.</span></div>
         <div id="preview-safety-banner" role="status" style="padding:16px;margin-bottom:18px;border:2px solid var(--amber);border-radius:8px;color:var(--amber);font-weight:600;">MODEL PREVIEW ONLY — current guidance unavailable until freshness is established. Automated TAF withheld. Historical verification is not current operational skill.</div>
         <!-- Tab 1: Intelligence -->
         <section id="tab-intel" class="tab-pane active">
@@ -177,7 +179,7 @@
 
         <!-- Tab 3: Meteogram -->
         <section id="tab-meteogram" class="tab-pane">
-            <h2>Raw Model Meteogram</h2><p class="section-note">Unverified equal-model preview. Valid times are WITA (UTC+8). Not an operational forecast.</p>
+            <h2>Raw Model Meteogram</h2><p class="section-note">Unverified equal-model preview. Valid times: <span data-preview-zone>WITA (UTC+8)</span>. Not an operational forecast.</p>
             <div class="panel chart-panel">
                 <div id="chart-temp"></div>
             </div>
@@ -190,16 +192,20 @@
             <div class="panel chart-panel">
                 <div id="chart-rain"></div>
             </div>
+            <div class="panel chart-panel"><div id="chart-rain-cumulative"></div><p class="section-note">Sum of displayed hourly equal-model precipitation amounts, starting at the first available hour. Stops at the first missing or non-consecutive hour; changing contributing models can affect the result. Not a validated accumulation forecast.</p>
+            </div>
             <div class="panel chart-panel">
                 <div id="chart-clouds"></div>
             </div>
             <div class="panel chart-panel"><div id="chart-pressure"></div>
             </div>
+            <div class="panel chart-panel"><div id="chart-ttd"></div>
+            </div>
         </section>
 
         <!-- Tab 4: Consensus Spread -->
         <section id="tab-spread" class="tab-pane">
-            <h2>Model Disagreement</h2><p class="section-note">Descriptive model ranges, not calibrated probability intervals. Rainfall models are alternative forecasts; never sum them. Valid times: WITA (UTC+8).</p>
+            <h2>Model Disagreement</h2><p class="section-note">Descriptive model ranges, not calibrated probability intervals. Rainfall models are alternative forecasts; never sum them. Valid times: <span data-preview-zone>WITA (UTC+8)</span>.</p>
             <div class="panel chart-panel">
                 <div id="spread-temp"></div>
             </div>
@@ -216,13 +222,13 @@
 
         <!-- Tab 5: Matrix -->
         <section id="tab-matrix" class="tab-pane">
-            <h2>Hourly Matrix</h2><p class="section-note">Raw-model preview. Valid times: WITA (UTC+8). A dash denotes unavailable data.</p>
+            <h2>Hourly Matrix</h2><p class="section-note">Raw-model preview. Valid times: <span data-preview-zone>WITA (UTC+8)</span>. A dash denotes unavailable data.</p>
             <div class="panel">
                 <div class="table-container">
                     <table id="data-table">
                         <thead>
                             <tr>
-                                <th>Time (WITA)</th>
+                                <th>Valid time (<span data-preview-zone>WITA</span>)</th>
                                 <th>Temp (°C)</th>
                                 <th>Dew (°C)</th>
                                 <th>Pressure (hPa)</th>
@@ -244,7 +250,7 @@
 
         <!-- Tab 4.5: Individual Models -->
         <section id="tab-models" class="tab-pane">
-            <h2>Individual Models</h2><p class="section-note">Raw individual forecasts. Valid times: WITA (UTC+8); model collection timestamps are UTC.</p>
+            <h2>Individual Models</h2><p class="section-note">Raw individual forecasts. Valid times: <span data-preview-zone>WITA (UTC+8)</span>; model collection timestamps are UTC.</p>
             <div style="margin-bottom: 15px;">
                 <label for="model-select" style="color:var(--text-secondary); margin-right:10px;">Select Model:</label>
                 <select id="model-select" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px;">
@@ -268,7 +274,7 @@
                     <table id="model-table">
                         <thead>
                             <tr>
-                                <th>Time (WITA)</th>
+                                <th>Valid time (<span data-preview-zone>WITA</span>)</th>
                                 <th>Temp (°C)</th>
                                 <th>Dew (°C)</th>
                                 <th>Pressure (hPa)</th>
@@ -792,6 +798,6 @@
         
     </main>
 
-    <script src="dashboard.js?v=4.1-workstation"></script>
+    <script src="dashboard.js?v=4.2-workstation"></script>
 </body>
 </html>

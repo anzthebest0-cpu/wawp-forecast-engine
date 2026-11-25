@@ -307,7 +307,7 @@ async function loadDashboard() {
         const futureData = data.filter(d => d.Datetime >= witaHourStr);
         const previewManifest = guidanceJson.metadata?.preview_manifest;
         const currentPreview = previewIsCurrent(previewManifest) && futureData.length > 0;
-        const renderData = currentPreview ? futureData : [];
+        const renderData = currentPreview ? TitanPreview.windowRows(futureData,now.getTime(),titanPreviewSettings().hours) : [];
         const safetyBanner = document.getElementById('preview-safety-banner');
         if (safetyBanner) safetyBanner.textContent = currentPreview
             ? `RAW MODEL PREVIEW — ${Object.keys(previewManifest.models || {}).length} fresh model collections; unverified equal-model mean of original models (IFS 9 km independent), not an operational forecast. TAF withheld. Expires ${previewManifest.expires_at_utc}. Historical verification remains research-only.`
@@ -497,16 +497,18 @@ async function loadDashboard() {
             windData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Wind]),
             gustData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Gust ?? null]),
             rainData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Rain]),
-            windDirData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Wind Dir.'] ?? null]),
-            highCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['High Clouds'] ?? null]),
-            midCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Mid Clouds'] ?? null]),
-            lowCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Low Clouds'] ?? null]),
+            windDirData: renderData.map(d => [previewValidEpoch(d.Datetime), d['Wind Dir.'] ?? null]),
+            highCloudData: renderData.map(d => [previewValidEpoch(d.Datetime), d['High Clouds'] ?? null]),
+            midCloudData: renderData.map(d => [previewValidEpoch(d.Datetime), d['Mid Clouds'] ?? null]),
+            lowCloudData: renderData.map(d => [previewValidEpoch(d.Datetime), d['Low Clouds'] ?? null]),
+            cumulativeRain: TitanPreview.cumulative(renderData),
+            ttdData: renderData.map(d=>[previewValidEpoch(d.Datetime), TitanPreview.numeric(d.Temperature)===null||TitanPreview.numeric(d.Dewpoint)===null?null:d.Temperature-d.Dewpoint]),
             pressureData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Pressure ?? null]),
             condData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Condition ?? null])
         };
         
         // Initialize charts using the new TITAN_BASE design system
-        if (currentPreview) initTitanCharts(chartData);
+        if (currentPreview && renderData.length) { initTitanCharts(chartData); renderWindBarbs(renderData); }
         else for (const id of ['tab-meteogram', 'tab-spread', 'tab-matrix', 'tab-models']) {
             const panel = document.getElementById(id);
             if (panel) { const notice = document.createElement('p'); notice.textContent = 'Current model guidance unavailable.'; panel.prepend(notice); }
@@ -518,7 +520,7 @@ async function loadDashboard() {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>
-                    ${d.Datetime.substring(0, 16)} WITA<br>
+                    ${titanPreviewLabel(previewValidEpoch(d.Datetime))}<br>
                     <span style="font-size:0.8em; color:var(--text-secondary)">${d.Model_Count ?? '—'} models</span>
                 </td>
                 <td style="color: #ef4444">${displayNumber(d.Temperature)}</td>
@@ -635,6 +637,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialTab = window.location.hash.slice(1);
     if (/^tab-[a-z]+$/.test(initialTab) && document.getElementById(initialTab)) switchTab(initialTab);
     
+    setupPreviewControls();
     loadDashboard();
 });
 
@@ -746,7 +749,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
     
     const ttdContainer = document.querySelector('#spread-t-td');
     if (ttdContainer) {
-        const ttdOptions = spreadOptions('T - Td Plume (Fog Risk)', '°C');
+        const ttdOptions = spreadOptions('T − Td model distribution (°C)', '°C');
         ttdOptions.colors = ['#a855f7', '#a855f7', '#a855f7'];
         new ApexCharts(ttdContainer, { ...ttdOptions, series: createSpreadTTdPlume() }).render();
     }
@@ -755,8 +758,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
     windOptions.colors = ['#10b981', '#10b981', '#10b981'];
     new ApexCharts(document.querySelector('#spread-wind'), { ...windOptions, series: createPlumeSeries('Wind Speed') }).render();
     
-    const rainOptions = spreadOptions('Individual Model Rainfall (grouped, not summed)', 'mm', true);
-    new ApexCharts(document.querySelector('#spread-rain'), { ...rainOptions, series: createBarSeries('Rainfall') }).render();
+    renderRainHeatmap(modelsData,spreadTimeLabels);
 }
 
 function setupRegionalCharts() {
@@ -1741,7 +1743,7 @@ function setupIndividualModels(modelsData, timeLabels) {
             if([temp, dew, pres, windDir, windSpd, gust, rain, probRain].some(v=>v!==undefined && v!==null)) {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${dt.substring(0, 16)} WITA</td>
+                    <td>${titanPreviewLabel(previewValidEpoch(dt))}</td>
                     <td style="color: #ef4444">${displayNumber(temp)}</td>
                     <td style="color: #3b82f6">${displayNumber(dew)}</td>
                     <td style="color: #a855f7">${displayNumber(pres)}</td>
