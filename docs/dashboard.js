@@ -639,6 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     setupPreviewControls();
     setupAnalysisWorkspace();
+    setupObservationPanel();
     loadDashboard();
 });
 

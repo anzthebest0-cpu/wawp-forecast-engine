@@ -7,6 +7,9 @@ on:
       - 'docs/**'
       - 'tests/test_preview_ui.js'
       - 'tests/test_analysis_workspace.js'
+      - 'tests/test_observation_ui.js'
+      - 'scripts/probe_awosnet.py'
+      - 'tests/test_probe_awosnet.py'
       - '.github/workflows/titan_dashboard_checks.yml'
   pull_request:
     paths:
@@ -15,6 +18,9 @@ on:
       - 'docs/style.css'
       - 'tests/test_preview_ui.js'
       - 'tests/test_analysis_workspace.js'
+      - 'tests/test_observation_ui.js'
+      - 'scripts/probe_awosnet.py'
+      - 'tests/test_probe_awosnet.py'
       - '.github/workflows/titan_dashboard_checks.yml'
   workflow_dispatch:
 permissions:
@@ -27,6 +33,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check JavaScript syntax
         run: |
+          node --check docs/observation-ui.js
           node --check docs/analysis-workspace.js
           node --check docs/preview-ui.js
           node --check docs/apexcharts-theme.js
@@ -35,3 +42,6 @@ jobs:
         run: |
           node tests/test_preview_ui.js
           node tests/test_analysis_workspace.js
+          node tests/test_observation_ui.js
+      - name: Check offline AWOSnet probe helpers
+        run: python -m unittest discover -s tests -p test_probe_awosnet.py
