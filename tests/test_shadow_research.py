@@ -85,9 +85,22 @@ def test_diurnal_bias_additive_with_time_of_day_shrinkage():
     assert s.fit_predict(rows,[1014.]*7,s.CORE,'pressure_msl','diurnal_bias',INIT)==pytest.approx(1012.5)
     assert s.fit_predict(rows,[1014.]*7,s.CORE,'pressure_msl','diurnal_bias',INIT+timedelta(hours=6))==pytest.approx(1013.5)
     assert s.fit_predict(rows,[1014.]*7,s.CORE,'pressure_msl','diurnal_bias',INIT+timedelta(hours=3))==pytest.approx(1013.)
-    obs,hist,current=fixture();r=s.build_forecast(INIT,INIT+timedelta(hours=8,minutes=20),'a'*64,current,hist,obs,{},{});diurnal=[x for x in r['rows'] if x['method']=='diurnal_bias']
+    obs,hist,current=fixture();r=s.build_forecast(INIT,INIT+timedelta(hours=8,minutes=20),'a'*64,current,hist,obs,{},{});diurnal=[x for x in r['rows'] if x['method']=='diurnal_bias' and x['parameter']!='wind_speed_10m']
     assert diurnal and {x['parameter'] for x in diurnal}==set(s.DIURNAL_WINDOWS)
     assert all(x['window_days']==s.DIURNAL_WINDOWS[x['parameter']][x['lead_bucket']] for x in diurnal)
     assert any(x['method']=='median_bias' for x in r['rows']) and any(x['method']=='mae_weighted' for x in r['rows'])
     bad=json.loads(json.dumps(r));next(x for x in bad['rows'] if x['method']=='diurnal_bias')['window_days']=45
+    with pytest.raises(ValueError):s.validate_forecast(bad)
+
+
+def test_hourly_diurnal_wind_matches_replay_and_keeps_paired_raw():
+    obs,hist,current=fixture();issued=INIT+timedelta(hours=8,minutes=20)
+    r=s.build_forecast(INIT,issued,'a'*64,current,hist,obs,{},{});w=[x for x in r['rows'] if x['candidate']==s.WIND_HOURLY_CANDIDATE]
+    assert len(w)==88 and {x['lead_hours'] for x in w}==set(range(9,97))
+    assert all(x['prediction']==pytest.approx(3.) and x['raw_core']==pytest.approx(5.) and x['window_days']==14 for x in w)
+    assert all(s.parse_time(x['training_last_valid_utc'])<INIT for x in w)
+    assert all(x['lead_hours'] in s.WIND_HOURLY_GROUPS[x['lead_bucket']] for x in w)
+    bad=json.loads(json.dumps(r));next(x for x in bad['rows'] if x['candidate']==s.WIND_HOURLY_CANDIDATE)['window_days']=7
+    with pytest.raises(ValueError):s.validate_forecast(bad)
+    bad=json.loads(json.dumps(r));next(x for x in bad['rows'] if x['candidate']==s.WIND_HOURLY_CANDIDATE)['method']='mean_bias'
     with pytest.raises(ValueError):s.validate_forecast(bad)

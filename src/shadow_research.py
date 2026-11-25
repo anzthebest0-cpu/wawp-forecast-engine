@@ -27,6 +27,8 @@ PARAMS={'temperature_2m':('°C',-10,55),'dew_point_2m':('°C',-30,45),'pressure_
 GROUPS={'12-24h':(12,18,24),'30-48h':(30,36,42,48),'54-72h':(54,60,66,72),'78-96h':(78,84,90,96)}
 CONFIG={'temperature_2m':('quantile_map','GEM_GLOBAL'),'pressure_msl':('median_bias','JMA_GSM'),'dew_point_2m':('mae_weighted','JMA_GSM'),'wind_speed_10m':('mean_bias',None),'wind_direction_10m':('mae_weighted',None)}
 DIURNAL_WINDOWS={'pressure_msl':dict(zip(GROUPS,(21,14,7,7))),'dew_point_2m':dict.fromkeys(GROUPS,14)}
+WIND_HOURLY_GROUPS={'9-24h-hourly':tuple(range(9,25)),'25-48h-hourly':tuple(range(25,49)),'49-72h-hourly':tuple(range(49,73)),'73-96h-hourly':tuple(range(73,97))}
+WIND_HOURLY_CANDIDATE='diurnal_bias_7_core_14d_hourly'
 SOURCE_CONTRACT='wawp-shadow-source-v1'
 FORECAST_CONTRACT='wawp-prospective-shadow-v1'
 
@@ -163,7 +165,7 @@ def aggregate(x,w,circ=False):
 def training_cases(runs,obs,members,var,group,init,days):
     lower=init-timedelta(days=days);rows=[]
     for r in sorted({t for _,t in runs if t.hour in (0,12) and t<init}):
-        for lead in GROUPS[group]:
+        for lead in (GROUPS|WIND_HOURLY_GROUPS)[group]:
             t=r+timedelta(hours=lead)
             if not lower<=t<init:continue
             y=obs_at(obs,t,var);x=[forecast_at(runs,m,r,lead,var) for m in members]
@@ -182,7 +184,7 @@ def fit_predict(rows,x,members,var,method,valid=None):
     if method=='mean_bias':z=x-np.mean(err,axis=0)
     elif method=='median_bias':z=x-np.median(err,axis=0)
     elif method=='diurnal_bias':
-        if valid is None or var not in DIURNAL_WINDOWS:raise ValueError('diurnal target required')
+        if valid is None or var not in {*DIURNAL_WINDOWS,'wind_speed_10m'}:raise ValueError('diurnal target required')
         mean=err.mean(axis=0);local_hour=(valid.hour+8)%24
         sub=err[np.array([(r[0].hour+8)%24==local_hour for r in rows])]
         z=x-(.5*mean+.5*sub.mean(axis=0) if len(sub)>=12 else mean)
@@ -244,6 +246,20 @@ def build_forecast(init,issued,source,current,history,obs,obs_inventory,train_in
                         if value is None or scalar(value,var) is None:withheld[f'{var}:invalid_candidate']+=1;continue
                         name=f'{method_name}_{len(members)}_{extra if len(members)>len(CORE) else "core"}_{days}d'
                         rows.append({**common,'candidate':name,'members':list(members),'method':method_name,'window_days':days,'prediction':value,'raw_same_cohort':raw,'training_n':len(tr),'training_days':len({a[0].date() for a in tr}),'training_last_valid_utc':timestamp(max(a[0] for a in tr))})
+    # Independent hourly wind-speed cohort reproduces the expanded retrospective grid;
+    # its immutable paired raw baseline is embedded on each candidate row.
+    var='wind_speed_10m';days=14
+    for group,leads in WIND_HOURLY_GROUPS.items():
+        tr=training_cases(history,obs,CORE,var,group,init,days) if fresh and fresh_by_var[var] else []
+        for lead in leads:
+            valid=init+timedelta(hours=lead)
+            if valid<=issued:continue
+            x=[forecast_at(current,m,init,lead,var) for m in CORE]
+            if None in x:withheld['wind_speed_10m:hourly_core_missing']+=1;continue
+            if not eligible(tr,days):withheld['wind_speed_10m:hourly_14d_training_unavailable']+=1;continue
+            raw=aggregate(x,family(CORE));value=fit_predict(tr,x,CORE,var,'diurnal_bias',valid)
+            if scalar(value,var) is None:withheld['wind_speed_10m:hourly_invalid_candidate']+=1;continue
+            rows.append({'parameter':var,'lead_bucket':group,'lead_hours':lead,'valid_utc':timestamp(valid),'receipt_lead_hours':(valid-issued).total_seconds()/3600,'raw_core':raw,'persistence':same_hour_persistence(obs,valid,init,var),'candidate':WIND_HOURLY_CANDIDATE,'members':list(CORE),'method':'diurnal_bias','window_days':days,'prediction':value,'raw_same_cohort':raw,'training_n':len(tr),'training_days':len({a[0].date() for a in tr}),'training_last_valid_utc':timestamp(max(a[0] for a in tr))})
     report={'contract':FORECAST_CONTRACT,'status':'research_only_not_operational','initialization_utc':timestamp(init),'issued_at_utc':timestamp(issued),'source_sha256':source,'source_models':sorted(m for m,_ in current),'latest_training_observation_utc':timestamp(latest) if latest else None,'awos_freshness_gate_passed':fresh,'observation_sha256':obs_inventory,'training_archive_sha256':train_inventory,'rows':rows,'withheld':dict(withheld)}
     validate_forecast(report)
     return report
@@ -259,7 +275,10 @@ def validate_forecast(data):
         if key in keys or t<=issued or t!=init+timedelta(hours=r['lead_hours']):raise ValueError('invalid forecast temporal identity')
         keys.add(key)
         var=r['parameter'];members=tuple(r['members'])
-        if var not in PARAMS or r['lead_hours'] not in GROUPS[r['lead_bucket']] or not set(members)<=set(data['source_models']):raise ValueError('invalid forecast parameter, lead or members')
+        hourly=r['lead_bucket'] in WIND_HOURLY_GROUPS
+        if var not in PARAMS or r['lead_hours'] not in (GROUPS|WIND_HOURLY_GROUPS).get(r['lead_bucket'],()) or not set(members)<=set(data['source_models']):raise ValueError('invalid forecast parameter, lead or members')
+        if hourly and (var!='wind_speed_10m' or r['candidate']!=WIND_HOURLY_CANDIDATE):raise ValueError('unexpected hourly research candidate')
+        if not hourly and r['candidate']==WIND_HOURLY_CANDIDATE:raise ValueError('hourly candidate outside hourly bucket')
         if r['parameter']=='precipitation' and (r['candidate']!='raw_core' or t-timedelta(hours=6)<issued):raise ValueError('unsafe rain forecast')
         if not all(math.isfinite(r[k]) for k in ('prediction','raw_core','raw_same_cohort','receipt_lead_hours')):raise ValueError('invalid numeric forecast')
         if abs(r['receipt_lead_hours']-(t-issued).total_seconds()/3600)>1e-8:raise ValueError('actual receipt lead mismatch')
@@ -272,7 +291,8 @@ def validate_forecast(data):
             method,extra=CONFIG[var];days=r['window_days'];allowed=[CORE]+([CORE+(extra,)] if extra else [])
             original=members in allowed and r['method']==method and days in (14,30)
             diurnal=members==CORE and r['method']=='diurnal_bias' and var in DIURNAL_WINDOWS and days==DIURNAL_WINDOWS[var][r['lead_bucket']]
-            if not (original or diurnal) or r['training_n']<40 or r['training_days']<math.ceil(.7*days) or not data['awos_freshness_gate_passed'] or parse_time(r['training_last_valid_utc'])>=init:raise ValueError('unqualified or future training data')
+            wind_hourly=hourly and members==CORE and r['method']=='diurnal_bias' and days==14 and r['raw_core']==r['raw_same_cohort']
+            if not ((not hourly and (original or diurnal)) or wind_hourly) or r['training_n']<40 or r['training_days']<math.ceil(.7*days) or not data['awos_freshness_gate_passed'] or parse_time(r['training_last_valid_utc'])>=init:raise ValueError('unqualified or future training data')
     return data
 
 
