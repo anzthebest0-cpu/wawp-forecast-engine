@@ -72,15 +72,15 @@ def coord(v,meta,axis):
     if axis=="lon" and (v.min()<-360 or v.max()>360):raise ValueError("Longitude bounds")
     return v if axis=="lat" else v%360
 def normalize(param,v,m):
-    u=m["units"];short=m["shortName"]
+    u=m["units"];short=m["shortName"].lower()
     if param=="TQV":
-        if short not in ("tqv","tcwv","pwat") or u not in ("kg m**-2","kg m-2","kg/m^2"):raise ValueError("PWV identity/units "+str(m))
+        if short!="tqv" or m["paramId"]!=500038 or m["typeOfLevel"]!="surface" or u not in ("kg m**-2","kg m-2","kg/m^2"):raise ValueError("PWV identity/units "+str(m))
         lo,hi=0,120
     elif param=="PMSL":
-        if short not in ("msl","pmsl","prmsl") or u!="Pa":raise ValueError("MSLP identity/units")
+        if short not in ("msl","pmsl","prmsl") or m["paramId"]!=260074 or m["typeOfLevel"]!="meanSea" or u!="Pa":raise ValueError("MSLP identity/units")
         v=v/100;lo,hi=850,1100
     else:
-        if short not in ("cape","cape_ml","capeml") or u not in ("J kg**-1","J/kg"):raise ValueError("CAPE identity/units "+str(m))
+        if short!="cape_ml" or m["paramId"]!=500153 or u not in ("J kg**-1","J kg-1","J/kg"):raise ValueError("CAPE identity/units "+str(m))
         lo,hi=-.1,15000
     if not np.isfinite(v).any() or np.any(np.isfinite(v)&((v<lo)|(v>hi))):raise ValueError("Field range")
     return v
