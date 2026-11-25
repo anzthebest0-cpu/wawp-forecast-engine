@@ -45,7 +45,8 @@ def decode(data, specs, lead, spacing, global_grid):
         with path.open("rb") as f:
             while (g:=ec.codes_grib_new_from_file(f)) is not None:
                 try:
-                    get=lambda k: ec.codes_get(g,k)
+                    get=lambda k: ec.codes_get_long(g,k) if k in ("typeOfFirstFixedSurface","typeOfSecondFixedSurface") else ec.codes_get(g,k)
+                    print("GRIB_META", json.dumps({k:get(k) for k in ("shortName","paramId","discipline","parameterCategory","parameterNumber","typeOfLevel","typeOfFirstFixedSurface","typeOfSecondFixedSurface","level","units","stepType")}),flush=True)
                     name=None
                     for label,validator in specs.items():
                         if validator(get): name=label;break
@@ -57,7 +58,7 @@ def decode(data, specs, lead, spacing, global_grid):
                             raise ValueError("Time mismatch")
                     if get("stepType")!="instant":raise ValueError("Not instantaneous")
                     units=get("units")
-                    if name=="pwv" and units not in ("kg m**-2","kg m-2","kg/m^2","kg m^-2"):
+                    if name=="pwv" and units not in ("kg m**-2","kg m-2","kg/m^2","kg m^-2","kg m**(-2)"):
                         raise ValueError("PWV units "+units)
                     if name=="refc" and units.lower() not in ("db","dbz"):
                         raise ValueError("REFC units "+units)
@@ -103,7 +104,7 @@ def ifs(lead,res):
     row=matches[0];offset,size=row["_offset"],row["_length"]
     if not isinstance(offset,int) or offset<0 or not isinstance(size,int) or not 0<size<=MAX_FIELD:raise ValueError("Bad range")
     data=fetch(url,size,(offset,size))
-    result,meta=decode(data,{"pwv":lambda get:get("shortName")=="tcwv" and get("typeOfLevel")=="surface"},lead,.1 if res=="0p1" else .25,True)
+    result,meta=decode(data,{"pwv":lambda get:get("paramId")==137 and get("shortName")=="tcwv" and get("typeOfLevel") in ("surface","entireAtmosphere","entireAtmosphereSingleLayer","atmosphereSingleLayer")},lead,.1 if res=="0p1" else .25,True)
     return result,{"url":url,"index":index,"range":[offset,size],"bytes":len(data),"sha256":hashlib.sha256(data).hexdigest(),"fields":meta}
 
 def plot(panels,lead):
