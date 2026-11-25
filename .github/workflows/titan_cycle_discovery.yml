@@ -1,0 +1,27 @@
+name: TITAN model cycle and 96h metadata discovery
+on:
+  push:
+    branches: [codex/titan-cycle-discovery]
+    paths: ['scripts/pilot_cycle_discovery.py','scripts/test_cycle_discovery.py','.github/workflows/titan_cycle_discovery.yml']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/test_cycle_discovery.py
+      - run: python scripts/pilot_cycle_discovery.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-cycle-discovery-report
+          path: cycle-discovery.json
+          retention-days: 7
+          if-no-files-found: warn
