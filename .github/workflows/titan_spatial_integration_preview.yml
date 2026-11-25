@@ -1,0 +1,44 @@
+name: TITAN existing-site spatial integration preview
+on:
+  push:
+    branches: [codex/titan-spatial-integration-preview]
+    paths: ['docs/index.html','docs/spatial-workspace.js','docs/spatial-workspace.css','scripts/test_spatial_integration.py','.github/workflows/titan_spatial_integration_preview.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-spatial-review-v3-offline
+          run-id: '45625176987'
+          github-token: ${{ github.token }}
+          path: docs/spatial-preview
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright
+      - run: python -m playwright install chromium
+      - run: node --check docs/spatial-workspace.js
+      - run: python scripts/test_spatial_integration.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-integrated-spatial-review-screenshots
+          path: |
+            integrated-desktop.png
+            integrated-mobile.png
+          retention-days: 7
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: titan-integrated-spatial-review-site
+          path: docs/
+          retention-days: 7
