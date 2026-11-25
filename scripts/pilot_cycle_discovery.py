@@ -46,9 +46,10 @@ def ec(model,cycle,h):
                 if not isinstance(a,int) or not isinstance(b,int) or a<0 or b<=0:raise ValueError("Invalid range")
                 fields[k]=b
         except (ValueError,KeyError,TypeError) as e:errors.append({"suffix":suffix,"status":"invalid_index","reason":type(e).__name__})
-    expected=EC_EXPECTED[model]|({"tp/sfc","10fg/sfc"} if h and family=="ifs" else {"tp/sfc"} if h else set())
+    expected=EC_EXPECTED[model]|({"tp/sfc"} if h else set())
+    gust=sorted(k for k in fields if k in {v+"/sfc" for v in ("10fg","10fg3","10fg6","10fg24","gust","fg10")})
     missing=sorted(expected-set(fields))
-    return {"status":"metadata_complete" if not errors and not missing else "partial" if fields else "unavailable","missing":missing,"errors":errors,"estimated_selected_bytes":sum(fields[k] for k in expected&set(fields)),"available":sorted(expected&set(fields))}
+    return {"status":"metadata_complete" if not errors and not missing else "partial" if fields else "unavailable","missing":missing,"errors":errors,"estimated_selected_bytes":sum(fields[k] for k in expected&set(fields)),"available":sorted(expected&set(fields)),"gust_inventory":gust,"gust_status":"metadata_present" if gust else "unavailable_or_unlisted"}
 def gfs(cycle,h):
     url=f"https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/gfs.{cycle:%Y%m%d}/{cycle:%H}/atmos/gfs.t{cycle:%H}z.pgrb2.0p25.f{h:03d}.idx"
     raw=request(url)
@@ -96,7 +97,7 @@ def main():
     for m in MODELS:
         r=discover(m,now);results.append(r)
         print("CYCLE_DISCOVERY",json.dumps({k:v for k,v in r.items() if k not in ("attempts","leads")}),flush=True)
-    report={"mode":"metadata_only_not_forecast_validation","as_of_utc":now.isoformat(),"requested_leads":LEADS,"results":results,"notes":"Selection requires H0 and H96 metadata. ICON HEAD only; coordinates and decoded fields not validated. No interpolation or automatic publication. Product-specific availability and GRIB step ranges need decode QC."}
+    report={"mode":"metadata_only_not_forecast_validation","as_of_utc":now.isoformat(),"requested_leads":LEADS,"results":results,"notes":"Selection requires H0 and H96 core metadata; gust is optional and separately reported. ICON HEAD only; coordinates and decoded fields not validated. No interpolation or automatic publication. Product-specific availability and GRIB step ranges need decode QC."}
     Path("cycle-discovery.json").write_text(json.dumps(report,indent=2))
     print("DISCOVERY_COMPLETE",len(results),flush=True)
 if __name__=="__main__":main()
