@@ -1,0 +1,29 @@
+name: TITAN multimodel circulation comparison
+on:
+  push:
+    branches: [codex/titan-circulation-comparison]
+    paths: ['scripts/pilot_circulation_comparison.py', '.github/workflows/titan_circulation_comparison.yml']
+permissions:
+  contents: read
+jobs:
+  experiment:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install "eccodes>=2.42,<3" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3"
+      - run: python scripts/pilot_circulation_comparison.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-circulation-comparison-review
+          path: |
+            circulation-comparison/*.png
+            circulation-comparison/manifest.json
+          retention-days: 7
+          if-no-files-found: warn
