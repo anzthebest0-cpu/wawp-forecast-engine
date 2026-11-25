@@ -85,7 +85,7 @@ def decode(data, specs, lead, spacing, global_grid):
     return result,meta
 
 def gfs(lead):
-    q={"dir":INIT.strftime("/gfs.%Y%m%d/%H/atmos"),"file":f"gfs.t00z.pgrb2.0p25.f{lead:03d}","subregion":"","leftlon":110,"rightlon":132,"toplat":5,"bottomlat":-10,"lev_entire_atmosphere":"on","lev_entire_atmosphere_(considered_as_a_single_layer)":"on","var_PWAT":"on","var_REFC":"on"}
+    q={"dir":INIT.strftime("/gfs.%Y%m%d/%H/atmos"),"file":f"gfs.t{INIT:%H}z.pgrb2.0p25.f{lead:03d}","subregion":"","leftlon":110,"rightlon":132,"toplat":5,"bottomlat":-10,"lev_entire_atmosphere":"on","lev_entire_atmosphere_(considered_as_a_single_layer)":"on","var_PWAT":"on","var_REFC":"on"}
     url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?"+urllib.parse.urlencode(q)
     data=fetch(url,MAX_FIELD)
     code=lambda get:tuple(get(k) for k in ("discipline","parameterCategory","parameterNumber"))
@@ -96,7 +96,7 @@ def gfs(lead):
 
 def ifs(lead,res):
     suffix="-sfc" if res=="0p1" else ""
-    url=f"{ROOT}/{res}/oper/20261125000000-{lead}h-oper-fc{suffix}.grib2"
+    url=f"https://data.ecmwf.int/forecasts/{INIT:%Y%m%d}/{INIT:%H}z/ifs/{res}/oper/{INIT:%Y%m%d%H}0000-{lead}h-oper-fc{suffix}.grib2"
     index=url.removesuffix(".grib2")+".index"
     rows=[json.loads(line) for line in fetch(index,MAX_FIELD).splitlines() if line.strip()]
     matches=[x for x in rows if x.get("param")=="tcwv" and x.get("levtype")=="sfc"]

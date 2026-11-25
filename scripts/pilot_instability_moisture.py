@@ -55,7 +55,7 @@ def decode_message(data,key,lead,dx):
 
 def read_gfs(lead):
     url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?"
-    q={"dir":"/gfs.20261125/00/atmos","file":f"gfs.t00z.pgrb2.0p25.f{lead:03d}","subregion":"","leftlon":110,"rightlon":132,"toplat":5,"bottomlat":-10,"lev_surface":"on"}
+    q={"dir":INIT.strftime("/gfs.%Y%m%d/%H/atmos"),"file":f"gfs.t{INIT:%H}z.pgrb2.0p25.f{lead:03d}","subregion":"","leftlon":110,"rightlon":132,"toplat":5,"bottomlat":-10,"lev_surface":"on"}
     q.update({f"lev_{p}_mb":"on" for p in (925,850,700,500,200)})
     q.update({f"var_{v}":"on" for v in ("UGRD","VGRD","SPFH","TMP","PRES","CAPE","CIN")})
     url+=urllib.parse.urlencode(q)
@@ -84,7 +84,7 @@ def read_ecmwf(model,res,lead,only_mucape=False):
     if only_mucape and model!="ifs":raise ValueError("MUCAPE unavailable for this model")
     entries={}
     for suffix in ("-pl","-sfc") if res=="0p1" else ("",):
-        url=f"https://data.ecmwf.int/forecasts/20261125/00z/{model}/{res}/oper/20261125000000-{lead}h-oper-fc{suffix}.grib2"
+        url=f"https://data.ecmwf.int/forecasts/{INIT:%Y%m%d}/{INIT:%H}z/{model}/{res}/oper/{INIT:%Y%m%d%H}0000-{lead}h-oper-fc{suffix}.grib2"
         for line in fetch(url.removesuffix(".grib2")+".index",4*1024**2).splitlines():
             if not line.strip():continue
             row=json.loads(line);lev=row.get("levtype")

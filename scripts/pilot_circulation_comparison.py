@@ -63,7 +63,7 @@ def ecmwf(model,res,lead):
         keys|={(v,p) for v in ("q","t") for p in (850,700)}
     urls={}
     for suff in ("-pl","-sfc") if res=="0p1" else ("",):
-        url=f"https://data.ecmwf.int/forecasts/20261125/00z/{model}/{res}/oper/20261125000000-{lead}h-oper-fc{suff}.grib2"
+        url=f"https://data.ecmwf.int/forecasts/{INIT:%Y%m%d}/{INIT:%H}z/{model}/{res}/oper/{INIT:%Y%m%d%H}0000-{lead}h-oper-fc{suff}.grib2"
         index=url.removesuffix(".grib2")+".index"
         for line in fetch(index,4*1024**2).splitlines():
             if not line.strip():continue

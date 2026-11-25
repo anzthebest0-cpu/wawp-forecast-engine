@@ -57,7 +57,7 @@ def decode(h,kind,dx,lead):
     return {"packing_error_mm":packing_error,"array":arr,"start":start,"end":end,"step":step,"short":short,"units":units,"dx":dx,"level":typ,"code":[get(k) for k in ("discipline","parameterCategory","parameterNumber")]}
 
 def gfs(lead):
-    q={"dir":"/gfs.20261125/00/atmos","file":f"gfs.t00z.pgrb2.0p25.f{lead:03d}","subregion":"","leftlon":110,"rightlon":132,"toplat":5,"bottomlat":-10,"lev_surface":"on","lev_10_m_above_ground":"on","var_APCP":"on","var_GUST":"on"}
+    q={"dir":INIT.strftime("/gfs.%Y%m%d/%H/atmos"),"file":f"gfs.t{INIT:%H}z.pgrb2.0p25.f{lead:03d}","subregion":"","leftlon":110,"rightlon":132,"toplat":5,"bottomlat":-10,"lev_surface":"on","lev_10_m_above_ground":"on","var_APCP":"on","var_GUST":"on"}
     url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?"+urllib.parse.urlencode(q)
     data=fetch(url,MAX_FIELD);p=OUT/"tmp.grib2";p.write_bytes(data);out={"rain":[],"gust":[]};errors=[]
     try:
@@ -77,7 +77,7 @@ def ecmwf(model,res,lead):
     global used
     dx=.1 if res=="0p1" else .25
     suffix="-sfc" if res=="0p1" else ""
-    url=f"https://data.ecmwf.int/forecasts/20261125/00z/{model}/{res}/oper/20261125000000-{lead}h-oper-fc{suffix}.grib2"
+    url=f"https://data.ecmwf.int/forecasts/{INIT:%Y%m%d}/{INIT:%H}z/{model}/{res}/oper/{INIT:%Y%m%d%H}0000-{lead}h-oper-fc{suffix}.grib2"
     rows=[json.loads(x) for x in fetch(url.removesuffix(".grib2")+".index",4*1024**2).splitlines() if x.strip()]
     out={"rain":[],"gust":[]};meta={"url":url,"fields":[],"errors":[]}
     selected=[x for x in rows if x.get("levtype")=="sfc" and (x.get("param")=="tp" or x.get("param") in GUST_NAMES)]

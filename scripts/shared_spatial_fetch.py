@@ -2,12 +2,12 @@
 import hashlib
 from urllib.parse import urlsplit
 class SharedFetch:
-    def __init__(self, upstream, *, max_bytes=256*1024**2, max_items=1000):
-        self.upstream=upstream;self.max_bytes=max_bytes;self.max_items=max_items
+    def __init__(self, upstream, *, max_bytes=256*1024**2, max_items=1000, cycle_prefix="/forecasts/20261125/00z/"):
+        self.cycle_prefix=cycle_prefix;self.upstream=upstream;self.max_bytes=max_bytes;self.max_items=max_items
         self.store={};self.events=[];self.bytes=0
     def __call__(self,url,cap,interval=None):
         u=urlsplit(url)
-        if u.scheme!="https" or u.hostname!="data.ecmwf.int" or not u.path.startswith("/forecasts/20261125/00z/") or u.query or u.fragment:
+        if u.scheme!="https" or u.hostname!="data.ecmwf.int" or not u.path.startswith(self.cycle_prefix) or u.query or u.fragment:
             raise ValueError("Outside fixed-cycle ECMWF pilot")
         if not isinstance(cap,int) or cap<=0:raise ValueError("Invalid cap")
         if interval is not None:
