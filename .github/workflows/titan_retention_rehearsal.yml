@@ -13,7 +13,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - run: sudo apt-get update -qq && sudo apt-get install -y rclone zstd
+      - run: python -m pip install -r requirements.txt -c requirements-preview-constraints.txt
       - name: Verify all proposed old checkpoint retirements without deletion
         env:
           GH_TOKEN: ${{ github.token }}
