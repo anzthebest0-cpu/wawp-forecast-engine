@@ -714,110 +714,17 @@ function setupSpreadCharts(modelsData, timeLabels) {
 }
 
 function setupRegionalCharts() {
-    const now = new Date();
-    // SIGWX Slots
-    const slots = [0, 6, 12, 18];
-    const currentHour = now.getUTCHours();
-    let anchorHour = Math.max(...slots.filter(h => h <= currentHour));
-    if(anchorHour === -Infinity) anchorHour = 18; // fallback to previous day if needed
-    const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
-    
-    function renderRegionalChartType(chartType) {
-        const note=document.getElementById("regional-product-note");
-        const selected=document.getElementById("regional-chart-type").selectedOptions[0]?.textContent || chartType;
-        note.textContent="BMKG · "+selected+" · requested product only. Check embedded issue/analysis and valid time.";
-        let sigwxHtml = '';
-        let firstUrl = '';
-        
-        if (chartType === "olr") {
-            document.getElementById('sigwx-slots').innerHTML = "";
-            document.getElementById('sigwx-img').src = "https://cews.bmkg.go.id/operational-early-warning-pdi/0_Latest/olr.cfs.all.indonesia.2_latest.png";
-            return;
-        }
-
-        if (chartType.startsWith("rason_")) {
-            const fn = chartType.replace("rason_", "");
-            
-            // Allow user to select date, defaulting to current UTC date if not set
-            if (!window.rasonDate) window.rasonDate = new Date();
-            
-            const d = String(window.rasonDate.getUTCDate()).padStart(2,'0');
-            const m = String(window.rasonDate.getUTCMonth() + 1).padStart(2,'0');
-            const y = window.rasonDate.getUTCFullYear();
-            const dateStr = `${d}${m}${y}`;
-            note.textContent += ` Requested RASON date ${y}-${m}-${d} UTC.`;
-            const url = `https://web-aviation.bmkg.go.id/rason/${dateStr}/${fn}`;
-            
-            const html = `
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <span style="color:var(--text-secondary); font-size:0.85em;">Select Date:</span>
-                    <input type="date" id="rason-date-picker" value="${y}-${m}-${d}" 
-                           style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px; border-radius:4px;">
-                </div>
-            `;
-            
-            document.getElementById('sigwx-slots').innerHTML = html;
-            document.getElementById('sigwx-img').src = url;
-            
-            document.getElementById('rason-date-picker').addEventListener('change', (e) => {
-                if (e.target.value) {
-                    window.rasonDate = new Date(e.target.value + 'T00:00:00Z');
-                    renderRegionalChartType(chartType);
-                }
-            });
-            return;
-        }
-        
-        // Parse type (e.g. mediumsigwx, highsigwx, windtemp_100)
-        let basePath = chartType;
-        let prefix = "sigwx_";
-        if (chartType.startsWith("windtemp_")) {
-            basePath = "windtemp";
-            prefix = "wt" + chartType.split("_")[1] + "_";
-        }
-        
-        for(let i=0; i<4; i++) {
-            let dt = new Date(now);
-            dt.setUTCHours(anchorHour - (6*i), 0, 0, 0);
-            let yr = dt.getUTCFullYear();
-            let mo = months[dt.getUTCMonth()];
-            let da = String(dt.getUTCDate()).padStart(2, '0');
-            let hr = String(dt.getUTCHours()).padStart(2, '0');
-            let fn = `${prefix}${yr}${mo}${da}${hr}00.jpeg`;
-            let url = `https://web-aviation.bmkg.go.id/model/${basePath}/${yr}/${mo}/${fn}`;
-            if(i===0) firstUrl = url;
-            sigwxHtml += `<button onclick="document.getElementById('sigwx-img').src='${url}'" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); margin-right:8px; padding:5px 10px; border-radius:4px; cursor:pointer;">${da}/${mo} ${hr}Z</button>`;
-        }
-        document.getElementById('sigwx-slots').innerHTML = sigwxHtml;
-        document.getElementById('sigwx-img').src = firstUrl;
+    const entries=[
+        ['regional-olr-img','regional-olr-status','https://cews.bmkg.go.id/operational-early-warning-pdi/0_Latest/olr.cfs.all.indonesia.2_latest.png'],
+        ['sat-img','regional-sat-status','https://inderaja.bmkg.go.id/IMAGE/HIMA/H08_EH_Indonesia.png']
+    ];
+    for(const [id,statusId,url] of entries){
+        const img=document.getElementById(id),status=document.getElementById(statusId);if(!img||!status)continue;
+        img.hidden=true;status.textContent='Requesting source image…';
+        img.addEventListener('load',()=>{img.hidden=false;status.textContent='Image received. Check printed issue/valid time; receipt is not product time.';});
+        img.addEventListener('error',()=>{img.hidden=true;status.textContent='Image unavailable now. Use the official source link; no stale image displayed.';});
+        img.src=url;
     }
-
-    const regionalSelect = document.getElementById('regional-chart-type');
-    if (regionalSelect) {
-        regionalSelect.addEventListener('change', (e) => {
-            renderRegionalChartType(e.target.value);
-        });
-        renderRegionalChartType(regionalSelect.value);
-    }
-    
-    // CB Animation
-    let yesterday = new Date(now);
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-    let yda = String(yesterday.getUTCDate()).padStart(2, '0');
-    let ymo = months[yesterday.getUTCMonth()];
-    let yyr = yesterday.getUTCFullYear();
-    let cbStr = `${yda}${ymo}${yyr}`;
-    const cb = document.getElementById('cb-img');
-    const cbNote = document.getElementById('cb-source-note');
-    cbNote.textContent = `BMKG Aviation · requested archive product ${yyr}-${ymo}-${yda} UTC; verify the embedded validity before use.`;
-    cb.src = `https://web-aviation.bmkg.go.id/prakcb/${cbStr}/CB_FORECAST_ANIMATION_${cbStr}.gif`;
-    ['sigwx-img','cb-img','sat-img'].forEach(id=>{
-        const img = document.getElementById(id); if(!img) return;
-        const status = document.createElement('p'); status.className='section-note'; status.setAttribute('role','status'); img.after(status);
-        img.addEventListener('error',()=>{status.textContent='External chart unavailable. Check the source directly.';});
-        img.addEventListener('load',()=>{status.textContent='Image loaded; check the source timestamp and validity.';});
-        if(img.complete && img.getAttribute('src')) status.textContent=img.naturalWidth?'Image loaded; check the source timestamp and validity.':'External chart unavailable. Check the source directly.';
-    });
 }
 
 function setupVerifyCharts(lbMetrics, ltData) {

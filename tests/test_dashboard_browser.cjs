@@ -71,6 +71,9 @@ async function fixture(browser,mode,viewport){
   await loc('#analysis-scales button[data-scale="global"]').click();
   await loc('#analysis-cards button').first().click();
   await page.waitForFunction(()=>document.getElementById('analysis-image-status').textContent.includes('unavailable'));
+  assert.equal(await loc('#aviation-product-sources a[href$="sigwx_medium_level.php"]').count(),1);
+  assert.equal(await loc('#aviation-product-sources a[href$="sigwx_high_level.php"]').count(),1);
+  assert.equal(await loc('#regional-chart-type').count(),0);
   await page.screenshot({path:'browser-audit/'+mode+'-analysis-'+viewport.width+'.png',fullPage:false});
   await open('tab-intel');
   if(mode==='mismatch'){

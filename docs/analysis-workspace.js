@@ -16,10 +16,10 @@ const sources=[
     "scale": "global",
     "id": "enso",
     "title": "ENSO — Niño regions",
-    "source": "NOAA CPC",
-    "type": "Weekly SST index",
-    "url": "https://cpc.ncep.noaa.gov/products/precip/CWlink/MJO/enso.shtml",
-    "image": "https://cpc.ncep.noaa.gov/products/analysis_monitoring/enso_update/ssta_c.gif",
+    "source": "NOAA PSL",
+    "type": "Official monitoring page",
+    "url": "https://www.psl.noaa.gov/enso/",
+    "image": null,
     "prompt": "Check persistence of the Pacific SST anomaly; do not infer airport rainfall timing from ENSO alone."
   },
   {
@@ -37,10 +37,10 @@ const sources=[
     "id": "mjo",
     "title": "MJO phase and outlook",
     "source": "Australian Bureau of Meteorology",
-    "type": "RMM monitoring",
+    "type": "Official RMM monitoring page",
     "url": "https://www.bom.gov.au/climate/mjo/",
-    "image": "https://www.bom.gov.au/clim_data/IDCKGEM000/rmm.phase.Last40days.gif",
-    "prompt": "Check amplitude, direction of evolution and regional cloud response; the embedded phase graphic is monitoring, not necessarily an outlook."
+    "image": null,
+    "prompt": "Check amplitude, direction and regional cloud response on the provider's current charts."
   },
   {
     "scale": "global",
@@ -66,10 +66,10 @@ const sources=[
     "scale": "global",
     "id": "sst",
     "title": "SST and anomalies",
-    "source": "NOAA CPC",
-    "type": "Weekly anomaly map",
-    "url": "https://cpc.ncep.noaa.gov/products/precip/CWlink/MJO/enso.shtml",
-    "image": "https://cpc.ncep.noaa.gov/products/analysis_monitoring/enso_update/ssta-week.gif",
+    "source": "NOAA PSL",
+    "type": "SST monitoring page",
+    "url": "https://psl.noaa.gov/enso/current.html",
+    "image": null,
     "prompt": "Examine broad ocean anomalies; for local waters consult NOAA OISST or BMKG and respect coastal grid limitations."
   },
   {
@@ -96,11 +96,11 @@ const sources=[
     "scale": "synoptic",
     "id": "lowlevel",
     "title": "925 / 850 hPa circulation",
-    "source": "BMKG Aviation",
-    "type": "RASON analysis viewer",
-    "url": "https://web-aviation.bmkg.go.id/",
+    "source": "Windy",
+    "type": "External model viewer",
+    "url": "https://www.windy.com/menu",
     "image": null,
-    "prompt": "Use the existing BMKG chart viewer below for low-level streamlines; distinguish analysis from forecast."
+    "prompt": "Select wind at 925/850 hPa and examine valid time. Legacy BMKG gridded RASON charts are currently unavailable; use sounding observations separately."
   },
   {
     "scale": "synoptic",
@@ -127,20 +127,20 @@ const sources=[
     "id": "instability",
     "title": "Instability and inhibition",
     "source": "BMKG Aviation",
-    "type": "RASON analysis viewer",
-    "url": "https://web-aviation.bmkg.go.id/",
+    "type": "Sounding map / diagnostic checklist",
+    "url": "https://web-aviation.bmkg.go.id/maps",
     "image": null,
-    "prompt": "Use CAPE+, LI, KI, TT and SWEAT in the chart viewer; assess CIN separately where available. None alone establishes thunderstorm occurrence."
+    "prompt": "Review available sounding data, stability and inhibition. Legacy CAPE+, LI, KI, TT and SWEAT gridded charts are no longer embedded."
   },
   {
     "scale": "meso",
     "id": "shear",
     "title": "Vertical wind shear and humidity",
-    "source": "BMKG Aviation",
-    "type": "RASON analysis viewer",
-    "url": "https://web-aviation.bmkg.go.id/",
+    "source": "Windy / sounding observations",
+    "type": "Diagnostic checklist",
+    "url": "https://www.windy.com/menu",
     "image": null,
-    "prompt": "Compare surface–925 and surface–850 shear with surface, 850 and 700 hPa RH; examine dry-air layers and organization."
+    "prompt": "Compare winds and RH at relevant levels using provider model guidance and sounding observations; dedicated gridded shear/RH charts are no longer embedded."
   },
   {
     "scale": "meso",
@@ -233,7 +233,7 @@ function setupAnalysisWorkspace(){
             if(item.image){const b=create('button','View source chart');b.type='button';b.addEventListener('click',()=>showImage(item));actions.append(b);}
             if(item.url){const a=create('a','Open source');a.href=item.url;a.target='_blank';a.rel='noopener noreferrer';actions.append(a);}
             if(item.id==='clim'){const b=create('button','Open climatology');b.type='button';b.addEventListener('click',()=>switchTab('tab-climatology'));actions.append(b);}
-            if(['lowlevel','instability','shear'].includes(item.id)){const b=create('button','Use existing chart viewer');b.type='button';b.addEventListener('click',()=>document.getElementById('regional-chart-type').scrollIntoView({block:'center'}));actions.append(b);}
+            if(['lowlevel','instability','shear'].includes(item.id)){const b=create('button','Official aviation products');b.type='button';b.addEventListener('click',()=>document.getElementById('aviation-product-sources').scrollIntoView({block:'center'}));actions.append(b);}
             card.append(actions);cards.append(card);
         });
     }
