@@ -1,0 +1,38 @@
+name: TITAN read-only real retention rehearsal
+on:
+  push:
+    branches: [codex/titan-storage-diagnostics]
+    paths: ['scripts/rehearse_checkpoint_retention.py','.github/workflows/titan_retention_rehearsal.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: sudo apt-get update -qq && sudo apt-get install -y rclone zstd
+      - name: Verify all proposed old checkpoint retirements without deletion
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
+          WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$WAWP_RCLONE_CONFIG" && test -n "$WAWP_ARCHIVE_FOLDER_ID"
+          umask 077
+          export RCLONE_CONFIG="$RUNNER_TEMP/titan-rehearsal.conf"
+          export RCLONE_CONFIG_WAWP_ROOT_FOLDER_ID="$WAWP_ARCHIVE_FOLDER_ID"
+          trap 'rm -f "$RCLONE_CONFIG"' EXIT
+          printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
+          unset WAWP_RCLONE_CONFIG
+          PYTHONPATH=. python scripts/rehearse_checkpoint_retention.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-retention-rehearsal-report
+          path: retention-rehearsal.json
+          retention-days: 7
+          if-no-files-found: warn
