@@ -1105,3 +1105,13 @@ tbody tr:hover td {
 .lookback-radio { color: var(--text-primary); font-size: 0.85em; display: flex; align-items: center; gap: 5px; cursor: pointer; margin-left: 10px; transition: color 0.2s; background: var(--bg-secondary); padding: 5px 10px; border-radius: 15px; border: 1px solid var(--border-glass); }
 .lookback-radio:hover { color: var(--cyan); border-color: var(--cyan); }
 .lookback-radio input { accent-color: var(--cyan); cursor: pointer; }
+
+/* Workstation navigation and source-status presentation */
+.nav-links .nav-group {font-size:0.67rem; letter-spacing:.08em; color:var(--text-secondary); cursor:default; margin-top:12px; padding:4px 12px; pointer-events:none; font-weight:700;}
+.nav-links .nav-group::before,.nav-links .nav-group::after {display:none;}
+.nav-links li[data-tab]:focus-visible,.observation-links button:focus-visible,.observation-links a:focus-visible {outline:2px solid var(--cyan); outline-offset:2px;}
+.section-note,.observation-note {font-size:.85rem;color:var(--text-secondary);line-height:1.5;margin:8px 0 14px;}
+.observation-overview,.overview-links {margin-bottom:16px;}
+.observation-links {display:flex; flex-wrap:wrap; gap:8px; margin:12px 0;}
+.observation-links a,.observation-links button {font:inherit;font-size:.85rem;color:var(--cyan);background:var(--bg-tertiary);border:1px solid var(--border-glass);border-radius:6px;padding:8px 12px;cursor:pointer;text-decoration:none;}
+@media(max-width:900px){.nav-links .nav-group{display:none;}.chart-panel > div{min-width:0;} .observation-links{gap:6px;}}

@@ -12,8 +12,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script src="apexcharts-theme.js?v=3.0"></script>
-    <link rel="stylesheet" href="style.css?v=3.0">
+    <script src="apexcharts-theme.js?v=3.1-workstation"></script>
+    <link rel="stylesheet" href="style.css?v=4.1-workstation">
 </head>
 <body>
 
@@ -21,22 +21,26 @@
         <div class="logo-area">
             <h1 class="logo">TITAN</h1>
             <div style="display: flex; gap: 8px; align-items: center;">
-                <div class="version-badge">v114 Migration</div>
+                <div class="version-badge">Workstation preview</div>
                 <button id="theme-toggle" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-glass); padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75em;">☀️/🌙</button>
             </div>
         </div>
-        <ul class="nav-links">
-            <li class="active" data-tab="tab-intel">Intelligence</li>
-            <li data-tab="tab-weighter">Advanced Weighter</li>
-            <li data-tab="tab-meteogram">Consensus Meteogram</li>
-            <li data-tab="tab-spread">Consensus Spread</li>
+        <ul class="nav-links" aria-label="Workstation sections">
+            <li class="nav-group">OPERATIONS</li>
+            <li class="active" data-tab="tab-intel">Forecaster Overview</li>
+            <li data-tab="tab-regional">Regional Analysis</li>
+            <li class="nav-group">MODEL PREVIEW</li>
+            <li data-tab="tab-meteogram">Raw Model Meteogram</li>
+            <li data-tab="tab-spread">Model Disagreement</li>
             <li data-tab="tab-matrix">Hourly Matrix</li>
             <li data-tab="tab-models">Individual Models</li>
-            <li data-tab="tab-regional">Regional Charts</li>
+            <li class="nav-group">HISTORICAL RESEARCH</li>
+            <li data-tab="tab-weighter">Archived Model Weights</li>
             <li data-tab="tab-climatology">Climatology Engine</li>
-            <li data-tab="tab-health" style="color: var(--amber); font-weight: 600;">System Health</li>
-            <li data-tab="tab-verify">Live Verification</li>
-            <li data-tab="tab-persistency">Persistency (Obs)</li>
+            <li data-tab="tab-verify">Historical Verification</li>
+            <li data-tab="tab-persistency">Observation Archive</li>
+            <li class="nav-group">ADMINISTRATION</li>
+            <li data-tab="tab-health">System Health</li>
         </ul>
         <div class="last-update">
             <div>Latest Forecast Pull:</div>
@@ -50,7 +54,7 @@
         <!-- Tab 1: Intelligence -->
         <section id="tab-intel" class="tab-pane active">
             <div class="header-bar">
-                <h2>Operational Intelligence</h2>
+                <h2>Forecaster Overview</h2>
                 <div>
                     <select id="taf-issuance-select" disabled hidden style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px; margin-right: 15px;">
                         <option value="default">Validated Default</option>
@@ -59,15 +63,22 @@
                         <option value="1100">1100Z Shift</option>
                         <option value="1700">1700Z Shift</option>
                     </select>
-                    <span class="mme-badge" id="consensus-badge">MME Consensus</span>
+                    <span class="mme-badge" id="consensus-badge">Raw model preview</span>
                 </div>
             </div>
             
             <div id="shift-status-banner" style="background: rgba(14, 165, 233, 0.1); border-left: 4px solid var(--cyan); padding: 12px 20px; margin-bottom: 20px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
-                <div style="font-weight: 600; color: var(--cyan);">Next Mandatory TAF Issuance: <span id="next-taf-issuance-label">...</span></div>
+                <div style="font-weight: 600; color: var(--cyan);">Next configured TAF issuance: <span id="next-taf-issuance-label">...</span></div>
                 <div id="shift-countdown" style="font-family: var(--font-mono); font-weight: bold; font-size: 1.1em; color: var(--text-primary);">00:00:00</div>
             </div>
             
+            <div class="panel observation-overview" aria-labelledby="observation-title">
+                <h3 id="observation-title">Station observations · WAWP</h3>
+                <p>Live observation ingestion is not connected. No live METAR, wind or sensor values are claimed here.</p>
+                <div class="observation-links"><a href="http://wawp.awosnet.com/" target="_blank" rel="noopener noreferrer">Open AWOSnet</a><a href="https://web-aviation.bmkg.go.id/web/observation.php" target="_blank" rel="noopener noreferrer">BMKG Aviation observations</a><button type="button" data-open-tab="tab-persistency">Observation archive</button></div>
+                <p class="observation-note">AWOSnet endpoint, access permissions, timestamps and units require verification before automated ingestion.</p>
+            </div>
+            <div class="panel overview-links"><h3>Analysis shortcuts</h3><div class="observation-links"><button type="button" data-open-tab="tab-regional">Regional analysis</button><button type="button" data-open-tab="tab-meteogram">Raw model meteogram</button><button type="button" data-open-tab="tab-spread">Model disagreement</button><button type="button" data-open-tab="tab-matrix">Hourly matrix</button></div></div>
             <div class="intel-grid">
                 <!-- TAF Editor Panel -->
                 <div class="panel taf-panel">
@@ -85,7 +96,7 @@
 
                 <!-- Parameters Panel -->
                 <div class="panel bg-panel">
-                    <h3>Base Group Parameters</h3>
+                    <h3>Base Group Parameters (withheld)</h3>
                     <div class="param-grid" id="bg-params">
                         <!-- Populated via JS -->
                     </div>
@@ -102,7 +113,7 @@
             </div>
 
             <div class="panel" style="margin-top: 20px;">
-                <h3>Thunderstorm Proxy Audit</h3>
+                <h3>Thunderstorm Proxy Audit (withheld)</h3>
                 <div id="ts-proxy-audit" style="margin-top: 12px; overflow-x: auto;">Loading proxy calculation...</div>
                 <details style="margin-top: 16px;">
                     <summary style="cursor: pointer; color: var(--cyan); font-weight: 700;">Method and WMO Weather Codes</summary>
@@ -112,7 +123,7 @@
             
             <!-- Narrative Panel -->
             <div class="panel" style="margin-top: 20px;">
-                <h3 style="margin-bottom: 10px;">Narasi Prakiraan Cuaca (AI Summary)</h3>
+                <h3 style="margin-bottom: 10px;">Automated narrative (withheld)</h3>
                 <div id="taf-narration" style="color: var(--text-secondary); line-height: 1.6;">Loading narrative...</div>
             </div>
 
@@ -144,7 +155,7 @@
 
         <!-- Tab 2: Weighter -->
         <section id="tab-weighter" class="tab-pane">
-            <h2>Dynamic Ensemble Weights</h2>
+            <h2>Historical Ensemble Weights</h2><p class="section-note">Archived research diagnostics only; not the weights of the current raw-model preview.</p>
             <div class="weighter-grid" id="weighter-container">
                 <!-- Populated via JS -->
             </div>
@@ -166,7 +177,7 @@
 
         <!-- Tab 3: Meteogram -->
         <section id="tab-meteogram" class="tab-pane">
-            <h2>Consensus Meteogram</h2>
+            <h2>Raw Model Meteogram</h2><p class="section-note">Unverified equal-model preview. Valid times are WITA (UTC+8). Not an operational forecast.</p>
             <div class="panel chart-panel">
                 <div id="chart-temp"></div>
             </div>
@@ -182,11 +193,13 @@
             <div class="panel chart-panel">
                 <div id="chart-clouds"></div>
             </div>
+            <div class="panel chart-panel"><div id="chart-pressure"></div>
+            </div>
         </section>
 
         <!-- Tab 4: Consensus Spread -->
         <section id="tab-spread" class="tab-pane">
-            <h2>Consensus Spread</h2>
+            <h2>Model Disagreement</h2><p class="section-note">Descriptive model ranges, not calibrated probability intervals. Rainfall models are alternative forecasts; never sum them. Valid times: WITA (UTC+8).</p>
             <div class="panel chart-panel">
                 <div id="spread-temp"></div>
             </div>
@@ -203,7 +216,7 @@
 
         <!-- Tab 5: Matrix -->
         <section id="tab-matrix" class="tab-pane">
-            <h2>Hourly Matrix</h2>
+            <h2>Hourly Matrix</h2><p class="section-note">Raw-model preview. Valid times: WITA (UTC+8). A dash denotes unavailable data.</p>
             <div class="panel">
                 <div class="table-container">
                     <table id="data-table">
@@ -215,6 +228,7 @@
                                 <th>Pressure (hPa)</th>
                                 <th>Wind Dir</th>
                                 <th>Wind Spd (kt)</th>
+                                <th>Gust (kt)</th>
                                 <th>Rain (mm)</th>
                                 <th>Precip Prob</th>
                                 <th>Condition</th>
@@ -230,7 +244,7 @@
 
         <!-- Tab 4.5: Individual Models -->
         <section id="tab-models" class="tab-pane">
-            <h2>Individual Models</h2>
+            <h2>Individual Models</h2><p class="section-note">Raw individual forecasts. Valid times: WITA (UTC+8); model collection timestamps are UTC.</p>
             <div style="margin-bottom: 15px;">
                 <label for="model-select" style="color:var(--text-secondary); margin-right:10px;">Select Model:</label>
                 <select id="model-select" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px;">
@@ -317,7 +331,7 @@
 
             <!-- CB -->
             <div class="panel" style="margin-top:20px;">
-                <h3>Cumulonimbus (CB) Forecast Animation</h3>
+                <h3>Cumulonimbus (CB) Forecast Animation</h3><p id="cb-source-note" class="section-note">BMKG Aviation · requested product date will be shown here.</p>
                 <div style="text-align: center;">
                     <img id="cb-img" src="" alt="CB Forecast Animation" style="max-width:100%; border-radius:8px; border:1px solid var(--border-glass);" />
                 </div>
@@ -325,7 +339,7 @@
 
             <!-- Satellite -->
             <div class="panel" style="margin-top:20px;">
-                <h3>Himawari-8 Satellite (EH IR)</h3>
+                <h3>Himawari Satellite (EH IR)</h3><p class="section-note">BMKG satellite image · check its embedded timestamp before interpretation.</p>
                 <div style="text-align: center;">
                     <img id="sat-img" src="https://inderaja.bmkg.go.id/IMAGE/HIMA/H08_EH_Indonesia.png" alt="Himawari-8 Satellite" style="max-width:100%; border-radius:8px; border:1px solid var(--border-glass);" />
                 </div>
@@ -512,13 +526,13 @@
                 <!-- AWOS Upload Widget -->
                 <div class="panel">
                     <h3>Manual AWOS Ingestion</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 20px;">Upload local AWOS `.dat` files to the central GitHub repository to trigger Live Verification metrics processing.</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">Upload local AWOS `.dat` files to the central GitHub repository for authorized archive processing. Historical verification remains frozen.</p>
                     
                     <div style="display: flex; flex-direction: column; gap: 15px;">
                         <div>
                             <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9em;">GitHub Access Token (PAT)</label>
                             <input type="password" id="github-pat-input" placeholder="ghp_xxxxxxxxxxxx" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--col-border); border-radius: 4px; color: var(--text-primary);">
-                            <div style="font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;">*Saved securely in your browser's localStorage.</div>
+                            <div style="font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;">Not saved. Enter a restricted, short-lived token only on a trusted device; prefer the authorized ingestion workflow.</div>
                         </div>
                         
                         <div>
@@ -527,7 +541,7 @@
                         </div>
                         
                         <button id="upload-awos-btn" style="background: var(--cyan-glow); color: var(--cyan); border: 1px solid rgba(0, 212, 255, 0.25); padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: all 0.2s;">
-                            Upload to GitHub & Trigger Verification
+                            Upload to GitHub archive
                         </button>
                         
                         <div id="upload-status" style="display:none; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center;"></div>
@@ -668,7 +682,7 @@
                 <div style="display: flex; gap: 15px;">
                     <button class="verify-subtab active" data-sub="verify-skill">Skill Analysis</button>
                     <button class="verify-subtab" data-sub="verify-leadtime">Lead-Time Accuracy</button>
-                    <button class="verify-subtab" data-sub="verify-significancy">Significancy</button>
+                    <button class="verify-subtab" data-sub="verify-significancy">Statistical Significance</button>
                     <button class="verify-subtab" data-sub="verify-diurnal">Diurnal Bias</button>
                 </div>
                 
@@ -761,7 +775,7 @@
 
         <!-- Tab 10: Persistency -->
         <section id="tab-persistency" class="tab-pane">
-            <h2>Historical Persistency (Last 5 Days)</h2>
+            <h2>Historical Observations (Last 5 Days in Archive)</h2><p class="section-note">Archived observations, not a live sensor feed. Check archive coverage before use.</p>
             <div class="panel chart-panel" style="margin-bottom: 20px;">
                 <h3>Temperature & Dewpoint</h3>
                 <div id="persistency-temp-chart">Loading...</div>
@@ -778,6 +792,6 @@
         
     </main>
 
-    <script src="dashboard.js?v=4.0-preview-safety"></script>
+    <script src="dashboard.js?v=4.1-workstation"></script>
 </body>
 </html>

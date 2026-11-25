@@ -492,16 +492,17 @@ async function loadDashboard() {
         // 4. Meteogram Tab (using apexcharts from guidance)
         // Convert to [timestamp_ms, value] format expected by apexcharts-theme.js
         const chartData = {
-            tempData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Temperature]),
-            dewData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Dewpoint]),
-            windData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Wind]),
-            gustData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Gust ?? null]),
-            rainData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Rain]),
+            tempData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Temperature]),
+            dewData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Dewpoint]),
+            windData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Wind]),
+            gustData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Gust ?? null]),
+            rainData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Rain]),
             windDirData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Wind Dir.'] ?? null]),
             highCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['High Clouds'] ?? null]),
             midCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Mid Clouds'] ?? null]),
             lowCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Low Clouds'] ?? null]),
-            condData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Condition ?? null])
+            pressureData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Pressure ?? null]),
+            condData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Condition ?? null])
         };
         
         // Initialize charts using the new TITAN_BASE design system
@@ -525,6 +526,7 @@ async function loadDashboard() {
                 <td style="color: #a855f7">${displayNumber(d.Pressure)}</td>
                 <td>${displayNumber(d['Wind Dir.'], 0, '°')}</td>
                 <td style="color: #10b981">${displayNumber(d.Wind)}</td>
+                <td style="color: #f59e0b">${displayNumber(d.Gust)}</td>
                 <td style="color: #0ea5e9">${displayNumber(d.Rain)}</td>
                 <td>${displayNumber(d['Precip Probability'], 1, '%')}</td>
                 <td>${d.Condition || '-'}</td>
@@ -592,6 +594,9 @@ function switchTab(tabId) {
     
     document.getElementById(tabId).classList.add('active');
     document.querySelector(`.nav-links li[data-tab="${tabId}"]`).classList.add('active');
+    document.querySelectorAll('.nav-links li[data-tab]').forEach(el=>el.setAttribute('aria-current',el.getAttribute('data-tab')===tabId?'page':'false'));
+    if(window.location.hash !== '#'+tabId) window.history.replaceState(null,'','#'+tabId);
+    setTimeout(()=>window.dispatchEvent(new Event('resize')),0);
 
     if (tabId === 'tab-spread' && pendingSpreadModelsData && !spreadChartsRendered) {
         setupSpreadCharts(pendingSpreadModelsData, pendingSpreadTimeLabels);
@@ -620,11 +625,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.querySelectorAll('.nav-links li').forEach(li => {
-        li.addEventListener('click', () => {
-            switchTab(li.getAttribute('data-tab'));
-        });
+    document.querySelectorAll('.nav-links li[data-tab]').forEach(li => {
+        li.setAttribute('role','button'); li.tabIndex = 0;
+        const activate = () => switchTab(li.getAttribute('data-tab'));
+        li.addEventListener('click', activate);
+        li.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
     });
+    document.querySelectorAll('[data-open-tab]').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.getAttribute('data-open-tab'))));
+    const initialTab = window.location.hash.slice(1);
+    if (/^tab-[a-z]+$/.test(initialTab) && document.getElementById(initialTab)) switchTab(initialTab);
     
     loadDashboard();
 });
@@ -654,7 +663,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
         const medLine = [];
         
         for (const t of spreadTimeLabels) {
-            const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
+            const ts = previewValidEpoch(t);
             const vals = [];
             for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
                 if (modelVals[t] !== undefined && modelVals[t] !== null) {
@@ -679,7 +688,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
         for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
             const dataPts = [];
             for (const t of spreadTimeLabels) {
-                const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
+                const ts = previewValidEpoch(t);
                 if (modelVals[t] !== undefined && modelVals[t] !== null) {
                     dataPts.push([ts, modelVals[t]]);
                 }
@@ -691,13 +700,13 @@ function setupSpreadCharts(modelsData, timeLabels) {
 
     const spreadOptions = (title, yAxisLabel, isBar=false) => ({
         ...TITAN_BASE,
-        chart: { ...TITAN_BASE.chart, type: isBar ? 'bar' : 'area', height: 280, stacked: isBar, animations: { enabled: false } },
+        chart: { ...TITAN_BASE.chart, type: isBar ? 'bar' : 'area', height: 280, stacked: false, animations: { enabled: false } },
         title: { text: title, style: { fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' } },
         stroke: { curve: 'smooth', width: isBar ? 0 : [0, 0, 2] },
         dataLabels: { enabled: false },
-        tooltip: { enabled: false },
+        tooltip: { enabled: true, shared: false, x: {formatter: value=>previewWitaLabel(value)} },
         markers: { size: 0 },
-        xaxis: { type: 'datetime', labels: { style: { colors: 'var(--text-secondary)' } } },
+        xaxis: previewXAxis(),
         yaxis: { title: { text: yAxisLabel }, labels: { style: { colors: 'var(--text-secondary)' }, formatter: (val) => val.toFixed(1) } },
         legend: { position: 'top' },
         fill: isBar ? { opacity: 0.85 } : { opacity: [0.15, 0.4, 1] }
@@ -713,7 +722,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
         const rangeIQR = [];
         const medLine = [];
         for (const t of spreadTimeLabels) {
-            const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
+            const ts = previewValidEpoch(t);
             const vals = [];
             for (const [model, modelVals] of Object.entries(modelsData['Temperature'] || {})) {
                 const temp = modelsData['Temperature'][model]?.[t];
@@ -746,7 +755,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
     windOptions.colors = ['#10b981', '#10b981', '#10b981'];
     new ApexCharts(document.querySelector('#spread-wind'), { ...windOptions, series: createPlumeSeries('Wind Speed') }).render();
     
-    const rainOptions = spreadOptions('Rainfall Spread (Bar)', 'mm', true);
+    const rainOptions = spreadOptions('Individual Model Rainfall (grouped, not summed)', 'mm', true);
     new ApexCharts(document.querySelector('#spread-rain'), { ...rainOptions, series: createBarSeries('Rainfall') }).render();
 }
 
@@ -840,7 +849,17 @@ function setupRegionalCharts() {
     let ymo = months[yesterday.getUTCMonth()];
     let yyr = yesterday.getUTCFullYear();
     let cbStr = `${yda}${ymo}${yyr}`;
-    document.getElementById('cb-img').src = `https://web-aviation.bmkg.go.id/prakcb/${cbStr}/CB_FORECAST_ANIMATION_${cbStr}.gif`;
+    const cb = document.getElementById('cb-img');
+    const cbNote = document.getElementById('cb-source-note');
+    cbNote.textContent = `BMKG Aviation · requested archive product ${yyr}-${ymo}-${yda} UTC; verify the embedded validity before use.`;
+    cb.src = `https://web-aviation.bmkg.go.id/prakcb/${cbStr}/CB_FORECAST_ANIMATION_${cbStr}.gif`;
+    ['sigwx-img','cb-img','sat-img'].forEach(id=>{
+        const img = document.getElementById(id); if(!img) return;
+        const status = document.createElement('p'); status.className='section-note'; status.setAttribute('role','status'); img.after(status);
+        img.addEventListener('error',()=>{status.textContent='External chart unavailable. Check the source directly.';});
+        img.addEventListener('load',()=>{status.textContent='Image loaded; check the source timestamp and validity.';});
+        if(img.complete && img.getAttribute('src')) status.textContent=img.naturalWidth?'Image loaded; check the source timestamp and validity.':'External chart unavailable. Check the source directly.';
+    });
 }
 
 function setupVerifyCharts(lbMetrics, ltData) {
@@ -1396,7 +1415,8 @@ function setupDiurnalClimatology(clim) {
         ],
         chart: { ...baseAxis.chart, type: 'line', height: 320 },
         stroke: { width: 3, curve: 'smooth' },
-        colors: ['#ef4444', '#3b82f6', '#a855f7']
+        colors: ['#ef4444', '#3b82f6', '#a855f7'],
+        yaxis: [{seriesName:'Temp C',title:{text:'Temperature / dewpoint (°C)'}},{seriesName:'Temp C',show:false},{seriesName:'RH %',opposite:true,min:0,max:100,title:{text:'RH (%)'}}]
     });
 
     renderChart('#clim-rain-chart', {
@@ -1407,7 +1427,8 @@ function setupDiurnalClimatology(clim) {
         ],
         chart: { ...baseAxis.chart, height: 320 },
         stroke: { width: [0, 3], curve: 'smooth' },
-        colors: ['#0ea5e9', '#f59e0b']
+        colors: ['#0ea5e9', '#f59e0b'],
+        yaxis: [{seriesName:'Rain Frequency %',min:0,max:100,title:{text:'Frequency (%)'}},{seriesName:'Wet-Hour Intensity mm',opposite:true,min:0,title:{text:'Intensity (mm)'}}]
     });
 
     renderChart('#clim-wind-chart', {
@@ -1419,7 +1440,8 @@ function setupDiurnalClimatology(clim) {
         ],
         chart: { ...baseAxis.chart, height: 320 },
         stroke: { width: [3, 0, 3], curve: 'smooth' },
-        colors: ['#10b981', '#f59e0b', '#ef4444']
+        colors: ['#10b981', '#f59e0b', '#ef4444'],
+        yaxis: [{seriesName:'Wind Speed kt',min:0,title:{text:'Wind (kt)'}},{seriesName:'Gust Event %',opposite:true,min:0,max:100,title:{text:'Frequency (%)'}},{seriesName:'Wind Speed kt',show:false,min:0}]
     });
 
     renderChart('#clim-fog-chart', {
@@ -1476,7 +1498,7 @@ function setupDiurnalClimatology(clim) {
         const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         const series = rainMatrix.map((row, idx) => ({
             name: monthLabels[idx],
-            data: row.map((v, h) => ({ x: `${String(h).padStart(2,'0')}`, y: v === null ? 0 : Number(Number(v).toFixed(2)) }))
+            data: row.map((v, h) => ({ x: `${String(h).padStart(2,'0')}`, y: v === null || v === undefined ? null : Number(Number(v).toFixed(2)) }))
         }));
         renderChart('#clim-rain-heatmap', {
             chart: { type: 'heatmap', height: 360, background: 'transparent', toolbar: { show: false } },
@@ -1716,10 +1738,10 @@ function setupIndividualModels(modelsData, timeLabels) {
             const rain = modelsData['Rainfall']?.[modelName]?.[dt];
             const probRain = modelsData['Precip Probability']?.[modelName]?.[dt] ?? modelsData['Prob Precip 1.0mm']?.[modelName]?.[dt];
             
-            if(temp !== undefined) {
+            if([temp, dew, pres, windDir, windSpd, gust, rain, probRain].some(v=>v!==undefined && v!==null)) {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${dt.substring(11, 16)}</td>
+                    <td>${dt.substring(0, 16)} WITA</td>
                     <td style="color: #ef4444">${displayNumber(temp)}</td>
                     <td style="color: #3b82f6">${displayNumber(dew)}</td>
                     <td style="color: #a855f7">${displayNumber(pres)}</td>
@@ -1752,10 +1774,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusDiv = document.getElementById('upload-status');
 
     if (patInput) {
-        patInput.value = localStorage.getItem('gh_wawp_pat') || '';
-        patInput.addEventListener('input', (e) => {
-            localStorage.setItem('gh_wawp_pat', e.target.value);
-        });
+        try { localStorage.removeItem('gh_wawp_pat'); } catch (_) {}
+        patInput.value = '';
     }
 
     if (uploadBtn && patInput && awosInput) {

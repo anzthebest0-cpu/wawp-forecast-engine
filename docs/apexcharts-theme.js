@@ -1,3 +1,17 @@
+// Preview valid times are timezone-naive WITA by the raw-model export contract.
+function previewValidEpoch(value) {
+    const s = String(value ?? '').trim().replace(' ', 'T');
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(s)) return NaN;
+    return Date.parse(s + '+08:00');
+}
+function previewWitaLabel(epoch, dateOnly = false) {
+    if (!Number.isFinite(Number(epoch))) return '—';
+    const d = new Date(Number(epoch) + 8 * 3600000);
+    const s = d.toISOString();
+    return dateOnly ? s.slice(11,16) : s.slice(5,10) + ' ' + s.slice(11,16) + ' WITA';
+}
+const previewXAxis = () => ({ type:'datetime', labels:{datetimeUTC:true, formatter:(_value, timestamp)=>previewWitaLabel(timestamp), style:{colors:'#94a3b8'}} });
+
 /**
  * ABSOLUTE TITAN — ApexCharts Theme Configuration
  * Drop-in chart options for the Consensus Meteogram tab.
@@ -53,7 +67,7 @@ const TITAN_BASE = {
   xaxis: {
     type: 'datetime',
     labels: {
-      format:     'HH:mm',
+      formatter: (_value, timestamp) => previewWitaLabel(timestamp),
       style: {
         colors:     TITAN_COLORS.text,
         fontSize:   '10px',
@@ -81,7 +95,7 @@ const TITAN_BASE = {
       fontSize:   '11px',
       fontFamily: TITAN_COLORS.font,
     },
-    x: { format: 'dd MMM HH:mm UTC' },
+    x: { formatter: (value) => previewWitaLabel(value) },
   },
 
   legend: {
@@ -103,12 +117,12 @@ const TITAN_BASE = {
   },
 
   stroke: {
-    curve:  'smooth',
+    curve:  'straight',
     lineCap: 'round',
   },
 
   noData: {
-    text:         'Loading forecast…',
+    text:         'No available model values',
     align:        'center',
     verticalAlign: 'middle',
     style: {
@@ -151,7 +165,7 @@ const CHART_TEMP_OPTIONS = {
   colors: [TITAN_COLORS.tempRed, TITAN_COLORS.dewBlue],
 
   stroke: {
-    curve:  'smooth',
+    curve:  'straight',
     width:  [2.5, 2],
     dashArray: [0, 4],         // Solid temp, dashed dewpoint
   },
@@ -224,7 +238,7 @@ const CHART_WIND_OPTIONS = {
   colors: [TITAN_COLORS.cyan, TITAN_COLORS.amber],
 
   stroke: {
-    curve:  'smooth',
+    curve:  'straight',
     width:  [2, 1.5],
     dashArray: [0, 3],
   },
@@ -414,7 +428,7 @@ const CHART_CLOUD_HEATMAP_OPTIONS = {
     group: 'meteogram',
   },
   title: {
-    text: 'CLOUD COVER (%)',
+    text: 'MODEL CLOUD COVER (%)',
     align: 'left',
     style: { fontSize: '10px', fontWeight: '600', fontFamily: TITAN_COLORS.font, color: 'rgba(138,154,184,0.7)', letterSpacing: '0.1em' },
     offsetY: 4,
@@ -426,11 +440,11 @@ const CHART_CLOUD_HEATMAP_OPTIONS = {
       useFillColorAsStroke: false,
       colorScale: {
         ranges: [
-          { from: -10, to: 10, color: '#f8fafc', name: 'Clear (0-10%)' },
-          { from: 10.001, to: 40, color: '#bae6fd', name: 'Few (11-40%)' },
-          { from: 40.001, to: 70, color: '#38bdf8', name: 'SCT (41-70%)' },
-          { from: 70.001, to: 90, color: '#0284c7', name: 'BKN (71-90%)' },
-          { from: 90.001, to: 200, color: '#1e1b4b', name: 'OVC (91-100%)' }
+          { from: -10, to: 10, color: '#f8fafc', name: '0–10%' },
+          { from: 10.001, to: 40, color: '#bae6fd', name: '11–40%' },
+          { from: 40.001, to: 70, color: '#38bdf8', name: '41–70%' },
+          { from: 70.001, to: 90, color: '#0284c7', name: '71–90%' },
+          { from: 90.001, to: 200, color: '#1e1b4b', name: '91–100%' }
         ]
       }
     }
@@ -515,5 +529,12 @@ function initTitanCharts(data) {
   );
   chartClouds.render();
 
-  return { chartTemp, chartWind, chartWindDir, chartRain, chartClouds };
+  const chartPressure = new ApexCharts(document.querySelector('#chart-pressure'), {
+    ...TITAN_BASE, chart: {...TITAN_BASE.chart, id:'titan-pressure', type:'line', height:200, group:'meteogram'},
+    title:{text:'MODEL PRESSURE (hPa)'}, series:[{name:'Pressure (hPa)',data:data.pressureData || []}],
+    stroke:{curve:'straight',width:2}, colors:['#8b5cf6'],
+    yaxis:{labels:{formatter:v=>Number.isFinite(v)?v.toFixed(1):'—'}}
+  });
+  chartPressure.render();
+  return { chartTemp, chartWind, chartWindDir, chartRain, chartClouds, chartPressure };
 }
