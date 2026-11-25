@@ -4,7 +4,7 @@ import json
 from playwright.sync_api import sync_playwright
 root=Path("titan-spatial-review").resolve()
 entries=json.loads((root/"catalog.json").read_text())["entries"]
-assert len(entries)==171 and len({e["product"] for e in entries})==24
+assert len(entries)==216 and len({e["product"] for e in entries})==25
 with sync_playwright() as p:
     browser=p.chromium.launch(headless=True,args=["--no-sandbox"])
     page=browser.new_page(viewport={"width":1440,"height":900})
@@ -32,13 +32,20 @@ with sync_playwright() as p:
     assert page.locator("#lead").input_value()=="12"
     assert page.locator("#next").is_disabled()
     page.select_option("#other","")
-    page.select_option("#product","comparison")
+    page.select_option("#product","rain")
+    page.select_option("#lead","0")
     assert page.locator(".empty").count()==1
+    page.select_option("#lead","6")
     page.set_viewport_size({"width":390,"height":844})
     page.select_option("#product","TQV")
     page.wait_for_function("document.querySelector('#panels img')?.naturalWidth > 0")
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
     assert not errors,errors
-    page.screenshot(path=str(root/"mobile-preview.png"))
+    page.screenshot(path=str(root/"mobile-preview.png"),full_page=True)
+    page.set_viewport_size({"width":1440,"height":900})
+    page.select_option("#product","wind925")
+    page.select_option("#other","rain")
+    page.wait_for_function("[...document.querySelectorAll('#panels img')].every(i=>i.naturalWidth>0)")
+    page.screenshot(path=str(root/"desktop-preview.png"),full_page=True)
     browser.close()
-print("BROWSER_PASS: 171 images, 24 products, zoom, compare, navigation, missing combinations and mobile width")
+print("BROWSER_PASS: 216 images, 25 products, zoom, compare, navigation, missing combinations and mobile width")
