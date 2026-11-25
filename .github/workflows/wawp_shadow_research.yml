@@ -24,7 +24,7 @@ jobs:
     if: >-
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      (github.event.pull_request.head.ref == 'codex/prospective-shadow-research' || github.event.pull_request.head.ref == 'codex/diurnal-shadow-candidates' || github.event.pull_request.head.ref == 'codex/hourly-wind-shadow' || github.event.pull_request.head.ref == 'codex/nighttime-spread-shadow' || github.event.pull_request.head.ref == 'codex/adaptive-west-sector-shadow') &&
+      (github.event.pull_request.head.ref == 'codex/prospective-shadow-research' || github.event.pull_request.head.ref == 'codex/diurnal-shadow-candidates' || github.event.pull_request.head.ref == 'codex/hourly-wind-shadow' || github.event.pull_request.head.ref == 'codex/nighttime-spread-shadow' || github.event.pull_request.head.ref == 'codex/adaptive-west-sector-shadow' || github.event.pull_request.head.ref == 'codex/integrated-shadow') &&
       github.event.label.name == 'shadow-research-validation'
     runs-on: ubuntu-latest
     timeout-minutes: 12

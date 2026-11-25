@@ -33,4 +33,39 @@ Expanded April–November replay follow-up: retain all existing wind candidates 
 
 November 25 retrospective follow-up: add core-only local-hour-conditioned mean bias candidates for pressure (21/14/7/7 days by the four lead bands) and dew point (14 days across bands). The bias is half all-hour and half matching local-hour when at least 12 matching rows exist, otherwise all-hour. Prior candidates and immutable forecasts remain valid and unchanged. The retrospective improvement is not proof of prospective skill; no automatic promotion.
 
+## Integrated portfolio — fixed prospective comparison
+
+The integrated backtest of November 25 found reductions in mean absolute errors for
+dew point, QFF, and wind speed, but deterioration on some wet cases. Run three
+simultaneous research variants on identical seven-core complete vectors:
+
+| Variant | Definition |
+| --- | --- |
+| Raw | Unchanged family-equal temperature, Td, QFF, 10-minute wind speed, circular wind direction and raw six-hour rain ≥1 mm vote. |
+| Corrected | Td 14-day diurnal bias, QFF 21/14/7/7-day diurnal bias, hourly wind speed 14-day diurnal bias; keep other fields raw. Bound Td by temperature, withhold physically inconsistent raw vectors. |
+| Guarded | Use corrected variant unless the **forecast-side** six-hour raw family vote is ≥0.5, then use raw. This is an exploratory comparison, not an operational safety rule or an alert. |
+
+Integrated vectors use the six-hour grid only where all six fields are available
+and the full precipitation target interval lies in the future at actual final
+issuance. Every vector records fit availability, training timestamps/counts,
+individual fallback, cap and guard state. If a fit is ineligible, the affected
+field falls back to raw and is marked inactive. The optional west-sector
+diagnostic retains the short-lead 25/75 blend and raw at longer leads, and the
+standalone climate/sector candidates continue to be scored separately. No
+additional model acquisitions, checkpoint storage, or operational data changes.
+Existing immutable archives are never retroactively populated with new vectors.
+
+The private verification snapshot compares all three variants on a common complete
+observational vector, overall and by lead band and **observed** wet/dry regime.
+Observed rain ≥1 mm in the complete six-hour window defines wet for verification
+only. It records paired MAE, circular MAE, Brier, guard contingencies, fit
+coverage, and joint two-/three-variable improvement counts. Common missing
+observations stay pending; event pair counts are not independent storms.
+Earliest sample review requires 30 distinct verified UTC dates and 20 distinct
+wet valid times **with all three fitted corrections active**. These are
+research review minima, not evidence of sufficient skill or approval to promote.
+The workflow's temporary status artifact contains only aggregate counts, not
+predictions or measurement values. Original prospective runs before this
+policy remain readable and eligible for their existing separate scores.
+
 Inspect actual source coverage, candidate eligibility, and paired scores on an independent prospective period (initial review after at least 30 days, longer if rain events or matched samples are insufficient). Consider actual receipt lead and weather regimes; do not promote solely on aggregate retrospective rankings. No automatic promotion, TAF generation, gust calibration, or operational warning decision is authorized by this workflow.

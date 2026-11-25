@@ -132,3 +132,69 @@ def test_west_sector_adaptive_frequency_and_blend():
     z=next(r for r in v['scores'] if r['parameter']==s.WEST_SECTOR and r['candidate']=='blend25_model75_recent30_sector');assert z['metric']=='Brier' and z['candidate_loss']==pytest.approx(.0625) and z['paired_core_raw_loss']==pytest.approx(1.)
     bad=json.loads(json.dumps(f));next(x for x in bad['rows'] if x['candidate']==s.WIND_HOURLY_CANDIDATE)['method']='mean_bias'
     with pytest.raises(ValueError):s.validate_forecast(bad)
+
+
+def test_integrated_vector_uses_exact_same_core_and_forecast_only_guard():
+    obs,hist,current=fixture();issued=INIT+timedelta(hours=8,minutes=20)
+    # Simulate a 6h majority wet forecast ending at +18h and dry at +24h.
+    for m in s.PREVIEW_MODEL_REGISTRY:
+        current[(m,INIT)][1]['hourly']['precipitation'][13:19]=[.2]*6
+    f=s.build_forecast(INIT,issued,'a'*64,current,hist,obs,{},{})
+    vec=f['integrated']['vectors'];assert len(vec)==14
+    wet=next(v for v in vec if v['lead_hours']==18)
+    dry=next(v for v in vec if v['lead_hours']==24)
+    assert wet['forecast_wet_guard'] and wet['raw']['precipitation']==pytest.approx(1)
+    assert wet['guarded']==wet['raw'] and dry['guarded']==dry['corrected']
+    assert all(v['fits']['wind_speed_10m']['candidate']==s.WIND_HOURLY_CANDIDATE for v in vec)
+    assert wet['fits']['pressure_msl']['window_days']==21 and wet['corrected']['pressure_msl']==pytest.approx(1013)
+    assert wet['fits']['dew_point_2m']['window_days']==14 and wet['corrected']['dew_point_2m']==pytest.approx(22)
+    assert wet['corrected']['wind_speed_10m']==pytest.approx(3)
+    assert set(wet['raw'])==set(s.PARAMS) and wet['raw']['temperature_2m']==wet['corrected']['temperature_2m']
+    assert all(s.parse_time(v['valid_utc'])-timedelta(hours=6)>=issued for v in vec)
+    # An observed future wet label cannot change a prospective guard.
+    obs[INIT+timedelta(hours=24)]={**obs_at(INIT),'precipitation':20.}
+    f2=s.build_forecast(INIT,issued,'a'*64,current,hist,obs,{},{});assert f2['integrated']==f['integrated']
+    bad=json.loads(json.dumps(f));bad['integrated']['vectors'][0]['guarded']['pressure_msl']+=1
+    with pytest.raises(ValueError,match='integrated vector'):s.validate_forecast(bad)
+
+
+def test_integrated_fallback_coherence_legacy_and_final_issue_filter():
+    obs,hist,current=fixture();issued=INIT+timedelta(hours=8,minutes=20)
+    # Raw dewpoint can be <= T while a fitted positive correction exceeds T.
+    for y in obs.values():y['dew_point_2m']=28.;y['temperature_2m']=30.
+    for m in s.PREVIEW_MODEL_REGISTRY:
+        current[(m,INIT)][1]['hourly']['temperature_2m']=[25.]*97
+    f=s.build_forecast(INIT,issued,'a'*64,current,hist,obs,{},{})
+    assert f['integrated']['vectors'] and all(v['dewpoint_capped'] and v['corrected']['dew_point_2m']==pytest.approx(25.) for v in f['integrated']['vectors'])
+    legacy=json.loads(json.dumps(f));legacy.pop('integrated')
+    assert s.validate_forecast(legacy)==legacy
+    stale={t:y for t,y in obs.items() if t<INIT-timedelta(hours=49)}
+    z=s.build_forecast(INIT,issued,'a'*64,current,hist,stale,{},{});assert z['integrated']['vectors']
+    assert all(v['raw']==v['corrected']==v['guarded'] and not any(x['active'] for x in v['fits'].values()) for v in z['integrated']['vectors'])
+    # Rebuild only from surviving final-issuance rows after a slow fit.
+    final=INIT+timedelta(hours=19)
+    f['issued_at_utc']=s.timestamp(final)
+    f['rows']=[r for r in f['rows'] if s.parse_time(r['valid_utc'])>final and (r['parameter']!='precipitation' or s.parse_time(r['valid_utc'])-timedelta(hours=6)>=final)]
+    for r in f['rows']:r['receipt_lead_hours']=(s.parse_time(r['valid_utc'])-final).total_seconds()/3600
+    s.attach_integrated(f)
+    assert all(v['lead_hours']>=30 for v in f['integrated']['vectors'])
+    s.validate_forecast(f)
+
+
+def test_integrated_verification_common_wet_dry_no_future_observation():
+    obs,hist,current=fixture();issued=INIT+timedelta(hours=8,minutes=20)
+    for m in s.PREVIEW_MODEL_REGISTRY:current[(m,INIT)][1]['hourly']['precipitation'][13:19]=[.2]*6
+    f=s.build_forecast(INIT,issued,'a'*64,current,hist,obs,{},{});v=f['integrated']['vectors']
+    for h in range(13,25):obs[INIT+timedelta(hours=h)]={**obs_at(INIT),'precipitation':.3 if h<=18 else 0.}
+    before=s.verify_forecasts([f],obs,issued,{})['integrated']
+    assert before['verified_vectors']==0 and before['pending_or_unobserved_vectors']==len(v)
+    result=s.verify_forecasts([f],obs,INIT+timedelta(hours=24),{})['integrated']
+    assert result['verified_vectors']==2 and result['distinct_wet_valid_times']==1
+    assert result['all_three_fits_active_vectors']==2 and not result['review_minimum_sample_met']
+    q=next(x for x in result['scores'] if x['parameter']=='pressure_msl' and x['lead_bucket']=='all' and x['observed_regime']=='wet')
+    assert q['loss']['raw']==pytest.approx(1) and q['loss']['corrected']==pytest.approx(0) and q['loss']['guarded']==pytest.approx(1)
+    j=next(x for x in result['joint_scores'] if x['lead_bucket']=='all' and x['observed_regime']=='all')
+    assert j['guard_hits']==1 and j['guard_misses']==0 and j['guard_false_alarms']==0
+    # Removing one observation constituent excludes the entire joint vector.
+    obs[INIT+timedelta(hours=24)]['dew_point_2m']=None
+    assert s.verify_forecasts([f],obs,INIT+timedelta(hours=24),{})['integrated']['verified_vectors']==1

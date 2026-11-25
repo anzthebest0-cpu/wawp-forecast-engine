@@ -35,6 +35,9 @@ WEST_SECTOR='west_sector_225_315_ge2kt'
 WEST_CANDIDATES={'recent30_sector_frequency':'local_frequency','blend25_model75_recent30_sector':'vote_frequency_blend'}
 SOURCE_CONTRACT='wawp-shadow-source-v1'
 FORECAST_CONTRACT='wawp-prospective-shadow-v1'
+INTEGRATED_CONTRACT='wawp-integrated-shadow-v1'
+INTEGRATED_CORRECTED=('dew_point_2m','pressure_msl','wind_speed_10m')
+INTEGRATED_FIELDS=tuple(PARAMS)
 
 
 def digest(data):return hashlib.sha256(data).hexdigest()
@@ -314,8 +317,68 @@ def build_forecast(init,issued,source,current,history,obs,obs_inventory,train_in
                 value=freq if method=='local_frequency' else .25*raw+.75*freq
                 rows.append({'parameter':var,'lead_bucket':group,'lead_hours':lead,'valid_utc':timestamp(valid),'receipt_lead_hours':(valid-issued).total_seconds()/3600,'raw_core':raw,'persistence':same_hour_persistence(obs,valid,init-timedelta(microseconds=1),var),'candidate':name,'members':list(CORE),'method':method,'window_days':days,'prediction':value,'raw_same_cohort':raw,'local_frequency':freq,'training_n':len(tr),'training_days':len({t.date() for t,_ in tr}),'training_last_valid_utc':timestamp(max(t for t,_ in tr))})
     report={'contract':FORECAST_CONTRACT,'status':'research_only_not_operational','initialization_utc':timestamp(init),'issued_at_utc':timestamp(issued),'source_sha256':source,'source_models':sorted(m for m,_ in current),'latest_training_observation_utc':timestamp(latest) if latest else None,'awos_freshness_gate_passed':fresh,'observation_sha256':obs_inventory,'training_archive_sha256':train_inventory,'rows':rows,'withheld':dict(withheld)}
+    attach_integrated(report)
     validate_forecast(report)
     return report
+
+
+def integrated_vectors(rows):
+    """Derive one immutable, coherent same-cycle vector from existing shadow rows.
+
+    Missing fits are genuine raw fallbacks; missing raw fields withhold the
+    vector. The rain guard uses only the contemporaneous raw model vote,
+    never the verifying rainfall. No second model acquisition or fit.
+    """
+    by_key={(r['valid_utc'],r['parameter'],r['candidate']):r for r in rows}
+    times=sorted({r['valid_utc'] for r in rows if r['parameter']=='precipitation' and r['candidate']=='raw_core'})
+    vectors=[]
+    for valid in times:
+        baseline={p:by_key.get((valid,p,'raw_core')) for p in INTEGRATED_FIELDS}
+        if any(r is None for r in baseline.values()):continue
+        lead=baseline['precipitation']['lead_hours'];bucket=baseline['precipitation']['lead_bucket']
+        raw={p:r['prediction'] for p,r in baseline.items()}
+        if raw['dew_point_2m']>raw['temperature_2m']:continue
+        source_candidates={
+            'dew_point_2m':'diurnal_bias_7_core_14d',
+            'pressure_msl':f'diurnal_bias_7_core_{DIURNAL_WINDOWS["pressure_msl"][bucket]}d',
+            'wind_speed_10m':WIND_HOURLY_CANDIDATE,
+        }
+        corrected=dict(raw);fit={}
+        for p,name in source_candidates.items():
+            r=by_key.get((valid,p,name))
+            if r is None:
+                fit[p]={'active':False,'candidate':name,'reason':'fit_withheld_raw_fallback'}
+                continue
+            if r['raw_core']!=raw[p] and abs(r['raw_core']-raw[p])>1e-10:
+                raise ValueError('integrated raw cohort mismatch')
+            corrected[p]=r['prediction']
+            fit[p]={'active':True,'candidate':name,'window_days':r['window_days'],
+                    'training_n':r['training_n'],'training_days':r['training_days'],
+                    'training_last_valid_utc':r['training_last_valid_utc']}
+        capped=corrected['dew_point_2m']>raw['temperature_2m']
+        corrected['dew_point_2m']=min(corrected['dew_point_2m'],raw['temperature_2m'])
+        guard=raw['precipitation']>=.5
+        guarded=dict(raw if guard else corrected)
+        # West-sector is an optional paired diagnostic: the integrated policy
+        # uses the short-lead blend only, otherwise retains its raw vote.
+        sector=by_key.get((valid,WEST_SECTOR,'blend25_model75_recent30_sector'))
+        diagnostic=None if sector is None else {
+            'raw':sector['raw_core'],
+            'candidate':sector['prediction'] if lead<=24 else sector['raw_core'],
+            'recent_frequency':sector['local_frequency'],
+        }
+        vectors.append({'valid_utc':valid,'lead_hours':lead,'lead_bucket':bucket,
+                        'receipt_lead_hours':baseline['precipitation']['receipt_lead_hours'],
+                        'raw':raw,'corrected':corrected,'guarded':guarded,
+                        'forecast_wet_guard':guard,'dewpoint_capped':capped,
+                        'fits':fit,'west_sector':diagnostic})
+    return vectors
+
+
+def attach_integrated(data):
+    """Call also after final issuance-time row filtering; never mutate old archives."""
+    data['integrated']={'contract':INTEGRATED_CONTRACT,'status':'research_only_no_promotion',
+                        'vectors':integrated_vectors(data['rows'])}
 
 
 def validate_forecast(data):
@@ -353,11 +416,72 @@ def validate_forecast(data):
             diurnal=members==CORE and r['method']=='diurnal_bias' and var in DIURNAL_WINDOWS and days==DIURNAL_WINDOWS[var][r['lead_bucket']]
             wind_hourly=hourly and members==CORE and r['method']=='diurnal_bias' and days==14 and r['raw_core']==r['raw_same_cohort']
             if not ((not hourly and (original or diurnal)) or wind_hourly) or r['training_n']<40 or r['training_days']<math.ceil(.7*days) or not data['awos_freshness_gate_passed'] or parse_time(r['training_last_valid_utc'])>=init:raise ValueError('unqualified or future training data')
+    # Older immutable forecasts legitimately predate the integrated policy.
+    if 'integrated' in data:
+        z=data['integrated']
+        if z.get('contract')!=INTEGRATED_CONTRACT or z.get('status')!='research_only_no_promotion' or z.get('vectors')!=integrated_vectors(data['rows']):
+            raise ValueError('invalid integrated vector derivation')
     return data
+
+
+def verify_integrated(forecasts,obs,now):
+    """Common complete-vector scoring, all three variants on identical labels."""
+    groups=collections.defaultdict(list);pending=0;issued_vectors=0;active_vectors=0
+    for f in forecasts:
+        for v in f.get('integrated',{}).get('vectors',[]):
+            issued_vectors+=1;t=parse_time(v['valid_utc'])
+            if t>now:pending+=1;continue
+            actual={p:obs_at(obs,t,p) for p in INTEGRATED_FIELDS}
+            if None in actual.values() or actual['dew_point_2m']>actual['temperature_2m']:
+                pending+=1;continue
+            wet=actual['precipitation']>=1;actual['precipitation']=float(wet)
+            active=all(x['active'] for x in v['fits'].values());active_vectors+=int(active)
+            for bucket in ('all',v['lead_bucket']):
+                for regime in ('all','wet' if wet else 'dry'):
+                    groups[bucket,regime].append((t,v,actual,active,wet))
+    scores=[];joint_scores=[]
+    for (bucket,regime),cases in sorted(groups.items()):
+        joint={'lead_bucket':bucket,'observed_regime':regime,'n':len(cases)}
+        for name in ('corrected','guarded'):
+            diffs=np.array([[abs(v['raw'][p]-y[p])-abs(v[name][p]-y[p]) for p in INTEGRATED_CORRECTED] for _,v,y,_,_ in cases])
+            joint[name]={'all_three_improved':int(np.sum(np.all(diffs>1e-10,axis=1))),
+                         'at_least_two_improved':int(np.sum(np.sum(diffs>1e-10,axis=1)>=2)),
+                         'at_least_two_worsened':int(np.sum(np.sum(diffs<-1e-10,axis=1)>=2))}
+        joint['guard_hits']=sum(v['forecast_wet_guard'] and w for _,v,_,_,w in cases)
+        joint['guard_misses']=sum(not v['forecast_wet_guard'] and w for _,v,_,_,w in cases)
+        joint['guard_false_alarms']=sum(v['forecast_wet_guard'] and not w for _,v,_,_,w in cases)
+        joint_scores.append(joint)
+        for p in INTEGRATED_FIELDS:
+            def loss(x,y):
+                if p=='precipitation':return (x-y)**2
+                if p=='wind_direction_10m':return abs(wrap(x-y))
+                return abs(x-y)
+            losses={name:float(np.mean([loss(v[name][p],y[p]) for _,v,y,_,_ in cases])) for name in ('raw','corrected','guarded')}
+            scores.append({'parameter':p,'lead_bucket':bucket,'observed_regime':regime,
+                           'metric':'Brier' if p=='precipitation' else 'circular_MAE' if p=='wind_direction_10m' else 'MAE',
+                           'n':len(cases),'distinct_valid_times':len({t for t,*_ in cases}),
+                           'distinct_days':len({t.date() for t,*_ in cases}),
+                           'all_three_fits_active_n':sum(a for _,_,_,a,_ in cases),
+                           'field_fit_active_n':sum(v['fits'].get(p,{}).get('active',False) for _,v,_,_,_ in cases),
+                           'guard_active_n':sum(v['forecast_wet_guard'] for _,v,_,_,_ in cases),
+                           'wet_distinct_times':len({t for t,_,_,_,w in cases if w}),
+                           'loss':losses})
+    all_cases=groups.get(('all','all'),[])
+    days=len({t.date() for t,*_ in all_cases});wet_times=len({t for t,_,_,_,w in all_cases if w})
+    active_days=len({t.date() for t,_,_,a,_ in all_cases if a})
+    active_wet=len({t for t,_,_,a,w in all_cases if a and w})
+    return {'contract':INTEGRATED_CONTRACT,'status':'research_only_no_promotion',
+            'issued_vectors':issued_vectors,'pending_or_unobserved_vectors':pending,
+            'verified_vectors':len(all_cases),'all_three_fits_active_vectors':active_vectors,
+            'distinct_verified_days':days,'distinct_wet_valid_times':wet_times,
+            'distinct_all_fits_active_days':active_days,'distinct_all_fits_active_wet_times':active_wet,
+            'review_minimum_sample_met':active_days>=30 and active_wet>=20,
+            'scores':scores,'joint_scores':joint_scores}
 
 
 def verify_forecasts(forecasts,obs,now,obs_inventory):
     """Score immutable prior predictions, never today's reforecast of past hours."""
+    forecasts=list(forecasts)
     groups=collections.defaultdict(list);seen=set();pending=0
     for f in forecasts:
         data=validate_forecast(f);init=parse_time(data['initialization_utc']);issued=parse_time(data['issued_at_utc'])
@@ -375,4 +499,4 @@ def verify_forecasts(forecasts,obs,now,obs_inventory):
     for (var,candidate,group),v in sorted(groups.items()):
         arr=np.array([a[1:4] for a in v]);pv=[a for a in v if a[4] is not None]
         scores.append({'parameter':var,'candidate':candidate,'lead_bucket':group,'metric':'Brier' if var in ('precipitation',WEST_SECTOR) else 'MAE','n':len(v),'distinct_valid_times':len({a[0] for a in v}),'distinct_days':len({a[0].date() for a in v}),'event_pairs':sum(a[5]>=1 for a in v) if var in ('precipitation',WEST_SECTOR) else None,'candidate_loss':float(arr[:,0].mean()),'paired_same_cohort_raw_loss':float(arr[:,1].mean()),'paired_core_raw_loss':float(arr[:,2].mean()),'persistence_n':len(pv),'paired_persistence_loss':float(np.mean([a[4] for a in pv])) if pv else None,'candidate_loss_on_persistence_pairs':float(np.mean([a[1] for a in pv])) if pv else None})
-    return {'contract':'wawp-shadow-verification-v1','as_of_utc':timestamp(now),'initializations':len(seen),'pending_or_unobserved_rows':pending,'observation_sha256':obs_inventory,'scores':scores,'status':'research_only_no_automatic_promotion'}
+    return {'contract':'wawp-shadow-verification-v1','as_of_utc':timestamp(now),'initializations':len(seen),'pending_or_unobserved_rows':pending,'observation_sha256':obs_inventory,'scores':scores,'integrated':verify_integrated(forecasts,obs,now),'status':'research_only_no_automatic_promotion'}
