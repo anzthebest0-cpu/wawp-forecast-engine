@@ -4,6 +4,22 @@ let pendingSpreadTimeLabels = [];
 let spreadChartsRendered = false;
 let pendingWeightHistoryText = null;
 let weightDriftChart = null;
+let pendingPreviewChartData = null;
+let previewChartsRendered = false;
+function renderPreviewChartsIfVisible() {
+    if (!pendingPreviewChartData || previewChartsRendered || !document.getElementById('tab-meteogram')?.classList.contains('active')) return;
+    if (!previewIsCurrent(pendingPreviewChartData.manifest)) return;
+    previewChartsRendered = true;
+    try {
+        if (typeof ApexCharts !== 'function') throw Error('Chart library unavailable');
+        initTitanCharts(pendingPreviewChartData.chartData);
+        renderWindBarbs(pendingPreviewChartData.rows);
+    } catch (err) {
+        const panel=document.getElementById('tab-meteogram');
+        panel.replaceChildren();const note=document.createElement('p');note.textContent='Meteogram unavailable. Use the hourly matrix and individual model tab if available.';panel.append(note);
+        console.error('Meteogram render failed',err);
+    }
+}
 
 const WEIGHT_DRIFT_COLORS = ['#0ea5e9', '#0284c7', '#f5a623', '#d97706', '#ec4899', '#be185d', '#10b981', '#94a3b8'];
 const WEIGHT_DRIFT_MODEL_LABELS = {
@@ -192,9 +208,8 @@ function updatePullStatus(timestamp) {
         return;
     }
 
-    const normalized = timestamp.endsWith('Z')
-        ? timestamp
-        : timestamp.replace(' ', 'T') + 'Z';
+    const raw = String(timestamp).trim().replace(' ', 'T');
+    const normalized = /(?:Z|[+-]\d{2}:\d{2})$/.test(raw) ? raw : raw + 'Z';
     const pulledAt = new Date(normalized);
     if (Number.isNaN(pulledAt.getTime())) {
         statusEl.innerText = "Pull time unknown";
@@ -202,7 +217,8 @@ function updatePullStatus(timestamp) {
         return;
     }
 
-    const ageHours = Math.max(0, (Date.now() - pulledAt.getTime()) / 36e5);
+    const ageHours = (Date.now() - pulledAt.getTime()) / 36e5;
+    if (ageHours < 0) {statusEl.innerText='Future pull time';statusEl.className='pull-status stale';return;}
     if (ageHours <= 3) {
         statusEl.innerText = "Fresh";
         statusEl.className = "pull-status fresh";
@@ -289,13 +305,13 @@ async function loadDashboard() {
             })
         ]);
         
-        const intelData = results[0].status === 'fulfilled' ? results[0].value : {};
+        const intelData = results[0].status === 'fulfilled' && results[0].value ? results[0].value : {};
         const hasValidatedDefault = intelData.default?.default_selection?.selection_status === 'selected';
         let currentIssuance = hasValidatedDefault ? "default" : "2300";
         let intel = intelData[currentIssuance] || intelData || {};
-        const weights = results[1].status === 'fulfilled' ? results[1].value : {weights: {}};
+        const weights = results[1].status === 'fulfilled' && results[1].value ? results[1].value : {weights: {}};
         const perf = results[2].status === 'fulfilled' ? results[2].value : null;
-        const guidanceJson = results[3].status === 'fulfilled' ? results[3].value : {data: []};
+        const guidanceJson = results[3].status === 'fulfilled' && results[3].value ? results[3].value : {data: []};
         const data = guidanceJson.data || [];
         const generatedAt = guidanceJson.metadata?.latest_data_pull_utc || "Unknown";
 
@@ -304,10 +320,11 @@ async function loadDashboard() {
         const localNow = new Date(now.getTime() + (8 * 60 * 60 * 1000));
         const witaHourStr = localNow.toISOString().replace('T', ' ').substring(0, 13) + ':00:00';
         
-        const futureData = data.filter(d => d.Datetime >= witaHourStr);
+        const futureData = Array.isArray(data) ? data.filter(d => d && Number.isFinite(previewValidEpoch(d.Datetime))) : [];
         const previewManifest = guidanceJson.metadata?.preview_manifest;
-        const currentPreview = previewIsCurrent(previewManifest) && futureData.length > 0;
-        const renderData = currentPreview ? futureData : [];
+        const candidateRows = TitanPreview.windowRows(futureData,now.getTime(),titanPreviewSettings().hours);
+        const currentPreview = previewIsCurrent(previewManifest) && candidateRows.length > 0;
+        const renderData = currentPreview ? candidateRows : [];
         const safetyBanner = document.getElementById('preview-safety-banner');
         if (safetyBanner) safetyBanner.textContent = currentPreview
             ? `RAW MODEL PREVIEW — ${Object.keys(previewManifest.models || {}).length} fresh model collections; unverified equal-model mean of original models (IFS 9 km independent), not an operational forecast. TAF withheld. Expires ${previewManifest.expires_at_utc}. Historical verification remains research-only.`
@@ -317,6 +334,7 @@ async function loadDashboard() {
             for (const id of ['tab-meteogram', 'tab-spread', 'tab-matrix', 'tab-models']) {
                 const el = document.getElementById(id); if (el) el.replaceChildren();
             }
+            pendingPreviewChartData=null;pendingSpreadModelsData=null;pendingSpreadTimeLabels=[];
             window.location.reload();
         }, Math.max(0, Date.parse(previewManifest.expires_at_utc) - Date.now()));
 
@@ -392,7 +410,7 @@ async function loadDashboard() {
                 }
                 target.setUTCHours(next, 0, 0, 0);
                 
-                const diff = target - now;
+                const diff = Math.max(0, target - now);
                 const hrs = Math.floor(diff / 3600000);
                 const mins = Math.floor((diff % 3600000) / 60000);
                 const secs = Math.floor((diff % 60000) / 1000);
@@ -466,7 +484,7 @@ async function loadDashboard() {
                 </div>
             `;
         }
-        for (const [param, modelWeights] of Object.entries(weights.weights)) {
+        for (const [param, modelWeights] of Object.entries(weights.weights || {})) {
             wHtml += `<div class="weight-card"><h3 style="color:var(--accent); margin-top:0;">${param} Weights</h3>`;
             const sortedModels = Object.entries(modelWeights).sort((a,b) => b[1] - a[1]);
             for (const [model, weight] of sortedModels) {
@@ -492,20 +510,23 @@ async function loadDashboard() {
         // 4. Meteogram Tab (using apexcharts from guidance)
         // Convert to [timestamp_ms, value] format expected by apexcharts-theme.js
         const chartData = {
-            tempData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Temperature]),
-            dewData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Dewpoint]),
-            windData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Wind]),
-            gustData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Gust ?? null]),
-            rainData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Rain]),
-            windDirData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Wind Dir.'] ?? null]),
-            highCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['High Clouds'] ?? null]),
-            midCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Mid Clouds'] ?? null]),
-            lowCloudData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d['Low Clouds'] ?? null]),
-            condData: renderData.map(d => [new Date(d.Datetime.replace(' ', 'T') + 'Z').getTime(), d.Condition ?? null])
+            tempData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Temperature]),
+            dewData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Dewpoint]),
+            windData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Wind]),
+            gustData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Gust ?? null]),
+            rainData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Rain]),
+            windDirData: renderData.map(d => [previewValidEpoch(d.Datetime), d['Wind Dir.'] ?? null]),
+            highCloudData: renderData.map(d => [previewValidEpoch(d.Datetime), d['High Clouds'] ?? null]),
+            midCloudData: renderData.map(d => [previewValidEpoch(d.Datetime), d['Mid Clouds'] ?? null]),
+            lowCloudData: renderData.map(d => [previewValidEpoch(d.Datetime), d['Low Clouds'] ?? null]),
+            cumulativeRain: TitanPreview.cumulative(renderData),
+            ttdData: renderData.map(d=>[previewValidEpoch(d.Datetime), TitanPreview.numeric(d.Temperature)===null||TitanPreview.numeric(d.Dewpoint)===null?null:d.Temperature-d.Dewpoint]),
+            pressureData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Pressure ?? null]),
+            condData: renderData.map(d => [previewValidEpoch(d.Datetime), d.Condition ?? null])
         };
         
         // Initialize charts using the new TITAN_BASE design system
-        if (currentPreview) initTitanCharts(chartData);
+        if (currentPreview && renderData.length) { pendingPreviewChartData={chartData,rows:renderData,manifest:previewManifest}; renderPreviewChartsIfVisible(); }
         else for (const id of ['tab-meteogram', 'tab-spread', 'tab-matrix', 'tab-models']) {
             const panel = document.getElementById(id);
             if (panel) { const notice = document.createElement('p'); notice.textContent = 'Current model guidance unavailable.'; panel.prepend(notice); }
@@ -517,7 +538,7 @@ async function loadDashboard() {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>
-                    ${d.Datetime.substring(0, 16)} WITA<br>
+                    ${titanPreviewLabel(previewValidEpoch(d.Datetime))}<br>
                     <span style="font-size:0.8em; color:var(--text-secondary)">${d.Model_Count ?? '—'} models</span>
                 </td>
                 <td style="color: #ef4444">${displayNumber(d.Temperature)}</td>
@@ -525,6 +546,7 @@ async function loadDashboard() {
                 <td style="color: #a855f7">${displayNumber(d.Pressure)}</td>
                 <td>${displayNumber(d['Wind Dir.'], 0, '°')}</td>
                 <td style="color: #10b981">${displayNumber(d.Wind)}</td>
+                <td style="color: #f59e0b">${displayNumber(d.Gust)}</td>
                 <td style="color: #0ea5e9">${displayNumber(d.Rain)}</td>
                 <td>${displayNumber(d['Precip Probability'], 1, '%')}</td>
                 <td>${d.Condition || '-'}</td>
@@ -533,7 +555,7 @@ async function loadDashboard() {
         });
         
         // 5.5 Individual Models
-        if (modelsData && renderData) {
+        if (modelsData && renderData.length) {
             setupIndividualModels(modelsData, renderData.map(d=>d.Datetime));
             pendingSpreadModelsData = modelsData;
             pendingSpreadTimeLabels = renderData.map(d=>d.Datetime).slice(0, SPREAD_MAX_HOURS);
@@ -543,6 +565,7 @@ async function loadDashboard() {
             }
         }
         
+        else if (currentPreview) { for(const id of ['tab-spread','tab-models']) {const p=document.getElementById(id);if(p){const n=document.createElement('p');n.className='section-note';n.textContent='Matching individual model payload unavailable.';p.prepend(n);}} }
         // 6. Regional & Climatology
         try {
             setupRegionalCharts();
@@ -558,7 +581,7 @@ async function loadDashboard() {
         }
         try {
             if (workflowData && (!healthData || !(healthData.model_freshness || []).length)) {
-                setupHealthFreshness(workflowData.model_freshness || []);
+                setupHealthFreshness([]); // never promote legacy freshness rows to current evidence
             }
         } catch (sectionError) {
             console.error("System workflow fallback failed", sectionError);
@@ -582,7 +605,10 @@ async function loadDashboard() {
         document.getElementById('update-time').innerText = "Load failed: " + (e.message || e);
         updatePullStatus("Unknown");
         const tafDisplay = document.getElementById('taf-text-display');
-        if (tafDisplay) tafDisplay.innerText = e.stack || e;
+        if (tafDisplay) tafDisplay.textContent = 'Automated TAF withheld. Dashboard data load failed.';
+        pendingPreviewChartData=null;pendingSpreadModelsData=null;pendingSpreadTimeLabels=[];
+        const banner=document.getElementById('preview-safety-banner');if(banner)banner.textContent='UNAVAILABLE — dashboard data load failed. Automated TAF withheld.';
+        for(const id of ['tab-meteogram','tab-spread','tab-matrix','tab-models']){const panel=document.getElementById(id);if(panel){panel.replaceChildren();const note=document.createElement('p');note.textContent='Current model guidance unavailable.';panel.append(note);}}
     }
 }
 
@@ -592,9 +618,13 @@ function switchTab(tabId) {
     
     document.getElementById(tabId).classList.add('active');
     document.querySelector(`.nav-links li[data-tab="${tabId}"]`).classList.add('active');
+    document.querySelectorAll('.nav-links li[data-tab]').forEach(el=>el.setAttribute('aria-current',el.getAttribute('data-tab')===tabId?'page':'false'));
+    if(window.location.hash !== '#'+tabId) window.history.replaceState(null,'','#'+tabId);
+    setTimeout(()=>window.dispatchEvent(new Event('resize')),0);
 
+    if (tabId === 'tab-meteogram') renderPreviewChartsIfVisible();
     if (tabId === 'tab-spread' && pendingSpreadModelsData && !spreadChartsRendered) {
-        setupSpreadCharts(pendingSpreadModelsData, pendingSpreadTimeLabels);
+        try { setupSpreadCharts(pendingSpreadModelsData, pendingSpreadTimeLabels); } catch (err) { console.error('Spread render failed',err); renderRainHeatmap(pendingSpreadModelsData,pendingSpreadTimeLabels); }
     }
     if (tabId === 'tab-weighter') {
         if (weightDriftChart) {
@@ -620,12 +650,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.querySelectorAll('.nav-links li').forEach(li => {
-        li.addEventListener('click', () => {
-            switchTab(li.getAttribute('data-tab'));
-        });
+    document.querySelectorAll('.nav-links li[data-tab]').forEach(li => {
+        li.setAttribute('role','button'); li.tabIndex = 0;
+        const activate = () => switchTab(li.getAttribute('data-tab'));
+        li.addEventListener('click', activate);
+        li.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
     });
+    document.querySelectorAll('[data-open-tab]').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.getAttribute('data-open-tab'))));
+    const initialTab = window.location.hash.slice(1);
+    if (/^tab-[a-z]+$/.test(initialTab) && document.getElementById(initialTab) && document.querySelector('.nav-links li[data-tab="'+initialTab+'"]')) switchTab(initialTab);
     
+    setupPreviewControls();
+    setupAnalysisWorkspace();
+    setupObservationPanel();
     loadDashboard();
 });
 
@@ -637,210 +674,57 @@ function setupSpreadCharts(modelsData, timeLabels) {
         if (el) el.innerHTML = '';
     });
 
-    const getPercentile = (dataArr, p) => {
-        if(dataArr.length === 0) return null;
-        dataArr.sort((a,b) => a-b);
-        const index = (dataArr.length - 1) * p;
-        const lower = Math.floor(index);
-        const upper = Math.ceil(index);
-        const weight = index - lower;
-        if(upper >= dataArr.length) return dataArr[lower];
-        return dataArr[lower] * (1 - weight) + dataArr[upper] * weight;
+    const percentile=(vals,p)=>{
+        if(!vals.length)return null;
+        const sorted=[...vals].sort((a,b)=>a-b), i=(sorted.length-1)*p, lo=Math.floor(i),hi=Math.ceil(i);
+        return sorted[lo]+(sorted[hi]-sorted[lo])*(i-lo);
     };
-
-    const createPlumeSeries = (param) => {
-        const rangeMaxMin = [];
-        const rangeIQR = [];
-        const medLine = [];
-        
-        for (const t of spreadTimeLabels) {
-            const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
-            const vals = [];
-            for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
-                if (modelVals[t] !== undefined && modelVals[t] !== null) {
-                    vals.push(modelVals[t]);
-                }
-            }
-            if (vals.length > 0) {
-                rangeMaxMin.push({ x: ts, y: [getPercentile(vals, 0.0), getPercentile(vals, 1.0)] });
-                rangeIQR.push({ x: ts, y: [getPercentile(vals, 0.25), getPercentile(vals, 0.75)] });
-                medLine.push({ x: ts, y: getPercentile(vals, 0.50) });
-            }
+    const makeDistribution=(param,paired=false)=>spreadTimeLabels.map(t=>{
+        const vals=[];
+        for(const [model,values] of Object.entries(modelsData[param]||{})){
+            const v=TitanPreview.numeric(values?.[t]);
+            if(v===null)continue;
+            if(paired){const dew=TitanPreview.numeric(modelsData.Dewpoint?.[model]?.[t]);if(dew===null)continue;vals.push(v-dew);}
+            else vals.push(v);
         }
-        return [
-            { name: 'Min-Max Range', type: 'rangeArea', data: rangeMaxMin },
-            { name: 'Interquartile Range', type: 'rangeArea', data: rangeIQR },
-            { name: 'Median', type: 'line', data: medLine }
-        ];
-    };
-
-    const createBarSeries = (param) => {
-        const series = [];
-        for (const [model, modelVals] of Object.entries(modelsData[param] || {})) {
-            const dataPts = [];
-            for (const t of spreadTimeLabels) {
-                const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
-                if (modelVals[t] !== undefined && modelVals[t] !== null) {
-                    dataPts.push([ts, modelVals[t]]);
-                }
-            }
-            series.push({ name: model, data: dataPts, type: 'bar' });
-        }
-        return series;
-    };
-
-    const spreadOptions = (title, yAxisLabel, isBar=false) => ({
-        ...TITAN_BASE,
-        chart: { ...TITAN_BASE.chart, type: isBar ? 'bar' : 'area', height: 280, stacked: isBar, animations: { enabled: false } },
-        title: { text: title, style: { fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' } },
-        stroke: { curve: 'smooth', width: isBar ? 0 : [0, 0, 2] },
-        dataLabels: { enabled: false },
-        tooltip: { enabled: false },
-        markers: { size: 0 },
-        xaxis: { type: 'datetime', labels: { style: { colors: 'var(--text-secondary)' } } },
-        yaxis: { title: { text: yAxisLabel }, labels: { style: { colors: 'var(--text-secondary)' }, formatter: (val) => val.toFixed(1) } },
-        legend: { position: 'top' },
-        fill: isBar ? { opacity: 0.85 } : { opacity: [0.15, 0.4, 1] }
+        return {x:previewValidEpoch(t),vals};
     });
-
-    const tempOptions = spreadOptions('Temperature Plume (°C)', '°C');
-    tempOptions.colors = ['#ef4444', '#ef4444', '#ef4444'];
-    new ApexCharts(document.querySelector('#spread-temp'), { ...tempOptions, series: createPlumeSeries('Temperature') }).render();
-    
-    // T - Td Spread (Fog Risk) Plume
-    const createSpreadTTdPlume = () => {
-        const rangeMaxMin = [];
-        const rangeIQR = [];
-        const medLine = [];
-        for (const t of spreadTimeLabels) {
-            const ts = new Date(t.replace(' ', 'T') + 'Z').getTime();
-            const vals = [];
-            for (const [model, modelVals] of Object.entries(modelsData['Temperature'] || {})) {
-                const temp = modelsData['Temperature'][model]?.[t];
-                const dew = modelsData['Dewpoint']?.[model]?.[t];
-                if (temp !== undefined && temp !== null && dew !== undefined && dew !== null) {
-                    vals.push(Math.max(0, temp - dew));
-                }
-            }
-            if (vals.length > 0) {
-                rangeMaxMin.push({ x: ts, y: [getPercentile(vals, 0.0), getPercentile(vals, 1.0)] });
-                rangeIQR.push({ x: ts, y: [getPercentile(vals, 0.25), getPercentile(vals, 0.75)] });
-                medLine.push({ x: ts, y: getPercentile(vals, 0.50) });
-            }
-        }
-        return [
-            { name: 'Min-Max Range', type: 'rangeArea', data: rangeMaxMin },
-            { name: 'Interquartile Range', type: 'rangeArea', data: rangeIQR },
-            { name: 'Median', type: 'line', data: medLine }
-        ];
+    const draw=(id,title,unit,param,paired=false)=>{
+        const el=document.getElementById(id),points=makeDistribution(param,paired);
+        if(!points.some(p=>p.vals.length)){el.textContent='No matched model values.';return;}
+        const series=[['Minimum',0],['P25',.25],['Median',.5],['P75',.75],['Maximum',1]].map(([name,p])=>({name,data:points.map(d=>[d.x,percentile(d.vals,p)])}));
+        const note=document.createElement('p');note.className='section-note';
+        const counts=points.map(d=>d.vals.length);
+        note.textContent='Contributing models per hour: '+Math.min(...counts)+'–'+Math.max(...counts)+'. Quantiles are descriptive; with one model all five lines coincide.';
+        el.append(note);
+        const mount=document.createElement('div');el.append(mount);
+        const chart=new ApexCharts(mount,{
+            ...TITAN_BASE,chart:{...TITAN_BASE.chart,id:id+'-distribution',type:'line',height:280,animations:{enabled:false}},
+            title:{text:title},series,colors:['#94a3b8','#38bdf8','#0ea5e9','#38bdf8','#94a3b8'],
+            stroke:{curve:'straight',width:[1,1.5,3,1.5,1],dashArray:[4,2,0,2,4]},
+            dataLabels:{enabled:false},xaxis:previewXAxis(),tooltip:{...TITAN_BASE.tooltip,shared:true},
+            yaxis:{title:{text:unit},labels:{formatter:v=>Number.isFinite(v)?v.toFixed(1):'—'}}
+        });
+        chart.render().catch(err=>{console.error('Distribution render failed: '+id,err);mount.textContent='Chart rendering failed; use individual model table.';});
     };
-    
-    const ttdContainer = document.querySelector('#spread-t-td');
-    if (ttdContainer) {
-        const ttdOptions = spreadOptions('T - Td Plume (Fog Risk)', '°C');
-        ttdOptions.colors = ['#a855f7', '#a855f7', '#a855f7'];
-        new ApexCharts(ttdContainer, { ...ttdOptions, series: createSpreadTTdPlume() }).render();
-    }
-    
-    const windOptions = spreadOptions('Wind Speed Plume (kt)', 'kt');
-    windOptions.colors = ['#10b981', '#10b981', '#10b981'];
-    new ApexCharts(document.querySelector('#spread-wind'), { ...windOptions, series: createPlumeSeries('Wind Speed') }).render();
-    
-    const rainOptions = spreadOptions('Rainfall Spread (Bar)', 'mm', true);
-    new ApexCharts(document.querySelector('#spread-rain'), { ...rainOptions, series: createBarSeries('Rainfall') }).render();
+    draw('spread-temp','Temperature model distribution','°C','Temperature');
+    draw('spread-t-td','Temperature − dewpoint distribution','°C','Temperature',true);
+    draw('spread-wind','Wind speed model distribution','kt','Wind Speed');
+    renderRainHeatmap(modelsData,spreadTimeLabels);
 }
 
 function setupRegionalCharts() {
-    const now = new Date();
-    // SIGWX Slots
-    const slots = [0, 6, 12, 18];
-    const currentHour = now.getUTCHours();
-    let anchorHour = Math.max(...slots.filter(h => h <= currentHour));
-    if(anchorHour === -Infinity) anchorHour = 18; // fallback to previous day if needed
-    const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
-    
-    function renderRegionalChartType(chartType) {
-        let sigwxHtml = '';
-        let firstUrl = '';
-        
-        if (chartType === "olr") {
-            document.getElementById('sigwx-slots').innerHTML = "";
-            document.getElementById('sigwx-img').src = "https://cews.bmkg.go.id/operational-early-warning-pdi/0_Latest/olr.cfs.all.indonesia.2_latest.png";
-            return;
-        }
-
-        if (chartType.startsWith("rason_")) {
-            const fn = chartType.replace("rason_", "");
-            
-            // Allow user to select date, defaulting to current UTC date if not set
-            if (!window.rasonDate) window.rasonDate = new Date();
-            
-            const d = String(window.rasonDate.getUTCDate()).padStart(2,'0');
-            const m = String(window.rasonDate.getUTCMonth() + 1).padStart(2,'0');
-            const y = window.rasonDate.getUTCFullYear();
-            const dateStr = `${d}${m}${y}`;
-            const url = `https://web-aviation.bmkg.go.id/rason/${dateStr}/${fn}`;
-            
-            const html = `
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <span style="color:var(--text-secondary); font-size:0.85em;">Select Date:</span>
-                    <input type="date" id="rason-date-picker" value="${y}-${m}-${d}" 
-                           style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px; border-radius:4px;">
-                </div>
-            `;
-            
-            document.getElementById('sigwx-slots').innerHTML = html;
-            document.getElementById('sigwx-img').src = url;
-            
-            document.getElementById('rason-date-picker').addEventListener('change', (e) => {
-                if (e.target.value) {
-                    window.rasonDate = new Date(e.target.value + 'T00:00:00Z');
-                    renderRegionalChartType(chartType);
-                }
-            });
-            return;
-        }
-        
-        // Parse type (e.g. mediumsigwx, highsigwx, windtemp_100)
-        let basePath = chartType;
-        let prefix = "sigwx_";
-        if (chartType.startsWith("windtemp_")) {
-            basePath = "windtemp";
-            prefix = "wt" + chartType.split("_")[1] + "_";
-        }
-        
-        for(let i=0; i<4; i++) {
-            let dt = new Date(now);
-            dt.setUTCHours(anchorHour - (6*i), 0, 0, 0);
-            let yr = dt.getUTCFullYear();
-            let mo = months[dt.getUTCMonth()];
-            let da = String(dt.getUTCDate()).padStart(2, '0');
-            let hr = String(dt.getUTCHours()).padStart(2, '0');
-            let fn = `${prefix}${yr}${mo}${da}${hr}00.jpeg`;
-            let url = `https://web-aviation.bmkg.go.id/model/${basePath}/${yr}/${mo}/${fn}`;
-            if(i===0) firstUrl = url;
-            sigwxHtml += `<button onclick="document.getElementById('sigwx-img').src='${url}'" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); margin-right:8px; padding:5px 10px; border-radius:4px; cursor:pointer;">${da}/${mo} ${hr}Z</button>`;
-        }
-        document.getElementById('sigwx-slots').innerHTML = sigwxHtml;
-        document.getElementById('sigwx-img').src = firstUrl;
+    const entries=[
+        ['regional-olr-img','regional-olr-status','https://cews.bmkg.go.id/operational-early-warning-pdi/0_Latest/olr.cfs.all.indonesia.2_latest.png'],
+        ['sat-img','regional-sat-status','https://inderaja.bmkg.go.id/IMAGE/HIMA/H08_EH_Indonesia.png']
+    ];
+    for(const [id,statusId,url] of entries){
+        const img=document.getElementById(id),status=document.getElementById(statusId);if(!img||!status)continue;
+        img.hidden=true;status.textContent='Requesting source image…';
+        img.addEventListener('load',()=>{img.hidden=false;status.textContent='Image received. Check printed issue/valid time; receipt is not product time.';});
+        img.addEventListener('error',()=>{img.hidden=true;status.textContent='Image unavailable now. Use the official source link; no stale image displayed.';});
+        img.src=url;
     }
-
-    const regionalSelect = document.getElementById('regional-chart-type');
-    if (regionalSelect) {
-        regionalSelect.addEventListener('change', (e) => {
-            renderRegionalChartType(e.target.value);
-        });
-        renderRegionalChartType(regionalSelect.value);
-    }
-    
-    // CB Animation
-    let yesterday = new Date(now);
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-    let yda = String(yesterday.getUTCDate()).padStart(2, '0');
-    let ymo = months[yesterday.getUTCMonth()];
-    let yyr = yesterday.getUTCFullYear();
-    let cbStr = `${yda}${ymo}${yyr}`;
-    document.getElementById('cb-img').src = `https://web-aviation.bmkg.go.id/prakcb/${cbStr}/CB_FORECAST_ANIMATION_${cbStr}.gif`;
 }
 
 function setupVerifyCharts(lbMetrics, ltData) {
@@ -892,6 +776,7 @@ function renderVerification() {
     if(!lbMetrics) return;
     
     if (window.currentVerifySub === 'verify-skill') {
+        renderHistoricalScorecard(lbMetrics);
         // Temperature MAE
         const tempMetrics = lbMetrics['Temperature']?.overall;
         if (tempMetrics && Object.keys(tempMetrics).length > 0) {
@@ -1026,6 +911,9 @@ function renderVerification() {
     else if (window.currentVerifySub === 'verify-diurnal') {
         const param = document.getElementById('diurnal-param-select').value;
         const dData = lbMetrics[param]?.diurnal_bias;
+        const legacyBias=document.getElementById('verify-diurnal-chart');
+        legacyBias.textContent='Legacy diurnal bias plot withheld: the historical exporter filled absent hourly groups and circular errors with zero. Per-hour counts are not exported, so true zero bias cannot be distinguished from missing evidence.';
+        return; // preserve archive; do not reinterpret placeholder values
         if (dData && Object.keys(dData).length > 0) {
             const hours = Array.from({length: 24}, (_, i) => i.toString());
             const models = Object.keys(lbMetrics[param].overall || {});
@@ -1064,8 +952,8 @@ function renderVerification() {
                     <p><strong>Diebold-Mariano Stat (DM):</strong> ${Number(sigData.fused.dm_stat).toFixed(3)}</p>
                     <p><strong>P-Value:</strong> ${Number(sigData.fused.p_value).toFixed(4)}</p>
                     <p><strong>Newey-West Bandwidth:</strong> ${sigData.fused.nw_bandwidth}</p>
-                    <p style="margin-top: 10px; font-weight: bold; color: ${sigData.fused.p_value < 0.05 ? 'var(--green)' : 'var(--amber)'};">
-                        ${sigData.fused.p_value < 0.05 ? '[OK] Weighted ensemble significantly better than equal weighting (p < 0.05)' : '[WARN] Improvement is not statistically significant'}
+                    <p style="margin-top: 10px; font-weight: bold; color: var(--text-secondary);">
+                        ${TitanResearch.significance(sigData.fused.p_value)}
                     </p>
                 </div>
             `;
@@ -1292,24 +1180,8 @@ function setupDiurnalClimatology(clim) {
     const fmt = (v, d=1) => (v === null || v === undefined || Number.isNaN(Number(v))) ? '-' : Number(v).toFixed(d);
     const roundValue = (v, d=1) => (v === null || v === undefined || Number.isNaN(Number(v))) ? null : Number(Number(v).toFixed(d));
     const roundArray = (arr, d=1) => (arr || []).map(v => roundValue(v, d));
-    const peakHour = (arr) => {
-        if (!arr || !arr.length) return null;
-        let bestIdx = -1;
-        let bestVal = -Infinity;
-        arr.forEach((v, idx) => {
-            const n = Number(v);
-            if (!Number.isNaN(n) && n > bestVal) {
-                bestVal = n;
-                bestIdx = idx;
-            }
-        });
-        return bestIdx < 0 ? null : bestIdx;
-    };
-    const meanValid = (arr) => {
-        const vals = (arr || []).map(Number).filter(v => !Number.isNaN(v));
-        if (!vals.length) return null;
-        return vals.reduce((a, b) => a + b, 0) / vals.length;
-    };
+    const peakHour = TitanResearch.peak;
+    const meanValid = TitanResearch.mean;
     const hours = Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`);
     const tempStats = clim.climatology?.temperature?.stats || {};
     const dewStats = clim.climatology?.dewpoint?.stats || {};
@@ -1396,7 +1268,8 @@ function setupDiurnalClimatology(clim) {
         ],
         chart: { ...baseAxis.chart, type: 'line', height: 320 },
         stroke: { width: 3, curve: 'smooth' },
-        colors: ['#ef4444', '#3b82f6', '#a855f7']
+        colors: ['#ef4444', '#3b82f6', '#a855f7'],
+        yaxis: [{seriesName:'Temp C',title:{text:'Temperature / dewpoint (°C)'}},{seriesName:'Temp C',show:false},{seriesName:'RH %',opposite:true,min:0,max:100,title:{text:'RH (%)'}}]
     });
 
     renderChart('#clim-rain-chart', {
@@ -1407,7 +1280,8 @@ function setupDiurnalClimatology(clim) {
         ],
         chart: { ...baseAxis.chart, height: 320 },
         stroke: { width: [0, 3], curve: 'smooth' },
-        colors: ['#0ea5e9', '#f59e0b']
+        colors: ['#0ea5e9', '#f59e0b'],
+        yaxis: [{seriesName:'Rain Frequency %',min:0,max:100,title:{text:'Frequency (%)'}},{seriesName:'Wet-Hour Intensity mm',opposite:true,min:0,title:{text:'Intensity (mm)'}}]
     });
 
     renderChart('#clim-wind-chart', {
@@ -1419,7 +1293,8 @@ function setupDiurnalClimatology(clim) {
         ],
         chart: { ...baseAxis.chart, height: 320 },
         stroke: { width: [3, 0, 3], curve: 'smooth' },
-        colors: ['#10b981', '#f59e0b', '#ef4444']
+        colors: ['#10b981', '#f59e0b', '#ef4444'],
+        yaxis: [{seriesName:'Wind Speed kt',min:0,title:{text:'Wind (kt)'}},{seriesName:'Gust Event %',opposite:true,min:0,max:100,title:{text:'Frequency (%)'}},{seriesName:'Wind Speed kt',show:false,min:0}]
     });
 
     renderChart('#clim-fog-chart', {
@@ -1430,53 +1305,18 @@ function setupDiurnalClimatology(clim) {
         ],
         chart: { ...baseAxis.chart, height: 320 },
         stroke: { width: [3, 0], curve: 'smooth' },
-        colors: ['#a855f7', '#64748b']
+        colors: ['#a855f7', '#64748b'],
+        yaxis:[{seriesName:'Proxy Score',title:{text:'Proxy score (unitless)'}},{seriesName:'High-Risk Frequency %',opposite:true,min:0,max:100,title:{text:'Frequency (%)'}}]
     });
 
-    if(clim.wind_rose?.sectors) {
-        const roseAll = clim.wind_rose.all || [];
-        const roseFreq = roseAll.length
-            ? roseAll.map(d => Number(fmt(d.freq_pct, 2)))
-            : (clim.wind_rose.wet || []).map(d => Number(fmt(d.freq_pct, 2)));
-        const roseColors = [
-            '#38bdf8', '#22d3ee', '#2dd4bf', '#34d399',
-            '#a3e635', '#facc15', '#fb923c', '#f97316',
-            '#ef4444', '#f43f5e', '#e879f9', '#c084fc',
-            '#818cf8', '#60a5fa', '#0ea5e9', '#06b6d4'
-        ];
-        renderChart('#chart-wind-rose', {
-            series: roseFreq,
-            chart: { type: 'polarArea', height: 390, background: 'transparent', toolbar: { show: false } },
-            labels: clim.wind_rose.sectors,
-            stroke: { colors: ['rgba(15,23,42,0.75)'], width: 1 },
-            fill: { opacity: 0.86 },
-            colors: roseColors,
-            theme: { mode: 'dark' },
-            legend: { position: 'right', labels: { colors: '#94a3b8' } },
-            yaxis: { labels: { formatter: value => `${Number(value).toFixed(1)}%` } },
-            plotOptions: {
-                polarArea: {
-                    rings: { strokeWidth: 1, strokeColor: 'rgba(148,163,184,0.22)' },
-                    spokes: { strokeWidth: 1, connectorColors: 'rgba(148,163,184,0.22)' }
-                }
-            },
-            tooltip: {
-                y: {
-                    formatter: (value, opts) => {
-                        const detail = roseAll[opts.seriesIndex] || {};
-                        return `${Number(value).toFixed(2)}% | mean ${fmt(detail.mean_speed_kt)} kt | gust ${fmt(detail.gust_event_pct)}%`;
-                    }
-                }
-            }
-        });
-    }
+    renderDirectionTable(clim);
 
     const rainMatrix = clim.monthly_hourly_matrices?.rain_1h?.matrix;
     if (rainMatrix) {
         const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         const series = rainMatrix.map((row, idx) => ({
             name: monthLabels[idx],
-            data: row.map((v, h) => ({ x: `${String(h).padStart(2,'0')}`, y: v === null ? 0 : Number(Number(v).toFixed(2)) }))
+            data: row.map((v, h) => ({ x: `${String(h).padStart(2,'0')}`, y: v === null || v === undefined ? null : Number(Number(v).toFixed(2)) }))
         }));
         renderChart('#clim-rain-heatmap', {
             chart: { type: 'heatmap', height: 360, background: 'transparent', toolbar: { show: false } },
@@ -1489,12 +1329,12 @@ function setupDiurnalClimatology(clim) {
                     enableShades: false,
                     colorScale: {
                         ranges: [
-                            { from: 0, to: 0.05, color: '#111827', name: 'Dry' },
-                            { from: 0.06, to: 0.5, color: '#0ea5e9', name: 'Light' },
-                            { from: 0.51, to: 1.5, color: '#22c55e', name: 'Wet' },
-                            { from: 1.51, to: 3, color: '#facc15', name: 'Mod' },
-                            { from: 3.01, to: 7, color: '#f97316', name: 'Heavy' },
-                            { from: 7.01, to: 999, color: '#ef4444', name: 'Extreme' }
+                            { from: 0, to: 0.05, color: '#111827', name: '0–0.05 mm' },
+                            { from: 0.06, to: 0.5, color: '#0ea5e9', name: '0.06–0.5 mm' },
+                            { from: 0.51, to: 1.5, color: '#22c55e', name: '0.51–1.5 mm' },
+                            { from: 1.51, to: 3, color: '#facc15', name: '1.51–3 mm' },
+                            { from: 3.01, to: 7, color: '#f97316', name: '3.01–7 mm' },
+                            { from: 7.01, to: 999, color: '#ef4444', name: '>7 mm' }
                         ]
                     }
                 }
@@ -1671,7 +1511,12 @@ function setupIndividualModels(modelsData, timeLabels) {
     const modelSelect = document.getElementById('model-select');
     const tbody = document.querySelector('#model-table tbody');
     if(!modelSelect || !tbody) return;
-    
+    const keys=['Temperature','Dewpoint','Pressure','Wind Dir.','Wind Speed','Wind Gust','Rainfall','Precip Probability','Prob Precip 1.0mm'];
+    const present=[...new Set(keys.flatMap(k=>Object.keys(modelsData[k]||{})))];
+    const names={ECMWF_HRES:'ECMWF IFS 0.25°',ECMWF_IFS_9KM:'ECMWF IFS HRES 9 km (independent)',GFS_GLOBAL:'NOAA GFS Global',ICON_SEAMLESS:'DWD ICON Seamless',GEM_GLOBAL:'ECCC GEM Global',CMA_GRAPES_GLOBAL:'CMA GRAPES Global',JMA_GSM:'JMA GSM',METEOFRANCE_ARPEGE_WORLD:'Météo-France ARPEGE World',UKMO_GLOBAL_10KM:'UKMO Global 10 km'};
+    modelSelect.replaceChildren();
+    for(const key of present){const opt=document.createElement('option');opt.value=key;opt.textContent=names[key]||key;modelSelect.append(opt);}
+    modelSelect.disabled=!present.length;
     function renderModel(modelName) {
         tbody.innerHTML = '';
         if(!timeLabels) return;
@@ -1699,11 +1544,11 @@ function setupIndividualModels(modelsData, timeLabels) {
             }
         }
         if (cadenceBadge) {
-            const output = meta.expected_output_interval_hours ?? 1;
-            const update = meta.provider_update_frequency_hours ?? '-';
+            const output = meta.expected_output_interval_hours;
+            const update = meta.provider_update_frequency_hours;
             const provider = meta.provider || 'Unknown provider';
             const note = meta.hourly_output_note || 'Open-Meteo hourly output grid; provider update frequency may differ.';
-            cadenceBadge.innerText = `${provider} | Output grid: ${output}h | Provider update: ${update}h | ${note}`;
+            cadenceBadge.innerText = `${provider} | Output grid: ${output==null?'Not reported':output+' h'} | Provider update: ${update==null?'Not reported':update+' h'} | ${meta.hourly_output_note || 'Native time step and update frequency may differ; inspect provider metadata.'}`;
         }
         
         timeLabels.forEach(dt => {
@@ -1716,10 +1561,10 @@ function setupIndividualModels(modelsData, timeLabels) {
             const rain = modelsData['Rainfall']?.[modelName]?.[dt];
             const probRain = modelsData['Precip Probability']?.[modelName]?.[dt] ?? modelsData['Prob Precip 1.0mm']?.[modelName]?.[dt];
             
-            if(temp !== undefined) {
+            if([temp, dew, pres, windDir, windSpd, gust, rain, probRain].some(v=>v!==undefined && v!==null)) {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${dt.substring(11, 16)}</td>
+                    <td>${titanPreviewLabel(previewValidEpoch(dt))}</td>
                     <td style="color: #ef4444">${displayNumber(temp)}</td>
                     <td style="color: #3b82f6">${displayNumber(dew)}</td>
                     <td style="color: #a855f7">${displayNumber(pres)}</td>
@@ -1742,109 +1587,7 @@ function setupIndividualModels(modelsData, timeLabels) {
     renderModel(modelSelect.value);
 }
 
+// Remove legacy browser-stored credentials even though the upload form is gone.
 document.addEventListener('DOMContentLoaded', () => {
-    // No automated TAF copy or manual override handlers in preview mode.
-
-    // AWOS Upload Logic (GitHub API Direct - INSECURE)
-    const patInput = document.getElementById('github-pat-input');
-    const awosInput = document.getElementById('awos-file-input');
-    const uploadBtn = document.getElementById('upload-awos-btn');
-    const statusDiv = document.getElementById('upload-status');
-
-    if (patInput) {
-        patInput.value = localStorage.getItem('gh_wawp_pat') || '';
-        patInput.addEventListener('input', (e) => {
-            localStorage.setItem('gh_wawp_pat', e.target.value);
-        });
-    }
-
-    if (uploadBtn && patInput && awosInput) {
-        uploadBtn.addEventListener('click', async () => {
-            const token = patInput.value.trim();
-            if (!token) {
-                showStatus('Error: GitHub Token is required.', 'var(--amber)');
-                return;
-            }
-            if (!awosInput.files || awosInput.files.length === 0) {
-                showStatus('Error: Please select a .dat file.', 'var(--amber)');
-                return;
-            }
-            
-            const file = awosInput.files[0];
-            uploadBtn.innerText = 'Uploading...';
-            uploadBtn.disabled = true;
-            showStatus('Reading file...', 'var(--text-secondary)');
-            
-            try {
-                // Read as base64
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = async () => {
-                    const base64Content = reader.result.split(',')[1];
-                    
-                    // GitHub API push
-                    const repoOwner = "anzthebest0-cpu";
-                    const repoName = "wawp-forecast-engine";
-                    const path = "data/raw_obs/latest.dat";
-                    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}`;
-                    
-                    // Get current file SHA if exists to overwrite
-                    let sha = null;
-                    try {
-                        const getRes = await fetch(apiUrl, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        if (getRes.ok) {
-                            const getJson = await getRes.json();
-                            sha = getJson.sha;
-                        }
-                    } catch(e) {}
-                    
-                    const payload = {
-                        message: `Upload manual AWOS observation: ${file.name}`,
-                        content: base64Content,
-                        branch: "main"
-                    };
-                    if (sha) payload.sha = sha;
-                    
-                    const putRes = await fetch(apiUrl, {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    if (putRes.ok) {
-                        showStatus('Upload Successful! GitHub Actions triggered.', 'var(--green)');
-                        setTimeout(() => {
-                            uploadBtn.innerText = 'Upload to GitHub & Trigger Verification';
-                            uploadBtn.disabled = false;
-                            awosInput.value = '';
-                        }, 3000);
-                    } else {
-                        const errText = await putRes.text();
-                        showStatus(`Upload Failed: ${putRes.status}`, 'var(--crimson)');
-                        console.error(errText);
-                        uploadBtn.innerText = 'Upload to GitHub & Trigger Verification';
-                        uploadBtn.disabled = false;
-                    }
-                };
-            } catch(e) {
-                showStatus(`Error: ${e.message}`, 'var(--crimson)');
-                uploadBtn.innerText = 'Upload to GitHub & Trigger Verification';
-                uploadBtn.disabled = false;
-            }
-        });
-    }
-    
-    function showStatus(msg, color) {
-        if (!statusDiv) return;
-        statusDiv.style.display = 'block';
-        statusDiv.innerText = msg;
-        statusDiv.style.color = color;
-        statusDiv.style.border = `1px solid ${color}`;
-        statusDiv.style.background = 'rgba(255, 255, 255, 0.05)';
-    }
+    try { localStorage.removeItem('gh_wawp_pat'); } catch (_) {}
 });

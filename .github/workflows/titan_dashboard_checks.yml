@@ -1,0 +1,147 @@
+name: TITAN Dashboard Checks
+on:
+  push:
+    branches:
+      - codex/titan-dashboard-phase1
+    paths:
+      - 'docs/**'
+      - 'services/awos-proxy/**'
+      - 'tests/test_preview_ui.js'
+      - 'tests/test_dashboard_browser.cjs'
+      - 'tests/build_dashboard_preview.cjs'
+      - 'tests/test_dashboard_preview.cjs'
+      - 'tests/build_connected_preview.cjs'
+      - 'tests/test_connected_preview.cjs'
+      - 'scripts/serve_connected_preview.py'
+      - 'tests/probe_awosnet_browser.cjs'
+      - 'tests/probe_sigwx_sources.cjs'
+      - 'tests/probe_sigwx_images.cjs'
+      - 'tests/test_analysis_workspace.js'
+      - 'tests/test_observation_ui.js'
+      - 'scripts/probe_awosnet.py'
+      - 'tests/test_probe_awosnet.py'
+      - 'tests/test_research_ui.js'
+      - 'scripts/normalize_awosnet_xml.py'
+      - 'tests/test_normalize_awosnet_xml.py'
+      - '.github/workflows/titan_dashboard_checks.yml'
+  pull_request:
+    paths:
+      - 'docs/index.html'
+      - 'docs/*.js'
+      - 'docs/style.css'
+      - 'services/awos-proxy/**'
+      - 'tests/test_preview_ui.js'
+      - 'tests/test_dashboard_browser.cjs'
+      - 'tests/build_dashboard_preview.cjs'
+      - 'tests/test_dashboard_preview.cjs'
+      - 'tests/build_connected_preview.cjs'
+      - 'tests/test_connected_preview.cjs'
+      - 'scripts/serve_connected_preview.py'
+      - 'tests/probe_awosnet_browser.cjs'
+      - 'tests/probe_sigwx_sources.cjs'
+      - 'tests/probe_sigwx_images.cjs'
+      - 'tests/test_analysis_workspace.js'
+      - 'tests/test_observation_ui.js'
+      - 'scripts/probe_awosnet.py'
+      - 'tests/test_probe_awosnet.py'
+      - 'tests/test_research_ui.js'
+      - 'scripts/normalize_awosnet_xml.py'
+      - 'tests/test_normalize_awosnet_xml.py'
+      - '.github/workflows/titan_dashboard_checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  presentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          node --check docs/research-ui.js
+          node --check docs/observation-ui.js
+          node --check docs/analysis-workspace.js
+          node --check docs/preview-ui.js
+          node --check docs/apexcharts-theme.js
+          node --check docs/dashboard.js
+      - name: Check preview presentation helpers
+        run: |
+          node tests/test_preview_ui.js
+          node tests/test_analysis_workspace.js
+          node tests/test_observation_ui.js
+          node tests/test_research_ui.js
+      - name: Check stateless proxy with synthetic XML
+        run: |
+          cd services/awos-proxy
+          npm install --ignore-scripts --no-audit --no-fund --package-lock=false
+          npm test
+      - name: Check offline AWOSnet probe helpers
+        run: |
+          python -m unittest discover -s tests -p test_probe_awosnet.py
+          python -m unittest discover -s tests -p test_normalize_awosnet_xml.py
+
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned browser test dependencies
+        run: |
+          npm install --no-save --package-lock=false playwright@1.51.1 apexcharts@3.54.1
+          npx playwright install --with-deps chromium
+      - name: Explicitly requested read-only AWOSnet connectivity diagnostic
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[awosnet-probe]')
+        run: python scripts/probe_awosnet.py --allow-http --timeout 5
+      - name: Explicitly requested direct browser AWOSnet test
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[awos-direct-test]')
+        run: node tests/probe_awosnet_browser.cjs
+      - name: Explicitly requested BMKG SIGWX source diagnostic
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[sigwx-source-test]')
+        run: node tests/probe_sigwx_sources.cjs
+      - name: Explicitly requested exact SIGWX image diagnostic
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[sigwx-image-test]')
+        run: node tests/probe_sigwx_images.cjs
+      - name: Run isolated Chromium dashboard smoke tests
+        run: |
+          python -m http.server 8765 --bind 127.0.0.1 --directory docs > /tmp/titan-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for attempt in $(seq 1 20); do curl -fsS http://127.0.0.1:8765/ >/dev/null && break; sleep 1; done
+          node tests/test_dashboard_browser.cjs
+      - name: Build and test standalone interactive design preview
+        run: |
+          node tests/build_dashboard_preview.cjs
+          node tests/test_dashboard_preview.cjs
+      - name: Upload standalone interactive preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: TITAN-interactive-preview
+          path: dashboard-preview/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Build connected review package
+        run: node tests/build_connected_preview.cjs
+      - name: Check actual published data from connected browser preview
+        continue-on-error: true
+        run: node tests/test_connected_preview.cjs
+      - name: Upload connected review package
+        uses: actions/upload-artifact@v4
+        with:
+          name: TITAN-connected-preview
+          path: dashboard-connected-preview/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload browser audit screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-browser-audit
+          path: browser-audit/
+          if-no-files-found: warn
+          retention-days: 7

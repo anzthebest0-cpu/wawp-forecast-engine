@@ -1,0 +1,11 @@
+{
+  "name": "titan-awos-proxy",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test.mjs"
+  },
+  "dependencies": {
+    "saxes": "6.0.0"
+  }
+}

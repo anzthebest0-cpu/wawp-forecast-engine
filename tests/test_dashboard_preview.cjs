@@ -1,0 +1,21 @@
+'use strict';
+const {chromium}=require('playwright');
+const {pathToFileURL}=require('node:url');
+const path=require('node:path');
+const assert=require('node:assert/strict');
+(async()=>{const browser=await chromium.launch({headless:true});try{
+ const page=await browser.newPage({viewport:{width:1440,height:900}});
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.route('**/*',r=>{if(/^https?:/.test(r.request().url()))return r.abort();return r.continue();});
+ await page.goto(pathToFileURL(path.resolve('dashboard-preview/TITAN-preview.html')).href+'#tab-matrix');
+ await page.locator('#data-table tbody tr').first().waitFor();
+ assert.match(await page.locator('#offline-demo-banner').textContent(),/SYNTHETIC DATA/);
+ await page.locator('.nav-links [data-tab="tab-meteogram"]').click();
+ await page.locator('#chart-temp .apexcharts-svg').first().waitFor();
+ await page.locator('.nav-links [data-tab="tab-spread"]').click();
+ await page.locator('#spread-temp .apexcharts-svg').first().waitFor();
+ await page.locator('.nav-links [data-tab="tab-intel"]').click();
+ assert.match(await page.locator('#obs-poll-status').textContent(),/not configured/);
+ assert.deepEqual(errors,[]);await page.close();
+ console.log('PASS: standalone offline interactive preview opened from file URL');
+ }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

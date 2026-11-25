@@ -1,0 +1,13 @@
+name = "titan-awos-proxy"
+main = "worker.mjs"
+compatibility_date = "2026-11-25"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGIN = "https://anzthebest0-cpu.github.io"
+PUBLIC_FEED_AUTHORIZED = "false"
+DISPLAY_CLOCK_UTC_CONFIRMED = "false"
+WIND_TRUE_CONFIRMED = "false"
+
+[observability]
+enabled = false

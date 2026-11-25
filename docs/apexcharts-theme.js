@@ -1,3 +1,9 @@
+// Preview valid times are timezone-naive WITA by the raw-model export contract.
+function previewValidEpoch(value) { return TitanPreview.epoch(value); }
+function previewWitaLabel(epoch, dateOnly = false) { return titanPreviewLabel(epoch,dateOnly); }
+const previewAxisLabel=(_value,timestamp)=>previewWitaLabel(timestamp,true);
+const previewXAxis = () => ({ type:'datetime', tickAmount:6, labels:{datetimeUTC:true, formatter:previewAxisLabel, hideOverlappingLabels:true, rotate:0, trim:false, style:{colors:'#475569',fontSize:'10px'}},title:{text:'Valid time · '+titanPreviewSettings().zone} });
+
 /**
  * ABSOLUTE TITAN — ApexCharts Theme Configuration
  * Drop-in chart options for the Consensus Meteogram tab.
@@ -52,8 +58,10 @@ const TITAN_BASE = {
 
   xaxis: {
     type: 'datetime',
+    tickAmount:6, title:{text:'Valid time · '+titanPreviewSettings().zone},
     labels: {
-      format:     'HH:mm',
+      formatter: previewAxisLabel,
+      hideOverlappingLabels:true, rotate:0, trim:false,
       style: {
         colors:     TITAN_COLORS.text,
         fontSize:   '10px',
@@ -81,7 +89,7 @@ const TITAN_BASE = {
       fontSize:   '11px',
       fontFamily: TITAN_COLORS.font,
     },
-    x: { format: 'dd MMM HH:mm UTC' },
+    x: { formatter: (value) => previewWitaLabel(value) },
   },
 
   legend: {
@@ -103,12 +111,12 @@ const TITAN_BASE = {
   },
 
   stroke: {
-    curve:  'smooth',
+    curve:  'straight',
     lineCap: 'round',
   },
 
   noData: {
-    text:         'Loading forecast…',
+    text:         'No available model values',
     align:        'center',
     verticalAlign: 'middle',
     style: {
@@ -131,7 +139,7 @@ const CHART_TEMP_OPTIONS = {
   },
 
   title: {
-    text:   'TEMPERATURE / DEWPOINT',
+    text:   'TEMPERATURE / DEWPOINT (°C)',
     align:  'left',
     style: {
       fontSize:   '10px',
@@ -151,7 +159,7 @@ const CHART_TEMP_OPTIONS = {
   colors: [TITAN_COLORS.tempRed, TITAN_COLORS.dewBlue],
 
   stroke: {
-    curve:  'smooth',
+    curve:  'straight',
     width:  [2.5, 2],
     dashArray: [0, 4],         // Solid temp, dashed dewpoint
   },
@@ -204,7 +212,7 @@ const CHART_WIND_OPTIONS = {
   },
 
   title: {
-    text:   'WIND SPEED',
+    text:   'WIND SPEED / GUST (kt)',
     align:  'left',
     style: {
       fontSize:   '10px',
@@ -224,7 +232,7 @@ const CHART_WIND_OPTIONS = {
   colors: [TITAN_COLORS.cyan, TITAN_COLORS.amber],
 
   stroke: {
-    curve:  'smooth',
+    curve:  'straight',
     width:  [2, 1.5],
     dashArray: [0, 3],
   },
@@ -264,7 +272,7 @@ const CHART_WIND_OPTIONS = {
     {
       labels: {
         style: { colors: TITAN_COLORS.text, fontSize: '10px', fontFamily: TITAN_COLORS.font },
-        formatter: (v) => v !== undefined ? `${v.toFixed(0)}kt` : '',
+        formatter: (v) => Number.isFinite(v) ? `${v.toFixed(0)}kt` : '—',
       },
       tickAmount: 4,
       min: 0,
@@ -277,10 +285,11 @@ const CHART_WIND_OPTIONS = {
   ],
   
   tooltip: {
+    ...TITAN_BASE.tooltip,
     theme: 'light',
     y: [
-      { formatter: (v) => `${v.toFixed(2)} kt` },
-      { formatter: (v) => `${v.toFixed(2)} kt` }
+      { formatter: (v) => Number.isFinite(v) ? `${v.toFixed(2)} kt` : '—' },
+      { formatter: (v) => Number.isFinite(v) ? `${v.toFixed(2)} kt` : '—' }
     ]
   }
 };
@@ -339,7 +348,7 @@ const CHART_RAIN_OPTIONS = {
   },
 
   title: {
-    text:   'PRECIPITATION',
+    text:   'HOURLY MODEL PRECIPITATION (mm)',
     align:  'left',
     style: {
       fontSize:   '10px',
@@ -394,7 +403,7 @@ const CHART_RAIN_OPTIONS = {
         fontSize:   '10px',
         fontFamily: TITAN_COLORS.font,
       },
-      formatter: (v) => `${v.toFixed(1)}mm`,
+      formatter: (v) => Number.isFinite(v) ? `${v.toFixed(1)}mm` : '—',
     },
     tickAmount: 3,
     min: 0,
@@ -414,7 +423,7 @@ const CHART_CLOUD_HEATMAP_OPTIONS = {
     group: 'meteogram',
   },
   title: {
-    text: 'CLOUD COVER (%)',
+    text: 'MODEL CLOUD COVER (%)',
     align: 'left',
     style: { fontSize: '10px', fontWeight: '600', fontFamily: TITAN_COLORS.font, color: 'rgba(138,154,184,0.7)', letterSpacing: '0.1em' },
     offsetY: 4,
@@ -426,11 +435,11 @@ const CHART_CLOUD_HEATMAP_OPTIONS = {
       useFillColorAsStroke: false,
       colorScale: {
         ranges: [
-          { from: -10, to: 10, color: '#f8fafc', name: 'Clear (0-10%)' },
-          { from: 10.001, to: 40, color: '#bae6fd', name: 'Few (11-40%)' },
-          { from: 40.001, to: 70, color: '#38bdf8', name: 'SCT (41-70%)' },
-          { from: 70.001, to: 90, color: '#0284c7', name: 'BKN (71-90%)' },
-          { from: 90.001, to: 200, color: '#1e1b4b', name: 'OVC (91-100%)' }
+          { from: -10, to: 10, color: '#f8fafc', name: '0–10%' },
+          { from: 10.001, to: 40, color: '#bae6fd', name: '11–40%' },
+          { from: 40.001, to: 70, color: '#38bdf8', name: '41–70%' },
+          { from: 70.001, to: 90, color: '#0284c7', name: '71–90%' },
+          { from: 90.001, to: 200, color: '#1e1b4b', name: '91–100%' }
         ]
       }
     }
@@ -484,15 +493,7 @@ function initTitanCharts(data) {
   );
   chartWind.render();
 
-  // Wind Dir (Histogram)
-  const windDirSeries = [
-    { name: 'Dir (°)', type: 'bar', data: data.windDirData || [] },
-  ];
-  const chartWindDir = new ApexCharts(
-    document.querySelector('#chart-wind-dir'),
-    { ...CHART_WIND_DIR_OPTIONS, series: windDirSeries }
-  );
-  chartWindDir.render();
+  // Wind barbs rendered by the preview UI using the matching direction and speed rows.
 
   // Rain
   const rainSeries = [{ name: 'Rain (mm)', data: data.rainData || [] }];
@@ -515,5 +516,22 @@ function initTitanCharts(data) {
   );
   chartClouds.render();
 
-  return { chartTemp, chartWind, chartWindDir, chartRain, chartClouds };
+  const chartPressure = new ApexCharts(document.querySelector('#chart-pressure'), {
+    ...TITAN_BASE, chart: {...TITAN_BASE.chart, id:'titan-pressure', type:'line', height:200, group:'meteogram'},
+    title:{text:'MODEL PRESSURE (hPa)'}, series:[{name:'Pressure (hPa)',data:data.pressureData || []}],
+    stroke:{curve:'straight',width:2}, colors:['#8b5cf6'],
+    yaxis:{labels:{formatter:v=>Number.isFinite(v)?v.toFixed(1):'—'}}
+  });
+  chartPressure.render();
+  const extras = [
+    ['chart-rain-cumulative','titan-cumrain','Displayed hourly precipitation sum (mm)',data.cumulativeRain,'#0ea5e9','stepline'],
+    ['chart-ttd','titan-ttd','Temperature − dewpoint (°C)',data.ttdData,'#8b5cf6','straight']
+  ].map(([id,chartId,title,values,color,curve])=>{
+    const chart=new ApexCharts(document.getElementById(id),{...TITAN_BASE,
+      chart:{...TITAN_BASE.chart,id:chartId,group:'meteogram',type:'line',height:190},
+      title:{text:title},series:[{name:title,data:values||[]}],colors:[color],
+      stroke:{curve,width:2},yaxis:{labels:{formatter:v=>Number.isFinite(v)?v.toFixed(1):'—'}}});
+    chart.render();return chart;
+  });
+  return { chartTemp, chartWind, chartRain, chartClouds, chartPressure, extras };
 }

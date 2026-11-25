@@ -11,9 +11,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script src="apexcharts-theme.js?v=3.0"></script>
-    <link rel="stylesheet" href="style.css?v=3.0">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
+    <script src="preview-ui.js?v=1"></script>
+    <script src="analysis-workspace.js?v=3-sigwx"></script>
+    <meta name="titan-awos-proxy" content="">
+    <script src="observation-ui.js?v=3"></script>
+    <script src="research-ui.js?v=1"></script>
+    <script src="apexcharts-theme.js?v=3.4-labels"></script>
+    <link rel="stylesheet" href="style.css?v=4.6-audit">
 </head>
 <body>
 
@@ -21,22 +26,26 @@
         <div class="logo-area">
             <h1 class="logo">TITAN</h1>
             <div style="display: flex; gap: 8px; align-items: center;">
-                <div class="version-badge">v114 Migration</div>
+                <div class="version-badge">Workstation preview</div>
                 <button id="theme-toggle" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-glass); padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75em;">☀️/🌙</button>
             </div>
         </div>
-        <ul class="nav-links">
-            <li class="active" data-tab="tab-intel">Intelligence</li>
-            <li data-tab="tab-weighter">Advanced Weighter</li>
-            <li data-tab="tab-meteogram">Consensus Meteogram</li>
-            <li data-tab="tab-spread">Consensus Spread</li>
+        <ul class="nav-links" aria-label="Workstation sections">
+            <li class="nav-group">OPERATIONS</li>
+            <li class="active" data-tab="tab-intel">Forecaster Overview</li>
+            <li data-tab="tab-regional">Multi-scale Analysis</li>
+            <li class="nav-group">MODEL PREVIEW</li>
+            <li data-tab="tab-meteogram">Raw Model Meteogram</li>
+            <li data-tab="tab-spread">Model Disagreement</li>
             <li data-tab="tab-matrix">Hourly Matrix</li>
             <li data-tab="tab-models">Individual Models</li>
-            <li data-tab="tab-regional">Regional Charts</li>
+            <li class="nav-group">HISTORICAL RESEARCH</li>
+            <li data-tab="tab-weighter">Archived Model Weights</li>
             <li data-tab="tab-climatology">Climatology Engine</li>
-            <li data-tab="tab-health" style="color: var(--amber); font-weight: 600;">System Health</li>
-            <li data-tab="tab-verify">Live Verification</li>
-            <li data-tab="tab-persistency">Persistency (Obs)</li>
+            <li data-tab="tab-verify">Historical Verification</li>
+            <li data-tab="tab-persistency">Observation Archive</li>
+            <li class="nav-group">ADMINISTRATION</li>
+            <li data-tab="tab-health">System Health</li>
         </ul>
         <div class="last-update">
             <div>Latest Forecast Pull:</div>
@@ -46,11 +55,12 @@
     </nav>
 
     <main class="content">
+        <div class="preview-controls"><strong>Raw model view</strong><label for="preview-zone">Valid time</label><select id="preview-zone"><option value="WITA">WITA (UTC+8)</option><option value="UTC">UTC</option></select><label for="preview-hours">Horizon</label><select id="preview-hours"><option value="12">12 h</option><option value="24">24 h</option><option value="48">48 h</option><option value="96">96 h</option></select><span class="section-note">Research/archive times retain their original references.</span></div>
         <div id="preview-safety-banner" role="status" style="padding:16px;margin-bottom:18px;border:2px solid var(--amber);border-radius:8px;color:var(--amber);font-weight:600;">MODEL PREVIEW ONLY — current guidance unavailable until freshness is established. Automated TAF withheld. Historical verification is not current operational skill.</div>
         <!-- Tab 1: Intelligence -->
         <section id="tab-intel" class="tab-pane active">
             <div class="header-bar">
-                <h2>Operational Intelligence</h2>
+                <h2>Forecaster Overview</h2>
                 <div>
                     <select id="taf-issuance-select" disabled hidden style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px; margin-right: 15px;">
                         <option value="default">Validated Default</option>
@@ -59,15 +69,56 @@
                         <option value="1100">1100Z Shift</option>
                         <option value="1700">1700Z Shift</option>
                     </select>
-                    <span class="mme-badge" id="consensus-badge">MME Consensus</span>
+                    <span class="mme-badge" id="consensus-badge">Raw model preview</span>
                 </div>
             </div>
             
             <div id="shift-status-banner" style="background: rgba(14, 165, 233, 0.1); border-left: 4px solid var(--cyan); padding: 12px 20px; margin-bottom: 20px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
-                <div style="font-weight: 600; color: var(--cyan);">Next Mandatory TAF Issuance: <span id="next-taf-issuance-label">...</span></div>
+                <div style="font-weight: 600; color: var(--cyan);">Next configured TAF issuance: <span id="next-taf-issuance-label">...</span></div>
                 <div id="shift-countdown" style="font-family: var(--font-mono); font-weight: bold; font-size: 1.1em; color: var(--text-primary);">00:00:00</div>
             </div>
             
+            <div class="panel observation-overview" aria-labelledby="observation-title">
+                <h3 id="observation-title">Station observations · WAWP</h3>
+                <p id="obs-status" role="status" class="section-note">Not connected — no local snapshot loaded</p>
+                <p id="obs-time" class="section-note">Sensor observation time: —</p><p id="obs-epoch-note" class="section-note"></p>
+                <p id="obs-retrieved" class="section-note"></p><p id="obs-poll-status" class="section-note" role="status">Automatic retrieval not configured</p>
+                <div class="observation-links"><label><input id="obs-auto" type="checkbox" disabled> Auto-refresh while browser tab is visible</label><button id="obs-refresh" type="button" disabled>Refresh AWOS now</button></div>
+                <div class="obs-grid">
+                  <div><span>2-min wind</span><strong id="obs-wind_speed_kt">—</strong></div>
+                  <div><span>Direction (true)</span><strong id="obs-wind_direction_deg">—</strong></div>
+                  <div><span>Gust (source interval)</span><strong id="obs-gust_kt">—</strong></div>
+                  <div><span>Temperature</span><strong id="obs-temperature_c">—</strong></div>
+                  <div><span>Dewpoint</span><strong id="obs-dewpoint_c">—</strong></div>
+                  <div><span>QNH (independently confirmed)</span><strong id="obs-qnh_hpa">—</strong></div>
+                  <div><span>Altimeter setting</span><strong id="obs-altimeter_setting_hpa">—</strong></div>
+                  <div><span>10-min temperature</span><strong id="obs-temperature_10min_c">—</strong></div>
+                  <div><span>10-min dewpoint</span><strong id="obs-dewpoint_10min_c">—</strong></div>
+                  <div><span>Relative humidity</span><strong id="obs-relative_humidity_pct">—</strong></div>
+                  <div><span>Current-hour rain (source accumulation)</span><strong id="obs-rain_current_hour_mm">—</strong></div>
+                  <div><span>Solar radiation</span><strong id="obs-solar_wm2">—</strong></div>
+                  <div><span>Density altitude</span><strong id="obs-density_altitude_ft">—</strong></div>
+                </div>
+                <details class="obs-manual"><summary>Import a locally prepared AWOSnet snapshot (JSON)</summary>
+                  <p class="section-note">Authorized, manually normalized snapshot only. Confirm UTC timestamp, units and wind reference. File stays in browser memory; not uploaded or archived. Values withheld after 5 minutes (internal display policy).</p>
+                  <label for="obs-file">Local snapshot file</label> <input id="obs-file" type="file" accept=".json,application/json">
+                </details>
+                <div class="obs-report"><h4>METAR / SPECI · local snapshot or manual entry</h4>
+                  <p id="obs-metar-status" role="status" class="section-note">No manually entered report</p>
+                  <p id="obs-metar-time" class="section-note">Report observation time: —</p>
+                  <pre id="obs-metar-text">—</pre>
+                  <details class="obs-manual"><summary>Paste a report from an authorized source</summary>
+                    <label for="obs-metar-date">Full UTC report date</label><input id="obs-metar-date" type="date">
+                    <label for="obs-metar-input">WAWP METAR / SPECI (one line)</label><textarea id="obs-metar-input" rows="2" maxlength="400"></textarea>
+                    <button id="obs-metar-apply" type="button">Display report</button>
+                  </details>
+                </div>
+                <div class="observation-links"><button id="obs-clear" type="button">Clear local observations</button></div>
+                <p class="section-note">Manual report display checks station and time, not full code validity or authenticity. Values are supplemental only; not official live ingestion. Report display withheld after 60 minutes (internal display policy). Refresh clears local inputs.</p>
+                <div class="observation-links"><a href="http://wawp.awosnet.com/" target="_blank" rel="noopener noreferrer">Open AWOSnet</a><a href="https://web-aviation.bmkg.go.id/web/observation.php" target="_blank" rel="noopener noreferrer">BMKG Aviation observations</a><a href="https://www.bmkg.go.id/cuaca/bandara/WAWP" target="_blank" rel="noopener noreferrer">BMKG WAWP weather</a><a href="https://stamet-tolitoli.bmkg.go.id/cuaca/penerbangan?icao=WAWP" target="_blank" rel="noopener noreferrer">BMKG METAR mirror</a><button type="button" data-open-tab="tab-persistency">Observation archive</button></div>
+                <p class="observation-note">HTTP XML connectivity confirmed by a GitHub runner. Source clock, wind reference, measurement semantics and publication authorization still require confirmation. Automatic on-demand polling is enabled only after an authorized HTTPS proxy is configured. No observation archive is created.</p>
+            </div>
+            <div class="panel overview-links"><h3>Analysis shortcuts</h3><div class="observation-links"><button type="button" data-open-tab="tab-regional">Regional analysis</button><button type="button" data-open-tab="tab-meteogram">Raw model meteogram</button><button type="button" data-open-tab="tab-spread">Model disagreement</button><button type="button" data-open-tab="tab-matrix">Hourly matrix</button></div></div>
             <div class="intel-grid">
                 <!-- TAF Editor Panel -->
                 <div class="panel taf-panel">
@@ -85,7 +136,7 @@
 
                 <!-- Parameters Panel -->
                 <div class="panel bg-panel">
-                    <h3>Base Group Parameters</h3>
+                    <h3>Base Group Parameters (withheld)</h3>
                     <div class="param-grid" id="bg-params">
                         <!-- Populated via JS -->
                     </div>
@@ -102,7 +153,7 @@
             </div>
 
             <div class="panel" style="margin-top: 20px;">
-                <h3>Thunderstorm Proxy Audit</h3>
+                <h3>Thunderstorm Proxy Audit (withheld)</h3>
                 <div id="ts-proxy-audit" style="margin-top: 12px; overflow-x: auto;">Loading proxy calculation...</div>
                 <details style="margin-top: 16px;">
                     <summary style="cursor: pointer; color: var(--cyan); font-weight: 700;">Method and WMO Weather Codes</summary>
@@ -112,7 +163,7 @@
             
             <!-- Narrative Panel -->
             <div class="panel" style="margin-top: 20px;">
-                <h3 style="margin-bottom: 10px;">Narasi Prakiraan Cuaca (AI Summary)</h3>
+                <h3 style="margin-bottom: 10px;">Automated narrative (withheld)</h3>
                 <div id="taf-narration" style="color: var(--text-secondary); line-height: 1.6;">Loading narrative...</div>
             </div>
 
@@ -144,7 +195,7 @@
 
         <!-- Tab 2: Weighter -->
         <section id="tab-weighter" class="tab-pane">
-            <h2>Dynamic Ensemble Weights</h2>
+            <h2>Historical Ensemble Weights</h2><p class="section-note">Archived research diagnostics only; not the weights of the current raw-model preview.</p>
             <div class="weighter-grid" id="weighter-container">
                 <!-- Populated via JS -->
             </div>
@@ -166,7 +217,7 @@
 
         <!-- Tab 3: Meteogram -->
         <section id="tab-meteogram" class="tab-pane">
-            <h2>Consensus Meteogram</h2>
+            <h2>Raw Model Meteogram</h2><p class="section-note">Unverified equal-model preview. Valid times: <span data-preview-zone>WITA (UTC+8)</span>. Not an operational forecast.</p>
             <div class="panel chart-panel">
                 <div id="chart-temp"></div>
             </div>
@@ -179,14 +230,20 @@
             <div class="panel chart-panel">
                 <div id="chart-rain"></div>
             </div>
+            <div class="panel chart-panel"><div id="chart-rain-cumulative"></div><p class="section-note">Sum of displayed hourly equal-model precipitation amounts, starting at the first available hour. Stops at the first missing or non-consecutive hour; changing contributing models can affect the result. Not a validated accumulation forecast.</p>
+            </div>
             <div class="panel chart-panel">
                 <div id="chart-clouds"></div>
+            </div>
+            <div class="panel chart-panel"><div id="chart-pressure"></div>
+            </div>
+            <div class="panel chart-panel"><div id="chart-ttd"></div>
             </div>
         </section>
 
         <!-- Tab 4: Consensus Spread -->
         <section id="tab-spread" class="tab-pane">
-            <h2>Consensus Spread</h2>
+            <h2>Model Disagreement</h2><p class="section-note">Descriptive model ranges, not calibrated probability intervals. Rainfall models are alternative forecasts; never sum them. Valid times: <span data-preview-zone>WITA (UTC+8)</span>.</p>
             <div class="panel chart-panel">
                 <div id="spread-temp"></div>
             </div>
@@ -203,18 +260,19 @@
 
         <!-- Tab 5: Matrix -->
         <section id="tab-matrix" class="tab-pane">
-            <h2>Hourly Matrix</h2>
+            <h2>Hourly Matrix</h2><p class="section-note">Raw-model preview. Valid times: <span data-preview-zone>WITA (UTC+8)</span>. A dash denotes unavailable data.</p>
             <div class="panel">
                 <div class="table-container">
                     <table id="data-table">
                         <thead>
                             <tr>
-                                <th>Time (WITA)</th>
+                                <th>Valid time (<span data-preview-zone>WITA</span>)</th>
                                 <th>Temp (°C)</th>
                                 <th>Dew (°C)</th>
                                 <th>Pressure (hPa)</th>
                                 <th>Wind Dir</th>
                                 <th>Wind Spd (kt)</th>
+                                <th>Gust (kt)</th>
                                 <th>Rain (mm)</th>
                                 <th>Precip Prob</th>
                                 <th>Condition</th>
@@ -230,20 +288,10 @@
 
         <!-- Tab 4.5: Individual Models -->
         <section id="tab-models" class="tab-pane">
-            <h2>Individual Models</h2>
+            <h2>Individual Models</h2><p class="section-note">Raw individual forecasts. Valid times: <span data-preview-zone>WITA (UTC+8)</span>; model collection timestamps are UTC.</p>
             <div style="margin-bottom: 15px;">
                 <label for="model-select" style="color:var(--text-secondary); margin-right:10px;">Select Model:</label>
-                <select id="model-select" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px;">
-                    <option value="ECMWF_HRES">ECMWF IFS 0.25° (open data)</option>
-                    <option value="ECMWF_IFS_9KM">ECMWF IFS HRES 9 km (independent research preview)</option>
-                    <option value="GFS_GLOBAL">GFS_GLOBAL</option>
-                    <option value="ICON_SEAMLESS">ICON_SEAMLESS</option>
-                    <option value="GEM_GLOBAL">GEM_GLOBAL</option>
-                    <option value="CMA_GRAPES_GLOBAL">CMA_GRAPES_GLOBAL</option>
-                    <option value="JMA_GSM">JMA_GSM</option>
-                    <option value="METEOFRANCE_ARPEGE_WORLD">METEOFRANCE_ARPEGE_WORLD</option>
-                    <option value="UKMO_GLOBAL_10KM">UKMO_GLOBAL_10KM</option>
-                </select>
+                <select id="model-select" style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px;"><option value="">Waiting for matching model data</option></select>
                 <span id="model-init-badge" style="margin-left: 15px; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-glass);">Data pull: Unknown</span>
             </div>
             <div id="model-cadence-badge" style="margin-bottom: 15px; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem; color: var(--text-secondary); background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass);">
@@ -254,7 +302,7 @@
                     <table id="model-table">
                         <thead>
                             <tr>
-                                <th>Time (WITA)</th>
+                                <th>Valid time (<span data-preview-zone>WITA</span>)</th>
                                 <th>Temp (°C)</th>
                                 <th>Dew (°C)</th>
                                 <th>Pressure (hPa)</th>
@@ -277,67 +325,87 @@
         <!-- Tab 5: Regional Charts -->
         <section id="tab-regional" class="tab-pane">
             <div class="header-bar">
-                <h2>Regional Charts (SIGWX, CB, Satellite)</h2>
+                <h2>Multi-scale Atmospheric Analysis</h2>
             </div>
             
-            <!-- Regional Charts -->
-            <div class="panel">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h3>Regional Aviation Charts</h3>
-                    <select id="regional-chart-type" style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-glass); padding: 5px; border-radius: 4px;">
-                        <optgroup label="Aviation Hazards">
-                            <option value="mediumsigwx">Medium Level SIGWX (FL100-FL450)</option>
-                            <option value="olr">OLR Chart (Indonesia)</option>
-                        </optgroup>
-                        <optgroup label="Upper Air Sounding (RASON)">
-                            <option value="rason_wind_streamlines_Surface_cubic.png">Surface Wind Streamlines</option>
-                            <option value="rason_wind_streamlines_925p0_cubic.png">925 hPa Wind Streamlines</option>
-                            <option value="rason_wind_streamlines_850p0_cubic.png">850 hPa Wind Streamlines</option>
-                            <option value="rason_vertical_wind_shear_Surface-925p0_cubic.png">Wind Shear Surface-925</option>
-                            <option value="rason_vertical_wind_shear_Surface-850p0_cubic.png">Wind Shear Surface-850</option>
-                            <option value="rason_CAPE_plus_Surface_cubic.png">CAPE+</option>
-                            <option value="rason_LI_Surface_cubic.png">Lifted Index (LI)</option>
-                            <option value="rason_KI_Surface_cubic.png">K-Index (KI)</option>
-                            <option value="rason_TT_Surface_cubic.png">Total Totals (TT)</option>
-                            <option value="rason_SWEAT_Surface_cubic.png">SWEAT Index</option>
-                            <option value="rason_freezing_level_surface_cubic.png">Freezing Level</option>
-                            <option value="rason_RH_Surface_cubic.png">Surface RH</option>
-                            <option value="rason_RH_850p0_cubic.png">850 hPa RH</option>
-                            <option value="rason_RH_700p0_cubic.png">700 hPa RH</option>
-                        </optgroup>
-                    </select>
-                </div>
-                <div style="margin-bottom: 10px;" id="sigwx-slots">
-                    <!-- Buttons will be generated by JS -->
-                </div>
-                <div style="text-align: center;">
-                    <img id="sigwx-img" src="" alt="Regional Chart" style="max-width:100%; border-radius:8px; border:1px solid var(--border-glass);" />
+            <div id="analysis-workspace" class="panel">
+                <p class="section-note">Work from large-scale background to local evidence. These are external source products and diagnostic prompts, not a TITAN-generated forecast or warning. Always inspect source timestamps and validity.</p>
+                <div id="analysis-scales" class="analysis-actions" role="group" aria-label="Atmospheric scale"></div>
+                <h3 id="analysis-question"></h3>
+                <div id="analysis-cards" class="analysis-grid"></div>
+                <div id="analysis-image-viewer" class="analysis-viewer" hidden>
+                    <h3 id="analysis-image-title"></h3>
+                    <div class="analysis-actions"><a id="analysis-image-source" target="_blank" rel="noopener noreferrer"></a><button id="analysis-image-refresh" type="button">Reload image</button><button id="analysis-image-full" type="button">Open full-size image</button></div>
+                    <p id="analysis-image-status" role="status" class="section-note"></p>
+                    <img id="analysis-image" hidden alt="External meteorological chart">
                 </div>
             </div>
-
-            <!-- CB -->
-            <div class="panel" style="margin-top:20px;">
-                <h3>Cumulonimbus (CB) Forecast Animation</h3>
-                <div style="text-align: center;">
-                    <img id="cb-img" src="" alt="CB Forecast Animation" style="max-width:100%; border-radius:8px; border:1px solid var(--border-glass);" />
+            <div class="panel analysis-checklist">
+                <h3>Shift analysis checklist</h3>
+                <p class="section-note">Manual review only. Completion does not certify product validity or authorize issuance. State resets on page refresh.</p>
+                <label><input type="checkbox"> Reviewed global drivers and their time scale</label>
+                <label><input type="checkbox"> Examined low-level circulation and moisture</label>
+                <label><input type="checkbox"> Compared instability and satellite/radar evolution</label>
+                <label><input type="checkbox"> Checked station observations and local climatology</label>
+                <label><input type="checkbox"> Identified uncertainties and operational implications</label>
+            </div>
+            <div class="panel" id="aviation-product-sources">
+                <h3>Official BMKG aviation products</h3>
+                <p class="section-note">Use the provider's date/valid-time selector. Coverage, issue time and flight levels must be read from each selected chart. These are source links, not embedded or TITAN-generated products.</p>
+                <div class="analysis-grid">
+                    <article class="analysis-card"><h4>Medium Level SIGWX</h4><p>Regional significant weather, particularly convective hazards. Inspect the chart's actual vertical coverage and valid time.</p><div class="analysis-actions"><a href="https://web-aviation.bmkg.go.id/web/sigwx_medium_level.php" target="_blank" rel="noopener noreferrer">Open Medium Level SIGWX</a></div></article>
+                    <article class="analysis-card"><h4>High Level SIGWX</h4><p>En-route significant weather, including upper-level CB, turbulence and jet-stream context. Not a surface or aerodrome forecast.</p><div class="analysis-actions"><a href="https://web-aviation.bmkg.go.id/web/sigwx_high_level.php" target="_blank" rel="noopener noreferrer">Open High Level SIGWX</a></div></article>
+                    <article class="analysis-card"><h4>WAFC Wind / Temperature</h4><p>Choose level and forecast hour at the provider.</p><div class="analysis-actions"><a href="https://web-aviation.bmkg.go.id/web/windtemp_full.php" target="_blank" rel="noopener noreferrer">Open Wind / Temp</a></div></article>
+                    <article class="analysis-card"><h4>WAFC CB area forecast</h4><p>Choose the available product and forecast hour; distinct from the weekly CB outlook.</p><div class="analysis-actions"><a href="https://web-aviation.bmkg.go.id/web/seccb.php" target="_blank" rel="noopener noreferrer">Open CB forecast</a><a href="https://web-aviation.bmkg.go.id/web/prediksi_cb.php" target="_blank" rel="noopener noreferrer">Weekly CB outlook</a></div></article>
+                    <article class="analysis-card"><h4>Upper-air sounding and analysis</h4><p>Use sounding observations where available. Legacy gridded RASON image menu retired from TITAN because recent products are unavailable; check provider for recovery.</p><div class="analysis-actions"><a href="https://web-aviation.bmkg.go.id/maps" target="_blank" rel="noopener noreferrer">Open sounding map</a><a href="https://web-aviation.bmkg.go.id/web/upper_air.php" target="_blank" rel="noopener noreferrer">Check upper-air products</a></div></article>
+                    <article class="analysis-card"><h4>SIGMET</h4><p>Check official active significant meteorological information and its validity separately from SIGWX.</p><div class="analysis-actions"><a href="https://web-aviation.bmkg.go.id/web/sigmet.php" target="_blank" rel="noopener noreferrer">Open SIGMET</a></div></article>
                 </div>
             </div>
-
-            <!-- Satellite -->
-            <div class="panel" style="margin-top:20px;">
-                <h3>Himawari-8 Satellite (EH IR)</h3>
-                <div style="text-align: center;">
-                    <img id="sat-img" src="https://inderaja.bmkg.go.id/IMAGE/HIMA/H08_EH_Indonesia.png" alt="Himawari-8 Satellite" style="max-width:100%; border-radius:8px; border:1px solid var(--border-glass);" />
+            <div class="panel" id="sigwx-image-panel">
+                <h3>SIGWX chart comparison · BMKG source</h3>
+                <p class="section-note">Select a chart at the official provider, then paste its exact image address below. HTTPS retrieval only; no generated dates or IDs. If source images are blocked, select an authorized local PNG/JPEG copy. Images stay in browser memory. Verify printed valid time, coverage and flight levels yourself. No automatic freshness claim.</p>
+                <div class="analysis-grid">
+                    <article class="analysis-card">
+                        <h4>Medium Level SIGWX</h4>
+                        <label for="sigwx-medium-url">Exact provider image address</label>
+                        <input id="sigwx-medium-url" type="url" maxlength="600" placeholder="Paste BMKG image address" style="width:100%;box-sizing:border-box">
+                        <div class="analysis-actions"><button id="sigwx-medium-load" type="button">Load image</button><button id="sigwx-medium-clear" type="button">Clear</button><a href="https://web-aviation.bmkg.go.id/web/sigwx_medium_level.php" target="_blank" rel="noopener noreferrer">Select at BMKG</a></div>
+                        <label for="sigwx-medium-file">Or open local chart (PNG/JPEG, max 10 MiB)</label><input id="sigwx-medium-file" type="file" accept="image/png,image/jpeg">
+                        <p id="sigwx-medium-status" role="status" class="section-note">No chart selected.</p>
+                        <a id="sigwx-medium-original" hidden target="_blank" rel="noopener noreferrer">Open original image</a>
+                        <img id="sigwx-medium-image" hidden alt="medium level SIGWX selected chart" style="width:100%;height:auto">
+                    </article>
+                    <article class="analysis-card">
+                        <h4>High Level SIGWX</h4>
+                        <label for="sigwx-high-url">Exact provider image address</label>
+                        <input id="sigwx-high-url" type="url" maxlength="600" placeholder="Paste BMKG image address" style="width:100%;box-sizing:border-box">
+                        <div class="analysis-actions"><button id="sigwx-high-load" type="button">Load image</button><button id="sigwx-high-clear" type="button">Clear</button><a href="https://web-aviation.bmkg.go.id/web/sigwx_high_level.php" target="_blank" rel="noopener noreferrer">Select at BMKG</a></div>
+                        <label for="sigwx-high-file">Or open local chart (PNG/JPEG, max 10 MiB)</label><input id="sigwx-high-file" type="file" accept="image/png,image/jpeg">
+                        <p id="sigwx-high-status" role="status" class="section-note">No chart selected.</p>
+                        <a id="sigwx-high-original" hidden target="_blank" rel="noopener noreferrer">Open original image</a>
+                        <img id="sigwx-high-image" hidden alt="high level SIGWX selected chart" style="width:100%;height:auto">
+                    </article>
                 </div>
             </div>
-
+            <div class="panel" id="regional-olr-panel">
+                <h3>Indonesia · two-day OLR and equatorial waves</h3>
+                <p class="section-note">BMKG CEWS · observed and CFS forecast panels. Read generation date, panel dates and contour legend.</p>
+                <div class="analysis-actions"><a href="https://cews.bmkg.go.id/operational-early-warning-pdi/0_Latest/olr.cfs.all.indonesia.2_latest.png" target="_blank" rel="noopener noreferrer">Open original OLR chart</a></div>
+                <img id="regional-olr-img" hidden alt="BMKG two-day OLR and equatorial waves" style="max-width:100%;border-radius:8px">
+                <p id="regional-olr-status" role="status" class="section-note">Open analysis to request image.</p>
+            </div>
+            <div class="panel" id="regional-satellite-panel">
+                <h3>Himawari · enhanced infrared</h3><p class="section-note">BMKG satellite image. Check printed observation timestamp.</p>
+                <div class="analysis-actions"><a href="https://web-aviation.bmkg.go.id/web/satellite_ir.php" target="_blank" rel="noopener noreferrer">Open BMKG IR source</a></div>
+                <img id="sat-img" hidden alt="BMKG Himawari enhanced infrared satellite image" style="max-width:100%;border-radius:8px">
+                <p id="regional-sat-status" role="status" class="section-note">Open analysis to request image.</p>
             </div>
         </section>
 
         <!-- Tab 6: Climatology Engine -->
         <section id="tab-climatology" class="tab-pane">
             <div class="header-bar">
-                <h2>Diurnal Climatology</h2>
+                <h2>Historical Diurnal Climatology</h2><p class="section-note">Archive-derived descriptive statistics, not a current forecast or a 30-year climate normal. Hours are WITA; sample coverage varies. Fog/low-cloud indicators are proxies, not verified visibility observations.</p>
             </div>
 
             <div class="intel-grid" style="margin-bottom: 20px;">
@@ -363,11 +431,11 @@
                     </div>
                     <div class="clim-quicklook" id="clim-quicklook">
                         <div class="clim-quicklook-card">
-                            <div class="param-label">Daily Temp Range</div>
+                            <div class="param-label">Range of hourly means</div>
                             <div class="param-value" id="clim-temp-range">--</div>
                         </div>
                         <div class="clim-quicklook-card">
-                            <div class="param-label">Wet-Hour Freq</div>
+                            <div class="param-label">Mean hourly wet frequency</div>
                             <div class="param-value" id="clim-wet-freq">--</div>
                         </div>
                         <div class="clim-quicklook-card">
@@ -375,7 +443,7 @@
                             <div class="param-value" id="clim-peak-rain">--</div>
                         </div>
                         <div class="clim-quicklook-card">
-                            <div class="param-label">Mean Wind</div>
+                            <div class="param-label">Mean of hourly wind means</div>
                             <div class="param-value" id="clim-mean-wind">--</div>
                         </div>
                         <div class="clim-quicklook-card">
@@ -390,7 +458,7 @@
                 </div>
 
                 <div class="panel taf-panel">
-                    <h3>Operational Briefing</h3>
+                    <h3>Historical climatology briefing</h3>
                     <div class="taf-content" id="climatology-text">Loading climatology...</div>
                 </div>
             </div>
@@ -448,11 +516,11 @@
                     <div id="clim-fog-chart"></div>
                 </div>
                 <div class="panel chart-panel">
-                    <h3>Wind Rose</h3>
+                    <h3>Wind direction distribution</h3><p class="section-note">All-condition archive frequencies by sector. No speed-class or calm-frequency reconstruction is made from these aggregates.</p>
                     <div id="chart-wind-rose"></div>
                 </div>
                 <div class="panel chart-panel">
-                    <h3>Monthly-Hourly Rain Heatmap</h3>
+                    <h3>Monthly-Hourly Mean Rain</h3><p class="section-note">Mean hourly accumulation, mm; color bins describe means, not heavy-rain event categories. Missing is unavailable, not zero.</p>
                     <div id="clim-rain-heatmap"></div>
                 </div>
             </div>
@@ -509,29 +577,9 @@
                     </div>
                 </div>
 
-                <!-- AWOS Upload Widget -->
                 <div class="panel">
-                    <h3>Manual AWOS Ingestion</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 20px;">Upload local AWOS `.dat` files to the central GitHub repository to trigger Live Verification metrics processing.</p>
-                    
-                    <div style="display: flex; flex-direction: column; gap: 15px;">
-                        <div>
-                            <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9em;">GitHub Access Token (PAT)</label>
-                            <input type="password" id="github-pat-input" placeholder="ghp_xxxxxxxxxxxx" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--col-border); border-radius: 4px; color: var(--text-primary);">
-                            <div style="font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;">*Saved securely in your browser's localStorage.</div>
-                        </div>
-                        
-                        <div>
-                            <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9em;">AWOS Data File (.dat)</label>
-                            <input type="file" id="awos-file-input" accept=".dat" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--col-border); border-radius: 4px; color: var(--text-primary);">
-                        </div>
-                        
-                        <button id="upload-awos-btn" style="background: var(--cyan-glow); color: var(--cyan); border: 1px solid rgba(0, 212, 255, 0.25); padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: all 0.2s;">
-                            Upload to GitHub & Trigger Verification
-                        </button>
-                        
-                        <div id="upload-status" style="display:none; padding: 10px; border-radius: 4px; font-weight: bold; text-align: center;"></div>
-                    </div>
+                    <h3>Authorized AWOS archive ingestion</h3>
+                    <p class="section-note">Public Pages is read-only. Do not enter GitHub tokens or upload raw station files here. Use the established authorized station archive workflow outside the dashboard. Local snapshot import remains available on Forecaster Overview and stays in browser memory.</p>
                 </div>
             </div>
 
@@ -664,12 +712,13 @@
 
         <!-- Tab 9: Live Verification -->
         <section id="tab-verify" class="tab-pane">
+            <h2>Historical verification — frozen research</h2><p class="section-note">Archived scores are not current operational skill. The legacy export omits paired sample counts, confidence intervals and exact per-model coverage; comparisons may use different samples. No model promotion or ranking is inferred.</p>
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 10px; margin-bottom: 20px;">
                 <div style="display: flex; gap: 15px;">
                     <button class="verify-subtab active" data-sub="verify-skill">Skill Analysis</button>
                     <button class="verify-subtab" data-sub="verify-leadtime">Lead-Time Accuracy</button>
-                    <button class="verify-subtab" data-sub="verify-significancy">Significancy</button>
-                    <button class="verify-subtab" data-sub="verify-diurnal">Diurnal Bias</button>
+                    <button class="verify-subtab" data-sub="verify-significancy">Statistical Significance</button>
+                    <button class="verify-subtab" data-sub="verify-diurnal">Diurnal Bias (legacy)</button>
                 </div>
                 
                 <div style="display: flex; gap: 10px; align-items: center;">
@@ -683,6 +732,7 @@
             
             <!-- Skill Analysis Sub-tab -->
             <div id="verify-skill" class="verify-content active">
+                <div class="panel"><h3>Archived metric scorecard</h3><p class="section-note">MAE/RMSE lower is better; bias is forecast minus observation; HSS/CSI are dimensionless event scores. Legacy event thresholds and common-sample comparability must be checked before interpretation. — = missing.</p><div id="historical-scorecard" class="preview-scroll">No archived metrics loaded.</div></div>
                 <div class="intel-grid">
                     <div class="panel chart-panel">
                         <h3>Temperature Accuracy (MAE)</h3>
@@ -761,7 +811,7 @@
 
         <!-- Tab 10: Persistency -->
         <section id="tab-persistency" class="tab-pane">
-            <h2>Historical Persistency (Last 5 Days)</h2>
+            <h2>Historical Observations (Last 5 Days in Archive)</h2><p class="section-note">Archived observations, not a live sensor feed. Check archive coverage before use.</p>
             <div class="panel chart-panel" style="margin-bottom: 20px;">
                 <h3>Temperature & Dewpoint</h3>
                 <div id="persistency-temp-chart">Loading...</div>
@@ -778,6 +828,6 @@
         
     </main>
 
-    <script src="dashboard.js?v=4.0-preview-safety"></script>
+    <script src="dashboard.js?v=4.9-sources"></script>
 </body>
 </html>
