@@ -638,6 +638,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (/^tab-[a-z]+$/.test(initialTab) && document.getElementById(initialTab)) switchTab(initialTab);
     
     setupPreviewControls();
+    setupAnalysisWorkspace();
     loadDashboard();
 });
 
@@ -771,6 +772,9 @@ function setupRegionalCharts() {
     const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
     
     function renderRegionalChartType(chartType) {
+        const note=document.getElementById("regional-product-note");
+        const selected=document.getElementById("regional-chart-type").selectedOptions[0]?.textContent || chartType;
+        note.textContent="BMKG · "+selected+" · requested product only. Check embedded issue/analysis and valid time.";
         let sigwxHtml = '';
         let firstUrl = '';
         
@@ -790,6 +794,7 @@ function setupRegionalCharts() {
             const m = String(window.rasonDate.getUTCMonth() + 1).padStart(2,'0');
             const y = window.rasonDate.getUTCFullYear();
             const dateStr = `${d}${m}${y}`;
+            note.textContent += ` Requested RASON date ${y}-${m}-${d} UTC.`;
             const url = `https://web-aviation.bmkg.go.id/rason/${dateStr}/${fn}`;
             
             const html = `
