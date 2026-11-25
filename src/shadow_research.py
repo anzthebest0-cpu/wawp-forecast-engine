@@ -29,6 +29,8 @@ CONFIG={'temperature_2m':('quantile_map','GEM_GLOBAL'),'pressure_msl':('median_b
 DIURNAL_WINDOWS={'pressure_msl':dict(zip(GROUPS,(21,14,7,7))),'dew_point_2m':dict.fromkeys(GROUPS,14)}
 WIND_HOURLY_GROUPS={'9-24h-hourly':tuple(range(9,25)),'25-48h-hourly':tuple(range(25,49)),'49-72h-hourly':tuple(range(49,73)),'73-96h-hourly':tuple(range(73,97))}
 WIND_HOURLY_CANDIDATE='diurnal_bias_7_core_14d_hourly'
+SPREAD='temperature_dewpoint_spread_2m'
+SPREAD_CANDIDATE='diurnal_spread_7_core_14d_night_hourly'
 SOURCE_CONTRACT='wawp-shadow-source-v1'
 FORECAST_CONTRACT='wawp-prospective-shadow-v1'
 
@@ -51,7 +53,7 @@ def cycle_key(init):return init.strftime('%Y%m%d%HZ')
 
 
 def scalar(v,var):
-    lo,hi=PARAMS[var][1:]
+    lo,hi=(0,85) if var==SPREAD else PARAMS[var][1:]
     return float(v) if isinstance(v,(int,float)) and not isinstance(v,bool) and math.isfinite(v) and lo<=v<=hi else None
 
 
@@ -128,6 +130,9 @@ def read_obs(folder):
 
 
 def obs_at(obs,t,var):
+    if var==SPREAD:
+        a=obs_at(obs,t,'temperature_2m');b=obs_at(obs,t,'dew_point_2m')
+        return scalar(a-b,SPREAD) if a is not None and b is not None else None
     if var=='precipitation':
         values=[scalar(obs.get(t-timedelta(hours=i),{}).get(var),var) for i in range(6)]
         return None if None in values else sum(values)
@@ -136,6 +141,9 @@ def obs_at(obs,t,var):
 
 
 def forecast_at(runs,model,init,lead,var):
+    if var==SPREAD:
+        a=forecast_at(runs,model,init,lead,'temperature_2m');b=forecast_at(runs,model,init,lead,'dew_point_2m')
+        return scalar(a-b,SPREAD) if a is not None and b is not None else None
     data=runs.get((model,init))
     if data is None:return None
     pay=data[1];a=pay['hourly'].get(var)
@@ -168,6 +176,7 @@ def training_cases(runs,obs,members,var,group,init,days):
         for lead in (GROUPS|WIND_HOURLY_GROUPS)[group]:
             t=r+timedelta(hours=lead)
             if not lower<=t<init:continue
+            if var==SPREAD and (t.hour+8)%24 not in (*range(19,24),*range(0,8)):continue
             y=obs_at(obs,t,var);x=[forecast_at(runs,m,r,lead,var) for m in members]
             if y is not None and None not in x:rows.append((t,y,x))
     return rows
@@ -184,7 +193,7 @@ def fit_predict(rows,x,members,var,method,valid=None):
     if method=='mean_bias':z=x-np.mean(err,axis=0)
     elif method=='median_bias':z=x-np.median(err,axis=0)
     elif method=='diurnal_bias':
-        if valid is None or var not in {*DIURNAL_WINDOWS,'wind_speed_10m'}:raise ValueError('diurnal target required')
+        if valid is None or var not in {*DIURNAL_WINDOWS,'wind_speed_10m',SPREAD}:raise ValueError('diurnal target required')
         mean=err.mean(axis=0);local_hour=(valid.hour+8)%24
         sub=err[np.array([(r[0].hour+8)%24==local_hour for r in rows])]
         z=x-(.5*mean+.5*sub.mean(axis=0) if len(sub)>=12 else mean)
@@ -194,7 +203,7 @@ def fit_predict(rows,x,members,var,method,valid=None):
             xp=np.quantile(X[:,i],q);u,ix=np.unique(xp,return_index=True);z.append(x[i]+np.interp(x[i],u,(yp-xp)[ix]))
         z=np.array(z)
     else:raise ValueError('unknown candidate method')
-    if var=='wind_speed_10m':z=np.maximum(0,z)
+    if var in ('wind_speed_10m',SPREAD):z=np.maximum(0,z)
     return aggregate(z,base)
 
 
@@ -260,6 +269,19 @@ def build_forecast(init,issued,source,current,history,obs,obs_inventory,train_in
             raw=aggregate(x,family(CORE));value=fit_predict(tr,x,CORE,var,'diurnal_bias',valid)
             if scalar(value,var) is None:withheld['wind_speed_10m:hourly_invalid_candidate']+=1;continue
             rows.append({'parameter':var,'lead_bucket':group,'lead_hours':lead,'valid_utc':timestamp(valid),'receipt_lead_hours':(valid-issued).total_seconds()/3600,'raw_core':raw,'persistence':same_hour_persistence(obs,valid,init,var),'candidate':WIND_HOURLY_CANDIDATE,'members':list(CORE),'method':'diurnal_bias','window_days':days,'prediction':value,'raw_same_cohort':raw,'training_n':len(tr),'training_days':len({a[0].date() for a in tr}),'training_last_valid_utc':timestamp(max(a[0] for a in tr))})
+    # Derived nighttime T-Td proxy, not a visibility/fog forecast.
+    var=SPREAD;days=14;recent=any(t<init and issued-t<=timedelta(hours=48) and obs_at(obs,t,var) is not None for t in obs)
+    for group,leads in WIND_HOURLY_GROUPS.items():
+        tr=training_cases(history,obs,CORE,var,group,init,days) if fresh and recent else []
+        for lead in leads:
+            valid=init+timedelta(hours=lead)
+            if valid<=issued or (valid.hour+8)%24 not in (*range(19,24),*range(0,8)):continue
+            x=[forecast_at(current,m,init,lead,var) for m in CORE]
+            if None in x:withheld['temperature_dewpoint_spread:core_missing']+=1;continue
+            if not eligible(tr,days):withheld['temperature_dewpoint_spread:training_unavailable']+=1;continue
+            raw=aggregate(x,family(CORE));value=fit_predict(tr,x,CORE,var,'diurnal_bias',valid)
+            if scalar(value,var) is None:withheld['temperature_dewpoint_spread:invalid_candidate']+=1;continue
+            rows.append({'parameter':var,'lead_bucket':group,'lead_hours':lead,'valid_utc':timestamp(valid),'receipt_lead_hours':(valid-issued).total_seconds()/3600,'raw_core':raw,'persistence':same_hour_persistence(obs,valid,init-timedelta(microseconds=1),var),'candidate':SPREAD_CANDIDATE,'members':list(CORE),'method':'diurnal_bias','window_days':days,'prediction':value,'raw_same_cohort':raw,'training_n':len(tr),'training_days':len({a[0].date() for a in tr}),'training_last_valid_utc':timestamp(max(a[0] for a in tr))})
     report={'contract':FORECAST_CONTRACT,'status':'research_only_not_operational','initialization_utc':timestamp(init),'issued_at_utc':timestamp(issued),'source_sha256':source,'source_models':sorted(m for m,_ in current),'latest_training_observation_utc':timestamp(latest) if latest else None,'awos_freshness_gate_passed':fresh,'observation_sha256':obs_inventory,'training_archive_sha256':train_inventory,'rows':rows,'withheld':dict(withheld)}
     validate_forecast(report)
     return report
@@ -276,9 +298,10 @@ def validate_forecast(data):
         keys.add(key)
         var=r['parameter'];members=tuple(r['members'])
         hourly=r['lead_bucket'] in WIND_HOURLY_GROUPS
-        if var not in PARAMS or r['lead_hours'] not in (GROUPS|WIND_HOURLY_GROUPS).get(r['lead_bucket'],()) or not set(members)<=set(data['source_models']):raise ValueError('invalid forecast parameter, lead or members')
-        if hourly and (var!='wind_speed_10m' or r['candidate']!=WIND_HOURLY_CANDIDATE):raise ValueError('unexpected hourly research candidate')
-        if not hourly and r['candidate']==WIND_HOURLY_CANDIDATE:raise ValueError('hourly candidate outside hourly bucket')
+        if var not in {*PARAMS,SPREAD} or r['lead_hours'] not in (GROUPS|WIND_HOURLY_GROUPS).get(r['lead_bucket'],()) or not set(members)<=set(data['source_models']):raise ValueError('invalid forecast parameter, lead or members')
+        if hourly and (var,r['candidate']) not in (('wind_speed_10m',WIND_HOURLY_CANDIDATE),(SPREAD,SPREAD_CANDIDATE)):raise ValueError('unexpected hourly research candidate')
+        if not hourly and (r['candidate'] in (WIND_HOURLY_CANDIDATE,SPREAD_CANDIDATE) or var==SPREAD):raise ValueError('hourly candidate outside hourly bucket')
+        if var==SPREAD and ((t.hour+8)%24 not in (*range(19,24),*range(0,8)) or any(scalar(r[k],SPREAD) is None for k in ('raw_core','raw_same_cohort'))):raise ValueError('invalid nighttime spread row')
         if r['parameter']=='precipitation' and (r['candidate']!='raw_core' or t-timedelta(hours=6)<issued):raise ValueError('unsafe rain forecast')
         if not all(math.isfinite(r[k]) for k in ('prediction','raw_core','raw_same_cohort','receipt_lead_hours')):raise ValueError('invalid numeric forecast')
         if abs(r['receipt_lead_hours']-(t-issued).total_seconds()/3600)>1e-8:raise ValueError('actual receipt lead mismatch')
@@ -288,7 +311,7 @@ def validate_forecast(data):
         if r['candidate']=='raw_core':
             if members!=CORE or r['method']!='family_equal' or r['window_days'] is not None or r['prediction']!=r['raw_core'] or r['prediction']!=r['raw_same_cohort']:raise ValueError('raw baseline inconsistent')
         else:
-            method,extra=CONFIG[var];days=r['window_days'];allowed=[CORE]+([CORE+(extra,)] if extra else [])
+            method,extra=CONFIG.get(var,(None,None));days=r['window_days'];allowed=[CORE]+([CORE+(extra,)] if extra else [])
             original=members in allowed and r['method']==method and days in (14,30)
             diurnal=members==CORE and r['method']=='diurnal_bias' and var in DIURNAL_WINDOWS and days==DIURNAL_WINDOWS[var][r['lead_bucket']]
             wind_hourly=hourly and members==CORE and r['method']=='diurnal_bias' and days==14 and r['raw_core']==r['raw_same_cohort']
