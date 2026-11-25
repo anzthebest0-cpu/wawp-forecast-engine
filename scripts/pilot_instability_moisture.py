@@ -28,7 +28,7 @@ def decode_message(data,key,lead,dx):
         elif short!=var and CODES.get(code)!=var:
             raise ValueError("Wrong field "+str(key)+" "+short)
         if p and (typ!="isobaricInhPa" or get("level")!=p):raise ValueError("Wrong level")
-        if not p and typ!="surface":raise ValueError("Wrong surface level "+typ)
+        if not p and typ!=("mostUnstableParcel" if var=="mucape" else "surface"):raise ValueError("Wrong non-pressure level "+typ)
         if get("stepType")!="instant":raise ValueError("Not instantaneous")
         if var in ("u","v") and get("uvRelativeToGrid")!=0:raise ValueError("Grid-relative winds")
         units=get("units")
@@ -77,10 +77,11 @@ def read_gfs(lead):
     finally:path.unlink(missing_ok=True)
     return fields,.25,{"bytes":len(data),"url":url,"sha256":hashlib.sha256(data).hexdigest(),"fields":meta,"errors":errors,"missing":sorted(map(str,want-set(fields)))}
 
-def read_ecmwf(model,res,lead):
+def read_ecmwf(model,res,lead,only_mucape=False):
     global used
     dx=.1 if res=="0p1" else .25
-    want=COMMON|({("mucape",0)} if model=="ifs" else set())
+    want={("mucape",0)} if only_mucape else COMMON|({("mucape",0)} if model=="ifs" else set())
+    if only_mucape and model!="ifs":raise ValueError("MUCAPE unavailable for this model")
     entries={}
     for suffix in ("-pl","-sfc") if res=="0p1" else ("",):
         url=f"https://data.ecmwf.int/forecasts/20261125/00z/{model}/{res}/oper/20261125000000-{lead}h-oper-fc{suffix}.grib2"
@@ -193,4 +194,30 @@ def main():
         if lead!=LEADS[-1]:time.sleep(10)
     print("ECMWF attempted bytes",used,flush=True)
     if fail:raise SystemExit(f"{fail} incomplete model/lead results")
-if __name__=="__main__":main()
+def mucape_only():
+    OUT.mkdir(exist_ok=False)
+    manifest={"cycle":INIT.isoformat(),"scope":"MUCAPE-only repair; previous successful diagnostics not repeated","leads":{},"domains":DOMAINS}
+    fail=0
+    for lead in LEADS:
+        data={};record={}
+        for label,model,res in MODELS:
+            if model!="ifs":continue
+            try:
+                fields,dx,meta=read_ecmwf(model,res,lead,only_mucape=True)
+                if ("mucape",0) not in fields or meta["errors"] or meta["missing"]:raise ValueError(str(meta))
+                arr=fields["mucape",0]
+                data[label]=({"mucape":arr},dx);record[label]=meta
+                print("PASS_MUCAPE",lead,label,json.dumps(meta["fields"]),flush=True)
+            except Exception as e:
+                fail+=1;record[label]={"error":str(e)};print("FAIL_MUCAPE",lead,label,str(e),flush=True)
+        for domain in DOMAINS:plot(data,lead,"mucape",domain)
+        manifest["leads"][str(lead)]=record
+        (OUT/"manifest.json").write_text(json.dumps(manifest,indent=2))
+        if lead!=LEADS[-1]:time.sleep(10)
+    if fail:raise SystemExit(f"{fail} MUCAPE failures")
+
+if __name__=="__main__":
+    import sys
+    if sys.argv[1:]==["--mucape-only"]:mucape_only()
+    elif not sys.argv[1:]:main()
+    else:raise SystemExit("Unknown arguments")
