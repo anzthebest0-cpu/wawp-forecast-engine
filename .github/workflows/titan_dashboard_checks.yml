@@ -8,6 +8,8 @@ on:
       - 'services/awos-proxy/**'
       - 'tests/test_preview_ui.js'
       - 'tests/test_dashboard_browser.cjs'
+      - 'tests/build_dashboard_preview.cjs'
+      - 'tests/test_dashboard_preview.cjs'
       - 'tests/probe_awosnet_browser.cjs'
       - 'tests/test_analysis_workspace.js'
       - 'tests/test_observation_ui.js'
@@ -25,6 +27,8 @@ on:
       - 'services/awos-proxy/**'
       - 'tests/test_preview_ui.js'
       - 'tests/test_dashboard_browser.cjs'
+      - 'tests/build_dashboard_preview.cjs'
+      - 'tests/test_dashboard_preview.cjs'
       - 'tests/probe_awosnet_browser.cjs'
       - 'tests/test_analysis_workspace.js'
       - 'tests/test_observation_ui.js'
@@ -94,6 +98,17 @@ jobs:
           trap 'kill "$server" || true' EXIT
           for attempt in $(seq 1 20); do curl -fsS http://127.0.0.1:8765/ >/dev/null && break; sleep 1; done
           node tests/test_dashboard_browser.cjs
+      - name: Build and test standalone interactive design preview
+        run: |
+          node tests/build_dashboard_preview.cjs
+          node tests/test_dashboard_preview.cjs
+      - name: Upload standalone interactive preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: TITAN-interactive-preview
+          path: dashboard-preview/
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload browser audit screenshots
         if: always()
         uses: actions/upload-artifact@v4
