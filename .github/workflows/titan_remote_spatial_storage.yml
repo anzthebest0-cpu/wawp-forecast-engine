@@ -1,0 +1,62 @@
+name: TITAN real remote spatial storage rehearsal
+on:
+  push:
+    branches: [codex/titan-remote-spatial-storage]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: titan-remote-spatial-validation
+  cancel-in-progress: false
+jobs:
+  spatial:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-cache-*
+          run-id: '45721468170'
+          github-token: ${{ github.token }}
+          path: cache-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-full-integrated-review-site
+          run-id: '45729933917'
+          github-token: ${{ github.token }}
+          path: old-site
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-refined-review-site
+          run-id: '45731053151'
+          github-token: ${{ github.token }}
+          path: refined-site
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update -qq && sudo apt-get install -y rclone
+      - run: python -m pip install "numpy>=2,<3" pillow "requests>=2.32,<3"
+      - name: Upload and validate real frozen forecast archives in isolated Drive prefix
+        env:
+          WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
+          WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$WAWP_RCLONE_CONFIG" && test -n "$WAWP_ARCHIVE_FOLDER_ID"
+          umask 077
+          export RCLONE_CONFIG="$RUNNER_TEMP/titan-spatial-fixture.conf"
+          export RCLONE_CONFIG_WAWP_ROOT_FOLDER_ID="$WAWP_ARCHIVE_FOLDER_ID"
+          trap 'rm -f "$RCLONE_CONFIG"' EXIT
+          printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
+          unset WAWP_RCLONE_CONFIG
+          PYTHONPATH=. python scripts/rehearse_titan_remote_spatial_storage.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-remote-spatial-storage-report
+          path: remote-spatial-storage-report.json
+          retention-days: 30
+          if-no-files-found: warn
