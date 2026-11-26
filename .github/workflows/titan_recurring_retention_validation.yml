@@ -1,0 +1,30 @@
+name: TITAN recurring checkpoint retention repair validation
+on:
+  push:
+    branches: [codex/titan-recurring-retention-repair]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update -qq && sudo apt-get install -y rclone zstd
+      - run: python -m pip install -r requirements.txt -c requirements-preview-constraints.txt PyYAML
+      - run: |
+          python - <<'PY'
+          import pathlib,subprocess,yaml
+          workflow=yaml.safe_load(pathlib.Path('.github/workflows/wawp_model_only_refresh.yml').read_text())
+          for job in workflow['jobs'].values():
+              for step in job.get('steps',[]):
+                  if 'run' in step:subprocess.run(['bash','-n'],input=step['run'],text=True,check=True)
+          print('WORKFLOW_SHELL_PASS')
+          PY
+      - run: PYTHONPATH=. python -m pytest tests/test_checkpoint_retention.py -q
+      - run: PYTHONPATH=. python -m pytest -q
