@@ -37,7 +37,7 @@ class Store:
         self.inv=self.t.inventory()
         self.initial=dict(self.inv);self.uploaded=0;self.reused=0;self.read_bytes=0
         self.inventory_calls=1;self.cache_hits=0;self.verified={};self.member_proofs={}
-        require(all(COMMIT.fullmatch(n) or re.fullmatch(r"(numeric|charts|metadata)-[0-9a-f]{64}\.zip|generation-[0-9a-f]{64}\.json",n) for n in self.inv),"Unknown object in resume directory")
+        require(all(n in ("retirement-intent.json","retirement-receipt.json") or COMMIT.fullmatch(n) or re.fullmatch(r"(numeric|charts|metadata)-[0-9a-f]{64}\.zip|generation-[0-9a-f]{64}\.json",n) for n in self.inv),"Unknown object in resume directory")
     def refresh(self,*,added=None,removed=None):
         fresh=self.t.inventory();self.inventory_calls+=1
         expected=dict(self.inv)
