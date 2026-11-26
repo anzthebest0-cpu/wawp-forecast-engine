@@ -1,0 +1,40 @@
+name: TITAN isolated real Drive recurring retention rehearsal
+on:
+  push:
+    branches: [codex/titan-remote-retention-rehearsal]
+permissions:
+  contents: read
+jobs:
+  rehearsal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update -qq && sudo apt-get install -y rclone zstd
+      - run: python -m pip install -r requirements.txt -c requirements-preview-constraints.txt
+      - name: Exercise real Drive with synthetic checkpoints and simulated release
+        env:
+          WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
+          WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$WAWP_RCLONE_CONFIG" && test -n "$WAWP_ARCHIVE_FOLDER_ID"
+          umask 077
+          export RCLONE_CONFIG="$RUNNER_TEMP/titan-fixture-retention.conf"
+          export RCLONE_CONFIG_WAWP_ROOT_FOLDER_ID="$WAWP_ARCHIVE_FOLDER_ID"
+          trap 'rm -f "$RCLONE_CONFIG"' EXIT
+          printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
+          unset WAWP_RCLONE_CONFIG
+          PYTHONPATH=. python scripts/rehearse_remote_recurring_retention.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-remote-retention-report
+          path: remote-retention-report.json
+          retention-days: 30
+          if-no-files-found: warn
