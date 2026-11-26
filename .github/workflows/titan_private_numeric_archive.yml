@@ -1,0 +1,60 @@
+name: TITAN private numerical archive
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/titan_private_numeric_archive.yml']
+  workflow_run:
+    workflows: ['TITAN rolling spatial research refresh']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: Successful main rolling run (or verified transition seed)
+        required: true
+        default: '45902498571'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: titan-private-numerical-archive
+  cancel-in-progress: false
+jobs:
+  archive:
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y rclone
+          python -m pip install -r titan-engine/panel-runtime-lock.txt
+      - name: Archive exact verified regional model caches to private Drive
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
+          WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
+          SOURCE_RUN: ${{ github.event.workflow_run.id || inputs.source_run || '45902498571' }}
+        run: |
+          set -euo pipefail
+          test -n "$WAWP_RCLONE_CONFIG" && test -n "$WAWP_ARCHIVE_FOLDER_ID"
+          umask 077
+          export RCLONE_CONFIG="$RUNNER_TEMP/titan-numeric-archive.conf"
+          export RCLONE_CONFIG_WAWP_ROOT_FOLDER_ID="$WAWP_ARCHIVE_FOLDER_ID"
+          trap 'rm -f "$RCLONE_CONFIG"' EXIT
+          printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
+          unset WAWP_RCLONE_CONFIG
+          python scripts/titan_private_numeric_archive.py "$SOURCE_RUN"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-numeric-archive-report
+          path: titan-numeric-archive-report.json
+          if-no-files-found: warn
+          retention-days: 30
