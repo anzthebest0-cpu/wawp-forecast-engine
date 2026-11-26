@@ -14,8 +14,8 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
     <script src="preview-ui.js?v=2-scroll"></script>
     <script src="analysis-workspace.js?v=4-links"></script>
-    <script defer src="spatial-workspace.js?v=1"></script>
-    <link rel="stylesheet" href="spatial-workspace.css?v=1">
+    <script defer src="spatial-workspace.js?v=2"></script>
+    <link rel="stylesheet" href="spatial-workspace.css?v=2">
     <meta name="titan-awos-proxy" content="">
     <script src="observation-ui.js?v=4-status"></script>
     <script src="research-ui.js?v=1"></script>
@@ -332,12 +332,12 @@
                 <div id="spatial-controls" class="spatial-controls" hidden>
                     <label>Product<select id="spatial-product"></select></label>
                     <label>Domain<select id="spatial-domain"><option value="regional">Regional</option><option value="sulawesi" selected>Sulawesi</option><option value="kolaka">Kolaka</option></select></label>
-                    <label>Valid time (UTC / WITA)<select id="spatial-lead"></select></label>
+                    <label class="spatial-valid-label">Valid time (WITA)<select id="spatial-lead"></select></label>
                     <label>Compare with<select id="spatial-other"><option value="">Single figure</option></select></label>
                     <button type="button" id="spatial-prev">Previous valid time</button><button type="button" id="spatial-next">Next valid time</button>
                 </div>
-                <div id="spatial-panels" class="spatial-panels" aria-live="polite"></div>
-                <dialog id="spatial-zoom" class="spatial-zoom"><button id="spatial-close" type="button">Close</button><img id="spatial-zoom-image" alt="Enlarged spatial chart"></dialog>
+                <p id="spatial-valid-summary" class="section-note" aria-live="polite"></p><p class="section-note">Archived spatial horizon up to H+96; independent of raw point-model controls.</p><div id="spatial-panels" class="spatial-panels" aria-live="polite"></div>
+                <dialog id="spatial-zoom" class="spatial-zoom"><div class="spatial-zoom-tools"><button id="spatial-zoom-toggle" type="button" aria-pressed="false">Native pixels</button><button id="spatial-close" type="button">Close</button></div><div id="spatial-zoom-scroll" class="spatial-zoom-scroll"><img id="spatial-zoom-image" alt="Enlarged spatial chart"></div></dialog>
                 <p class="section-note">GFS, ECMWF IFS/AIFS and DWD ICON. CAPE parcel definitions and gust intervals are not interchangeable. No live observations, automated TAF or new storage architecture. <button type="button" data-open-tab="tab-regional">Open Multi-scale Analysis sources</button></p>
             </div>
         </section>

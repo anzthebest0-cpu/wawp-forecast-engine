@@ -31,6 +31,9 @@ try:
         assert "Window:" in page.locator("#spatial-panels").inner_text()
         page.screenshot(path="integrated-rain.png",full_page=True)
         page.locator("#spatial-panels img").first.click();assert page.locator("#spatial-zoom").evaluate("(x)=>x.open")
+        page.locator("#spatial-zoom-toggle").click()
+        assert page.locator("#spatial-zoom-scroll").evaluate("(x)=>x.classList.contains('native')")
+        page.locator("#spatial-zoom-toggle").click()
         page.locator("#spatial-close").click()
         page.screenshot(path="integrated-desktop.png",full_page=True)
         page.select_option("#spatial-other","");page.select_option("#spatial-product","CAPE_ML");page.select_option("#spatial-lead",missing)
@@ -57,6 +60,12 @@ try:
             mobile.wait_for_function("document.querySelector('#tab-spatial')?.classList.contains('active') && document.querySelector('#spatial-panels img')?.naturalWidth>0")
             assert mobile.locator("#spatial-status").inner_text().startswith("HISTORICAL RESEARCH ONLY")
             assert mobile.locator("#spatial-product").input_value()=="wind925"
+            assert not mobile.locator(".preview-controls").is_visible()
+            assert "UTC" in mobile.locator("#spatial-valid-summary").inner_text() and "WITA" in mobile.locator("#spatial-valid-summary").inner_text()
+            assert mobile.locator("[data-tab=tab-spatial]").evaluate("(x)=>x.scrollWidth<=x.clientWidth+2")
+            assert mobile.locator("#spatial-lead").evaluate("(x)=>x.clientWidth>=180")
+            assert mobile.locator("#spatial-product optgroup").count()==5
+            print("MOBILE_REFINEMENT_PASS",flush=True)
             print("FRESH_MOBILE_DEEP_LINK_PASS",flush=True)
         except Exception:
             print("MOBILE_DIAGNOSTIC",mobile.url,mobile.locator("#spatial-status").inner_text(),mobile.locator("#spatial-panels").inner_text(),flush=True)

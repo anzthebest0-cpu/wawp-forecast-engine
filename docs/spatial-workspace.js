@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded',()=>{
  const root=document.getElementById('titan-spatial'),tab=document.getElementById('tab-spatial');if(!root||!tab)return;
  const $=id=>document.getElementById('spatial-'+id),base=new URL('spatial-preview/',document.baseURI);
  const labels={'gfs':'GFS 0.25°','ifs-025':'IFS 0.25°','ifs-010':'IFS 0.10°','aifs-025':'AIFS 0.25°','icon':'ICON'};
+ const guidance={
+ wind925:'Low-level circulation; 925 hPa may be below model terrain. Streamlines are instantaneous, not trajectories.',wind850:'850 hPa flow; assess convergence with moisture and other levels.',mslp:'Mean sea-level pressure, not station QNH.',PMSL:'ICON native MSLP; separate product.',z500:'Mid-tropospheric geopotential height, not wind directly.',
+ rh700:'Mid-level RH; AIFS RH is derived over liquid water.',rh850:'Low-level RH; AIFS RH is derived over liquid water.',pwv:'Column water vapour, not forecast rainfall.',TQV:'ICON column water vapour on native-centre display remap.',
+ mfc925:'Horizontal pressure-surface moisture flux convergence; positive is convergence. Native-grid derivatives are resolution-sensitive.',mfc850:'Horizontal pressure-surface moisture flux convergence; positive is convergence. Native-grid derivatives are resolution-sensitive.',flux925:'Specific-humidity flux magnitude, not vertically integrated transport.',
+ cape:'GFS surface-based CAPE; not interchangeable with MUCAPE or MLCAPE.',cin:'GFS surface-based inhibition; negative values denote inhibition.',mucape:'IFS most-unstable CAPE; not surface-based CAPE.',CAPE_ML:'ICON native mixed-layer CAPE; distinct parcel definition.',ki:'K-index with liquid-water dewpoint; no universal local thunderstorm threshold.',li:'Approximate 2 m parcel at surface pressure lifted to 500 hPa.',si:'850 hPa parcel lifted to 500 hPa.',shear:'850–200 hPa vector wind difference; not low-level aviation wind shear.',
+ rain:'Compare only identical start and end times.',gust_1h:'Previous-hour maximum gust; not instantaneous gust.',gust_instant:'Instantaneous gust; not a maximum over an interval.',refc:'GFS simulated composite reflectivity; not observed radar.',freeze:'Lowest resolved warm-to-cold 0°C crossing in geopotential metres MSL; not an icing forecast.'};
  let state='idle',entries=[],products=[],times=[];
  function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n}
  function local(path){if(typeof path!=='string'||!/^sources\/[a-z]+\/[A-Za-z0-9_.-]+$/.test(path))throw Error('Unexpected chart path');return new URL(path,base).href}
@@ -14,22 +20,22 @@ document.addEventListener('DOMContentLoaded',()=>{
  function panel(product){
   const p=products.find(e=>e.product===product),d=$('domain').value,v=$('lead').value;
   const card=node('article',undefined,'spatial-card');if(!p)return card;
-  card.append(node('h3',p.label),node('p','Valid '+stamp(v)+' · '+d,'section-note'));
+  card.append(node('h3',p.label),node('p',guidance[product]||'','section-note'),node('p','Valid '+stamp(v)+' · '+d,'section-note'));
   const matches=entries.filter(e=>e.product===product&&e.domain===d&&e.valid_utc===v).sort((a,b)=>String(a.window_utc[0]||'').localeCompare(String(b.window_utc[0]||'')));
   if(!matches.length){card.append(node('p','Not available at this valid time. No substitution or zero filling.','spatial-empty'));return card}
   for(const a of matches){
    if(a.window_utc.length){const [s,end]=a.window_utc;card.append(node('h4','Window: '+time(s,'UTC')+' – '+time(end,'UTC')+' UTC ('+((Date.parse(end)-Date.parse(s))/3600000)+' h)'))}
    const models=a.models.map(m=>labels[m.model]+' · Init '+time(m.init_utc,'UTC')+' UTC · H+'+m.lead);
    card.append(node('p',models.join(' | '),'section-note'));
-   card.append(node('p','Only available model panels are shown; absent models are not estimated.','section-note'));
+   card.append(node('p','Gray = masked / unavailable; only listed models are shown. Zoom does not increase model resolution.','section-note'));
    const url=local(a.image),img=node('img');img.alt=p.label+' '+d+' '+stamp(v);img.src=url;img.tabIndex=0;img.setAttribute('role','button');img.setAttribute('aria-label','Enlarge '+p.label);
-   const zoom=()=>{$('zoom-image').src=url;$('zoom').showModal()};img.onclick=zoom;img.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();zoom()}};
+   const zoom=()=>{$('zoom-image').src=url;$('zoom-scroll').classList.remove('native');$('zoom-toggle').setAttribute('aria-pressed','false');$('zoom-toggle').textContent='Native pixels';$('zoom').showModal()};img.onclick=zoom;img.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();zoom()}};
    img.onerror=()=>img.replaceWith(node('p','Chart unavailable. Archived asset could not be loaded.','spatial-empty'));
    const links=node('div',undefined,'analysis-actions');links.append(link(url,'Full size'),link(local('sources/'+a.group+'/catalog.json'),'Source manifest'),link('https://github.com/anzthebest0-cpu/wawp-forecast-engine/actions/runs/45721468170','Original experiment'));
    card.append(img,links)
   }return card
  }
- function render(){const other=$('other').value,host=$('panels'),i=$('lead').selectedIndex;host.replaceChildren(panel($('product').value));if(other)host.append(panel(other));host.classList.toggle('two',!!other);$('prev').disabled=i<=0;$('next').disabled=i>=times.length-1}
+ function render(){const other=$('other').value,host=$('panels'),i=$('lead').selectedIndex;$('valid-summary').textContent='Spatial valid time: '+stamp($('lead').value);host.replaceChildren(panel($('product').value));if(other)host.append(panel(other));host.classList.toggle('two',!!other);$('prev').disabled=i<=0;$('next').disabled=i>=times.length-1}
  async function load(){
   if(state!=='idle')return;state='loading';$('status').textContent='Loading archived multi-model spatial catalog…';
   try{
@@ -37,7 +43,7 @@ document.addEventListener('DOMContentLoaded',()=>{
    if(c.schema!==2||c.mode!=='research_preview'||c.run!=='45721468170'||c.entries.length!==1563||c.products.length!==25)throw Error('Unexpected catalog');
    for(const e of c.entries){local(e.image);if(!['regional','sulawesi','kolaka'].includes(e.domain)||!Number.isFinite(Date.parse(e.valid_utc))||!Array.isArray(e.models)||!Array.isArray(e.window_utc))throw Error('Invalid entry')}
    entries=c.entries;products=c.products;times=[...new Set(entries.map(e=>e.valid_utc))].sort((a,b)=>Date.parse(a)-Date.parse(b));
-   for(const v of times){const o=node('option',stamp(v));o.value=v;$('lead').append(o)}
+   for(const v of times){const o=node('option',time(v,'Asia/Makassar')+' WITA');o.value=v;$('lead').append(o)}
    for(const id of ['product','other']){const groups=new Map();for(const p of products){if(!groups.has(p.category)){const g=node('optgroup');g.label=p.category;groups.set(p.category,g);$(id).append(g)}const o=node('option',p.label);o.value=p.product;groups.get(p.category).append(o)}}
    $('product').value='wind925';$('lead').value=times.find(v=>Date.parse(v)>=Date.parse(c.discovery_utc)&&entries.some(e=>e.product==='wind925'&&e.valid_utc===v))||times[0];
    $('controls').hidden=false;$('status').textContent='HISTORICAL RESEARCH ONLY · 25 Nov 2026 UTC initializations · 1,563 figures / 25 products · up to H+96. Not live guidance; spatial forecast skill not verified.';state='ready';render()
@@ -45,7 +51,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  }
  for(const id of ['product','domain','lead','other'])$(id).onchange=render;
  $('prev').onclick=()=>{if($('lead').selectedIndex>0)$('lead').selectedIndex--;render()};$('next').onclick=()=>{if($('lead').selectedIndex<times.length-1)$('lead').selectedIndex++;render()};
- $('close').onclick=()=>$('zoom').close();
+ $('close').onclick=()=>$('zoom').close();$('zoom-toggle').onclick=()=>{const native=$('zoom-scroll').classList.toggle('native');$('zoom-toggle').setAttribute('aria-pressed',String(native));$('zoom-toggle').textContent=native?'Fit to window':'Native pixels'};
  new MutationObserver(()=>{if(tab.classList.contains('active'))load()}).observe(tab,{attributes:true,attributeFilter:['class']});if(tab.classList.contains('active'))load();
 });
 })();

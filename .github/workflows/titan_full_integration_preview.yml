@@ -1,4 +1,4 @@
-name: TITAN full catalog existing-site integration preview
+name: TITAN consolidated visual and meteorological refinement
 on:
   push:
     branches: [codex/titan-full-integration-preview]
@@ -6,7 +6,47 @@ permissions:
   contents: read
   actions: read
 jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [pwv, circulation, dynamics, vertical, rain, icon]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: '5ba074efa1010f1dbf50006da97b313b6ed8f6e2'
+          path: pinned-renderer
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-cache-*
+          run-id: '45721468170'
+          github-token: ${{ github.token }}
+          path: cache-inputs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install "eccodes>=2.42,<3" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3" "metpy>=1.7,<2" scipy pillow
+      - name: Render from verified archived numerical caches only
+        run: |
+          cp scripts/titan_refined_style.py pinned-renderer/scripts/spatial_v3_style.py
+          cp scripts/titan_refined_render.py pinned-renderer/scripts/pilot_full_spatial_render.py
+          export TITAN_RENDER_SHA="$GITHUB_SHA"
+          export GITHUB_SHA="5ba074efa1010f1dbf50006da97b313b6ed8f6e2"
+          python pinned-renderer/scripts/pilot_full_spatial_render.py ${{ matrix.group }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-full-render-${{ matrix.group }}
+          path: rendered/
+          retention-days: 7
+          if-no-files-found: error
   preview:
+    needs: render
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
@@ -16,9 +56,13 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: titan-full-render-*
+          path: full-render-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-render-*
           run-id: '45721468170'
           github-token: ${{ github.token }}
-          path: full-render-inputs
+          path: original-render-inputs
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -30,7 +74,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: titan-full-integrated-screenshots
+          name: titan-refined-screenshots
           path: |
             integrated-desktop.png
             integrated-mobile.png
@@ -40,7 +84,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: titan-full-integrated-review-site
+          name: titan-refined-review-site
           path: docs/
           retention-days: 7
           if-no-files-found: error
