@@ -44,7 +44,7 @@ class Store:
     def __init__(self,root,create=False):
         self.root=root;self.prefix=prefix();remote.PREFIX=self.prefix
         self.exact=ExactFolder();self.t=self.exact.t
-        self.inv=self.exact.inventory();self.initial=dict(self.inv);self.read_bytes=0;self.upload_bytes=0;self.inventory_calls=1;self.cache={}
+        self.inv=self.exact.inventory();self.initial=dict(self.inv);self.read_bytes=0;self.upload_bytes=0;self.inventory_calls=1;self.cache={};self.marker_cache={};self.read_proofs=set()
         print("RECOVERY_INVENTORY",json.dumps({"objects":len(self.inv),"bytes":sum(x["size"] for x in self.inv.values()),"commits":sum(n.startswith("commit-") for n in self.inv)}),flush=True)
         self.check_inventory(self.inv)
     def check_inventory(self,inv):
@@ -58,18 +58,17 @@ class Store:
         p=self.root/("read-"+n)
         if not fresh and self.cache.get(n)==self.inv[n] and p.is_file():
             need(sha(p)==r["sha256"],"Local readback cache differs");return p
+        self.exact.pace()
         self.t._get(self.inv[n],{"supportsAllDrives":"true","alt":"media"},p)
         need(sha(p)==r["sha256"] and p.stat().st_size==r["bytes"],"Remote digest differs")
         self.cache[n]=dict(self.inv[n]);self.read_bytes+=p.stat().st_size;return p
     def upload(self,name,p):
         need(name not in self.inv,"Already exists; refuse mutation")
-        info,actual=self.exact.create(name,p)
-        self.inventory_calls+=1;self.check_inventory(actual)
-        need(set(actual)==set(self.inv)|{name} and all(actual[n]==v for n,v in self.inv.items()) and actual[name]==info,"Unexpected inventory mutation")
-        self.inv=actual;self.upload_bytes+=p.stat().st_size
+        info=self.exact.create(name,p)
+        need(info["id"] not in {x["id"] for x in self.inv.values()} and info["size"]==p.stat().st_size,"Unexpected created identity")
+        self.inv[name]=info;self.upload_bytes+=p.stat().st_size
         print("RECOVERY_UPLOAD",json.dumps({"name":name,"bytes":p.stat().st_size}),flush=True)
     def batch(self,objects):
-        self.refresh()
         for r,p in objects:
             check(r);need(sha(p)==r["sha256"] and p.stat().st_size==r["bytes"],"Source digest differs")
             n=r["name"]
@@ -82,8 +81,10 @@ class Store:
         result=[]
         for n in names:
             p=self.root/n
-            self.t._get(self.inv[n],{"supportsAllDrives":"true","alt":"media"},p)
-            self.read_bytes+=p.stat().st_size;m=load(p)
+            if self.marker_cache.get(n)!=self.inv[n] or not p.is_file():
+                self.exact.pace();self.t._get(self.inv[n],{"supportsAllDrives":"true","alt":"media"},p)
+                self.read_bytes+=p.stat().st_size;self.marker_cache[n]=dict(self.inv[n])
+            m=load(p)
             need(m["mode"]==MODE and m["sequence"]==len(result)+1 and m["previous_commit_sha256"]==(result[-1][1] if result else None),"Broken commit chain")
             check(m["generation"]);result.append((m,sha(p)))
         return result
@@ -95,8 +96,9 @@ class Store:
         self.verify_generation(r)
         m={"schema":1,"mode":MODE,"sequence":sequence,"generation":r,"previous_commit_sha256":chain[-1][1] if chain else None}
         n=f"commit-{sequence:06}.json";p=self.root/("upload-"+n);p.write_bytes(dump(m))
-        self.refresh();need(n not in self.inv,"Commit name already exists")
+        need(n not in self.inv,"Commit name already exists")
         self.upload(n,p)
+        self.refresh()
         chain=self.markers();need(len(chain)==sequence and chain[-1]==(m,sha(p)),"Commit readback differs")
     def verify_generation(self,r,restore=None):
         g=load(self.read(r))
@@ -170,6 +172,8 @@ def publish():
         for r,p in o1+o2:
             if r["name"] in s.inv:s.read(r)
         print("RECOVERY_EXISTING_VERIFIED",json.dumps({"objects":len(s.cache),"bytes":sum(s.inv[n]["size"] for n in s.cache)}),flush=True)
+        missing=allowed-set(s.inv);s.exact.reserve(len(missing))
+        print("RECOVERY_MISSING_PLAN",json.dumps({"objects":len(missing),"payload_bytes":sum(r["bytes"] for r in {r["name"]:r for r,p in o1+o2}.values() if r["name"] in missing)}),flush=True)
         s.batch(o1);s.verify_generation(r1);s.commit(r1,1)
         before=s.markers();before_upload=s.upload_bytes
         s.batch(o2);s.verify_generation(r2)
@@ -186,7 +190,7 @@ def publish():
         s.verify_generation(r1);s.verify_generation(r2);s.refresh()
         keep={g[k][m]["object"]["name"] for g in (g1,g2) for k in ("charts","numeric") for m in MODELS}
         need(keep<=set(s.inv),"Protected packs missing")
-        report={"passed":True,"mode":MODE,"prefix":s.prefix,"commits":2,"retained_chart_packs":len({g["charts"][m]["object"]["name"] for g in (g1,g2) for m in MODELS}),"permanent_numeric_packs":len({g["numeric"][m]["object"]["name"] for g in (g1,g2) for m in MODELS}),"new_chart_pack_bytes":g2["charts"]["aifs-025"]["object"]["bytes"],"new_numeric_pack_bytes":g2["numeric"]["aifs-025"]["object"]["bytes"],"remote_active_bytes":sum(v["size"] for v in s.inv.values()),"uploaded_bytes":s.upload_bytes,"initial_objects":len(s.initial),"initial_bytes":sum(v["size"] for v in s.initial.values()),"second_generation_upload_bytes":saved-before_upload,"readback_bytes":s.read_bytes,"inventory_calls":s.inventory_calls,"direct_http_requests":remote.HTTP_REQUESTS,"invalid_rejected":True,"retry_idempotent":True,"retired_packs":0,"reason_no_retirement":"Both generations retained; all registered chart packs referenced."}
+        report={"passed":True,"mode":MODE,"prefix":s.prefix,"commits":2,"retained_chart_packs":len({g["charts"][m]["object"]["name"] for g in (g1,g2) for m in MODELS}),"permanent_numeric_packs":len({g["numeric"][m]["object"]["name"] for g in (g1,g2) for m in MODELS}),"new_chart_pack_bytes":g2["charts"]["aifs-025"]["object"]["bytes"],"new_numeric_pack_bytes":g2["numeric"]["aifs-025"]["object"]["bytes"],"remote_active_bytes":sum(v["size"] for v in s.inv.values()),"uploaded_bytes":s.upload_bytes,"initial_objects":len(s.initial),"initial_bytes":sum(v["size"] for v in s.initial.values()),"second_generation_upload_bytes":saved-before_upload,"readback_bytes":s.read_bytes,"inventory_calls":s.inventory_calls,"scoped_list_calls":s.exact.list_calls,"direct_http_requests":remote.HTTP_REQUESTS,"invalid_rejected":True,"retry_idempotent":True,"retired_packs":0,"reason_no_retirement":"Both generations retained; all registered chart packs referenced."}
         Path("remote-publication-report.json").write_bytes(dump(report));print("INDEPENDENT_REMOTE_PUBLICATION_PASS",json.dumps(report),flush=True)
 def restore():
     with tempfile.TemporaryDirectory() as td:
