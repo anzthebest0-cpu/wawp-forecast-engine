@@ -1,0 +1,197 @@
+name: TITAN automated cycle-aware update rehearsal
+on:
+  push:
+    branches: [codex/titan-automated-rehearsal]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: titan-automated-rehearsal
+  cancel-in-progress: false
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/test_cycle_discovery.py
+      - run: python scripts/pilot_cycle_discovery.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-auto-discovery
+          path: cycle-discovery.json
+          retention-days: 30
+  acquire:
+    needs: discover
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        model: [gfs, ifs-025, ifs-010, aifs-025, icon]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-auto-discovery
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-independent-inputs
+          path: previous-inputs
+          run-id: '45759575549'
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-panel-runtime-lock
+          run-id: '45759575549'
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r panel-runtime-lock.txt
+      - run: python scripts/test_spatial_rain_windows.py
+      - run: python scripts/titan_automated_update.py select ${{ matrix.model }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-full-cache-${{ matrix.model }}
+          path: |
+            regional-cache/manifest.json
+            regional-cache/*.npz
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-selection-${{ matrix.model }}
+          path: selection-receipt.json
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-rejected-${{ matrix.model }}
+          path: rejected-cache/
+          retention-days: 7
+          if-no-files-found: ignore
+  render:
+    needs: acquire
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [pwv, circulation, dynamics, vertical, rain, icon]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-cache-*
+          path: cache-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-selection-*
+          path: selection-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-full-independent-review-site
+          path: previous-site
+          run-id: '45759575549'
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-panel-runtime-lock
+          run-id: '45759575549'
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r panel-runtime-lock.txt
+      - run: python scripts/titan_automated_update.py ${{ matrix.group }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-auto-panels-${{ matrix.group }}
+          path: panel-output/
+          retention-days: 7
+  validate:
+    needs: render
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-cache-*
+          path: cache-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-selection-*
+          path: selection-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-auto-panels-*
+          path: render-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-independent-inputs
+          path: previous-inputs
+          run-id: '45759575549'
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-full-independent-review-site
+          path: previous-site
+          run-id: '45759575549'
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-panel-runtime-lock
+          run-id: '45759575549'
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r panel-runtime-lock.txt
+      - run: python scripts/titan_automated_update.py assemble
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - run: |
+          python -m http.server 8765 --directory titan-independent-review > /tmp/titan-server.log 2>&1 &
+          trap 'kill $!' EXIT
+          sleep 2
+          node scripts/test_full_panel_browser.cjs
+      - run: python scripts/titan_automated_update.py publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-auto-validated-site
+          path: titan-independent-review/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-auto-new-numerical-archive
+          path: new-numerical-archive/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-auto-publication-report
+          path: automated-publication-report.json
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-auto-browser-screenshots
+          path: review-screenshots/
+          retention-days: 30
