@@ -1,0 +1,230 @@
+name: TITAN rolling spatial research refresh
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/titan_rolling_refresh.yml', 'titan-engine/**']
+  schedule:
+    - cron: '45 0,6,12,18 * * *' # 08:45, 14:45, 20:45, 02:45 WITA
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: titan-rolling-refresh
+  cancel-in-progress: false
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      decision: ${{ steps.gate.outputs.decision }}
+      baseline_run: ${{ steps.baseline.outputs.baseline_run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python titan-engine/test_cycle_discovery.py
+      - run: python titan-engine/test_titan_early_exit.py
+      - id: baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python titan-engine/titan_rolling_baseline.py
+      - run: python titan-engine/pilot_cycle_discovery.py
+      - id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python titan-engine/titan_early_exit.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-auto-discovery
+          path: |
+            cycle-discovery.json
+            early-exit-report.json
+            rolling-baseline.json
+          retention-days: 30
+  acquire:
+    needs: discover
+    if: needs.discover.outputs.decision == 'update'
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        model: [gfs, ifs-025, ifs-010, aifs-025, icon]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-auto-discovery
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-cache-*
+          path: previous-inputs
+          run-id: ${{ needs.discover.outputs.baseline_run }}
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r titan-engine/panel-runtime-lock.txt
+      - uses: actions/download-artifact@v4
+        if: matrix.model == 'ifs-010' || matrix.model == 'aifs-025'
+        with:
+          name: titan-recovered-${{ matrix.model }}
+          path: recovered-input/${{ matrix.model }}
+          run-id: '45828477995'
+          github-token: ${{ github.token }}
+        continue-on-error: true
+      - run: python titan-engine/test_spatial_rain_windows.py
+      - run: python titan-engine/test_targeted_ecmwf_retry.py
+      - run: python titan-engine/titan_automated_update.py select ${{ matrix.model }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-full-cache-${{ matrix.model }}
+          path: |
+            regional-cache/manifest.json
+            regional-cache/*.npz
+            regional-cache/required-field-failure.json
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-selection-${{ matrix.model }}
+          path: selection-receipt.json
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-rejected-${{ matrix.model }}
+          path: rejected-cache/
+          retention-days: 7
+          if-no-files-found: ignore
+  render:
+    needs: [discover, acquire]
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [pwv, circulation, dynamics, vertical, rain, icon]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-auto-discovery
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-cache-*
+          path: cache-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-selection-*
+          path: selection-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-auto-validated-site
+          path: previous-site
+          run-id: ${{ needs.discover.outputs.baseline_run }}
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r titan-engine/panel-runtime-lock.txt
+      - run: python titan-engine/titan_automated_update.py ${{ matrix.group }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-auto-panels-${{ matrix.group }}
+          path: panel-output/
+          retention-days: 7
+  validate:
+    needs: [discover, render]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-auto-discovery
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-cache-*
+          path: cache-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-selection-*
+          path: selection-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-auto-panels-*
+          path: render-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-cache-*
+          path: previous-inputs
+          run-id: ${{ needs.discover.outputs.baseline_run }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-auto-validated-site
+          path: previous-site
+          run-id: ${{ needs.discover.outputs.baseline_run }}
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r titan-engine/panel-runtime-lock.txt
+      - run: python titan-engine/titan_automated_update.py assemble
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - run: |
+          python -m http.server 8765 --directory titan-independent-review > /tmp/titan-server.log 2>&1 &
+          trap 'kill $!' EXIT
+          sleep 2
+          node titan-engine/test_full_panel_browser.cjs
+      - run: python titan-engine/titan_automated_update.py publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-auto-validated-site
+          path: titan-independent-review/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-auto-new-numerical-archive
+          path: new-numerical-archive/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-auto-publication-report
+          path: automated-publication-report.json
+          retention-days: 30
+      - name: Prepare next baseline receipt
+        run: |
+          if [ -f next-rolling-baseline.json ]; then
+            mkdir -p rolling-receipt
+            cp next-rolling-baseline.json rolling-receipt/rolling-baseline.json
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-rolling-baseline
+          path: rolling-receipt/rolling-baseline.json
+          if-no-files-found: ignore
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-auto-browser-screenshots
+          path: review-screenshots/
+          retention-days: 30

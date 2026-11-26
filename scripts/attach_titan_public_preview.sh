@@ -5,6 +5,14 @@ site="$1"
 mode="${2:-read-only}"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
+# Prefer the last committed rolling release. A missing rolling release is
+# the only condition that permits the initial frozen seed fallback.
+set +e
+python scripts/titan_image_release.py attach "$site"
+status=$?
+set -e
+if [ "$status" -eq 0 ]; then exit 0; fi
+if [ "$status" -ne 3 ]; then exit "$status"; fi
 tag=titan-frozen-preview-20261126
 asset=titan-panels-20261126.zip
 if gh release download "$tag" --pattern "$asset" --dir "$work"; then

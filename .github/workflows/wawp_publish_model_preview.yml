@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
     paths: ['.github/workflows/wawp_publish_model_preview.yml']
+  workflow_run:
+    workflows: ['TITAN rolling spatial research refresh']
+    types: [completed]
+    branches: [main]
   pull_request:
     types: [labeled]
     branches: [main]
@@ -42,9 +46,9 @@ jobs:
           print('PASS: all workflow shell blocks parse')
           PY
   package:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.WAWP_LIVE_PIPELINE_ENABLED != 'true'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') && vars.WAWP_LIVE_PIPELINE_ENABLED != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     permissions:
       contents: write
       actions: read
@@ -87,11 +91,23 @@ jobs:
           python -m src.model_preview_gate --database "$work/source.db" --directory "$work/model-pages/data" --report artifacts/model-publication/gate.json
           sha256sum -c "$work/source.sha256"
           echo "Preview outcome: $(jq -r .status artifacts/model-publication/gate.json)"
-      - name: Attach verified frozen TITAN preview
+      - name: Prepare next validated TITAN generation or retain last committed images
         env:
           GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ github.event.workflow_run.id || '45902498571' }}
         run: |
-          bash scripts/attach_titan_public_preview.sh "$RUNNER_TEMP/wawp-publish-only/model-pages" seed-release
+          set -euo pipefail
+          site="$RUNNER_TEMP/wawp-publish-only/model-pages"
+          work="$RUNNER_TEMP/titan-rolling-publication"
+          set +e
+          python scripts/titan_image_release.py prepare "$site" "$work" "$SOURCE_RUN"
+          status=$?
+          set -e
+          if [ "$status" -eq 3 ]; then
+            bash scripts/attach_titan_public_preview.sh "$site" read-only
+          elif [ "$status" -ne 0 ]; then
+            exit "$status"
+          fi
       - name: Verify TITAN mobile and desktop controls including hash navigation before deployment
         run: |
           set -euo pipefail
@@ -108,6 +124,10 @@ jobs:
           path: titan-review-screenshots/
           retention-days: 30
           if-no-files-found: ignore
+      - name: Commit browser-validated image release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/titan_image_release.py commit "$RUNNER_TEMP/wawp-publish-only/model-pages" "$RUNNER_TEMP/titan-rolling-publication"
       - name: Upload gated Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -133,6 +153,23 @@ jobs:
       - name: Deploy verified model-only preview
         id: deployment
         uses: actions/deploy-pages@v4
+  retire-obsolete-images:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Retire only older committed image payloads after successful deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/titan_image_release.py retire
   report-status:
     if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.WAWP_LIVE_PIPELINE_ENABLED != 'true'
     needs: [package, deploy]
