@@ -1,14 +1,31 @@
 """Bounded Drive-ID reads and exact-object trash for the rolling checkpoint prefix only."""
 from __future__ import annotations
-import json,re,subprocess,time
+import json,re,subprocess,time,random
 from pathlib import Path
 from urllib.parse import quote
 import requests
 def rclone_copy(source,destination):
-    subprocess.run(['rclone','copyto','--immutable','--checksum','--retries','2','--low-level-retries','3',source,destination],check=True,timeout=600)
+    retry_cli(["rclone","copyto","--immutable","--checksum","--tpslimit","0.5","--tpslimit-burst","1","--retries","1","--low-level-retries","2",source,destination])
 from src.storage_snapshot import file_digest
 
-PREFIX="wawp:checkpoints/rolling"
+PREFIX=None
+# Fixture-only client: no default production location.
+LAST_REQUEST=0.0
+HTTP_REQUESTS=0
+def pace():
+    global LAST_REQUEST,HTTP_REQUESTS
+    time.sleep(max(0,2.5-(time.monotonic()-LAST_REQUEST)))
+    LAST_REQUEST=time.monotonic();HTTP_REQUESTS+=1
+
+def retry_cli(args):
+    for delay in (0,30,60,120):
+        if delay:time.sleep(delay+random.uniform(0,4))
+        p=subprocess.run(args,capture_output=True,text=True,timeout=900)
+        if p.returncode==0:return p.stdout
+        s=p.stderr.lower()
+        if not any(x in s for x in ("ratelimitexceeded","rate limit","requests per minute","429","quota metric")):raise ValueError("Drive CLI request failed (non-rate-limit)")
+    raise ValueError("Drive CLI rate limit retry budget exhausted")
+
 def need(ok,msg):
     if not ok:raise ValueError(msg)
 def config():
@@ -16,10 +33,11 @@ def config():
     return json.loads(subprocess.check_output(["rclone","config","dump"],stderr=subprocess.DEVNULL,timeout=30))["wawp"]
 class RollingTransport:
     def __init__(self):
+        need(isinstance(PREFIX,str) and re.fullmatch(r"wawp:validation/titan-spatial-storage/run-\d+-\d+",PREFIX),"Not an isolated spatial fixture")
         self.kind=config()["type"]
         need(self.kind in ("drive","local"),"Unsupported rolling archive backend")
     def inventory(self):
-        rows=json.loads(subprocess.check_output(["rclone","lsjson",PREFIX,"--files-only","--no-modtime","--no-mimetype"],text=True,timeout=120))
+        rows=json.loads(retry_cli(["rclone","lsjson",PREFIX,"--files-only","--no-modtime","--no-mimetype","--tpslimit","0.5","--tpslimit-burst","1","--retries","1","--low-level-retries","2"]))
         names=[x["Name"] for x in rows];need(len(names)==len(set(names)),"Duplicate rolling names")
         out={x["Name"]:{"id":x.get("ID") if self.kind=="drive" else x["Name"],"size":x["Size"]} for x in rows}
         need(all(isinstance(x["id"],str) and x["id"] for x in out.values()),"Missing rolling object ID")
@@ -34,10 +52,11 @@ class RollingTransport:
         return "https://www.googleapis.com/drive/v3/files/"+quote(fid,safe="")
     def _get(self,info,params,dest=None):
         last="unknown"
-        for delay in (0,4,12,25):
-            if delay:time.sleep(delay)
+        for delay in (0,15,45,90,150):
+            if delay:time.sleep(delay+random.uniform(0,3))
             if dest is not None and dest.exists():dest.unlink()
             try:
+                pace()
                 with requests.get(self._url(info),params=params,headers=self._headers(),stream=dest is not None,timeout=(20,60),allow_redirects=False) as resp:
                     if resp.status_code==200:
                         if dest is None:return resp.json()
