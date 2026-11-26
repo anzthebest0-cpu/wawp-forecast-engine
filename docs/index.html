@@ -328,13 +328,13 @@
         <section id="tab-spatial" class="tab-pane">
             <div class="header-bar"><h2>Spatial Model Analysis</h2></div>
             <div class="panel titan-spatial" id="titan-spatial">
-                <p class="section-note" id="spatial-status" role="status">Historical spatial research preview only. Open this tab to load the fixed-cycle catalog. Not current guidance or an official forecast.</p>
+                <p class="section-note" id="spatial-status" role="status">Historical spatial research preview only. Open this tab to load the archived multi-model catalog. Not current guidance or an official forecast.</p>
                 <div id="spatial-controls" class="spatial-controls" hidden>
                     <label>Product<select id="spatial-product"></select></label>
                     <label>Domain<select id="spatial-domain"><option value="regional">Regional</option><option value="sulawesi" selected>Sulawesi</option><option value="kolaka">Kolaka</option></select></label>
-                    <label>Lead<select id="spatial-lead"><option value="0">H+0</option><option value="6" selected>H+6</option><option value="12">H+12</option></select></label>
+                    <label>Valid time (UTC / WITA)<select id="spatial-lead"></select></label>
                     <label>Compare with<select id="spatial-other"><option value="">Single figure</option></select></label>
-                    <button type="button" id="spatial-prev">Previous lead</button><button type="button" id="spatial-next">Next lead</button>
+                    <button type="button" id="spatial-prev">Previous valid time</button><button type="button" id="spatial-next">Next valid time</button>
                 </div>
                 <div id="spatial-panels" class="spatial-panels" aria-live="polite"></div>
                 <dialog id="spatial-zoom" class="spatial-zoom"><button id="spatial-close" type="button">Close</button><img id="spatial-zoom-image" alt="Enlarged spatial chart"></dialog>

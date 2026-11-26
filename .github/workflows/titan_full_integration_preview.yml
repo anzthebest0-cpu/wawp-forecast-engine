@@ -1,0 +1,46 @@
+name: TITAN full catalog existing-site integration preview
+on:
+  push:
+    branches: [codex/titan-full-integration-preview]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-render-*
+          run-id: '45721468170'
+          github-token: ${{ github.token }}
+          path: full-render-inputs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pillow playwright
+      - run: python -m playwright install chromium
+      - run: python scripts/build_full_spatial_catalog.py
+      - run: node --check docs/spatial-workspace.js
+      - run: python scripts/test_full_spatial_integration.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-full-integrated-screenshots
+          path: |
+            integrated-desktop.png
+            integrated-mobile.png
+            integrated-rain.png
+          retention-days: 7
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: titan-full-integrated-review-site
+          path: docs/
+          retention-days: 7
+          if-no-files-found: error
