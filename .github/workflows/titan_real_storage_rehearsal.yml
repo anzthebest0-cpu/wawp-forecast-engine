@@ -1,0 +1,79 @@
+name: TITAN real-artifact spatial storage and read-only checkpoint rehearsal
+on:
+  push:
+    branches: [codex/titan-storage-rehearsal]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  spatial:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-cache-*
+          run-id: '45721468170'
+          github-token: ${{ github.token }}
+          path: cache-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-full-integrated-review-site
+          run-id: '45729933917'
+          github-token: ${{ github.token }}
+          path: old-site
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-refined-review-site
+          run-id: '45731053151'
+          github-token: ${{ github.token }}
+          path: refined-site
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install "numpy>=2,<3" pillow
+      - run: python scripts/rehearse_titan_real_storage.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-spatial-storage-report
+          path: spatial-storage-report.json
+          retention-days: 7
+          if-no-files-found: warn
+  checkpoint-readonly:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update -qq && sudo apt-get install -y rclone zstd
+      - run: python -m pip install -r requirements.txt -c requirements-preview-constraints.txt
+      - name: Read-only proof of managed checkpoint redundancy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
+          WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$WAWP_RCLONE_CONFIG" && test -n "$WAWP_ARCHIVE_FOLDER_ID"
+          umask 077
+          export RCLONE_CONFIG="$RUNNER_TEMP/titan-checkpoint-readonly.conf"
+          export RCLONE_CONFIG_WAWP_ROOT_FOLDER_ID="$WAWP_ARCHIVE_FOLDER_ID"
+          trap 'rm -f "$RCLONE_CONFIG"' EXIT
+          printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
+          unset WAWP_RCLONE_CONFIG
+          PYTHONPATH=. python scripts/rehearse_checkpoint_cat_readback.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-checkpoint-readonly-report
+          path: checkpoint-readonly-report.json
+          retention-days: 7
+          if-no-files-found: warn
