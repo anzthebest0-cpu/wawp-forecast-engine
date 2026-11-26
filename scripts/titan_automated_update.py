@@ -16,6 +16,9 @@ BASE=Path("previous-inputs")
 CAND=Path("cache-inputs")
 OLD_SITE=Path("previous-site")
 MAX_AGE_H=24 # trial gate; not an operational SLA
+# Only the isolated archive replay sets this mapping to a pinned, validated historical revision.
+REPLAY_REVISIONS={}
+def fresh_revision(model):return REPLAY_REVISIONS.get(model,os.environ["GITHUB_SHA"])
 def check_model(root,m,allowed):
     return read_model(folder(root,m),m,allowed=allowed)
 def candidate_select(model):
@@ -57,7 +60,7 @@ def candidate_select(model):
         shutil.copytree(folder(BASE,model),target)
         receipt["status"]="fallback" if reason else "unchanged"
         receipt["fallback_reason"]=reason
-    m,r=read_model(target,model,allowed={full.REVISIONS[model],os.environ["GITHUB_SHA"]})
+    m,r=read_model(target,model,allowed={full.REVISIONS[model],fresh_revision(model)})
     receipt["selected_cycle"]=m["cycle"];receipt["manifest_sha256"]=sha(target/"manifest.json")
     age=(asof-utc(m["cycle"])).total_seconds()/3600
     receipt["age_hours_at_discovery"]=round(age,3)
@@ -71,9 +74,9 @@ def read_dynamic():
     for model in MODELS:
         r=rr[model];need(r["model"]==model and r["freshness_pass"] and r["previous_cycle"]==full.CYCLES[model],"Selection/freshness gate failed")
         f=folder(CAND,model)
-        m,rows=read_model(f,model,allowed={full.REVISIONS[model],os.environ["GITHUB_SHA"]})
+        m,rows=read_model(f,model,allowed={full.REVISIONS[model],fresh_revision(model)})
         need(m["cycle"]==r["selected_cycle"] and sha(f/"manifest.json")==r["manifest_sha256"],"Candidate receipt differs")
-        need((r["status"]=="advanced" and m["code_sha"]==os.environ["GITHUB_SHA"] and utc(m["cycle"])>utc(r["previous_cycle"])) or (r["status"] in ("unchanged","fallback") and m["code_sha"]==full.REVISIONS[model] and m["cycle"]==r["previous_cycle"]),"Selection lineage differs")
+        need((r["status"]=="advanced" and m["code_sha"]==fresh_revision(model) and utc(m["cycle"])>utc(r["previous_cycle"])) or (r["status"] in ("unchanged","fallback") and m["code_sha"]==full.REVISIONS[model] and m["cycle"]==r["previous_cycle"]),"Selection lineage differs")
         if model=="ifs-010" and m["code_sha"]==full.QC_SHA:need(m.get("qc_policy")=="experimental_localized_rh_quarantine_v1","Missing prior QC lineage")
         sources[model]={"cycle":m["cycle"],"acquisition_sha":m["code_sha"],"entries":len(rows),"manifest_sha256":sha(f/"manifest.json")}
         n+=len(rows)
@@ -174,7 +177,7 @@ def assemble():
     for e in entries.values():groups[e["product"],e["domain"],e["valid_utc"],tuple(e["window_utc"])].append(e)
     comparisons=[{"product":p,"domain":d,"valid_utc":t,"window_utc":list(w),"panels":sorted(es,key=lambda e:MODELS.index(e["model"]))} for (p,d,t,w),es in sorted(groups.items())]
     need(all(len(set(e["model"] for e in c["panels"]))==len(c["panels"]) for c in comparisons),"Duplicate models")
-    report={"passed":True,"mode":"automated_research_rehearsal","renderer":revision,"sources":sources,"products":25,"domains":list(DOMAINS),"native_leads":81,"panels":len(entries),"comparisons":len(comparisons),"image_bytes":sum(e["bytes"] for e in entries.values()),"quarantine_panel_count":sum(bool(e["qc"]) for e in entries.values()),"production_deployed":False,"selection":rr,"groups":stats,"reused_panels":len(set(entries)&set(old)),"new_panels":len(set(entries)-set(old)),"new_image_bytes":sum(e["bytes"] for k,e in entries.items() if k not in old),"reused_image_bytes":sum(e["bytes"] for k,e in entries.items() if k in old)}
+    report={"passed":True,"mode":"archived_real_cycle_replay" if REPLAY_REVISIONS else "automated_research_rehearsal","renderer":revision,"sources":sources,"products":25,"domains":list(DOMAINS),"native_leads":81,"panels":len(entries),"comparisons":len(comparisons),"image_bytes":sum(e["bytes"] for e in entries.values()),"quarantine_panel_count":sum(bool(e["qc"]) for e in entries.values()),"production_deployed":False,"selection":rr,"groups":stats,"reused_panels":len(set(entries)&set(old)),"new_panels":len(set(entries)-set(old)),"new_image_bytes":sum(e["bytes"] for k,e in entries.items() if k not in old),"reused_image_bytes":sum(e["bytes"] for k,e in entries.items() if k in old)}
     data={"report":report,"labels":full.LABELS,"products":{k:{"title":v[0],"unit":v[1]} for k,v in SPECS.items()},"comparisons":comparisons}
     (out/"catalog.json").write_bytes(dump(data));(out/"catalog.js").write_text("window.TITAN_CATALOG="+json.dumps(data,ensure_ascii=True).replace("</","<\\/")+";")
     page=(Path(__file__).parent/"titan_full_panels.html").read_text().replace("Frozen model-cycle comparison | Research preview","Automated update rehearsal | Research preview").replace("IFS 0.1° includes an experimental RH cell quarantine; affected panels are flagged.","Previous-cycle fallback is possible; check each model initialization. Any experimental RH quarantine is flagged on the affected product.")
@@ -189,14 +192,14 @@ def publish_local():
     verify_site(out,new);report=data["report"];need(report["passed"],"Invalid candidate")
     numeric=Path("new-numerical-archive");numeric.mkdir();numeric_bytes=0
     for m in MODELS:
-        a,x=check_model(BASE,m,{full.REVISIONS[m]});b,y=check_model(CAND,m,{full.REVISIONS[m],os.environ["GITHUB_SHA"]})
+        a,x=check_model(BASE,m,{full.REVISIONS[m]});b,y=check_model(CAND,m,{full.REVISIONS[m],fresh_revision(m)})
         need(report["sources"][m]["manifest_sha256"]==sha(folder(CAND,m)/"manifest.json"),"Candidate numeric manifest mismatch")
         if a["cycle"]==b["cycle"]:
             need(a==b and [(e["lead"],e["sha256"]) for e in x]==[(e["lead"],e["sha256"]) for e in y],"Unchanged model differs")
         else:
-            dest=folder(numeric,m);shutil.copytree(folder(CAND,m),dest);read_model(dest,m,allowed={os.environ["GITHUB_SHA"]})
+            dest=folder(numeric,m);shutil.copytree(folder(CAND,m),dest);read_model(dest,m,allowed={fresh_revision(m)})
             numeric_bytes+=sum(p.stat().st_size for p in dest.iterdir() if p.is_file())
-    (numeric/"archive-index.json").write_bytes(dump({"source_run":os.environ["GITHUB_RUN_ID"],"previous_run":BASE_RUN,"new_models":[m for m in MODELS if folder(numeric,m).exists()],"new_numeric_bytes":numeric_bytes}))
+    (numeric/"archive-index.json").write_bytes(dump({"source_run":os.environ["GITHUB_RUN_ID"],"previous_run":BASE_RUN,"archived_replay":bool(REPLAY_REVISIONS),"new_models":[m for m in MODELS if folder(numeric,m).exists()],"new_numeric_bytes":numeric_bytes}))
     with tempfile.TemporaryDirectory(prefix="titan-local-publication-") as td:
         root=Path(td);objects=root/"panels";objects.mkdir();generations=root/"generations";generations.mkdir()
         def stage(site,es):
@@ -234,7 +237,7 @@ def publish_local():
         need({p.stem for p in objects.glob("*.webp")}==keep,"Rolling union differs")
         verify_generation(h1,old)
         if advanced:verify_generation(h2,new)
-        proof={"passed":True,"mode":"local_disposable_publication_only","advanced":advanced,"published_new_local_generation":advanced,"no_op_preserved":not advanced,"previous_preserved":True,"invalid_candidate_rejected":True,"staging_preserved_pointer":True,"retry_idempotent":True,"retained_panel_union":len(keep),"retained_panel_union_bytes":sum(p.stat().st_size for p in objects.glob("*.webp")),"new_numeric_bytes":numeric_bytes,"new_numeric_models":[m for m in MODELS if folder(numeric,m).exists()],"new_panels":report["new_panels"],"reused_panels":report["reused_panels"],"new_image_bytes":report["new_image_bytes"],"candidate_catalog_sha256":sha(out/"catalog.json"),"production_deployed":False,"remote_archive_written":False}
+        proof={"passed":True,"mode":"local_disposable_publication_only","archived_replay":bool(REPLAY_REVISIONS),"advanced":advanced,"published_new_local_generation":advanced,"no_op_preserved":not advanced,"previous_preserved":True,"invalid_candidate_rejected":True,"staging_preserved_pointer":True,"retry_idempotent":True,"retained_panel_union":len(keep),"retained_panel_union_bytes":sum(p.stat().st_size for p in objects.glob("*.webp")),"new_numeric_bytes":numeric_bytes,"new_numeric_models":[m for m in MODELS if folder(numeric,m).exists()],"new_panels":report["new_panels"],"reused_panels":report["reused_panels"],"new_image_bytes":report["new_image_bytes"],"candidate_catalog_sha256":sha(out/"catalog.json"),"production_deployed":False,"remote_archive_written":False}
         Path("automated-publication-report.json").write_bytes(dump(proof));print("AUTO_PUBLICATION_PASS",json.dumps(proof),flush=True)
 if __name__=="__main__":
     cmd=sys.argv[1]

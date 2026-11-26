@@ -1,4 +1,4 @@
-name: TITAN automated cycle-aware update rehearsal
+name: TITAN optimized automated update and actual-cycle replay
 on:
   push:
     branches: [codex/titan-automated-rehearsal]
@@ -13,6 +13,8 @@ jobs:
   discover:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    outputs:
+      decision: ${{ steps.gate.outputs.decision }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,14 +23,23 @@ jobs:
         with:
           python-version: '3.12'
       - run: python scripts/test_cycle_discovery.py
+      - run: python scripts/test_titan_early_exit.py
       - run: python scripts/pilot_cycle_discovery.py
+      - id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/titan_early_exit.py
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: titan-auto-discovery
-          path: cycle-discovery.json
+          path: |
+            cycle-discovery.json
+            early-exit-report.json
           retention-days: 30
   acquire:
     needs: discover
+    if: needs.discover.outputs.decision == 'update'
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -194,4 +205,59 @@ jobs:
         with:
           name: titan-auto-browser-screenshots
           path: review-screenshots/
+          retention-days: 30
+  archived-transition:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-independent-inputs
+          path: previous-inputs
+          run-id: '45759575549'
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-full-independent-review-site
+          path: previous-site
+          run-id: '45759575549'
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-panel-runtime-lock
+          run-id: '45759575549'
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-full-cache-icon
+          path: archived-icon
+          run-id: '45721468170'
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r panel-runtime-lock.txt
+      - run: python scripts/titan_archived_transition.py prepare
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - run: |
+          python -m http.server 8765 --directory titan-independent-review > /tmp/titan-server.log 2>&1 &
+          trap 'kill $!' EXIT
+          sleep 2
+          node scripts/test_full_panel_browser.cjs
+      - run: python scripts/titan_archived_transition.py publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-archived-transition-report
+          path: |
+            automated-publication-report.json
+            titan-independent-review/report.json
+            new-numerical-archive/archive-index.json
           retention-days: 30
