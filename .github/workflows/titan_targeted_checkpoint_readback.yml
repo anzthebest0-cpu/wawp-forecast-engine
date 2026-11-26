@@ -1,0 +1,48 @@
+name: TITAN targeted Drive ID checkpoint readback
+on:
+  push:
+    branches: [codex/titan-targeted-checkpoint-readback]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  targeted:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-checkpoint-recovery-proof
+          run-id: '45733820182'
+          github-token: ${{ github.token }}
+          path: prior-proof
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update -qq && sudo apt-get install -y rclone zstd
+      - run: python -m pip install -r requirements.txt -c requirements-preview-constraints.txt requests
+      - name: Read target via Drive file ID and verify against registered release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
+          WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$WAWP_RCLONE_CONFIG" && test -n "$WAWP_ARCHIVE_FOLDER_ID"
+          umask 077
+          export RCLONE_CONFIG="$RUNNER_TEMP/titan-target-readonly.conf"
+          export RCLONE_CONFIG_WAWP_ROOT_FOLDER_ID="$WAWP_ARCHIVE_FOLDER_ID"
+          trap 'rm -f "$RCLONE_CONFIG"' EXIT
+          printf '%s\n' "$WAWP_RCLONE_CONFIG" > "$RCLONE_CONFIG"
+          unset WAWP_RCLONE_CONFIG
+          PYTHONPATH=. python scripts/rehearse_targeted_checkpoint_readback.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-targeted-checkpoint-report
+          path: targeted-checkpoint-report.json
+          retention-days: 7
+          if-no-files-found: warn
