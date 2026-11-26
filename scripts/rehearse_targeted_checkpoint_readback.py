@@ -17,6 +17,19 @@ def inventory():
     need(len(names)==len(set(names)),"Duplicate Drive names")
     records={x["Name"]:{"id":x.get("ID"),"size":x["Size"]} for x in rows}
     return records
+def stable_release_inventory(assets):
+    # Download counters, uploader profile and display labels are not object identity.
+    # The fields match the existing checkpoint registration contract.
+    return {name:r.identity(asset) for name,asset in assets.items()}
+
+def inventory_diff(before,after):
+    return {"added":sorted(set(after)-set(before)),
+            "removed":sorted(set(before)-set(after)),
+            "changed":{name:sorted(k for k in set(before[name])|set(after[name])
+                                   if before[name].get(k)!=after[name].get(k))
+                       for name in sorted(set(before)&set(after))
+                       if before[name]!=after[name]}}
+
 def fingerprint(x):
     return hashlib.sha256(json.dumps(x,sort_keys=True,separators=(",",":")).encode()).hexdigest()
 def token():
@@ -83,7 +96,8 @@ def main():
         need(select_asset(pages)==LATEST,"Newest checkpoint changed")
         need({n for n in inv if r.name_allowed(n)}==expected,"Managed checkpoint set changed")
         report["inventory_fingerprint_before"]=fingerprint(inv)
-        report["release_fingerprint_before"]=fingerprint(assets)
+        stable_assets=stable_release_inventory(assets)
+        report["release_fingerprint_before"]=fingerprint(stable_assets)
         # Previous report does not contain exact inventory IDs; use current start/end
         # comparison and match all six registered release identities, not an invented
         # historical fingerprint.
@@ -125,8 +139,16 @@ def main():
             need(file_digest(db)==file_digest(githubdb),"Restored databases differ")
             report["drive_restored"]=True
             report["stage"]="inventory_recheck"
-            final=inventory();final_assets=r.indexed(r.release_assets(REPO,RELEASE))
-            need(final==inv and final_assets==assets,"Inventory changed during targeted proof")
+            final=inventory();final_pages=r.release_assets(REPO,RELEASE);final_assets=r.indexed(final_pages)
+            stable_final=stable_release_inventory(final_assets)
+            report["drive_inventory_diff"]=inventory_diff(inv,final)
+            report["release_identity_diff"]=inventory_diff(stable_assets,stable_final)
+            report["inventory_fingerprint_after"]=fingerprint(final)
+            report["release_fingerprint_after"]=fingerprint(stable_final)
+            report["download_counter_changes"]=sum(assets[n].get("download_count")!=final_assets[n].get("download_count") for n in set(assets)&set(final_assets))
+            need(select_asset(final_pages)==LATEST,"Selected checkpoint changed during targeted proof")
+            need(final==inv,"Drive object inventory changed during targeted proof")
+            need(stable_final==stable_assets,"GitHub release asset identity changed during targeted proof")
             report["inventory_unchanged_during_test"]=True
             report["stage"]="complete";report["passed"]=True
     except Exception as e:
