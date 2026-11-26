@@ -4,7 +4,8 @@ import json,re,subprocess,time
 from pathlib import Path
 from urllib.parse import quote
 import requests
-from src.storage_incremental_archive import rclone_copy
+def rclone_copy(source,destination):
+    subprocess.run(['rclone','copyto','--immutable','--checksum','--retries','2','--low-level-retries','3',source,destination],check=True,timeout=600)
 from src.storage_snapshot import file_digest
 
 PREFIX="wawp:checkpoints/rolling"

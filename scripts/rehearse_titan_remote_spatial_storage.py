@@ -139,7 +139,7 @@ def main():
                     require(len(meta_files)==7,"Wrong source manifest count")
                     chart=pack(root/(label+"-charts.zip"),chart_files);meta=pack(root/(label+"-meta.zip"),meta_files)
                     cr=ref("charts",chart);mr=ref("metadata",meta);s.put(cr,chart);s.put(mr,meta)
-                    return {"schema":1,"mode":"frozen_research_preview","source_run":"45721468170","cache_code_sha":CACHE_SHA,"render_sha":c["render_sha"],"label":label,"numeric":numeric,"numeric_entries":entries,"chart_object":cr,"chart_members":members(chart_files),"metadata_object":mr,"metadata_members":members(meta_files)}
+                    return {"schema":1,"mode":"frozen_research_preview","source_run":"45721468170","cache_code_sha":CACHE_SHA,"render_sha":c.get("render_sha",c["code_sha"]),"label":label,"numeric":numeric,"numeric_entries":entries,"chart_object":cr,"chart_members":members(chart_files),"metadata_object":mr,"metadata_members":members(meta_files)}
                 def put_generation(g):
                     p=root/"generation.json";p.write_bytes(dump(g));r=ref("generation",p);s.put(r,p);return r
                 report["stage"]="first_publication"
