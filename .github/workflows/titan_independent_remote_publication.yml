@@ -1,4 +1,4 @@
-name: TITAN independent panel durable Drive publication rehearsal
+name: TITAN resume exact independent panel Drive archive
 on:
   push:
     branches: [codex/titan-independent-remote-publication]
@@ -11,7 +11,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-24.04
-    timeout-minutes: 100
+    timeout-minutes: 110
     steps:
       - uses: actions/checkout@v4
         with:
