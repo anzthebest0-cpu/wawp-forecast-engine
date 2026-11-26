@@ -1,0 +1,51 @@
+name: TITAN rolling public publication rehearsal
+on:
+  push:
+    branches: [codex/titan-rolling-publication]
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: Successful rolling run ID
+        required: true
+        default: '45822462754'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: titan-rolling-publication-rehearsal
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact completed rolling generation and stage public-only files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ inputs.source_run || '45822462754' }}
+        run: python scripts/titan_rolling_publication.py "$SOURCE_RUN" rehearse
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright && npx playwright install --with-deps chromium
+      - name: Verify candidate mobile and desktop behavior
+        run: |
+          python -m http.server 8765 --directory publication-rehearsal >/tmp/titan-rolling-server.log 2>&1 &
+          trap 'kill $!' EXIT
+          sleep 2
+          node scripts/test_titan_public_preview.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-rolling-publication-proof
+          path: |
+            rolling-publication-rehearsal.json
+            titan-review-screenshots/
+          if-no-files-found: warn
+          retention-days: 30
