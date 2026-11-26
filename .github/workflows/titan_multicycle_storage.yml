@@ -1,4 +1,4 @@
-name: TITAN exact IFS 9 km cycle recovery and multi-cycle comparison
+name: TITAN localized RH QC and independent model panel experiment
 on:
   push:
     branches: [codex/titan-multicycle-storage]
@@ -33,17 +33,18 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install "eccodes>=2.42,<3" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3" "metpy>=1.7,<2" scipy pillow
       - run: python scripts/test_spatial_rain_windows.py
-      - run: python scripts/recover_ifs010_multicycle.py
+      - run: python scripts/test_rh_quarantine_policy.py
+      - run: python scripts/recover_ifs010_quarantine.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ifs010-rh-recovery-diagnostics
+          name: ifs010-rh-quarantine-diagnostics
           path: ifs-rh-diagnostics/
           retention-days: 30
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:
-          name: recovered-ifs-010
+          name: experimental-ifs-010
           path: |
             regional-cache/manifest.json
             regional-cache/*.npz
@@ -53,10 +54,9 @@ jobs:
           name: recovered-ifs-010-receipt
           path: reuse-receipt.json
           retention-days: 30
-  compare:
-    needs: recover
+  benchmark:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,33 +75,21 @@ jobs:
           github-token: ${{ github.token }}
       - uses: actions/download-artifact@v4
         with:
-          pattern: reuse-receipt-*
-          path: receipts-raw
-          run-id: '45752072415'
-          github-token: ${{ github.token }}
-      - uses: actions/download-artifact@v4
-        with:
           name: recovered-ifs-010
-          path: recovered
-      - uses: actions/download-artifact@v4
-        with:
-          name: recovered-ifs-010-receipt
-          path: receipts-raw/reuse-receipt-ifs-010
+          path: validated-ifs
+          run-id: '45757197359'
+          github-token: ${{ github.token }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: python -m pip install "eccodes>=2.42,<3" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3" "metpy>=1.7,<2" scipy pillow
       - run: |
           set -euo pipefail
-          mv candidate/titan-full-cache-ifs-010 partial-ifs-010
-          mv recovered candidate/titan-full-cache-ifs-010
-          mkdir receipts
-          for m in gfs ifs-025 ifs-010 aifs-025 icon; do
-            mv "receipts-raw/reuse-receipt-$m" "receipts/titan-full-cache-$m"
-          done
-          python scripts/pilot_multicycle_storage.py compare
+          mv candidate/titan-full-cache-ifs-010 rejected-ifs
+          mv validated-ifs candidate/titan-full-cache-ifs-010
+          python scripts/pilot_independent_panels.py
       - uses: actions/upload-artifact@v4
         with:
-          name: titan-multicycle-storage-report
-          path: multicycle-storage-report.json
+          name: titan-independent-panel-benchmark
+          path: panel-benchmark/
           retention-days: 30
