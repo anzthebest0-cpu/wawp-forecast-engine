@@ -1,0 +1,124 @@
+name: TITAN full independent panel implementation
+on:
+  push:
+    branches: [codex/titan-full-independent-panels]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: titan-full-independent-preview
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-cache-*
+          path: cache-inputs
+          run-id: '45752072415'
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: experimental-ifs-010
+          path: recovered
+          run-id: '45758421368'
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install "eccodes>=2.42,<3" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3" "metpy>=1.7,<2" scipy pillow
+      - run: |
+          mv cache-inputs/titan-full-cache-ifs-010 partial-ifs
+          mv recovered cache-inputs/titan-full-cache-ifs-010
+          python scripts/titan_full_independent_panels.py prepare
+          python -m pip freeze > panel-runtime-lock.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-independent-inputs
+          path: cache-inputs/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-panel-runtime-lock
+          path: panel-runtime-lock.txt
+          retention-days: 30
+  render:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [pwv, circulation, dynamics, vertical, rain, icon]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-independent-inputs
+          path: cache-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-panel-runtime-lock
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r panel-runtime-lock.txt
+      - run: python scripts/titan_full_independent_panels.py ${{ matrix.group }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-full-panels-${{ matrix.group }}
+          path: panel-output/
+          retention-days: 30
+  assemble:
+    needs: render
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-independent-inputs
+          path: cache-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-panel-runtime-lock
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-panels-*
+          path: render-inputs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r panel-runtime-lock.txt
+      - run: python scripts/titan_full_independent_panels.py assemble
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - run: |
+          python -m http.server 8765 --directory titan-independent-review > /tmp/titan-server.log 2>&1 &
+          trap 'kill $!' EXIT
+          sleep 2
+          node scripts/test_full_panel_browser.cjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-full-independent-review-site
+          path: titan-independent-review/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-full-independent-browser-screenshots
+          path: review-screenshots/
+          retention-days: 30
