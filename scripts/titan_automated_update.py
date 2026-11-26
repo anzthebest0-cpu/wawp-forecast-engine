@@ -25,6 +25,26 @@ MAX_AGE_H=24 # trial gate; not an operational SLA
 # Only the isolated archive replay sets this mapping to a pinned, validated historical revision.
 REPLAY_REVISIONS={}
 def fresh_revision(model):return REPLAY_REVISIONS.get(model,os.environ["GITHUB_SHA"])
+RECOVERED_REV="a41d84f17b4227462e3aa0c40001b11cece5dfd9"
+RECOVERED={
+    "ifs-010":("2026-11-26T00:00:00+00:00","5cb48c0d9dc278b765b2101561c9aba00e9bb17c0e2a091a864d2f86bab05ed3"),
+    "aifs-025":("2026-11-26T06:00:00+00:00","79ad6a6a9ce26351cbe815ad917de2ce5c41c59aa23d68dd2fe9d9b8a37b5311")}
+def allowed_new(model):
+    return {fresh_revision(model)}|({RECOVERED_REV} if model in RECOVERED else set())
+def check_new(model,m,f):
+    if m["code_sha"]==RECOVERED_REV:
+        need(model in RECOVERED and (m["cycle"],sha(f/"manifest.json"))==RECOVERED[model] and m.get("recovery_status")=="strict_targeted_recovery","Unverified recovered manifest")
+    else:need(m["code_sha"]==fresh_revision(model),"Unexpected acquisition revision")
+def use_recovered(model,target,old,chosen,asof,rows,receipt):
+    if model not in RECOVERED:return False
+    c,h=RECOVERED[model];f=Path("recovered-input")/model
+    if not f.is_dir() or not utc(old["cycle"])<utc(c)<=asof or (asof-utc(c)).total_seconds()/3600>MAX_AGE_H:return False
+    if chosen and utc(c)>utc(chosen):return False
+    m,newrows=read_model(f,model,allowed={RECOVERED_REV});check_new(model,m,f)
+    need(all(set(a["products"])-{"rain","gust_1h","gust_instant"}<=set(b["products"]) for a,b in zip(rows,newrows)),"Recovered core field missing")
+    shutil.copytree(f,target)
+    receipt.update({"status":"advanced","recovered_artifact_run":45828477995,"acquisition_sha":RECOVERED_REV,"successful_new_payload_bytes":0,"recovery_reused_verified_cache":True})
+    return True
 def check_model(root,m,allowed):
     return read_model(folder(root,m),m,allowed=allowed)
 def candidate_select(model):
@@ -41,6 +61,8 @@ def candidate_select(model):
     elif utc(chosen)<utc(old["cycle"]):reason="provider_regression"
     elif info.get("available_leads")!=expected:reason="incomplete_native_schedule"
     elif utc(chosen)>asof:reason="future_cycle"
+    elif utc(chosen)>utc(old["cycle"]) and model in RECOVERED and chosen==RECOVERED[model][0] and use_recovered(model,target,old,chosen,asof,rows,receipt):
+        pass
     elif utc(chosen)>utc(old["cycle"]):
         receipt["acquisition_attempted"]=True
         try:
@@ -63,11 +85,13 @@ def candidate_select(model):
                     receipt["failure_detail"]=str(fm.get("error",str(e)))[:300]
                 shutil.move(str(target),"rejected-cache")
             reason="acquisition_or_qc_failed"
+    if receipt["status"]!="advanced" and reason and not target.exists():
+        use_recovered(model,target,old,chosen,asof,rows,receipt)
     if receipt["status"]!="advanced":
         shutil.copytree(folder(BASE,model),target)
         receipt["status"]="fallback" if reason else "unchanged"
         receipt["fallback_reason"]=reason
-    m,r=read_model(target,model,allowed={full.REVISIONS[model],fresh_revision(model)})
+    m,r=read_model(target,model,allowed={full.REVISIONS[model]}|allowed_new(model))
     receipt["selected_cycle"]=m["cycle"];receipt["manifest_sha256"]=sha(target/"manifest.json")
     age=(asof-utc(m["cycle"])).total_seconds()/3600
     receipt["age_hours_at_discovery"]=round(age,3)
@@ -81,9 +105,10 @@ def read_dynamic():
     for model in MODELS:
         r=rr[model];need(r["model"]==model and r["freshness_pass"] and r["previous_cycle"]==full.CYCLES[model],"Selection/freshness gate failed")
         f=folder(CAND,model)
-        m,rows=read_model(f,model,allowed={full.REVISIONS[model],fresh_revision(model)})
+        m,rows=read_model(f,model,allowed={full.REVISIONS[model]}|allowed_new(model))
         need(m["cycle"]==r["selected_cycle"] and sha(f/"manifest.json")==r["manifest_sha256"],"Candidate receipt differs")
-        need((r["status"]=="advanced" and m["code_sha"]==fresh_revision(model) and utc(m["cycle"])>utc(r["previous_cycle"])) or (r["status"] in ("unchanged","fallback") and m["code_sha"]==full.REVISIONS[model] and m["cycle"]==r["previous_cycle"]),"Selection lineage differs")
+        need((r["status"]=="advanced" and m["code_sha"] in allowed_new(model) and utc(m["cycle"])>utc(r["previous_cycle"])) or (r["status"] in ("unchanged","fallback") and m["code_sha"]==full.REVISIONS[model] and m["cycle"]==r["previous_cycle"]),"Selection lineage differs")
+        if r["status"]=="advanced":check_new(model,m,f)
         if model=="ifs-010" and m["code_sha"]==full.QC_SHA:need(m.get("qc_policy")=="experimental_localized_rh_quarantine_v1","Missing prior QC lineage")
         sources[model]={"cycle":m["cycle"],"acquisition_sha":m["code_sha"],"entries":len(rows),"manifest_sha256":sha(f/"manifest.json")}
         n+=len(rows)
@@ -200,12 +225,12 @@ def publish_local():
     verify_site(out,new);report=data["report"];need(report["passed"],"Invalid candidate")
     numeric=Path("new-numerical-archive");numeric.mkdir();numeric_bytes=0
     for m in MODELS:
-        a,x=check_model(BASE,m,{full.REVISIONS[m]});b,y=check_model(CAND,m,{full.REVISIONS[m],fresh_revision(m)})
+        a,x=check_model(BASE,m,{full.REVISIONS[m]});b,y=check_model(CAND,m,{full.REVISIONS[m]}|allowed_new(m))
         need(report["sources"][m]["manifest_sha256"]==sha(folder(CAND,m)/"manifest.json"),"Candidate numeric manifest mismatch")
         if a["cycle"]==b["cycle"]:
             need(a==b and [(e["lead"],e["sha256"]) for e in x]==[(e["lead"],e["sha256"]) for e in y],"Unchanged model differs")
         else:
-            dest=folder(numeric,m);shutil.copytree(folder(CAND,m),dest);read_model(dest,m,allowed={fresh_revision(m)})
+            dest=folder(numeric,m);shutil.copytree(folder(CAND,m),dest);read_model(dest,m,allowed=allowed_new(m));check_new(m,b,dest)
             numeric_bytes+=sum(p.stat().st_size for p in dest.iterdir() if p.is_file())
     (numeric/"archive-index.json").write_bytes(dump({"source_run":os.environ["GITHUB_RUN_ID"],"previous_run":BASE_RUN,"archived_replay":bool(REPLAY_REVISIONS),"new_models":[m for m in MODELS if folder(numeric,m).exists()],"new_numeric_bytes":numeric_bytes}))
     with tempfile.TemporaryDirectory(prefix="titan-local-publication-") as td:

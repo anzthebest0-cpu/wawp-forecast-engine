@@ -52,7 +52,7 @@ jobs:
       matrix:
         model: [gfs, ifs-025, ifs-010, aifs-025, icon]
     runs-on: ubuntu-24.04
-    timeout-minutes: 55
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,7 +75,16 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -r panel-runtime-lock.txt
+      - uses: actions/download-artifact@v4
+        if: matrix.model == 'ifs-010' || matrix.model == 'aifs-025'
+        with:
+          name: titan-recovered-${{ matrix.model }}
+          path: recovered-input/${{ matrix.model }}
+          run-id: '45828477995'
+          github-token: ${{ github.token }}
+        continue-on-error: true
       - run: python scripts/test_spatial_rain_windows.py
+      - run: python scripts/test_targeted_ecmwf_retry.py
       - run: python scripts/titan_automated_update.py select ${{ matrix.model }}
       - uses: actions/upload-artifact@v4
         with:
@@ -83,6 +92,7 @@ jobs:
           path: |
             regional-cache/manifest.json
             regional-cache/*.npz
+            regional-cache/required-field-failure.json
           retention-days: 30
       - uses: actions/upload-artifact@v4
         with:

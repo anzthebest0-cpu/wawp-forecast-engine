@@ -1,5 +1,6 @@
 """Full native-lead regional cache pilot; no deployment, no database writes."""
 import json,sys,os,time,hashlib
+from targeted_ecmwf_retry import wrap
 from pathlib import Path
 from datetime import datetime,timedelta
 import numpy as np
@@ -34,7 +35,11 @@ def regular(model,c,leads,*,previous_lead=0,prior_records=None,initial_bytes=0):
         a,dx,m1=circ.load_gfs(h) if isg else circ.ecmwf(family,res,h)
         b,dx,m2=dyn.read_gfs(h) if isg else dyn.read_ecmwf(family,res,h)
         v,dx,m3=vert.read_gfs(h) if isg else vert.read_ecmwf(family,res,h)
-        if any(m["errors"] or m["missing"] for m in (m2,m3)):raise ValueError("Required fields missing")
+        if any(m["errors"] or m["missing"] for m in (m2,m3)):
+            details={"model":model,"cycle":c.isoformat(),"lead":h,"dynamics":{"errors":m2["errors"],"missing":m2["missing"]},"vertical":{"errors":m3["errors"],"missing":m3["missing"]},"received_this_lead":cache.bytes if cache else None}
+            (ROOT/"required-field-failure.json").write_text(json.dumps(details,indent=2))
+            print("REQUIRED_FIELD_FAILURE",json.dumps(details),flush=True)
+            raise ValueError("Required fields missing: "+json.dumps(details,sort_keys=True)[:1200])
         d,q2=dyn.diagnostics(b,dx);x,q3=vert.diagnostics(v,dx)
         required={"mfc925","mfc850","flux925","shear","ki"}|({"cape","cin"} if isg else {"mucape"} if family=="ifs" else set())
         if not required<=set(d) or not set(vert.PRODUCTS)<=set(x):raise ValueError("Missing diagnostics")
@@ -96,6 +101,12 @@ def main():
     d=json.loads(Path("cycle-discovery.json").read_text());info=next(x for x in d["results"] if x["model"]==model)
     expected=tuple(h for h in LEADS if model!="aifs-025" or h%6==0)
     manifest={"model":model,"cycle":info["selected"],"discovery_utc":d["as_of_utc"],"code_sha":os.environ.get("GITHUB_SHA"),"expected_leads":expected,"entries":[]}
+    retry_events=[]
+    raw_fetch=pwv.fetch
+    def retry_event(e):
+        retry_events.append(e);print("AUTO_TRANSFER_RETRY",json.dumps({"model":model,**e}),flush=True)
+        if len(retry_events)>12:raise ValueError("Model transient retry budget exhausted")
+    if model not in ("gfs","icon"):pwv.fetch=wrap(raw_fetch,report=retry_event)
     try:
         if not info["selected"] or tuple(info["available_leads"])!=expected:raise ValueError("Incomplete native schedule; do not publish")
         c=datetime.fromisoformat(info["selected"])
@@ -103,7 +114,23 @@ def main():
             manifest["entries"].append(rec)
             print("FULL_LEAD",model,rec["lead"],len(rec["products"]),rec["provenance"].get("rain_status"),flush=True)
         manifest["passed"]=True
-    except Exception as e:manifest["passed"]=False;manifest["error"]=str(e)[:1500]
+    except Exception as e:
+        manifest["passed"]=False;manifest["error"]=str(e)[:1500]
+        # One strict continuation if a verified prefix exists; never bypass QC.
+        # H0-only prefixes cannot reconstruct a rain boundary.
+        if model in ("ifs-025","ifs-010","aifs-025") and manifest["entries"] and manifest["entries"][-1]["lead"]>0 and len(manifest["entries"])<len(expected):
+            try:
+                from titan_resume_prefix import resume
+                import sys as _sys
+                # When called by the rolling selector this is the imported module.
+                resume(_sys.modules[__name__],model,c,manifest)
+                manifest["passed"]=True;manifest.pop("error",None)
+            except Exception as re:
+                manifest["recovery_error"]=str(re)[:1500]
+                print("AUTO_PREFIX_RECOVERY_FAILED",json.dumps({"model":model,"error":str(re)[:1500]}),flush=True)
+    finally:
+        pwv.fetch=raw_fetch
+        if retry_events:manifest["transfer_retry_events"]=retry_events
     manifest["elapsed_seconds"]=round(time.monotonic()-start,2)
     (ROOT/"manifest.json").write_text(json.dumps(manifest,indent=2,allow_nan=False))
     print("FULL_CACHE",json.dumps({k:v for k,v in manifest.items() if k!="entries"}|{"completed_leads":len(manifest["entries"]),"network_payload_bytes":sum(x["provenance"]["network_payload_bytes"] for x in manifest["entries"])}),flush=True)
