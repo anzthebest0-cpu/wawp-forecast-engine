@@ -1,0 +1,108 @@
+name: TITAN actual multi-cycle storage efficiency
+on:
+  push:
+    branches: [codex/titan-multicycle-storage]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: titan-multicycle-experiment
+  cancel-in-progress: false
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/test_cycle_discovery.py
+      - run: python scripts/pilot_cycle_discovery.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: multicycle-discovery
+          path: cycle-discovery.json
+          retention-days: 30
+  acquire:
+    needs: discover
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        model: [gfs, ifs-025, ifs-010, aifs-025, icon]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: multicycle-discovery
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-full-cache-${{ matrix.model }}
+          path: baseline/titan-full-cache-${{ matrix.model }}
+          run-id: '45721468170'
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install "eccodes>=2.42,<3" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3" "metpy>=1.7,<2" scipy pillow
+      - run: python scripts/test_spatial_rain_windows.py
+      - run: python scripts/pilot_multicycle_storage.py ${{ matrix.model }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-full-cache-${{ matrix.model }}
+          path: |
+            regional-cache/manifest.json
+            regional-cache/*.npz
+          retention-days: 30
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reuse-receipt-${{ matrix.model }}
+          path: reuse-receipt.json
+          retention-days: 30
+  compare:
+    needs: acquire
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-cache-*
+          path: baseline
+          run-id: '45721468170'
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: titan-full-cache-*
+          path: candidate
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: reuse-receipt-*
+          path: receipts-raw
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install "eccodes>=2.42,<3" "numpy>=2,<3" "matplotlib>=3.9,<4" "basemap>=2,<3" "metpy>=1.7,<2" scipy pillow
+      - run: |
+          set -euo pipefail
+          mkdir receipts
+          for m in gfs ifs-025 ifs-010 aifs-025 icon; do
+            mv "receipts-raw/reuse-receipt-$m" "receipts/titan-full-cache-$m"
+          done
+          python scripts/pilot_multicycle_storage.py compare
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-multicycle-storage-report
+          path: multicycle-storage-report.json
+          retention-days: 30
