@@ -14,6 +14,7 @@ REQUIRED={("u",925),("v",925),("u",850),("v",850),("r",850),("r",700),("sp",0),(
 UNITS={"u":("m s**-1","m/s"),"v":("m s**-1","m/s"),"r":("%",),"t":("K",),"q":("kg kg**-1","kg kg-1","kg/kg"),"sp":("Pa",),"msl":("Pa",)}
 BUDGET=110*1024**2
 used=0
+RH_QC_HOOK=None # optional research-only terrain diagnostic, strict default
 
 def crop(data,k,lead,spacing):
     path=OUT/"temporary.grib2"
@@ -45,6 +46,8 @@ def crop(data,k,lead,spacing):
                 arr=np.full((ny,nx),np.nan);arr[iy,ix]=v
                 if var in ("sp","msl"):arr/=100
                 lo,hi={"sp":(300,1100),"msl":(850,1100),"r":(-1,110),"t":(180,340),"q":(0,.06),"u":(-150,150),"v":(-150,150)}[var]
+                if var=="r" and RH_QC_HOOK is not None:
+                    arr=RH_QC_HOOK(data,k,lead,spacing,arr,lo,hi)
                 if not np.isfinite(arr).any() or np.any(np.isfinite(arr)&((arr<lo)|(arr>hi))):raise ValueError("Range QC "+str(k))
                 if var in ("sp","msl") and not np.isfinite(arr).all():raise ValueError("Incomplete pressure")
             finally:ec.codes_release(h)

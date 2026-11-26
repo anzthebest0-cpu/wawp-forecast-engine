@@ -21,9 +21,9 @@ def write(c,h,arrays,meta,windows,dx):
     if any(a.shape!=shape or not np.isfinite(a).any() or np.isinf(a).any() for a in arrays.values()):raise ValueError("Invalid regional field")
     f=ROOT/f"f{h:03d}.npz";np.savez_compressed(f,**arrays)
     return {"lead":h,"valid_utc":stamp(c,h),"dx":dx,"file":f.name,"sha256":hashlib.sha256(f.read_bytes()).hexdigest(),"products":sorted(arrays),"windows":windows,"provenance":meta}
-def regular(model,c,leads):
+def regular(model,c,leads,*,previous_lead=0,prior_records=None,initial_bytes=0):
     isg=model=="gfs";family="aifs-single" if model=="aifs-025" else "ifs";res="0p1" if model=="ifs-010" else "0p25"
-    upstream=pwv.fetch;total=0;previous=0;prior_rain=[]
+    upstream=pwv.fetch;total=initial_bytes;previous=previous_lead;prior_rain=list(prior_records or [])
     for m in (pwv,circ,dyn,vert,rain):m.INIT=c;m.OUT=ROOT
     for h in leads:
         cache=None

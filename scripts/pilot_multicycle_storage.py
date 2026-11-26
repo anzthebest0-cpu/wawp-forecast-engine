@@ -10,6 +10,7 @@ from pilot_full_spatial_render import SPECS,DOMAINS,MODELS
 from pilot_full_spatial_acquire import main as acquire_main
 BASE_SHA="5ba074efa1010f1dbf50006da97b313b6ed8f6e2"
 BASE_RUN="45721468170"
+EXPERIMENT_SHA="ff68052a7b71016f29d18b85f9af98426d81fb1c"
 def need(ok,msg):
     if not ok:raise ValueError(msg)
 def sha(p):
@@ -81,7 +82,7 @@ def compare():
     baseline=[];candidate=[];model_stats=[];base_models={};new_models={}
     for model in MODELS:
         a,x=read_model(folder("baseline",model),model,allowed={BASE_SHA})
-        b,y=read_model(folder("candidate",model),model,allowed={BASE_SHA,os.environ["GITHUB_SHA"]})
+        b,y=read_model(folder("candidate",model),model,allowed={BASE_SHA,EXPERIMENT_SHA,os.environ["GITHUB_SHA"]})
         receipt=load(folder("receipts",model)/"reuse-receipt.json")
         need(receipt["model"]==model and receipt["baseline_cycle"]==a["cycle"] and receipt["selected_cycle"]==b["cycle"],"Receipt identity mismatch")
         need(utc(b["cycle"])>=utc(a["cycle"]),"Cycle regression")
@@ -89,7 +90,7 @@ def compare():
         if same:
             need(receipt["mode"]=="same_cycle_reused" and receipt["network_payload_bytes"]==0 and a==b,"Same-cycle reuse evidence differs")
             need([(r["lead"],r["sha256"]) for r in x]==[(r["lead"],r["sha256"]) for r in y],"Same-cycle bytes differ")
-        else:need(receipt["mode"]=="new_cycle_acquired" and b["code_sha"]==os.environ["GITHUB_SHA"] and receipt["network_payload_bytes"]>0,"Fresh acquisition evidence missing")
+        else:need(receipt["mode"]=="new_cycle_acquired" and b["code_sha"] in {EXPERIMENT_SHA,os.environ["GITHUB_SHA"]} and receipt["network_payload_bytes"]>0,"Fresh acquisition evidence missing")
         baseline.extend(x);candidate.extend(y);base_models[model]=x;new_models[model]=y
         ax={r["valid_utc"]:r for r in x};by={r["valid_utc"]:r for r in y};overlap=set(ax)&set(by)
         field_pairs=field_equal=0
@@ -115,7 +116,7 @@ def compare():
         if any(s["model"]==m and s["mode"]=="new_cycle_acquired" for s in model_stats):
             rr=[r for k in MODELS for r in (new_models[k] if k==m else base_models[k])]
             stagger.append({"only_advanced_model":m,**compare_charts(baseline,rr)})
-    report={"passed":True,"mode":"actual_baseline_and_new_discovered_cycles","baseline_run":BASE_RUN,"candidate_run":os.environ["GITHUB_RUN_ID"],"baseline_native_entries":len(old),"candidate_native_entries":len(new),"same_native_identities":len(overlap),"new_native_identities":len(set(new)-set(old)),"baseline_npz_bytes":sum(r["bytes"] for r in baseline),"candidate_npz_bytes":sum(r["bytes"] for r in candidate),"incremental_native_identity_bytes":identity_new,"incremental_unique_npz_content_bytes":distinct_new,"new_manifest_bytes":manifest_growth,"network_payload_bytes":sum(m["network_payload_bytes"] for m in model_stats),"models":model_stats,"chart_reuse":charts,"staggered_counterfactual":stagger,"notes":["No new rendering or Drive writes; chart signatures identify safe reuse candidates only under unchanged renderer/style/domain settings.","Cross-cycle array equality is diagnostic only; preserve model-cycle provenance even if bytes coincide.","Two snapshots do not establish annual storage growth or sustained update availability. Staggered refreshes are counterfactual combinations of the measured data, not additional actual acquisitions."]}
+    report={"passed":True,"mode":"actual_baseline_and_new_discovered_cycles","baseline_run":BASE_RUN,"candidate_run":os.environ["GITHUB_RUN_ID"],"baseline_native_entries":len(old),"candidate_native_entries":len(new),"same_native_identities":len(overlap),"new_native_identities":len(set(new)-set(old)),"baseline_npz_bytes":sum(r["bytes"] for r in baseline),"candidate_npz_bytes":sum(r["bytes"] for r in candidate),"incremental_native_identity_bytes":identity_new,"incremental_unique_npz_content_bytes":distinct_new,"new_manifest_bytes":manifest_growth,"network_payload_bytes":sum(m["network_payload_bytes"] for m in model_stats),"models":model_stats,"ifs_010_recovery_status":next(m.get("recovery_status","not_applicable") for m in model_stats if m["model"]=="ifs-010"),"chart_reuse":charts,"staggered_counterfactual":stagger,"notes":["No new rendering or Drive writes; chart signatures identify safe reuse candidates only under unchanged renderer/style/domain settings.","Cross-cycle array equality is diagnostic only; preserve model-cycle provenance even if bytes coincide.","Two snapshots do not establish annual storage growth or sustained update availability. Staggered refreshes are counterfactual combinations of the measured data, not additional actual acquisitions."]}
     Path("multicycle-storage-report.json").write_text(json.dumps(report,indent=2))
     print("MULTICYCLE_STORAGE",json.dumps(report),flush=True)
 if __name__=="__main__":
