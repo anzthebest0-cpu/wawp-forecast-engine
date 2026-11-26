@@ -1,0 +1,55 @@
+name: TITAN exact rejected field recovery
+on:
+  push:
+    branches: [codex/titan-targeted-field-recovery]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: titan-targeted-field-recovery
+  cancel-in-progress: false
+jobs:
+  recover:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        model: [ifs-010, aifs-025]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-rejected-${{ matrix.model }}
+          path: partial
+          run-id: '45822462754'
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: titan-panel-runtime-lock
+          run-id: '45759575549'
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r panel-runtime-lock.txt
+      - run: python scripts/test_targeted_ecmwf_retry.py
+      - run: python scripts/test_spatial_rain_windows.py
+      - run: python scripts/titan_targeted_field_recovery.py ${{ matrix.model }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: titan-targeted-recovery-report-${{ matrix.model }}
+          path: recovery-evidence/
+          retention-days: 30
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: titan-recovered-${{ matrix.model }}
+          path: regional-cache/
+          retention-days: 30

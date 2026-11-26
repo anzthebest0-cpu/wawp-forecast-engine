@@ -34,7 +34,11 @@ def regular(model,c,leads,*,previous_lead=0,prior_records=None,initial_bytes=0):
         a,dx,m1=circ.load_gfs(h) if isg else circ.ecmwf(family,res,h)
         b,dx,m2=dyn.read_gfs(h) if isg else dyn.read_ecmwf(family,res,h)
         v,dx,m3=vert.read_gfs(h) if isg else vert.read_ecmwf(family,res,h)
-        if any(m["errors"] or m["missing"] for m in (m2,m3)):raise ValueError("Required fields missing")
+        if any(m["errors"] or m["missing"] for m in (m2,m3)):
+            details={"model":model,"cycle":c.isoformat(),"lead":h,"dynamics":{"errors":m2["errors"],"missing":m2["missing"]},"vertical":{"errors":m3["errors"],"missing":m3["missing"]},"received_this_lead":cache.bytes if cache else None}
+            (ROOT/"required-field-failure.json").write_text(json.dumps(details,indent=2))
+            print("REQUIRED_FIELD_FAILURE",json.dumps(details),flush=True)
+            raise ValueError("Required fields missing: "+json.dumps(details,sort_keys=True)[:1200])
         d,q2=dyn.diagnostics(b,dx);x,q3=vert.diagnostics(v,dx)
         required={"mfc925","mfc850","flux925","shear","ki"}|({"cape","cin"} if isg else {"mucape"} if family=="ifs" else set())
         if not required<=set(d) or not set(vert.PRODUCTS)<=set(x):raise ValueError("Missing diagnostics")
