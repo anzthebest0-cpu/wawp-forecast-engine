@@ -64,6 +64,7 @@ jobs:
       (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event_name == 'push')
     permissions:
       contents: write
+      actions: read
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -235,6 +236,11 @@ jobs:
           # Re-evaluate absolute freshness at packaging time.
           PYTHONPATH=. python scripts/replay_model_preview.py --database "$work/candidate.db" --directory "$work/model-pages/data"
           python -m src.model_preview_gate --database "$work/candidate.db" --directory "$work/model-pages/data" --report artifacts/model-refresh/publication.json
+      - name: Preserve separate frozen TITAN preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash scripts/attach_titan_public_preview.sh "$RUNNER_TEMP/wawp-model-refresh/model-pages" read-only || echo '::warning::Frozen TITAN preview unavailable; preserving operational root deployment'
       - name: Upload exact gated Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

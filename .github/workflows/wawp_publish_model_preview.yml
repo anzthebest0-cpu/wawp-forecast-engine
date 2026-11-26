@@ -44,7 +44,10 @@ jobs:
   package:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.WAWP_LIVE_PIPELINE_ENABLED != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -84,6 +87,11 @@ jobs:
           python -m src.model_preview_gate --database "$work/source.db" --directory "$work/model-pages/data" --report artifacts/model-publication/gate.json
           sha256sum -c "$work/source.sha256"
           echo "Preview outcome: $(jq -r .status artifacts/model-publication/gate.json)"
+      - name: Attach verified frozen TITAN preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash scripts/attach_titan_public_preview.sh "$RUNNER_TEMP/wawp-publish-only/model-pages" seed-release
       - name: Upload gated Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

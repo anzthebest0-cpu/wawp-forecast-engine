@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
   pages: write
   id-token: write
 
@@ -273,6 +274,11 @@ jobs:
             git push
           fi
 
+      - name: Preserve separate frozen TITAN preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash scripts/attach_titan_public_preview.sh "docs" read-only || echo '::warning::Frozen TITAN preview unavailable; preserving operational root deployment'
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
