@@ -92,7 +92,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           bash scripts/attach_titan_public_preview.sh "$RUNNER_TEMP/wawp-publish-only/model-pages" seed-release
-      - name: Verify TITAN mobile and desktop controls before deployment
+      - name: Verify TITAN mobile and desktop controls including hash navigation before deployment
         run: |
           set -euo pipefail
           npm install --no-save playwright
