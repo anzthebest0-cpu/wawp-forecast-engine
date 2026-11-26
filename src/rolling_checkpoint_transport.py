@@ -99,3 +99,17 @@ class RollingTransport:
                 need(data.get("id")==info["id"] and data.get("name")==name and int(data.get("size",-1))==info["size"] and data.get("trashed") is True,"Drive trash response differs")
         self.metadata(name,info,trashed=True)
         need(name not in self.inventory(),"Trash still active")
+
+def replicate_rolling(archive,work):
+    """Publish payload then manifest, read each by exact object ID, verify bytes."""
+    from src.storage_snapshot import manifest_path
+    t=RollingTransport()
+    readback=work/"readback";readback.mkdir()
+    for p in (archive,manifest_path(archive)):
+        inv=t.inventory()
+        if p.name not in inv:rclone_copy(str(p),PREFIX+"/"+p.name)
+        inv=t.inventory()
+        need(p.name in inv and inv[p.name]["size"]==p.stat().st_size,"Rolling upload inventory mismatch")
+        back=readback/p.name;t.read(p.name,inv[p.name],back)
+        need(file_digest(back)==file_digest(p),"Rolling upload readback differs")
+    return readback/archive.name
