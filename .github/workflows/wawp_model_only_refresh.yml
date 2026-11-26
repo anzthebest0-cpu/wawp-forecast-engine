@@ -102,6 +102,7 @@ jobs:
           cp "$work/original.db" "$work/candidate.db"
       - name: Collect new verified source data and archive evidence
         env:
+          GH_TOKEN: ${{ github.token }}
           WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
           WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
         run: |
@@ -127,6 +128,11 @@ jobs:
           print('Drive capacity preflight passed (unlimited or sufficient reported space)')
           PY
           rclone mkdir wawp:checkpoints/rolling
+          # Reconcile pending retirement against the restored current release before collecting.
+          release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/latest-db" --jq .id)"
+          original="$(<"$work/original-asset.txt")"
+          PYTHONPATH=. python -m src.checkpoint_retention --repo "$GITHUB_REPOSITORY" --release-id "$release_id" \
+            --checkpoint "$work/$original" --database "$work/original.db" --report artifacts/model-refresh/retention-preflight.json
           rclone lsf wawp:checkpoints/rolling --files-only > "$work/rolling-inventory.txt"
           python - "$work/rolling-inventory.txt" <<'PY'
           import re,sys
@@ -151,10 +157,10 @@ jobs:
             PYTHONPATH=. python - "$work/$asset" "$work/checkpoint-verification" <<'PY'
           import sys
           from pathlib import Path
-          from src.storage_incremental_archive import replicate
+          from src.rolling_checkpoint_transport import replicate_rolling
           from src.storage_snapshot import restore, file_digest
           p,w=map(Path,sys.argv[1:]);w.mkdir()
-          copy=replicate(p,'wawp:checkpoints/rolling',w)
+          copy=replicate_rolling(p,w)
           manifest=restore(copy,w/'recovered.db')
           if file_digest(w/'recovered.db') != manifest['database_sha256']:
               raise ValueError('Drive checkpoint restore mismatch')

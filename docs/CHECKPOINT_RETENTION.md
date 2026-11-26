@@ -54,3 +54,8 @@ At four ~74 MB checkpoints/day, a 30-day Trash window can temporarily hold
 roughly 8.9 GB of superseded payloads before Google removes them. Do not
 empty all Trash; review targeted managed files and quota as needed.
 Native-archive partitioning and longer-term quota tuning remain separate work.
+
+## Recurring retention repair (experimental)
+Following the approved one-time retirement in run 45736679913, the candidate implementation uses direct Drive object IDs for reads, stable release identities (not download counters), verified retained rollback copies, and an immutable `.retiring.json` journal written and read back before any retirement mutation. The pre-acquisition step reconciles pending retirement against the already verified latest GitHub checkpoint; it does not collect or publish when reconciliation fails. Only same-newest-checkpoint journals with matching exact object IDs and proof can resume. A missing active payload requires confirmation of the exact trashed object and absent release pair. Unknown/unregistered payloads, changed latest identity or ambiguous partial state block acquisition for review. Receipts remain immutable; no permanent Drive deletion. A local-only fixture transport simulates Trash in a separate test directory. The existing six-payload backpressure, three-generation retention, pinned backups, freshness gates and TAF withholding remain. Live Drive integration and first production refresh require separate validation; the test workflow has no credentials and no remote writes.
+
+The new rolling checkpoint publication uses the same ID-based readback for the payload and manifest, with the manifest uploaded only after the payload matches. Other archival transports are unchanged.

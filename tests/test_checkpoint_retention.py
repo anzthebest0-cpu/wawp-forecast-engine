@@ -63,7 +63,7 @@ def test_retire_only_oldest_managed_after_verified_superset(tmp_path,monkeypatch
 
 def test_non_equivalent_snapshot_never_retires(tmp_path,monkeypatch):
     remote,db,newest,assets,deleted=fixture(tmp_path,monkeypatch,changed=True)
-    with pytest.raises(ValueError,match='require review'):
+    with pytest.raises(ValueError,match='requires review'):
         retention.retire('repo',1,newest,db,tmp_path/'report.json')
     assert not deleted and (remote/'wawp_forecasts-1-1.db.zst').is_file()
 
@@ -81,7 +81,7 @@ def test_corrupted_old_snapshot_never_retires(tmp_path,monkeypatch):
     old=remote/'wawp_forecasts-1-1.db.zst'
     with old.open('ab') as f:
         f.write(b'damaged')
-    with pytest.raises(ValueError,match='require review'):
+    with pytest.raises(ValueError,match='requires review'):
         retention.retire('repo',1,newest,db,tmp_path/'report.json')
     assert not deleted and old.is_file()
 
@@ -89,3 +89,56 @@ def test_corrupted_old_snapshot_never_retires(tmp_path,monkeypatch):
 def test_release_pagination(monkeypatch):
     monkeypatch.setattr(retention,'run',lambda *args:'[{"id":1}]\n[{"id":2}]\n')
     assert retention.release_assets('repo',1)==[[{'id':1}],[{'id':2}]]
+
+
+def test_resume_after_release_manifest_delete(tmp_path,monkeypatch):
+    remote,db,newest,assets,deleted=fixture(tmp_path,monkeypatch)
+    out=tmp_path/'report.json';real=retention.run
+    def interrupt(*args):
+        result=real(*args)
+        if '--method' in args and args[-1].endswith('/2'):
+            raise OSError('interrupted after manifest removal')
+        return result
+    monkeypatch.setattr(retention,'run',interrupt)
+    with pytest.raises(ValueError,match='requires review'):
+        retention.retire('repo',1,newest,db,out)
+    assert deleted==[2] and (remote/'wawp_forecasts-1-1.db.zst.retiring.json').exists()
+    monkeypatch.setattr(retention,'run',real)
+    retention.retire('repo',1,newest,db,out)
+    assert deleted==[2,1] and json.loads(out.read_text())['retired']==['wawp_forecasts-1-1.db.zst']
+
+def test_resume_after_trash_before_receipt(tmp_path,monkeypatch):
+    remote,db,newest,assets,deleted=fixture(tmp_path,monkeypatch)
+    out=tmp_path/'report.json';real=retention.RollingTransport.put_json
+    def interrupt(self,name,value,work):
+        if name.endswith('.retired.json'):raise OSError('interrupted after trash')
+        return real(self,name,value,work)
+    monkeypatch.setattr(retention.RollingTransport,'put_json',interrupt)
+    with pytest.raises(ValueError,match='requires review'):
+        retention.retire('repo',1,newest,db,out)
+    assert deleted==[2,1] and not (remote/'wawp_forecasts-1-1.db.zst').exists()
+    monkeypatch.setattr(retention.RollingTransport,'put_json',real)
+    retention.retire('repo',1,newest,db,out)
+    assert deleted==[2,1] and (remote/'wawp_forecasts-1-1.db.zst.retired.json').is_file()
+
+def test_unregistered_managed_payload_blocks_retirement(tmp_path,monkeypatch):
+    remote,db,newest,assets,deleted=fixture(tmp_path,monkeypatch)
+    (remote/'wawp_forecasts-999-1.db.zst').write_bytes(b'unknown')
+    with pytest.raises(ValueError,match='requires review'):
+        retention.retire('repo',1,newest,db,tmp_path/'report.json')
+    assert not deleted
+
+def test_download_counter_not_asset_identity():
+    a={'id':1,'name':'x','size':1,'digest':'sha256:a','state':'uploaded','created_at':'t','download_count':1}
+    b=dict(a,download_count=2)
+    assert retention.stable([[a]])==retention.stable([[b]])
+    assert retention.stable([[a]])!=retention.stable([[dict(b,size=2)]])
+
+def test_rolling_replication_readback(tmp_path,monkeypatch):
+    from src.rolling_checkpoint_transport import replicate_rolling
+    remote,db,newest,assets,deleted=fixture(tmp_path,monkeypatch)
+    work=tmp_path/'replicate';work.mkdir()
+    back=replicate_rolling(newest,work)
+    assert file_digest(back)==file_digest(newest)
+    assert file_digest(manifest_path(back))==file_digest(manifest_path(newest))
+    assert not deleted

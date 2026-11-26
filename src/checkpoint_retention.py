@@ -17,7 +17,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from scripts.verify_preview_append import verify
-from src.storage_incremental_archive import rclone_copy
+from src.rolling_checkpoint_transport import RollingTransport, need
+import requests
 from src.storage_snapshot import file_digest, manifest_path, restore, select_asset, verify_asset
 
 PREFIX = "wawp:checkpoints/rolling"
@@ -85,107 +86,123 @@ def append_superset(old, new):
     return verify(old, new, diff)
 
 
-def put_json(work, name, report):
-    local = work / name
-    local.write_text(json.dumps(report, sort_keys=True, indent=2) + '\n', encoding='utf-8')
-    rclone_copy(str(local), f'{PREFIX}/{name}')
-    back = work / ('readback-' + name)
-    rclone_copy(f'{PREFIX}/{name}', str(back))
-    if file_digest(local) != file_digest(back):
-        raise ValueError('Retention record readback mismatch')
+def stable(pages):
+    return {n:identity(a) for n,a in indexed(pages).items()}
 
+def assert_state(repo,release_id,transport,latest,expected_drive,expected_release):
+    pages=release_assets(repo,release_id)
+    need(select_asset(pages)==latest,"Selected checkpoint changed")
+    need(stable(pages)==expected_release,"Release identity changed")
+    need(transport.inventory()==expected_drive,"Rolling object inventory changed")
 
-def get_json(work, name):
-    p = work/name
-    rclone_copy(f'{PREFIX}/{name}', str(p))
-    return json.loads(p.read_text())
+def verify_pair(work,name,rec,transport,inv):
+    for key in ("data","manifest"):
+        m=rec[key];n=m["name"]
+        need(n in inv and inv[n]["size"]==m["size"],"Drive inventory mismatch")
+        p=work/n;transport.read(n,inv[n],p)
+        need("sha256:"+file_digest(p)==m["digest"],"Drive checkpoint differs from registered GitHub asset")
+    return work/name
 
+def registration(name,rec):
+    need(name_allowed(name) and rec["version"]==1 and rec["data"]["name"]==name and rec["manifest"]["name"]==name+".json","Invalid managed registration")
+    for k in ("data","manifest"):
+        m=rec[k];need(identity(m)==m and m["state"]=="uploaded" and re.fullmatch(r"sha256:[0-9a-f]{64}",m["digest"]),"Invalid registered release identity")
 
-def verify_pair(work, name, rec):
-    p = work/name
-    rclone_copy(f'{PREFIX}/{name}', str(p))
-    rclone_copy(f'{PREFIX}/{name}.json', str(manifest_path(p)))
-    for path,key in ((p,'data'),(manifest_path(p),'manifest')):
-        meta = rec[key]
-        if meta['name'] != path.name or meta['size'] != path.stat().st_size or meta['digest'] != 'sha256:'+file_digest(path):
-            raise ValueError('Drive checkpoint differs from registered GitHub asset')
-    return p
+def receipt(intent):
+    return {"version":1,"superseded_by":intent["latest"]["data"]["name"],"retired":intent["record"],"proof":intent["proof"]}
 
-
-def retire(repo, release_id, checkpoint, latest_db, report_path):
-    if not name_allowed(checkpoint.name):
-        raise ValueError('Not a managed checkpoint')
-    with tempfile.TemporaryDirectory() as temp:
-        work = Path(temp)
-        pages = release_assets(repo, release_id)
-        assets = indexed(pages)
-        name = checkpoint.name
-        if select_asset(pages) != name:
-            raise ValueError('Current checkpoint is not the selected release')
-        verify_asset(pages, checkpoint)
-        verify_asset(pages, manifest_path(checkpoint))
-        record = {'version':1,'data':identity(assets[name]),'manifest':identity(assets[name+'.json'])}
-        with tempfile.TemporaryDirectory(dir=work) as check:
-            latest = verify_pair(Path(check), name, record)
-            if restore(latest, Path(check)/'latest.db')['database_sha256'] != file_digest(latest_db):
-                raise ValueError('Latest recovered checkpoint differs from append candidate')
-        put_json(work, name+'.registered.json', record)
-        files = run('rclone','lsf',PREFIX,'--files-only').splitlines()
-        if len(files) != len(set(files)):
-            raise ValueError('Duplicate names in rolling Drive folder')
-        records = {}
-        for f in files:
-            if f.endswith('.registered.json'):
-                n = f[:-len('.registered.json')]
-                if name_allowed(n) and n+'.retired.json' not in files:
-                    rec = get_json(work, f)
-                    if rec.get('version') != 1 or rec['data']['name'] != n or rec['manifest']['name'] != n+'.json':
-                        raise ValueError('Unexpected registration metadata')
-                    records[n] = rec
-        report = {'policy':'retain three newest managed generations; all pre-policy assets pinned',
-                  'latest':name,'managed':len(records),'retired':[],'skipped':[]}
-        for old_name in eligible(records, name):
-            # No source evidence, original checkpoint, or unregistered file
-            # can reach this block. Preserve all three newer generations.
-            rec = records[old_name]
-            try:
-                with tempfile.TemporaryDirectory(dir=work) as sub:
-                    old_dir = Path(sub)
-                    prior = verify_pair(old_dir, old_name, rec)
-                    recovered = old_dir/'old.db'
-                    restore(prior, recovered)
-                    proof = append_superset(recovered, latest_db)
-                current_pages = release_assets(repo, release_id)
-                current = indexed(current_pages)
-                if select_asset(current_pages) != name or any(identity(current[k]) != record[key] for k,key in ((name,'data'),(name+'.json','manifest'))):
-                    raise ValueError('Latest changed during retention')
-                for key in ('manifest','data'):
-                    a = rec[key]
-                    if a['name'] in current and identity(current[a['name']]) != a:
-                        raise ValueError('Old release identity changed')
-                # Delete only verified exact IDs; manifest first so an
-                # interruption cannot select a half-retired prior pair.
-                for key in ('manifest','data'):
-                    a = rec[key]
-                    if a['name'] in current:
-                        run('gh','api','--method','DELETE',f"repos/{repo}/releases/assets/{a['id']}")
-                final = indexed(release_assets(repo, release_id))
-                if old_name in final or old_name+'.json' in final:
-                    raise ValueError('Release retirement not confirmed')
-                # Old manifest and registration/proof are retained; only the
-                # redundant compressed data object is moved to Drive Trash.
-                run('rclone','deletefile','--drive-use-trash=true',f'{PREFIX}/{old_name}')
-                if old_name in run('rclone','lsf',PREFIX,'--files-only').splitlines():
-                    raise ValueError('Drive trash move not confirmed')
-                put_json(work, old_name+'.retired.json', {'version':1,'superseded_by':name,'retired':rec,'proof':proof})
-                report['retired'].append(old_name)
-            except (ValueError, KeyError, OSError, subprocess.CalledProcessError, sqlite3.Error) as exc:
-                report['skipped'].append({'name':old_name,'reason':type(exc).__name__})
-        report_path.write_text(json.dumps(report,indent=2)+'\n')
+def retire(repo,release_id,checkpoint,latest_db,report_path):
+    name=checkpoint.name
+    need(name_allowed(name),"Not a managed checkpoint")
+    report={"policy":"retain three newest verified managed generations","latest":name,"retired":[],"skipped":[],"stage":"preflight"}
+    try:
+        with tempfile.TemporaryDirectory() as temp:
+            work=Path(temp);t=RollingTransport();pages=release_assets(repo,release_id);assets=stable(pages)
+            need(select_asset(pages)==name,"Current checkpoint is not the selected release")
+            verify_asset(pages,checkpoint);verify_asset(pages,manifest_path(checkpoint))
+            rec={"version":1,"data":assets[name],"manifest":assets[name+".json"]}
+            registration(name,rec)
+            inv=t.inventory()
+            with tempfile.TemporaryDirectory(dir=work) as sub:
+                p=Path(sub);a=verify_pair(p,name,rec,t,inv)
+                latest=restore(a,p/"latest.db")
+                need(latest["database_sha256"]==file_digest(latest_db),"Latest Drive database differs from verified release")
+            # Existing registration is read/compared, not replaced.
+            reg=name+".registered.json"
+            inv[reg]=t.put_json(reg,rec,work)
+            assert_state(repo,release_id,t,name,inv,assets)
+            records={};pending={}
+            for f in sorted(inv):
+                if not f.endswith(".registered.json"):continue
+                n=f.removesuffix(".registered.json")
+                if not name_allowed(n):continue
+                if n+".retired.json" in inv:
+                    need(n not in inv and n not in assets and n+".json" not in assets,"Retired record has active payload")
+                    continue
+                old=t.read_json(f,inv[f],work);registration(n,old);records[n]=old
+                journal=n+".retiring.json"
+                if journal in inv:pending[n]=t.read_json(journal,inv[journal],work)
+            need(all(n in records for n in inv if name_allowed(n)),"Unregistered active managed checkpoint")
+            need(all(f.removesuffix(".retiring.json") in records or f.removesuffix(".retiring.json")+".retired.json" in inv for f in inv if f.endswith(".retiring.json")),"Orphan retirement journal")
+            candidates=eligible(records,name);keep=set(records)-set(candidates)
+            need(set(pending)<=set(candidates),"Pending retirement is not eligible")
+            report["managed"]=len(records)
+            # Verify retained rollback copies before any retirement. Latest was checked above.
+            if candidates:
+                for n in sorted(keep-{name}):
+                    old=records[n]
+                    need(all(assets.get(old[k]["name"])==old[k] for k in ("data","manifest")),"Retained release identity mismatch")
+                    with tempfile.TemporaryDirectory(dir=work) as sub:
+                        p=Path(sub);restore(verify_pair(p,n,old,t,inv),p/"rollback.db")
+            for n in candidates:
+                report["stage"]="candidate:"+n;old=records[n];journal=n+".retiring.json"
+                assert_state(repo,release_id,t,name,inv,assets)
+                for k in ("data","manifest"):
+                    m=old[k]
+                    if m["name"] in assets:need(assets[m["name"]]==m,"Old release identity changed")
+                    elif n not in pending:raise ValueError("Missing old release asset without journal")
+                if n in pending:
+                    intent=pending[n]
+                    need(intent["version"]==1 and intent["record"]==old and intent["latest"]==rec and intent["latest_database_sha256"]==file_digest(latest_db),"Pending journal does not match verified newest checkpoint")
+                    need(intent["proof"]["status"]=="passed","Pending proof invalid")
+                    need(inv.get(n+".json")==intent["drive_manifest"],"Pending Drive manifest changed")
+                    if n in inv:need(inv[n]==intent["drive_data"],"Pending Drive payload changed")
+                    else:
+                        need(n not in assets and n+".json" not in assets,"Trashed payload still has release assets")
+                        t.metadata(n,intent["drive_data"],trashed=True)
+                else:
+                    need(n in inv,"Missing active payload without journal")
+                    with tempfile.TemporaryDirectory(dir=work) as sub:
+                        p=Path(sub);db=p/"old.db";restore(verify_pair(p,n,old,t,inv),db)
+                        proof=append_superset(db,latest_db)
+                    intent={"version":1,"record":old,"latest":rec,"latest_database_sha256":file_digest(latest_db),"drive_data":inv[n],"drive_manifest":inv[n+".json"],"proof":proof}
+                    assert_state(repo,release_id,t,name,inv,assets)
+                    inv[journal]=t.put_json(journal,intent,work)
+                    assert_state(repo,release_id,t,name,inv,assets)
+                # Verified journal is committed before the first mutation. A restart
+                # may resume only with the same verified newest database and exact IDs.
+                for k in ("manifest","data"):
+                    m=old[k]
+                    if m["name"] not in assets:continue
+                    assert_state(repo,release_id,t,name,inv,assets)
+                    run("gh","api","--method","DELETE",f"repos/{repo}/releases/assets/{m['id']}")
+                    assets.pop(m["name"]);assert_state(repo,release_id,t,name,inv,assets)
+                if n in inv:
+                    assert_state(repo,release_id,t,name,inv,assets)
+                    t.trash(n,intent["drive_data"]);inv.pop(n)
+                    assert_state(repo,release_id,t,name,inv,assets)
+                else:t.metadata(n,intent["drive_data"],trashed=True)
+                inv[n+".retired.json"]=t.put_json(n+".retired.json",receipt(intent),work)
+                assert_state(repo,release_id,t,name,inv,assets)
+                report["retired"].append(n)
+            report["active_managed"]=sum(name_allowed(n) for n in inv)
+            report["stage"]="complete"
+    except (ValueError,KeyError,OSError,subprocess.CalledProcessError,subprocess.TimeoutExpired,sqlite3.Error,requests.RequestException) as exc:
+        report["skipped"].append({"stage":report["stage"],"reason":type(exc).__name__})
+        raise ValueError("Checkpoint retirement requires review; pending work must reconcile before acquisition") from exc
+    finally:
+        report_path.write_text(json.dumps(report,indent=2)+"\n")
         print(json.dumps(report,indent=2))
-        if report['skipped']:
-            raise ValueError('Some retirement candidates require review; no unverified assets removed')
-
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
