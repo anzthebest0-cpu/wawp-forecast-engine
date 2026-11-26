@@ -36,14 +36,10 @@ def api(path):
     req=urllib.request.Request(f"{base}/repos/{repo}/{path}",headers={"Authorization":"Bearer "+os.environ["GH_TOKEN"],"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"})
     with urllib.request.urlopen(req,timeout=20) as r:return json.load(r)
 def main():
-    run=api(f"actions/runs/{RUN}")
-    if run["id"]!=RUN or run["head_sha"]!=REV or run["status"]!="completed" or run["conclusion"]!="success":raise ValueError("Baseline run not verified")
-    artifacts=[]
-    now=datetime.now(timezone.utc)
-    for ident,name in ARTIFACTS.items():
-        a=api(f"actions/artifacts/{ident}")
-        if a["id"]!=ident or a["name"]!=name or a["expired"] or utc(a["expires_at"])<=now or a["size_in_bytes"]<=0 or a["workflow_run"]["id"]!=RUN:raise ValueError("Missing/expired baseline artifact "+name)
-        artifacts.append({"id":ident,"name":name,"size_in_bytes":a["size_in_bytes"],"expires_at":a["expires_at"]})
+    global RUN,REV,CYCLES
+    baseline=json.loads(Path("rolling-baseline.json").read_text())
+    RUN=baseline["run"];REV=baseline["revision"];CYCLES={m:x["cycle"] for m,x in baseline["sources"].items()}
+    artifacts=[{"id":v,"name":k} for k,v in baseline["artifacts"].items()]
     p=plan(json.loads(Path("cycle-discovery.json").read_text()))
     p.update({"baseline_run":RUN,"baseline_revision":REV,"baseline_artifacts":artifacts,"mode":"metadata_only_live_discovery","payload_revalidated":False,"new_payload_bytes":0,"new_images":0,"publication_changed":False})
     Path("early-exit-report.json").write_text(json.dumps(p,indent=2))

@@ -12,6 +12,12 @@ from pilot_multicycle_storage import read_model,folder,need,sha,dump,load,utc
 from pilot_cycle_discovery import LEADS,MODELS
 from pilot_full_spatial_render import GROUPS,SPECS,DOMAINS,render
 BASE_RUN="45759575549"
+BASELINE=None
+def configure_rolling():
+    global BASE_RUN,BASELINE
+    BASELINE=load(Path("rolling-baseline.json"));BASE_RUN=str(BASELINE["run"])
+    full.CYCLES.update({m:x["cycle"] for m,x in BASELINE["sources"].items()})
+    full.REVISIONS.update({m:x["acquisition_sha"] for m,x in BASELINE["sources"].items()})
 BASE=Path("previous-inputs")
 CAND=Path("cache-inputs")
 OLD_SITE=Path("previous-site")
@@ -24,6 +30,7 @@ def check_model(root,m,allowed):
 def candidate_select(model):
     old,rows=check_model(BASE,model,{full.REVISIONS[model]})
     need(old["cycle"]==full.CYCLES[model],"Baseline cycle changed")
+    if BASELINE:need(sha(folder(BASE,model)/"manifest.json")==BASELINE["sources"][model]["manifest_sha256"],"Baseline manifest differs")
     info=next(x for x in load(Path("cycle-discovery.json"))["results"] if x["model"]==model)
     asof=utc(load(Path("cycle-discovery.json"))["as_of_utc"])
     target=Path("regional-cache")
@@ -96,7 +103,8 @@ def read_dynamic():
     need(n==81 and set(k[0] for k in g)==set(SPECS) and len(SPECS)==25,"Candidate inventory incomplete")
     return g,sources
 def previous_entries():
-    c=load(OLD_SITE/"catalog.json");need(c["report"]["passed"] and c["report"]["native_leads"]==81 and c["report"]["panels"]==3567,"Invalid previous catalogue")
+    c=load(OLD_SITE/"catalog.json");need(c["report"]["passed"] and c["report"]["native_leads"]==81 and c["report"]["panels"]==(BASELINE["panels"] if BASELINE else 3567),"Invalid previous catalogue")
+    if BASELINE:need(sha(OLD_SITE/"catalog.json")==BASELINE["catalog_sha256"],"Baseline catalogue differs")
     need(c["report"]["renderer"]==full.renderer_identity(),"Renderer changed; cannot reuse prior panels")
     for m in MODELS:
         need(c["report"]["sources"][m]["cycle"]==full.CYCLES[m],"Previous source cycle mismatch")
@@ -106,7 +114,7 @@ def previous_entries():
             i={k:e[k] for k in ("renderer","product","domain","valid_utc","window_utc","model","init_utc","lead","numeric_sha256","qc")}
             need(e["id"]==full.key(i) and e["id"] not in entries and e["path"]=="panels/"+e["id"]+".webp","Previous panel identity mismatch")
             entries[e["id"]]=e
-    need(len(entries)==3567 and {x.name for x in (OLD_SITE/"panels").glob("*.webp")}=={i+".webp" for i in entries},"Previous image inventory differs")
+    need(len(entries)==(BASELINE["panels"] if BASELINE else 3567) and {x.name for x in (OLD_SITE/"panels").glob("*.webp")}=={i+".webp" for i in entries},"Previous image inventory differs")
     return entries
 def verify_image(p,e):
     need(p.is_file() and p.stat().st_size==e["bytes"] and sha(p)==e["sha256"],"Panel hash mismatch")
@@ -239,7 +247,11 @@ def publish_local():
         if advanced:verify_generation(h2,new)
         proof={"passed":True,"mode":"local_disposable_publication_only","archived_replay":bool(REPLAY_REVISIONS),"advanced":advanced,"published_new_local_generation":advanced,"no_op_preserved":not advanced,"previous_preserved":True,"invalid_candidate_rejected":True,"staging_preserved_pointer":True,"retry_idempotent":True,"retained_panel_union":len(keep),"retained_panel_union_bytes":sum(p.stat().st_size for p in objects.glob("*.webp")),"new_numeric_bytes":numeric_bytes,"new_numeric_models":[m for m in MODELS if folder(numeric,m).exists()],"new_panels":report["new_panels"],"reused_panels":report["reused_panels"],"new_image_bytes":report["new_image_bytes"],"candidate_catalog_sha256":sha(out/"catalog.json"),"production_deployed":False,"remote_archive_written":False}
         Path("automated-publication-report.json").write_bytes(dump(proof));print("AUTO_PUBLICATION_PASS",json.dumps(proof),flush=True)
+        if BASELINE and advanced:
+            receipt={"run":int(os.environ["GITHUB_RUN_ID"]),"revision":os.environ["GITHUB_SHA"],"advanced":True,"catalog_sha256":sha(out/"catalog.json"),"panels":len(new),"sources":report["sources"],"previous_run":BASE_RUN}
+            Path("next-rolling-baseline.json").write_bytes(dump(receipt));print("ROLLING_ADVANCE_PASS",json.dumps(receipt),flush=True)
 if __name__=="__main__":
+    if Path("rolling-baseline.json").exists():configure_rolling()
     cmd=sys.argv[1]
     if cmd=="select":candidate_select(sys.argv[2])
     elif cmd=="assemble":assemble()
