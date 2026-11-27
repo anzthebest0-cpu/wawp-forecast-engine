@@ -1,0 +1,23 @@
+name = "titan-forecast-watchdog"
+main = "worker.mjs"
+compatibility_date = "2026-11-25"
+workers_dev = false
+preview_urls = false
+keep_vars = true
+
+# No token, active flag or public HTTP route in source. Set runtime WATCHDOG_MODE
+# to observe first, then active only after reviewing the Cloudflare logs.
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[triggers]
+crons = ["*/15 * * * *"]
+
+[[durable_objects.bindings]]
+name = "DISPATCH_GUARD"
+class_name = "DispatchGuard"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DispatchGuard"]
