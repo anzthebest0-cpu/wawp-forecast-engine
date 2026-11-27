@@ -16,12 +16,12 @@
     <script src="analysis-workspace.js?v=6-canonical-obs"></script>
     <script src="forecast-workflow.js?v=restore-readiness"></script>
     <meta name="titan-awos-proxy" content="https://wawp-forecast-engine.anzthebest0.workers.dev/awos">
-    <script src="observation-ui.js?v=5-hosted-awos"></script>
+    <script src="observation-ui.js?v=6-station-overview"></script>
     <script src="remote-observations.js?v=1"></script>
     <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=4-aligned"></script>
     <script src="terminal-charts.js?v=2-cursor-repair"></script>
-    <link rel="stylesheet" href="style.css?v=production-workstation6">
+    <link rel="stylesheet" href="style.css?v=station-overview7">
 </head>
 <body>
 
@@ -229,43 +229,54 @@
  <div class="header-bar"><div><h2 id="remote-heading">Observation Monitor</h2><p class="section-note">Kolaka / WAWP · published remote-sensing and aviation sources</p></div><div class="observation-links"><button type="button" data-open-tab="tab-regional">Atmospheric analysis</button><button type="button" data-open-tab="tab-spatial">Spatial forecast</button></div></div>
  <p class="remote-notice" role="note"><strong>External source review only.</strong> A loaded image is not proof of freshness. Read the original printed timestamp, coverage and legend. Remote products are separate from the station AWOSnet relay below. No raw radar access or official warning issuance is implied.</p>
  <details class="panel station-detail" open><summary>Station observations · live AWOSnet and manual inputs</summary>            <div class="panel observation-overview" aria-labelledby="observation-title">
-                <h3 id="observation-title">Station observations · WAWP</h3>
-                <p id="obs-status" role="status" class="section-note">AWOSnet — awaiting validated snapshot</p>
-                <p id="obs-time" class="section-note">Sensor observation time: —</p><p id="obs-epoch-note" class="section-note"></p>
-                <p id="obs-retrieved" class="section-note"></p><p id="obs-poll-status" class="section-note" role="status">AWOSnet connection initializing.</p>
-                <div id="obs-live-controls" class="observation-links" hidden><label><input id="obs-auto" type="checkbox" disabled> Auto-refresh while browser tab is visible</label><button id="obs-refresh" type="button" disabled>Refresh AWOS now</button></div>
-                <div class="obs-grid">
-                  <div><span>2-min wind</span><strong id="obs-wind_speed_kt">—</strong></div>
-                  <div><span>Direction (true)</span><strong id="obs-wind_direction_deg">—</strong></div>
-                  <div><span>Gust (source interval)</span><strong id="obs-gust_kt">—</strong></div>
-                  <div><span>Temperature</span><strong id="obs-temperature_c">—</strong></div>
-                  <div><span>Dewpoint</span><strong id="obs-dewpoint_c">—</strong></div>
-                  <div><span>QNH (independently confirmed)</span><strong id="obs-qnh_hpa">—</strong></div>
-                  <div><span>Altimeter setting</span><strong id="obs-altimeter_setting_hpa">—</strong></div>
-                  <div><span>10-min temperature</span><strong id="obs-temperature_10min_c">—</strong></div>
-                  <div><span>10-min dewpoint</span><strong id="obs-dewpoint_10min_c">—</strong></div>
-                  <div><span>Relative humidity</span><strong id="obs-relative_humidity_pct">—</strong></div>
-                  <div><span>Current-hour rain (source accumulation)</span><strong id="obs-rain_current_hour_mm">—</strong></div>
-                  <div><span>Solar radiation</span><strong id="obs-solar_wm2">—</strong></div>
-                  <div><span>Density altitude</span><strong id="obs-density_altitude_ft">—</strong></div>
-                </div>
+
+<div class="obs-station-head">
+ <div><h3 id="observation-title">WAWP · Sangia Nibandera Airport</h3><p id="obs-status" role="status" class="section-note">AWOSnet — awaiting validated snapshot</p>
+ <p id="obs-time" class="obs-station-clock">Sensor observation time: —</p><p id="obs-retrieved" class="obs-station-clock"></p></div>
+ <div><span id="obs-live-indicator" class="obs-live-indicator" data-state="unavailable">No current snapshot</span>
+ <p id="obs-poll-status" class="section-note" role="status">AWOSnet connection initializing.</p>
+ <div id="obs-live-controls" class="observation-links" hidden><label><input id="obs-auto" type="checkbox" disabled> Auto-refresh while visible</label><button id="obs-refresh" type="button" disabled>Refresh AWOS now</button></div></div>
+</div>
+<div class="obs-live-layout">
+ <article class="obs-visual-card obs-wind-card"><h4>Two-minute average wind · AWOSnet</h4>
+ <svg class="obs-dial" viewBox="0 0 240 240" role="img" aria-label="Wind speed and source direction compass; north reference unverified">
+ <circle class="obs-dial-ring" cx="120" cy="120" r="98"/><line class="obs-dial-tick major" x1="120" y1="34" x2="120" y2="22" transform="rotate(0 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(10 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(20 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(30 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(40 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(50 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(60 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(70 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(80 120 120)"/><line class="obs-dial-tick major" x1="120" y1="34" x2="120" y2="22" transform="rotate(90 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(100 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(110 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(120 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(130 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(140 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(150 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(160 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(170 120 120)"/><line class="obs-dial-tick major" x1="120" y1="34" x2="120" y2="22" transform="rotate(180 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(190 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(200 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(210 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(220 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(230 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(240 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(250 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(260 120 120)"/><line class="obs-dial-tick major" x1="120" y1="34" x2="120" y2="22" transform="rotate(270 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(280 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(290 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(300 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(310 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(320 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(330 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(340 120 120)"/><line class="obs-dial-tick" x1="120" y1="30" x2="120" y2="22" transform="rotate(350 120 120)"/>
+ <g class="obs-dial-label" text-anchor="middle"><text x="120" y="15">360</text><text x="229" y="124">090</text><text x="120" y="236">180</text><text x="11" y="124">270</text></g>
+ <g id="obs-dial-needle" style="display:none"><path d="M120 27 L111 49 L120 44 L129 49 Z"/></g>
+ <text id="obs-dial-speed" x="120" y="117" text-anchor="middle" class="obs-dial-main">—</text>
+ <text id="obs-dial-bearing" x="120" y="139" text-anchor="middle" class="obs-dial-bearing">—</text>
+ </svg>
+ <p class="section-note">Raw source bearing (wind from). North reference pending confirmation; AWOS display labels magnetic. No conversion or runway components.</p>
+ <div class="obs-wind-details"><div class="obs-metric"><span>2-min speed</span><strong id="obs-wind_speed_kt">—</strong></div><div class="obs-metric"><span>Source bearing</span><strong id="obs-wind_direction_deg">—</strong></div><div class="obs-metric"><span>Gust · source interval</span><strong id="obs-gust_kt">—</strong></div><div class="obs-metric"><span>Variable sector · report</span><strong id="obs-report-variable">—</strong></div></div>
+ </article>
+ <article class="obs-visual-card"><h4>Surface observations · AWOSnet</h4><div class="obs-metric-grid">
+ <div class="obs-metric"><span>Temperature</span><strong id="obs-temperature_c">—</strong></div><div class="obs-metric"><span>Dewpoint</span><strong id="obs-dewpoint_c">—</strong></div><div class="obs-metric"><span>Relative humidity</span><strong id="obs-relative_humidity_pct">—</strong></div><div class="obs-metric"><span>Altimeter setting</span><strong id="obs-altimeter_setting_hpa">—</strong></div><div class="obs-metric"><span>Current-hour rainfall</span><strong id="obs-rain_current_hour_mm">—</strong></div><div class="obs-metric"><span>Density altitude</span><strong id="obs-density_altitude_ft">—</strong></div>
+ </div><p class="section-note">Sensor values share the observation timestamp above. Altimeter setting is not relabelled as QNH.</p></article>
+ <article class="obs-visual-card obs-report-card"><h4>Reported aviation conditions</h4><p id="obs-report-group-time" class="section-note">Report groups · unavailable</p>
+ <div class="obs-report-metrics"><div class="obs-metric"><span>Visibility · report</span><strong id="obs-report-visibility">—</strong></div><div class="obs-metric"><span>Present weather · report</span><strong id="obs-report-weather">—</strong></div><div class="obs-metric"><span>Sky condition · report</span><strong id="obs-report-sky">—</strong></div><div class="obs-metric"><span>QNH · report</span><strong id="obs-report-qnh">—</strong></div><div class="obs-metric"><span>Wind group · report</span><strong id="obs-report-wind">—</strong></div></div>
+ <p class="section-note">Explicit coded groups only. A dash means unavailable or not explicitly reported, not clear conditions. Report time can differ from sensor time.</p></article>
+</div>
+<div class="obs-metar-strip obs-report"><h4>Latest METAR / SPECI</h4><p id="obs-metar-status" role="status" class="section-note">No report received</p><p id="obs-metar-time" class="section-note">Report observation time: —</p><pre id="obs-metar-text">—</pre></div>
+<details class="obs-support"><summary>Additional measurements and source details</summary>
+ <div class="obs-grid"><div><span>QNH · independent sensor field</span><strong id="obs-qnh_hpa">—</strong></div><div><span>10-min temperature</span><strong id="obs-temperature_10min_c">—</strong></div><div><span>10-min dewpoint</span><strong id="obs-dewpoint_10min_c">—</strong></div><div><span>Solar radiation</span><strong id="obs-solar_wm2">—</strong></div></div>
+ <p id="obs-epoch-note" class="section-note"></p>
+ <p class="section-note">METAR group reference: FEW 1–2 oktas; SCT 3–4; BKN 5–7; OVC 8. Missing groups and slash codes are not inferred. Visibility, weather and sky are report-derived, not validated direct sensors.</p>
+</details>
+<details class="obs-support"><summary>Manual observations and official source links</summary>
                 <details class="obs-manual"><summary>Import a locally prepared AWOSnet snapshot (JSON)</summary>
                   <p class="section-note">Authorized, manually normalized snapshot only. Confirm UTC timestamp, units and wind reference. File stays in browser memory; not uploaded or archived. Values withheld after 5 minutes (internal display policy).</p>
                   <label for="obs-file">Local snapshot file</label> <input id="obs-file" type="file" accept=".json,application/json">
                 </details>
-                <div class="obs-report"><h4>METAR / SPECI · AWOSnet snapshot or manual entry</h4>
-                  <p id="obs-metar-status" role="status" class="section-note">No manually entered report</p>
-                  <p id="obs-metar-time" class="section-note">Report observation time: —</p>
-                  <pre id="obs-metar-text">—</pre>
                   <details class="obs-manual"><summary>Paste a report from an authorized source</summary>
                     <label for="obs-metar-date">Full UTC report date</label><input id="obs-metar-date" type="date">
                     <label for="obs-metar-input">WAWP METAR / SPECI (one line)</label><textarea id="obs-metar-input" rows="2" maxlength="400"></textarea>
                     <button id="obs-metar-apply" type="button">Display report</button>
                   </details>
-                </div>
-                <div class="observation-links"><button id="obs-clear" type="button">Clear local observations</button></div>
-                <p class="section-note">AWOSnet and manual reports are checked for station and observation time, not full code validity or authenticity. Supplemental guidance only; report display withheld after 60 minutes. A new AWOS snapshot can replace manual input.</p>
+
+ <div class="observation-links"><button id="obs-clear" type="button">Clear local observations</button></div>
+ <p class="section-note">Station and report times are checked, not full code validity or authenticity. Supplemental guidance; reports withheld after 60 minutes. A new AWOS snapshot can replace manual input.</p>
                 <div class="observation-links"><a href="http://wawp.awosnet.com/" target="_blank" rel="noopener noreferrer">Open AWOSnet</a><a href="https://web-aviation.bmkg.go.id/web/observation.php" target="_blank" rel="noopener noreferrer">BMKG Aviation observations</a><a href="https://www.bmkg.go.id/cuaca/bandara/WAWP" target="_blank" rel="noopener noreferrer">BMKG WAWP weather</a><a href="https://stamet-tolitoli.bmkg.go.id/cuaca/penerbangan?icao=WAWP" target="_blank" rel="noopener noreferrer">BMKG METAR mirror</a><button type="button" data-open-tab="tab-persistency">Observation archive</button></div>
+</details>
                 <p class="observation-note">AWOSnet is retrieved through the configured HTTPS relay. The upstream source uses unauthenticated HTTP. Automatic retrieval runs every 60 seconds while the browser tab is visible; values older than 5 minutes or failed retrievals are withheld. Source clock, true wind reference and redistribution are gated by the relay operator. No observation archive is created.</p>
             </div>
 </details><div class="remote-layout">
