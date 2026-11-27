@@ -1,0 +1,1 @@
+{"name":"titan-forecast-watchdog","private":true,"type":"module","scripts":{"test":"node --test test.mjs"}}
