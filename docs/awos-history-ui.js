@@ -58,7 +58,7 @@ function plot(rows,start,end,track,models=[],options={}){
  const h=document.createElement('h4');h.textContent=title;card.append(h);
  const obsValue=(s,k)=>value(s,k),modelValue=(s,k)=>s.values[k];
  const nums=rows.flatMap(s=>series.map(([k])=>obsValue(s,k))).concat(models.flatMap(s=>series.map(([k])=>modelValue(s,k)))).filter(finite);
- if(!nums.length){const p=document.createElement('p');p.className='section-note';p.textContent='No valid measurements in this window.';card.append(p);if(!unified)return card;}
+ if(!nums.length){const p=document.createElement('p');p.className='section-note';p.textContent='No valid measurements in this window.';card.append(p);return card;}
  let lo=bearing?0:nums.length?Math.floor(Math.min(...nums)):0,hi=bearing?360:nums.length?Math.ceil(Math.max(...nums)):1;
  if(['wind_speed_kt','rain_current_hour_mm','model_rain','spread'].includes(series[0][0]))lo=Math.min(0,lo);
  if(series[0][0]==='relative_humidity_pct'||series[0][0]==='cloud_low'){lo=0;hi=100;}
@@ -126,11 +126,12 @@ function modelSample(r){
 }
 function selectUnifiedTime(t){
  if(!unifiedState)return;
- const {rows,models,now}=unifiedState;
+ const {rows,models,now,start,end}=unifiedState;
  const isObs=t<=now,points=isObs?rows:models;
  const match=points.reduce((best,s)=>!best||Math.abs(s.at-t)<Math.abs(best.at-t)?s:best,null);
  const tolerance=isObs?180000:1800000;
  selectedTime=match&&Math.abs(match.at-t)<=tolerance?match.at:t;
+ const scrub=el('unified-time-slider');if(scrub){scrub.value=String(Math.max(0,Math.min(Number(scrub.max),Math.round((selectedTime-start)/60000))));scrub.setAttribute('aria-valuetext',titanPreviewLabel(selectedTime));}
  const out=el('unified-readout');if(!out)return;out.replaceChildren();
  const add=(v)=>{const span=document.createElement('span');span.textContent=v;out.append(span);};
  if(!match||Math.abs(match.at-t)>tolerance)add('No '+(isObs?'observation':'model hour')+' near '+titanPreviewLabel(t));
@@ -156,13 +157,14 @@ function renderMeteogram(force=false){
  if(!force&&signature===unifiedSignature)return;unifiedSignature=signature;
  const rows=(history?.rows||[]).filter(s=>s.at>=start&&s.at<=now).map(s=>({...s,values:{...s.values,spread:finite(s.values.temperature_c)&&finite(s.values.dewpoint_c)?s.values.temperature_c-s.values.dewpoint_c:null}}));
  const models=eligible?obsContext.rows.map(modelSample).filter(s=>s.at>=now&&s.at<end).sort((a,b)=>a.at-b.at):[];
- unifiedState={rows,models,now};
+ unifiedState={rows,models,now,start,end};
+ const scrub=el('unified-time-slider');if(scrub){scrub.max=String(Math.floor((end-start)/60000));scrub.disabled=!rows.length&&!models.length;}
  mount.replaceChildren();
  const status=el('unified-status');if(status)status.textContent=(history?rows.length+' AWOS samples':'AWOS history unavailable')+' · '+(models.length?models.length+' eligible future model hours':'No eligible future model guidance')+' · '+titanPreviewSettings().zone;
  const core=[
  [tracks[0],rows,models,'Solid: AWOS · dashed: model'],
  [tracks[1],rows,models,'AWOS 2-min speed / source gust vs model output; intervals differ'],
- [['Wind direction (°)',[['direction','AWOS raw bearing / model bearing','wind']],true],rows,models,'AWOS raw reference unverified; model markers distinct; no angular comparison'],
+ [['Wind direction (°)',[['direction','AWOS raw bearing / model bearing','wind']],true],rows,models,'Green: AWOS raw bearing (reference unverified); cyan: model bearing; no angular comparison'],
  [['Temperature − dewpoint (°C)',[['spread','T − Td','dew']]],rows,models,'Solid: AWOS · dashed: model'],
  [tracks[4],rows,[],'Observed only; model RH not supplied by this payload'],
  [tracks[5],rows,[],'AWOS source current-hour amount; not summed'],
@@ -212,14 +214,15 @@ async function refresh(){
  }catch(_){if(token===sequence)clear('AWOS history unavailable — trends withheld.');}
  finally{clearTimeout(deadline);if(token===sequence)controller=null;}
 }
-function stop(){sequence++;controller?.abort();controller=null;}
+function stop(){sequence++;if(controller){controller.abort();lastRequest=0;}controller=null;}
 function schedule(){if(!visible()){stop();return;}if(data)paint();else renderMeteogram();if(Date.now()-lastRequest>=300000)refresh();}
 function setup(){
  if(!el('awos-history-hours'))return;
- const change=e=>{const v=e.target.value;el('awos-history-hours').value=v;el('unified-history-hours').value=v;stop();clear('Retrieving selected history window…');refresh();};
+ const change=e=>{const v=e.target.value;el('awos-history-hours').value=v;if(el('unified-history-hours'))el('unified-history-hours').value=v;stop();clear('Retrieving selected history window…');refresh();};
  el('awos-history-hours').addEventListener('change',change);el('unified-history-hours')?.addEventListener('change',change);
  el('unified-history-refresh')?.addEventListener('click',()=>{stop();refresh();});
- el('unified-now')?.addEventListener('click',()=>selectUnifiedTime(Date.now()));
+ el('unified-now')?.addEventListener('click',()=>selectUnifiedTime(unifiedState?.rows.at(-1)?.at??Date.now()));
+ el('unified-time-slider')?.addEventListener('input',e=>{if(unifiedState)selectUnifiedTime(unifiedState.start+Number(e.target.value)*60000);});
  window.addEventListener('resize',()=>renderMeteogram());
  el('awos-history-refresh').addEventListener('click',()=>{stop();refresh();});
  document.addEventListener('visibilitychange',schedule);
