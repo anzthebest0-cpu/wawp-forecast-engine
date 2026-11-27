@@ -126,6 +126,7 @@ jobs:
           timeout 180s node scripts/test_titan_unified_workflow.cjs
           timeout 240s node scripts/test_titan_task_shell.cjs
           timeout 180s node scripts/test_titan_point_content.cjs
+          # Populated point tests now include synchronized cursor and model trace controls.
           # Spatial modes and time matching are covered by the public viewer tests.
       - uses: actions/upload-artifact@v4
         if: always()

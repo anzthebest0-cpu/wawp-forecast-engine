@@ -12,15 +12,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
-    <script src="preview-ui.js?v=2-scroll"></script>
+    <script src="preview-ui.js?v=3-cursor"></script>
     <script src="analysis-workspace.js?v=6-canonical-obs"></script>
     <script src="forecast-workflow.js?v=3-point-refresh"></script>
     <meta name="titan-awos-proxy" content="">
     <script src="observation-ui.js?v=4-status"></script>
     <script src="remote-observations.js?v=1"></script>
     <script src="research-ui.js?v=1"></script>
-    <script src="apexcharts-theme.js?v=3.4-labels"></script>
-    <link rel="stylesheet" href="style.css?v=production-workstation3">
+    <script src="apexcharts-theme.js?v=4-aligned"></script>
+    <script src="terminal-charts.js?v=1"></script>
+    <link rel="stylesheet" href="style.css?v=production-workstation4">
 </head>
 <body>
 
@@ -126,33 +127,27 @@
 
         <!-- Tab 3: Meteogram -->
         <section id="tab-meteogram" class="tab-pane" data-point-state="pending"><div class="point-empty" role="status">Checking current point forecast data…</div>
-            <h2>Airport Forecast Guidance · Meteogram</h2><div class="panel terminal-timeline-panel"><h3>Aligned terminal timeline</h3><p class="section-note">Raw equal-model hourly preview and available individual-model ranges. Counts vary by parameter and hour. No calibrated probability or skill ranking. Click a valid hour for its numerical detail.</p><div id="terminal-timeline" role="status">Checking matching data…</div></div><p class="section-note">Unverified equal-model preview. Valid times: <span data-preview-zone>WITA (UTC+8)</span>. Not an operational forecast.</p>
-            <div class="panel chart-panel">
-                <div id="chart-temp"></div>
-            </div>
-            <div class="panel chart-panel">
-                <div id="chart-wind"></div>
-            </div>
-            <div class="panel chart-panel">
-                <div id="chart-wind-dir"></div>
-            </div>
-            <div class="panel chart-panel">
-                <div id="chart-rain"></div>
-            </div>
-            <div class="panel chart-panel"><div id="chart-rain-cumulative"></div><p class="section-note">Sum of displayed hourly equal-model precipitation amounts, starting at the first available hour. Stops at the first missing or non-consecutive hour; changing contributing models can affect the result. Not a validated accumulation forecast.</p>
-            </div>
-            <div class="panel chart-panel">
-                <div id="chart-clouds"></div>
-            </div>
-            <div class="panel chart-panel"><div id="chart-pressure"></div>
-            </div>
-            <div class="panel chart-panel"><div id="chart-ttd"></div>
-            </div>
-        </section>
+            <h2>Airport Forecast Guidance · Meteogram</h2>
+ <p class="section-note">Unverified equal-model preview · <span data-preview-zone>WITA (UTC+8)</span> · not an operational forecast. Individual model traces are available in Model disagreement.</p>
+ <div class="panel terminal-cursor" id="terminal-cursor"><div class="cursor-toolbar"><label for="terminal-time">Selected valid time</label><button id="terminal-prev" type="button" aria-label="Previous forecast hour">‹</button><select id="terminal-time"></select><button id="terminal-next" type="button" aria-label="Next forecast hour">›</button><button id="terminal-map" type="button">Spatial rain map</button></div><input id="terminal-slider" type="range" aria-label="Forecast valid hour" min="0" max="0" value="0"><div id="terminal-readout" class="cursor-values" role="status"></div><p class="section-note">Select an hour, or move the pointer over a plot to inspect the same hour across tracks. Rain is per output hour; spatial accumulation windows may differ.</p></div>
+ <div class="panel meteogram-stack" aria-label="Aligned core forecast plots">
+  <div class="chart-track" id="chart-wind"></div>
+  <div class="wind-barb-track" id="chart-wind-dir"></div>
+  <div class="chart-track" id="chart-rain"></div>
+  <div class="chart-track" id="chart-temp"></div>
+  <div class="chart-track" id="chart-clouds"></div>
+ </div>
+ <details class="panel terminal-timeline-panel"><summary>Detailed hourly values and individual-model ranges</summary><p class="section-note">Raw values and descriptive model ranges; counts vary by parameter and hour. No calibrated probability or skill ranking.</p><div id="terminal-timeline" role="status">Checking matching data…</div></details>
+ <details class="panel" id="advanced-meteogram"><summary>Additional diagnostics · pressure, temperature–dewpoint spread, accumulated rain</summary>
+ <div class="chart-track" id="chart-pressure"></div><div class="chart-track" id="chart-ttd"></div><div class="chart-track" id="chart-rain-cumulative"></div><p class="section-note">Sum of displayed hourly equal-model precipitation amounts. Stops at the first missing or non-consecutive hour; changing contributing models can affect the result. Not a validated accumulation forecast.</p></details>
+ </section>
 
         <!-- Tab 4: Consensus Spread -->
         <section id="tab-spread" class="tab-pane" data-point-state="pending"><div class="point-empty" role="status">Checking current point forecast data…</div>
             <h2>Model Disagreement</h2><p class="section-note">Descriptive model ranges, not calibrated probability intervals. Rainfall models are alternative forecasts; never sum them. Valid times: <span data-preview-zone>WITA (UTC+8)</span>.</p>
+            <div class="panel model-trace-panel"><h3>Individual model traces</h3><p class="section-note">Matched output hours, not equal initialization or calibrated probabilities. IFS 9 km is separately displayed; original equal-model mean is unchanged.</p><div class="trace-controls"><label>Parameter <select id="trace-param"><option value="Wind Speed">Wind (kt)</option><option value="Wind Gust">Gust (kt)</option><option value="Rainfall">Rain (mm/output h)</option><option value="Temperature">Temperature (°C)</option><option value="Dewpoint">Dewpoint (°C)</option><option value="Pressure">Pressure (hPa)</option></select></label><div id="trace-models" aria-label="Displayed model traces"></div></div><div id="trace-chart"></div><p id="trace-note" class="section-note"></p></div><div class="panel chart-panel">
+                <div id="spread-rain"></div>
+            </div>
             <div class="panel chart-panel">
                 <div id="spread-temp"></div>
             </div>
@@ -162,9 +157,7 @@
             <div class="panel chart-panel">
                 <div id="spread-wind"></div>
             </div>
-            <div class="panel chart-panel">
-                <div id="spread-rain"></div>
-            </div>
+            
         </section>
 
         <!-- Tab 5: Matrix -->
@@ -813,6 +806,6 @@
         
     </main>
 
-    <dialog id="handover-dialog"><div class="handover-header"><h3>Manual shift notes</h3><button id="handover-close" type="button">Close</button></div><div id="handover-mount"></div></dialog><script src="workstation-shell.js?v=3-point-availability"></script><script src="dashboard.js?v=12-point-availability"></script>
+    <dialog id="handover-dialog"><div class="handover-header"><h3>Manual shift notes</h3><button id="handover-close" type="button">Close</button></div><div id="handover-mount"></div></dialog><script src="workstation-shell.js?v=4-cursor"></script><script src="dashboard.js?v=13-aligned"></script>
 </body>
 </html>

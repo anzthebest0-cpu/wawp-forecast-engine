@@ -19,11 +19,14 @@ const base='http://127.0.0.1:8765';
   for(let i=0;i<rows.length;i++){const v=numeric(rows[i].Wind);assert(cells[i].startsWith(v===null?'—':v.toFixed(1)),'Wind value differs from gated payload');}
   if(rows.some(r=>numeric(r.Wind)!==null)){await page.waitForSelector('#chart-wind .apexcharts-canvas',{state:'visible',timeout:25000});assert(await page.locator('#chart-wind .apexcharts-series path').count()>0,'Wind chart missing actual series');}
   if(rows.some(r=>numeric(r.Rain)!==null)){await page.waitForSelector('#chart-rain .apexcharts-canvas',{state:'visible',timeout:25000});assert(await page.locator('#chart-rain .apexcharts-series').count()>0);}
+  if(rows.length>1){await page.locator('#terminal-next').click();assert.equal(await page.locator('#terminal-time').inputValue(),'1');await page.waitForFunction(t=>[...document.querySelectorAll('#chart-wind .terminal-crosshair,#chart-rain .terminal-crosshair,#chart-temp .terminal-crosshair')].filter(x=>!x.hidden&&x.dataset.epoch===String(t)).length>=2,epoch(rows[1].Datetime));assert((await page.locator('#terminal-readout').textContent()).includes('Wind'));}
+  await page.locator('#advanced-meteogram summary').click();await page.waitForFunction(()=>document.querySelector('#chart-pressure')?.dataset.rendered==='1');
   await page.locator('[data-workspace-view="tab-matrix"]').click();assert.equal(await page.locator('#data-table tbody tr').count(),rows.length);
   if(JSON.stringify(models.Preview_Manifest)===JSON.stringify(m)&&Object.keys(models['Wind Speed']||{}).length){
    await page.locator('[data-workspace-view="tab-models"]').click();assert(await page.locator('#model-select option').count()>0);assert(await page.locator('#model-table tbody tr').count()>0);
    await page.locator('[data-workspace-view="tab-spread"]').click();await page.waitForFunction(()=>document.querySelector('#spread-wind .apexcharts-canvas')||document.getElementById('spread-wind')?.textContent.includes('No matched model values'));
    if(Object.keys(models.Rainfall||{}).length)assert(await page.locator('#spread-rain .rain-model-table tbody tr').count()>0);
+   await page.waitForSelector('#trace-chart .apexcharts-canvas',{state:'visible'});assert(await page.locator('#trace-models input').count()>0);await page.locator('#trace-param').selectOption('Rainfall');await page.waitForSelector('#trace-chart .apexcharts-canvas',{state:'visible'});
   }
   console.log('TITAN_POINT_CONTENT_POPULATED_PASS',JSON.stringify({models:Object.keys(m.models).length,displayed_rows:rows.length,source_rows:m.row_count,expiry:m.expires_at_utc}));
  }else{

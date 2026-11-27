@@ -89,8 +89,8 @@ function renderWindBarbs(rows){
     const wrap=document.createElement('div');wrap.className='preview-scroll';const strip=document.createElement('div');strip.className='wind-barb-strip';
     const ns='http://www.w3.org/2000/svg';
     const svgEl=(tag,attrs)=>{const el=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));return el;};
-    for(const row of rows){
-        const cell=document.createElement('div');cell.className='wind-barb-cell';
+    for(const [i,row] of rows.entries()){
+        const cell=document.createElement('button');cell.type='button';cell.className='wind-barb-cell';cell.dataset.cursorHour=String(i);cell.onclick=()=>selectTerminalHour(i);
         const speed=TitanPreview.numeric(row.Wind),dir=TitanPreview.numeric(row['Wind Dir.']);const parts=TitanPreview.barbParts(speed);
         const svg=svgEl('svg',{viewBox:'0 0 78 78',width:'64',height:'64','aria-hidden':'true'});
         const validDir=dir!==null&&dir>=0&&dir<=360;
@@ -111,5 +111,5 @@ function renderWindBarbs(rows){
         previewCell(cell,'span',validDir?String(Math.round(dir)).padStart(3,'0')+'°':'—');
         previewCell(cell,'small',titanPreviewLabel(TitanPreview.epoch(row.Datetime),true));strip.appendChild(cell);
     }
-    wrap.appendChild(strip);root.appendChild(wrap);
+    wrap.appendChild(strip);root.appendChild(wrap);if(typeof updateTerminalCrosshairs==='function')updateTerminalCrosshairs();
 }

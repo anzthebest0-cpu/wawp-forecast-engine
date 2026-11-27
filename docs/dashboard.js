@@ -12,7 +12,7 @@ function renderPreviewChartsIfVisible() {
     previewChartsRendered = true;
     try {
         if (typeof ApexCharts !== 'function') throw Error('Chart library unavailable');
-        initTitanCharts(pendingPreviewChartData.chartData);
+        initAlignedTerminalCharts(pendingPreviewChartData.chartData,pendingPreviewChartData.rows,pendingPreviewChartData.manifest);
         renderWindBarbs(pendingPreviewChartData.rows);
     } catch (err) {
         const panel=document.getElementById('tab-meteogram');
@@ -340,6 +340,7 @@ async function loadDashboard() {
             pendingPreviewChartData=null;pendingSpreadModelsData=null;pendingSpreadTimeLabels=[];
             renderBriefHourly([],null);
             renderTerminalTimeline([],null,null);
+            setupTerminalCursor([],null);
             setPointAvailability(false,null);
             window.location.reload();
         }, Math.max(0, Date.parse(previewManifest.expires_at_utc) - Date.now()));
@@ -348,6 +349,7 @@ async function loadDashboard() {
         const modelsData = currentPreview && results[5].status === 'fulfilled' &&
             JSON.stringify(results[5].value?.Preview_Manifest) === JSON.stringify(previewManifest) ? results[5].value : null;
         renderTerminalTimeline(renderData,modelsData,currentPreview?previewManifest:null);
+        setupTerminalCursor(renderData,currentPreview?previewManifest:null);
         const diurnalData = results[8].status === 'fulfilled' ? results[8].value : null;
         const workflowData = results[9].status === 'fulfilled' ? results[9].value : null;
         const residualData = results[10].status === 'fulfilled' ? results[10].value : null;
@@ -613,7 +615,7 @@ async function loadDashboard() {
         const tafDisplay = document.getElementById('taf-text-display');
         if (tafDisplay) tafDisplay.textContent = 'Automated TAF withheld. Dashboard data load failed.';
         pendingPreviewChartData=null;pendingSpreadModelsData=null;pendingSpreadTimeLabels=[];
-        renderBriefHourly([],null);renderTerminalTimeline([],null,null);setPointAvailability(false,null);
+        renderBriefHourly([],null);renderTerminalTimeline([],null,null);setupTerminalCursor([],null);setPointAvailability(false,null);
         const banner=document.getElementById('preview-safety-banner');if(banner)banner.textContent='UNAVAILABLE — dashboard data load failed. Automated TAF withheld.';
         for(const id of ['tab-meteogram','tab-spread','tab-matrix','tab-models']){const panel=document.getElementById(id);if(panel){panel.replaceChildren();const note=document.createElement('p');note.textContent='Current model guidance unavailable.';panel.append(note);}}
     }
@@ -663,7 +665,7 @@ function switchTab(tabId) {
         document.querySelector('.content').scrollTop=0;
         syncSpatialTheme();
     }
-    if (tabId === 'tab-meteogram') renderPreviewChartsIfVisible();
+    if (tabId === 'tab-meteogram') {renderPreviewChartsIfVisible();requestAnimationFrame(updateTerminalCrosshairs);}
     if (tabId === 'tab-spread' && pendingSpreadModelsData && !spreadChartsRendered) {
         try { setupSpreadCharts(pendingSpreadModelsData, pendingSpreadTimeLabels); } catch (err) { console.error('Spread render failed',err); renderRainHeatmap(pendingSpreadModelsData,pendingSpreadTimeLabels); }
     }
@@ -766,6 +768,7 @@ function setupSpreadCharts(modelsData, timeLabels) {
     draw('spread-t-td','Temperature − dewpoint distribution','°C','Temperature',true);
     draw('spread-wind','Wind speed model distribution','kt','Wind Speed');
     renderRainHeatmap(modelsData,spreadTimeLabels);
+    setupModelTraces(modelsData,spreadTimeLabels);
 }
 
 function setupRegionalCharts() {
