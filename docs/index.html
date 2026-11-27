@@ -13,14 +13,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
     <script src="preview-ui.js?v=2-scroll"></script>
-    <script src="analysis-workspace.js?v=5-titan-diagnostics"></script>
-    <script src="forecast-workflow.js?v=1"></script>
+    <script src="analysis-workspace.js?v=6-canonical-obs"></script>
+    <script src="forecast-workflow.js?v=2-triage"></script>
     <meta name="titan-awos-proxy" content="">
     <script src="observation-ui.js?v=4-status"></script>
     <script src="remote-observations.js?v=1"></script>
     <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=3.4-labels"></script>
-    <link rel="stylesheet" href="style.css?v=production-workflow1">
+    <link rel="stylesheet" href="style.css?v=production-workstation1">
 </head>
 <body>
 
@@ -33,24 +33,23 @@
             </div>
         </div>
         <ul class="nav-links" aria-label="Workstation sections">
-            <li class="nav-group">OPERATIONS</li>
-            <li class="active" data-tab="tab-intel">Forecaster Overview</li>
-            <li data-tab="tab-observations">Observation Monitor</li>
-            <li data-tab="tab-regional">Multi-scale Analysis</li>
-            <li data-tab="tab-spatial">Spatial Forecast</li>
-            <li class="nav-group">MODEL PREVIEW</li>
-            <li data-tab="tab-meteogram">Raw Model Meteogram</li>
-            <li data-tab="tab-spread">Model Disagreement</li>
-            <li data-tab="tab-matrix">Hourly Matrix</li>
-            <li data-tab="tab-models">Individual Models</li>
-            <li class="nav-group">HISTORICAL RESEARCH</li>
-            <li data-tab="tab-weighter">Archived Model Weights</li>
-            <li data-tab="tab-climatology">Climatology Engine</li>
-            <li data-tab="tab-verify">Historical Verification</li>
-            <li data-tab="tab-persistency">Observation Archive</li>
-            <li class="nav-group">ADMINISTRATION</li>
-            <li data-tab="tab-health">System Health</li>
-        </ul>
+ <li class="nav-group">OPERATIONS</li>
+ <li class="active" data-tab="tab-intel">Briefing &amp; Triage</li>
+ <li data-tab="tab-observations">Observation &amp; Nowcast</li>
+ <li data-tab="tab-meteogram">Airport Forecast Guidance</li>
+ <li data-tab="tab-spatial">Spatial &amp; Atmospheric Analysis</li>
+ <li class="nav-group">REFERENCE</li>
+ <li data-tab="tab-climatology">Climatology &amp; Verification</li>
+ <li class="nav-group">UTILITIES</li>
+ <li data-tab="tab-health">Research &amp; System Health</li>
+ <li data-tab="tab-spread" class="legacy-route" hidden>Model Disagreement</li>
+ <li data-tab="tab-matrix" class="legacy-route" hidden>Hourly Matrix</li>
+ <li data-tab="tab-models" class="legacy-route" hidden>Individual Models</li>
+ <li data-tab="tab-regional" class="legacy-route" hidden>Multi-scale Analysis</li>
+ <li data-tab="tab-verify" class="legacy-route" hidden>Historical Verification</li>
+ <li data-tab="tab-persistency" class="legacy-route" hidden>Observation Archive</li>
+ <li data-tab="tab-weighter" class="legacy-route" hidden>Archived Model Weights</li>
+ </ul>
         <div class="last-update">
             <div>Latest Forecast Pull:</div>
             <div id="update-time" class="time-val">Loading...</div>
@@ -59,12 +58,19 @@
     </nav>
 
     <main class="content">
+<div class="aerodrome-strip" aria-label="WAWP source status">
+ <div class="aero-report"><strong>WAWP</strong><span id="aero-metar">METAR: no local report</span></div>
+ <div class="aero-awos" id="aero-awos">AWOS: not connected</div>
+ <div class="aero-clock" id="aero-clock">UTC / WITA</div>
+ <button type="button" id="global-handover">Handover</button>
+ </div>
+ <div class="workspace-subnav" id="workspace-subnav" hidden aria-label="Workspace views"></div>
         <div class="preview-controls"><strong>Raw model view</strong><label for="preview-zone">Valid time</label><select id="preview-zone"><option value="WITA">WITA (UTC+8)</option><option value="UTC">UTC</option></select><label for="preview-hours">Horizon</label><select id="preview-hours"><option value="12">12 h</option><option value="24">24 h</option><option value="48">48 h</option><option value="96">96 h</option></select><span class="section-note">Research/archive times retain their original references.</span></div>
         <div id="preview-safety-banner" role="status" style="padding:16px;margin-bottom:18px;border:2px solid var(--amber);border-radius:8px;color:var(--amber);font-weight:600;">MODEL PREVIEW ONLY — current guidance unavailable until freshness is established. Automated TAF withheld. Historical verification is not current operational skill.</div>
         <!-- Tab 1: Intelligence -->
         <section id="tab-intel" class="tab-pane active">
             <div class="header-bar">
-                <h2>Forecaster Overview</h2>
+                <h2>Briefing &amp; Triage</h2>
                 <div>
                     <select id="taf-issuance-select" disabled hidden style="background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-glass); padding:5px 10px; border-radius:4px; margin-right: 15px;">
                         <option value="default">Validated Default</option>
@@ -82,114 +88,18 @@
                 <div id="shift-countdown" style="font-family: var(--font-mono); font-weight: bold; font-size: 1.1em; color: var(--text-primary);">00:00:00</div>
             </div>
             
-            <div class="panel observation-overview" aria-labelledby="observation-title">
-                <h3 id="observation-title">Station observations · WAWP</h3>
-                <p id="obs-status" role="status" class="section-note">Not connected — live AWOSnet is not configured</p>
-                <p id="obs-time" class="section-note">Sensor observation time: —</p><p id="obs-epoch-note" class="section-note"></p>
-                <p id="obs-retrieved" class="section-note"></p><p id="obs-poll-status" class="section-note" role="status">Live AWOS connection not configured.</p>
-                <div id="obs-live-controls" class="observation-links" hidden><label><input id="obs-auto" type="checkbox" disabled> Auto-refresh while browser tab is visible</label><button id="obs-refresh" type="button" disabled>Refresh AWOS now</button></div>
-                <div class="obs-grid">
-                  <div><span>2-min wind</span><strong id="obs-wind_speed_kt">—</strong></div>
-                  <div><span>Direction (true)</span><strong id="obs-wind_direction_deg">—</strong></div>
-                  <div><span>Gust (source interval)</span><strong id="obs-gust_kt">—</strong></div>
-                  <div><span>Temperature</span><strong id="obs-temperature_c">—</strong></div>
-                  <div><span>Dewpoint</span><strong id="obs-dewpoint_c">—</strong></div>
-                  <div><span>QNH (independently confirmed)</span><strong id="obs-qnh_hpa">—</strong></div>
-                  <div><span>Altimeter setting</span><strong id="obs-altimeter_setting_hpa">—</strong></div>
-                  <div><span>10-min temperature</span><strong id="obs-temperature_10min_c">—</strong></div>
-                  <div><span>10-min dewpoint</span><strong id="obs-dewpoint_10min_c">—</strong></div>
-                  <div><span>Relative humidity</span><strong id="obs-relative_humidity_pct">—</strong></div>
-                  <div><span>Current-hour rain (source accumulation)</span><strong id="obs-rain_current_hour_mm">—</strong></div>
-                  <div><span>Solar radiation</span><strong id="obs-solar_wm2">—</strong></div>
-                  <div><span>Density altitude</span><strong id="obs-density_altitude_ft">—</strong></div>
-                </div>
-                <details class="obs-manual"><summary>Import a locally prepared AWOSnet snapshot (JSON)</summary>
-                  <p class="section-note">Authorized, manually normalized snapshot only. Confirm UTC timestamp, units and wind reference. File stays in browser memory; not uploaded or archived. Values withheld after 5 minutes (internal display policy).</p>
-                  <label for="obs-file">Local snapshot file</label> <input id="obs-file" type="file" accept=".json,application/json">
-                </details>
-                <div class="obs-report"><h4>METAR / SPECI · local snapshot or manual entry</h4>
-                  <p id="obs-metar-status" role="status" class="section-note">No manually entered report</p>
-                  <p id="obs-metar-time" class="section-note">Report observation time: —</p>
-                  <pre id="obs-metar-text">—</pre>
-                  <details class="obs-manual"><summary>Paste a report from an authorized source</summary>
-                    <label for="obs-metar-date">Full UTC report date</label><input id="obs-metar-date" type="date">
-                    <label for="obs-metar-input">WAWP METAR / SPECI (one line)</label><textarea id="obs-metar-input" rows="2" maxlength="400"></textarea>
-                    <button id="obs-metar-apply" type="button">Display report</button>
-                  </details>
-                </div>
-                <div class="observation-links"><button id="obs-clear" type="button">Clear local observations</button></div>
-                <p class="section-note">Manual report display checks station and time, not full code validity or authenticity. Values are supplemental only; not official live ingestion. Report display withheld after 60 minutes (internal display policy). Refresh clears local inputs.</p>
-                <div class="observation-links"><a href="http://wawp.awosnet.com/" target="_blank" rel="noopener noreferrer">Open AWOSnet</a><a href="https://web-aviation.bmkg.go.id/web/observation.php" target="_blank" rel="noopener noreferrer">BMKG Aviation observations</a><a href="https://www.bmkg.go.id/cuaca/bandara/WAWP" target="_blank" rel="noopener noreferrer">BMKG WAWP weather</a><a href="https://stamet-tolitoli.bmkg.go.id/cuaca/penerbangan?icao=WAWP" target="_blank" rel="noopener noreferrer">BMKG METAR mirror</a><button type="button" data-open-tab="tab-persistency">Observation archive</button></div>
-                <p class="observation-note">HTTP XML connectivity confirmed by a GitHub runner. Source clock, wind reference, measurement semantics and publication authorization still require confirmation. Automatic on-demand polling is enabled only after an authorized HTTPS proxy is configured. No observation archive is created.</p>
-            </div>
+<div class="brief-grid">
+ <div class="panel brief-panel"><h3>Upcoming airport guidance</h3><p class="section-note">First available hourly raw-model values within the selected horizon. Not TAF or hazard probabilities.</p><div id="brief-hourly" role="status">Checking point forecast availability…</div><div class="observation-links"><button type="button" data-open-tab="tab-meteogram">Open airport guidance</button></div></div>
+ <div class="panel brief-panel"><h3>Current evidence</h3><p id="brief-source-status" class="section-note">AWOS not connected · no local METAR report</p><p class="section-note">Satellite, radar and lightning coverage must be checked at the original provider.</p><div class="observation-links"><button type="button" data-open-tab="tab-observations">Station &amp; remote observations</button><button type="button" data-open-tab="tab-spatial">Spatial forecast</button></div></div>
+ </div>
             <div class="panel shift-workflow" id="shift-workflow">
  <div class="workflow-heading"><div><h3>Forecasting workflow</h3><p class="section-note">Review evidence in sequence. Completion is a manual checklist, not certification.</p></div><span id="workflow-count" role="status">0 / 5 reviewed</span></div>
  <div id="workflow-steps" class="workflow-steps"></div>
  <details class="shift-notes"><summary>Shift analysis notes &amp; handover</summary><p class="section-note">Manual working notes only. No forecast generation, transmission, archive or upload. Export before refreshing; page reload clears notes.</p>
  <div class="shift-note-grid"><label>Forecast period (WITA)<input id="shift-period" maxlength="100" placeholder="e.g. 14–20 WITA"></label><label>Current observations / source times<textarea id="shift-evidence" rows="3" maxlength="3000"></textarea></label><label>Atmospheric drivers / mechanisms<textarea id="shift-drivers" rows="3" maxlength="3000"></textarea></label><label>Model agreement / disagreement<textarea id="shift-models" rows="3" maxlength="3000"></textarea></label><label>Uncertainty / operational implications<textarea id="shift-uncertainty" rows="3" maxlength="3000"></textarea></label></div>
  <div class="observation-links"><button id="shift-export" type="button">Export notes (.txt)</button><button id="shift-reset" type="button">Clear review and notes</button></div><p id="shift-note-status" role="status" class="section-note"></p></details>
- </div><div class="panel overview-links"><h3>Analysis shortcuts</h3><div class="observation-links"><button type="button" data-open-tab="tab-observations">Observation monitor</button><button type="button" data-open-tab="tab-spatial">Spatial forecast</button><button type="button" data-open-tab="tab-regional">Regional analysis</button><button type="button" data-open-tab="tab-meteogram">Raw model meteogram</button><button type="button" data-open-tab="tab-spread">Model disagreement</button><button type="button" data-open-tab="tab-matrix">Hourly matrix</button></div></div>
-            <div class="intel-grid">
-                <!-- TAF Editor Panel -->
-                <div class="panel taf-panel">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-4);">
-                        <h3 style="margin-bottom: 0;">Automated TAF (withheld)</h3>
-                        <div>
-                            <button id="toggle-manual-btn" disabled hidden>Manual Override</button>
-                            <button id="copy-taf-btn" disabled hidden>Copy</button>
-                        </div>
-                    </div>
-                    <div class="taf-content" id="taf-text-display">Automated TAF withheld pending independent validation.</div>
-                    <div id="taf-manual-boxes" style="display:none; flex-direction:column; gap:8px;"></div>
-                    <div class="warnings" id="taf-warnings"></div>
-                </div>
-
-                <!-- Parameters Panel -->
-                <div class="panel bg-panel">
-                    <h3>Base Group Parameters (withheld)</h3>
-                    <div class="param-grid" id="bg-params">
-                        <!-- Populated via JS -->
-                    </div>
-                    
-                    <h3 style="margin-top: 25px; margin-bottom: 15px; color: var(--amber);">Thunderstorm (TS) Risk</h3>
-                    <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 15px; border-radius: 8px;">
-                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px;">
-                            <span style="color: var(--text-secondary); font-size: 0.9em;">Max TS Proxy Risk</span>
-                            <span id="ts-prob-val" style="font-size: 1.5em; font-weight: 700; color: var(--amber);">--%</span>
-                        </div>
-                        <div id="ts-prob-time" style="font-size: 0.85em; color: var(--text-secondary); text-align: right;">Peak window: --</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel" style="margin-top: 20px;">
-                <h3>Thunderstorm Proxy Audit (withheld)</h3>
-                <div id="ts-proxy-audit" style="margin-top: 12px; overflow-x: auto;">Loading proxy calculation...</div>
-                <details style="margin-top: 16px;">
-                    <summary style="cursor: pointer; color: var(--cyan); font-weight: 700;">Method and WMO Weather Codes</summary>
-                    <div id="ts-proxy-method" style="margin-top: 14px; color: var(--text-secondary); line-height: 1.6;"></div>
-                </details>
-            </div>
+ </div>
             
-            <!-- Narrative Panel -->
-            <div class="panel" style="margin-top: 20px;">
-                <h3 style="margin-bottom: 10px;">Automated narrative (withheld)</h3>
-                <div id="taf-narration" style="color: var(--text-secondary); line-height: 1.6;">Loading narrative...</div>
-            </div>
-
-            <div class="panel" id="shadow-taf-panel" style="margin-top: 20px;" hidden>
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-                    <div>
-                        <h3 style="margin-bottom:4px;">Shadow Rain-Wording Comparison</h3>
-                        <div id="shadow-taf-status" style="color:var(--amber); font-size:var(--ts-xs); line-height:1.5;"></div>
-                    </div>
-                    <select id="shadow-taf-config-select" aria-label="Shadow TAF configuration"></select>
-                </div>
-                <div id="shadow-taf-config-note" style="margin-top:14px; color:var(--text-secondary); line-height:1.6;"></div>
-                <pre class="taf-content" id="shadow-taf-text" style="margin-top:14px; min-height:0;"></pre>
-            </div>
-
-            <div class="panel"><h3>Remote-sensing observations</h3><p class="section-note">Satellite, radar source and aviation reports are grouped in Observation Monitor.</p><div class="observation-links"><button type="button" data-open-tab="tab-observations">Open observation monitor</button></div></div>
         </section>
 
         <!-- Tab 2: Weighter -->
@@ -216,7 +126,7 @@
 
         <!-- Tab 3: Meteogram -->
         <section id="tab-meteogram" class="tab-pane">
-            <h2>Raw Model Meteogram</h2><p class="section-note">Unverified equal-model preview. Valid times: <span data-preview-zone>WITA (UTC+8)</span>. Not an operational forecast.</p>
+            <h2>Airport Forecast Guidance · Meteogram</h2><p class="section-note">Unverified equal-model preview. Valid times: <span data-preview-zone>WITA (UTC+8)</span>. Not an operational forecast.</p>
             <div class="panel chart-panel">
                 <div id="chart-temp"></div>
             </div>
@@ -323,9 +233,49 @@
 
         <!-- Tab 5: Regional Charts -->
         <section id="tab-observations" class="tab-pane" aria-labelledby="remote-heading">
- <div class="header-bar"><div><h2 id="remote-heading">Observation Monitor</h2><p class="section-note">Kolaka / WAWP · published remote-sensing and aviation sources</p></div><div class="observation-links"><button type="button" data-open-tab="tab-intel">Station AWOS / METAR</button><button type="button" data-open-tab="tab-regional">Atmospheric analysis</button><button type="button" data-open-tab="tab-spatial">Spatial forecast</button></div></div>
+ <div class="header-bar"><div><h2 id="remote-heading">Observation Monitor</h2><p class="section-note">Kolaka / WAWP · published remote-sensing and aviation sources</p></div><div class="observation-links"><button type="button" data-open-tab="tab-regional">Atmospheric analysis</button><button type="button" data-open-tab="tab-spatial">Spatial forecast</button></div></div>
  <p class="remote-notice" role="note"><strong>External source review only.</strong> A loaded image is not proof of freshness. Read the original printed timestamp, coverage and legend. No raw radar, live AWOS relay, or official warning issuance is implied.</p>
- <div class="remote-layout">
+ <details class="panel station-detail" open><summary>Station observations · local input and source status</summary>            <div class="panel observation-overview" aria-labelledby="observation-title">
+                <h3 id="observation-title">Station observations · WAWP</h3>
+                <p id="obs-status" role="status" class="section-note">Not connected — live AWOSnet is not configured</p>
+                <p id="obs-time" class="section-note">Sensor observation time: —</p><p id="obs-epoch-note" class="section-note"></p>
+                <p id="obs-retrieved" class="section-note"></p><p id="obs-poll-status" class="section-note" role="status">Live AWOS connection not configured.</p>
+                <div id="obs-live-controls" class="observation-links" hidden><label><input id="obs-auto" type="checkbox" disabled> Auto-refresh while browser tab is visible</label><button id="obs-refresh" type="button" disabled>Refresh AWOS now</button></div>
+                <div class="obs-grid">
+                  <div><span>2-min wind</span><strong id="obs-wind_speed_kt">—</strong></div>
+                  <div><span>Direction (true)</span><strong id="obs-wind_direction_deg">—</strong></div>
+                  <div><span>Gust (source interval)</span><strong id="obs-gust_kt">—</strong></div>
+                  <div><span>Temperature</span><strong id="obs-temperature_c">—</strong></div>
+                  <div><span>Dewpoint</span><strong id="obs-dewpoint_c">—</strong></div>
+                  <div><span>QNH (independently confirmed)</span><strong id="obs-qnh_hpa">—</strong></div>
+                  <div><span>Altimeter setting</span><strong id="obs-altimeter_setting_hpa">—</strong></div>
+                  <div><span>10-min temperature</span><strong id="obs-temperature_10min_c">—</strong></div>
+                  <div><span>10-min dewpoint</span><strong id="obs-dewpoint_10min_c">—</strong></div>
+                  <div><span>Relative humidity</span><strong id="obs-relative_humidity_pct">—</strong></div>
+                  <div><span>Current-hour rain (source accumulation)</span><strong id="obs-rain_current_hour_mm">—</strong></div>
+                  <div><span>Solar radiation</span><strong id="obs-solar_wm2">—</strong></div>
+                  <div><span>Density altitude</span><strong id="obs-density_altitude_ft">—</strong></div>
+                </div>
+                <details class="obs-manual"><summary>Import a locally prepared AWOSnet snapshot (JSON)</summary>
+                  <p class="section-note">Authorized, manually normalized snapshot only. Confirm UTC timestamp, units and wind reference. File stays in browser memory; not uploaded or archived. Values withheld after 5 minutes (internal display policy).</p>
+                  <label for="obs-file">Local snapshot file</label> <input id="obs-file" type="file" accept=".json,application/json">
+                </details>
+                <div class="obs-report"><h4>METAR / SPECI · local snapshot or manual entry</h4>
+                  <p id="obs-metar-status" role="status" class="section-note">No manually entered report</p>
+                  <p id="obs-metar-time" class="section-note">Report observation time: —</p>
+                  <pre id="obs-metar-text">—</pre>
+                  <details class="obs-manual"><summary>Paste a report from an authorized source</summary>
+                    <label for="obs-metar-date">Full UTC report date</label><input id="obs-metar-date" type="date">
+                    <label for="obs-metar-input">WAWP METAR / SPECI (one line)</label><textarea id="obs-metar-input" rows="2" maxlength="400"></textarea>
+                    <button id="obs-metar-apply" type="button">Display report</button>
+                  </details>
+                </div>
+                <div class="observation-links"><button id="obs-clear" type="button">Clear local observations</button></div>
+                <p class="section-note">Manual report display checks station and time, not full code validity or authenticity. Values are supplemental only; not official live ingestion. Report display withheld after 60 minutes (internal display policy). Refresh clears local inputs.</p>
+                <div class="observation-links"><a href="http://wawp.awosnet.com/" target="_blank" rel="noopener noreferrer">Open AWOSnet</a><a href="https://web-aviation.bmkg.go.id/web/observation.php" target="_blank" rel="noopener noreferrer">BMKG Aviation observations</a><a href="https://www.bmkg.go.id/cuaca/bandara/WAWP" target="_blank" rel="noopener noreferrer">BMKG WAWP weather</a><a href="https://stamet-tolitoli.bmkg.go.id/cuaca/penerbangan?icao=WAWP" target="_blank" rel="noopener noreferrer">BMKG METAR mirror</a><button type="button" data-open-tab="tab-persistency">Observation archive</button></div>
+                <p class="observation-note">HTTP XML connectivity confirmed by a GitHub runner. Source clock, wind reference, measurement semantics and publication authorization still require confirmation. Automatic on-demand polling is enabled only after an authorized HTTPS proxy is configured. No observation archive is created.</p>
+            </div>
+</details><div class="remote-layout">
   <aside class="panel remote-rail" aria-label="Observation products"><h3>Source products</h3><div id="remote-products"></div></aside>
   <div class="panel remote-stage">
    <div class="remote-stage-title"><div><p class="analysis-meta" id="remote-type"></p><h3 id="remote-title">Select an observation product</h3></div><div class="analysis-actions"><a id="remote-source" target="_blank" rel="noopener noreferrer">Open provider</a><button type="button" id="remote-reload" hidden>Reload</button><a id="remote-original" target="_blank" rel="noopener noreferrer" hidden>Full-size source image</a></div></div>
@@ -342,7 +292,7 @@
 <section id="tab-spatial" class="tab-pane" aria-labelledby="spatial-heading">
             <div class="spatial-toolbar">
                 <div class="spatial-title"><h2 id="spatial-heading">Spatial Forecast</h2><span>Kolaka · Sulawesi · Regional</span></div>
-                <a id="spatial-fullscreen" href="./titan/" target="_blank" rel="noopener">Full-screen viewer <span aria-hidden="true">↗</span></a>
+                <button type="button" id="spatial-analysis-link" data-open-tab="tab-regional">Atmospheric diagnostics</button><a id="spatial-fullscreen" href="./titan/" target="_blank" rel="noopener">Full-screen viewer <span aria-hidden="true">↗</span></a>
             </div>
             <iframe id="spatial-viewer" data-src="./titan/?embedded=1" title="TITAN spatial forecast maps" class="spatial-viewer"></iframe>
         </section>
@@ -363,15 +313,6 @@
                     <img id="analysis-image" hidden alt="External meteorological chart">
                 </div>
             </div>
-            <div class="panel analysis-checklist">
-                <h3>Shift analysis checklist</h3>
-                <p class="section-note">Manual review only. Completion does not certify product validity or authorize issuance. State resets on page refresh.</p>
-                <label><input type="checkbox"> Reviewed global drivers and their time scale</label>
-                <label><input type="checkbox"> Examined low-level circulation and moisture</label>
-                <label><input type="checkbox"> Compared instability and satellite/radar evolution</label>
-                <label><input type="checkbox"> Checked station observations and local climatology</label>
-                <label><input type="checkbox"> Identified uncertainties and operational implications</label>
-            </div>
             <div class="panel" id="aviation-product-sources">
                 <h3>Official BMKG aviation products</h3>
                 <p class="section-note">Use the provider's date/valid-time selector. Coverage, issue time and flight levels must be read from each selected chart. These are source links, not embedded or TITAN-generated products.</p>
@@ -391,13 +332,7 @@
                 <img id="regional-olr-img" hidden alt="BMKG two-day OLR and equatorial waves" style="max-width:100%;border-radius:8px">
                 <p id="regional-olr-status" role="status" class="section-note">Open analysis to request image.</p>
             </div>
-            <div class="panel" id="regional-satellite-panel">
-                <h3>Himawari · enhanced infrared</h3><p class="section-note">BMKG satellite image. Check printed observation timestamp.</p>
-                <div class="analysis-actions"><a href="https://web-aviation.bmkg.go.id/web/satellite_ir.php" target="_blank" rel="noopener noreferrer">Open BMKG IR source</a></div>
-                <img id="sat-img" hidden alt="BMKG Himawari enhanced infrared satellite image" style="max-width:100%;border-radius:8px">
-                <p id="regional-sat-status" role="status" class="section-note">Open analysis to request image.</p>
-            </div>
-        </section>
+            </section>
 
         <!-- Tab 6: Climatology Engine -->
         <section id="tab-climatology" class="tab-pane">
@@ -524,7 +459,67 @@
         </section>
 
         <!-- Tab 7: System Health (Added) -->
-        <section id="tab-health" class="tab-pane"><div class="panel"><h3>Spatial engine &amp; archive status</h3><p class="section-note">Build-time workflow evidence, not a live guarantee. Images and private numerical data have independent durability checks.</p><div id="workflow-health" role="status">Status not yet loaded.</div></div>
+        <section id="tab-health" class="tab-pane"><details class="panel"><summary>Withheld experimental forecast panels — non-operational</summary>            <div class="intel-grid">
+                <!-- TAF Editor Panel -->
+                <div class="panel taf-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-4);">
+                        <h3 style="margin-bottom: 0;">Automated TAF (withheld)</h3>
+                        <div>
+                            <button id="toggle-manual-btn" disabled hidden>Manual Override</button>
+                            <button id="copy-taf-btn" disabled hidden>Copy</button>
+                        </div>
+                    </div>
+                    <div class="taf-content" id="taf-text-display">Automated TAF withheld pending independent validation.</div>
+                    <div id="taf-manual-boxes" style="display:none; flex-direction:column; gap:8px;"></div>
+                    <div class="warnings" id="taf-warnings"></div>
+                </div>
+
+                <!-- Parameters Panel -->
+                <div class="panel bg-panel">
+                    <h3>Base Group Parameters (withheld)</h3>
+                    <div class="param-grid" id="bg-params">
+                        <!-- Populated via JS -->
+                    </div>
+                    
+                    <h3 style="margin-top: 25px; margin-bottom: 15px; color: var(--amber);">Thunderstorm (TS) Risk</h3>
+                    <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 15px; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px;">
+                            <span style="color: var(--text-secondary); font-size: 0.9em;">Max TS Proxy Risk</span>
+                            <span id="ts-prob-val" style="font-size: 1.5em; font-weight: 700; color: var(--amber);">--%</span>
+                        </div>
+                        <div id="ts-prob-time" style="font-size: 0.85em; color: var(--text-secondary); text-align: right;">Peak window: --</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" style="margin-top: 20px;">
+                <h3>Thunderstorm Proxy Audit (withheld)</h3>
+                <div id="ts-proxy-audit" style="margin-top: 12px; overflow-x: auto;">Loading proxy calculation...</div>
+                <details style="margin-top: 16px;">
+                    <summary style="cursor: pointer; color: var(--cyan); font-weight: 700;">Method and WMO Weather Codes</summary>
+                    <div id="ts-proxy-method" style="margin-top: 14px; color: var(--text-secondary); line-height: 1.6;"></div>
+                </details>
+            </div>
+            
+            <!-- Narrative Panel -->
+            <div class="panel" style="margin-top: 20px;">
+                <h3 style="margin-bottom: 10px;">Automated narrative (withheld)</h3>
+                <div id="taf-narration" style="color: var(--text-secondary); line-height: 1.6;">Loading narrative...</div>
+            </div>
+
+            <div class="panel" id="shadow-taf-panel" style="margin-top: 20px;" hidden>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin-bottom:4px;">Shadow Rain-Wording Comparison</h3>
+                        <div id="shadow-taf-status" style="color:var(--amber); font-size:var(--ts-xs); line-height:1.5;"></div>
+                    </div>
+                    <select id="shadow-taf-config-select" aria-label="Shadow TAF configuration"></select>
+                </div>
+                <div id="shadow-taf-config-note" style="margin-top:14px; color:var(--text-secondary); line-height:1.6;"></div>
+                <pre class="taf-content" id="shadow-taf-text" style="margin-top:14px; min-height:0;"></pre>
+            </div>
+
+</details><div class="panel"><h3>Spatial engine &amp; archive status</h3><p class="section-note">Build-time workflow evidence, not a live guarantee. Images and private numerical data have independent durability checks.</p><div id="workflow-health" role="status">Status not yet loaded.</div></div>
             <h2>System Health & Verification Data</h2>
             <div class="intel-grid">
                 
@@ -818,6 +813,6 @@
         
     </main>
 
-    <script src="dashboard.js?v=9-unified"></script>
+    <dialog id="handover-dialog"><div class="handover-header"><h3>Manual shift notes</h3><button id="handover-close" type="button">Close</button></div><div id="handover-mount"></div></dialog><script src="workstation-shell.js?v=1"></script><script src="dashboard.js?v=10-workstation"></script>
 </body>
 </html>

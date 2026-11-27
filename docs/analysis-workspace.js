@@ -149,8 +149,8 @@ const sources=[
     "source": "BMKG",
     "type": "Satellite observation",
     "url": "https://www.bmkg.go.id/cuaca/satelit/himawari-ir-enhanced",
-    "image": "https://inderaja.bmkg.go.id/IMAGE/HIMA/H08_EH_Indonesia.png",
-    "prompt": "Check cloud-top temperature and temporal evolution; cold tops alone do not prove surface rainfall or lightning."
+    "image": null,
+    "prompt": "Open the canonical Observation & Nowcast viewer. Check cloud-top temperature and temporal evolution; cold tops alone do not prove surface rainfall or lightning."
   },
   {
     "scale": "meso",

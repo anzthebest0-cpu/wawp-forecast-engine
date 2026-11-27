@@ -73,7 +73,7 @@ async function checkImage(frame){
    await p.screenshot({path:"titan-review-screenshots/spatial-layout-"+width+"x"+height+".png"});
    await p.locator('.nav-links li[data-tab="tab-intel"]').click();
    assert(!(await p.locator("#tab-spatial").isVisible()));
-   assert(await p.locator(".preview-controls").isVisible(),"Other tabs retain point controls");
+   assert(!(await p.locator(".preview-controls").isVisible()),"Point controls hidden outside airport guidance");
    await p.locator('#tab-intel [data-open-tab="tab-spatial"]').click();
    assert.equal(await frame.locator("#product").inputValue(),"wind850");
    assert.equal(new URL(p.url()).hash,"#tab-spatial");

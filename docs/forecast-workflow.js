@@ -3,9 +3,9 @@
 'use strict';
 const steps=[
  {id:'observe',title:'1 · Observe',desc:'METAR, AWOS, satellite, radar, lightning',tab:'tab-observations'},
- {id:'diagnose',title:'2 · Diagnose',desc:'Global drivers, circulation, instability and moisture',tab:'tab-regional'},
+ {id:'point',title:'2 · Airport guidance',desc:'Raw model timing and disagreement',tab:'tab-meteogram'},
  {id:'spatial',title:'3 · Compare maps',desc:'Native model cycles and exact forecast windows',tab:'tab-spatial'},
- {id:'point',title:'4 · Airport guidance',desc:'Raw model disagreement and local forecast timing',tab:'tab-spread'},
+ {id:'diagnose',title:'4 · Diagnose if needed',desc:'Global drivers, circulation, instability and moisture',tab:'tab-regional'},
  {id:'verify',title:'5 · Review limits',desc:'Verification readiness and uncertainty before a decision',tab:'tab-verify'}
 ];
 const p=(id,label)=>({id,label});

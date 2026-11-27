@@ -325,6 +325,7 @@ async function loadDashboard() {
         const candidateRows = TitanPreview.windowRows(futureData,now.getTime(),titanPreviewSettings().hours);
         const currentPreview = previewIsCurrent(previewManifest) && candidateRows.length > 0;
         const renderData = currentPreview ? candidateRows : [];
+        renderBriefHourly(renderData, currentPreview ? previewManifest : null);
         const safetyBanner = document.getElementById('preview-safety-banner');
         if (safetyBanner) safetyBanner.textContent = currentPreview
             ? `RAW MODEL PREVIEW — ${Object.keys(previewManifest.models || {}).length} fresh model collections; unverified equal-model mean of original models (IFS 9 km independent), not an operational forecast. TAF withheld. Expires ${previewManifest.expires_at_utc}. Historical verification remains research-only.`
@@ -335,6 +336,7 @@ async function loadDashboard() {
                 const el = document.getElementById(id); if (el) el.replaceChildren();
             }
             pendingPreviewChartData=null;pendingSpreadModelsData=null;pendingSpreadTimeLabels=[];
+            renderBriefHourly([],null);
             window.location.reload();
         }, Math.max(0, Date.parse(previewManifest.expires_at_utc) - Date.now()));
 
@@ -551,6 +553,8 @@ async function loadDashboard() {
                 <td>${displayNumber(d['Precip Probability'], 1, '%')}</td>
                 <td>${d.Condition || '-'}</td>
             `;
+            const timeCell=tr.firstElementChild;
+            if(timeCell){const link=document.createElement('button');link.type='button';link.className='point-spatial-link';link.textContent='Rain map';link.title='Open spatial rain at this valid time, if available; accumulation windows may differ';link.onclick=()=>openSpatialDiagnostic('rain','kolaka',new Date(previewValidEpoch(d.Datetime)).toISOString());timeCell.appendChild(link);}
             tbody.appendChild(tr);
         });
         
@@ -619,11 +623,12 @@ function syncSpatialTheme() {
     }
 }
 let spatialSelectionHash='';
-function openSpatialDiagnostic(product,domain){
+function openSpatialDiagnostic(product,domain,validUtc){
     const allowed=TitanWorkflow.diagnostics.flatMap(x=>x.products.map(p=>p.id));
     if(!allowed.includes(product)||!['kolaka','sulawesi','regional'].includes(domain))return;
     const frame=document.getElementById('spatial-viewer');
     const q=new URLSearchParams(spatialSelectionHash.slice(1));q.set('product',product);q.set('domain',domain);
+    if(validUtc&&Number.isFinite(Date.parse(validUtc))){q.set('time',validUtc);q.set('window','[]');}
     const src=new URL(frame.dataset.src,location.href);
     src.searchParams.set('theme',document.documentElement.classList.contains('light-mode')?'light':'dark');
     src.hash=q.toString();spatialSelectionHash=src.hash;
@@ -639,6 +644,7 @@ function switchTab(tabId) {
     document.getElementById(tabId).classList.add('active');
     document.querySelector(`.nav-links li[data-tab="${tabId}"]`).classList.add('active');
     document.querySelectorAll('.nav-links li[data-tab]').forEach(el=>el.setAttribute('aria-current',el.getAttribute('data-tab')===tabId?'page':'false'));
+    updateWorkspaceNavigation(tabId);
     if(window.location.hash !== '#'+tabId) window.history.replaceState(null,'','#'+tabId);
     setTimeout(()=>window.dispatchEvent(new Event('resize')),0);
 
@@ -708,6 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupObservationPanel();
     setupRemoteObservations();
     setupForecastWorkflow();
+    setupWorkstationShell();
     loadDashboard();
 });
 

@@ -124,6 +124,7 @@ jobs:
           timeout 300s node scripts/test_titan_main_dashboard.cjs
           timeout 180s node scripts/test_titan_remote_observations.cjs
           timeout 180s node scripts/test_titan_unified_workflow.cjs
+          timeout 240s node scripts/test_titan_task_shell.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

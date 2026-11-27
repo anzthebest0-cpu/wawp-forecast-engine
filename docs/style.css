@@ -1226,3 +1226,42 @@ body.spatial-active{height:100dvh;min-height:0;overflow:hidden;}
 .evidence-run{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-glass);font-size:.8rem;}
 .evidence-run a{color:var(--cyan);}
 @media(max-width:600px){.shift-note-grid{grid-template-columns:minmax(0,1fr);}.workflow-steps{grid-template-columns:repeat(2,minmax(0,1fr));}.workflow-step{padding:8px;}}
+
+/* Carbon audit: task-oriented shell; legacy hashes remain addressable. */
+.nav-links li.legacy-route,.spatial-active .nav-links li.legacy-route{display:none!important;}
+.sidebar::before,.logo-area::before,.nav-links li::before{display:none;}
+.sidebar,.panel{backdrop-filter:none;box-shadow:none;}
+.logo{text-shadow:none;letter-spacing:.08em;}
+.nav-links li{border-radius:5px;line-height:1.35;min-height:40px;}
+.nav-links li.active::after{box-shadow:none;}
+.aerodrome-strip{display:flex;align-items:center;gap:8px 12px;min-width:0;padding:7px 9px;margin-bottom:8px;border:1px solid var(--border-glass);border-radius:5px;background:var(--bg-secondary);font-size:.75rem;flex-wrap:wrap;}
+.aero-report{display:flex;gap:8px;align-items:baseline;min-width:0;flex:1 1 300px;}
+#aero-metar{font-family:var(--font-mono);overflow-wrap:anywhere;min-width:0;}
+.aero-awos{flex:1 1 160px;overflow-wrap:anywhere;}
+.aero-clock{font-family:var(--font-mono);white-space:nowrap;color:var(--text-secondary);}
+.aerodrome-strip button,.workspace-subnav button,.point-spatial-link,#spatial-analysis-link,#handover-close{font:inherit;color:var(--text-primary);background:var(--bg-tertiary);border:1px solid var(--border-glass);border-radius:5px;min-height:32px;padding:5px 9px;cursor:pointer;}
+.workspace-subnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.workspace-subnav[hidden]{display:none;}
+.workspace-subnav button[aria-pressed=true]{border-color:var(--cyan);color:var(--cyan);}
+body:not(.point-active) .preview-controls{display:none;}
+.brief-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:10px;}
+.brief-grid .panel{padding:12px;margin:0 0 12px;}
+.brief-table{border-collapse:collapse;width:max-content;min-width:100%;font-variant-numeric:tabular-nums;font-size:.75rem;}
+.brief-table td,.brief-table th{padding:6px 8px;border-bottom:1px solid var(--border-glass);text-align:right;white-space:nowrap;}
+.brief-table th:first-child{position:sticky;left:0;background:var(--bg-secondary);text-align:left;}
+.brief-table small{display:block;font-size:.65rem;color:var(--text-secondary);}
+.station-detail{margin-bottom:12px;}
+.station-detail>.observation-overview{margin:8px 0 0;padding:8px;box-shadow:none;}
+.station-detail summary,.utility-active details>summary{cursor:pointer;color:var(--text-primary);}
+#handover-dialog{position:fixed;inset:auto 12px 12px auto;width:min(620px,calc(100vw - 24px));max-height:88dvh;overflow:auto;border:1px solid var(--border-glass);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);padding:12px;}
+#handover-dialog::backdrop{background:rgba(0,0,0,.45);}
+.handover-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.point-spatial-link{display:block;margin:4px auto 0;font-size:.7rem;}
+.spatial-active .aerodrome-strip{flex:none;padding:4px 8px;font-size:.68rem;margin-bottom:5px;}
+.spatial-active .aero-report{flex-basis:220px;}
+.spatial-active .aero-awos{flex-basis:130px;}
+.spatial-active .aero-clock{display:none;}
+.spatial-active .aerodrome-strip button{min-height:28px;}
+.spatial-active #spatial-analysis-link{font-size:.75rem;min-height:28px;}
+@media(max-width:900px){.brief-grid{grid-template-columns:minmax(0,1fr);}.aero-clock{font-size:.7rem;}.aerodrome-strip{gap:4px 8px;}.aero-report{flex-basis:100%;}.spatial-active .aero-report{flex-basis:auto;flex:1 1 160px;}.spatial-active .aero-awos{display:none;}.spatial-active .aerodrome-strip{max-height:62px;overflow:auto;}.workspace-subnav button{min-height:40px;}.spatial-active #spatial-analysis-link{font-size:.68rem;}}
+@media(max-height:480px) and (max-width:900px){.spatial-active .aerodrome-strip{display:none;}}
