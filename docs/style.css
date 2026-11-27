@@ -956,7 +956,6 @@ tbody tr:hover td {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.panel,
 .weight-card,
 .param-item {
   animation: card-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
@@ -1306,3 +1305,6 @@ body:not(.point-active) .preview-controls{display:none;}
 
 /* Operational workspace switches must paint immediately. Keep mobile labels readable. */
 @media(max-width:900px){.nav-links li[data-tab]:not(.legacy-route){flex:0 0 auto;overflow:visible;white-space:nowrap;}}
+
+/* Scientific panels remain fully painted when switching workspaces. */
+.panel{animation:none;}
