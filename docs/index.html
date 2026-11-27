@@ -18,7 +18,7 @@
     <script src="observation-ui.js?v=4-status"></script>
     <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=3.4-labels"></script>
-    <link rel="stylesheet" href="style.css?v=production-hotfix1">
+    <link rel="stylesheet" href="style.css?v=production-spatial1">
 </head>
 <body>
 
@@ -34,6 +34,7 @@
             <li class="nav-group">OPERATIONS</li>
             <li class="active" data-tab="tab-intel">Forecaster Overview</li>
             <li data-tab="tab-regional">Multi-scale Analysis</li>
+            <li data-tab="tab-spatial">Spatial Forecast</li>
             <li class="nav-group">MODEL PREVIEW</li>
             <li data-tab="tab-meteogram">Raw Model Meteogram</li>
             <li data-tab="tab-spread">Model Disagreement</li>
@@ -118,7 +119,7 @@
                 <div class="observation-links"><a href="http://wawp.awosnet.com/" target="_blank" rel="noopener noreferrer">Open AWOSnet</a><a href="https://web-aviation.bmkg.go.id/web/observation.php" target="_blank" rel="noopener noreferrer">BMKG Aviation observations</a><a href="https://www.bmkg.go.id/cuaca/bandara/WAWP" target="_blank" rel="noopener noreferrer">BMKG WAWP weather</a><a href="https://stamet-tolitoli.bmkg.go.id/cuaca/penerbangan?icao=WAWP" target="_blank" rel="noopener noreferrer">BMKG METAR mirror</a><button type="button" data-open-tab="tab-persistency">Observation archive</button></div>
                 <p class="observation-note">HTTP XML connectivity confirmed by a GitHub runner. Source clock, wind reference, measurement semantics and publication authorization still require confirmation. Automatic on-demand polling is enabled only after an authorized HTTPS proxy is configured. No observation archive is created.</p>
             </div>
-            <div class="panel overview-links"><h3>Analysis shortcuts</h3><div class="observation-links"><a href="./titan/">Spatial research preview (frozen)</a><button type="button" data-open-tab="tab-regional">Regional analysis</button><button type="button" data-open-tab="tab-meteogram">Raw model meteogram</button><button type="button" data-open-tab="tab-spread">Model disagreement</button><button type="button" data-open-tab="tab-matrix">Hourly matrix</button></div></div>
+            <div class="panel overview-links"><h3>Analysis shortcuts</h3><div class="observation-links"><button type="button" data-open-tab="tab-spatial">Spatial forecast</button><button type="button" data-open-tab="tab-regional">Regional analysis</button><button type="button" data-open-tab="tab-meteogram">Raw model meteogram</button><button type="button" data-open-tab="tab-spread">Model disagreement</button><button type="button" data-open-tab="tab-matrix">Hourly matrix</button></div></div>
             <div class="intel-grid">
                 <!-- TAF Editor Panel -->
                 <div class="panel taf-panel">
@@ -323,6 +324,12 @@
 
 
         <!-- Tab 5: Regional Charts -->
+        <section id="tab-spatial" class="tab-pane">
+            <div class="header-bar"><h2>Spatial Forecast</h2></div>
+            <p class="section-note">Independent model-cycle maps for Kolaka, Sulawesi and the region. Research guidance only; check initialization ages and exact accumulation windows. Map time controls are independent of point-forecast controls.</p>
+            <div class="observation-links"><a href="./titan/" target="_blank" rel="noopener">Open full-screen spatial viewer</a></div>
+            <iframe id="spatial-viewer" data-src="./titan/?embedded=1" title="TITAN spatial forecast maps" loading="lazy" class="spatial-viewer"></iframe>
+        </section>
         <section id="tab-regional" class="tab-pane">
             <div class="header-bar">
                 <h2>Multi-scale Atmospheric Analysis</h2>
@@ -795,6 +802,6 @@
         
     </main>
 
-    <script src="dashboard.js?v=5-hotfix"></script>
+    <script src="dashboard.js?v=6-spatial"></script>
 </body>
 </html>

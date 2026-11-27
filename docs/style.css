@@ -1145,3 +1145,6 @@ tbody tr:hover td {
 #spread-rain .rain-model-table tbody tr:hover td.rain-zero{background:#e2e8f0;}#spread-rain .rain-model-table tbody tr:hover td.rain-r1{background:#bae6fd;}#spread-rain .rain-model-table tbody tr:hover td.rain-r2{background:#7dd3fc;}#spread-rain .rain-model-table tbody tr:hover td.rain-r3{background:#38bdf8;}#spread-rain .rain-model-table tbody tr:hover td.rain-r4{background:#0369a1;}#spread-rain .rain-model-table tbody tr:hover td.rain-r5{background:#1e3a8a;}#spread-rain .rain-model-table tbody tr:hover td.rain-missing{background:repeating-linear-gradient(135deg,#cbd5e1 0 4px,#f1f5f9 4px 8px);}
 #obs-live-controls[hidden]{display:none;}
 @media(max-width:600px){#spread-rain .rain-model-table th:first-child{min-width:112px;width:112px;max-width:112px;font-size:.7rem;}}
+
+.spatial-viewer{display:block;width:100%;min-width:0;height:78vh;min-height:560px;border:1px solid var(--border-glass);border-radius:10px;background:var(--col-surface-1)}
+@media(max-width:900px){.spatial-viewer{height:76vh;min-height:480px;}}

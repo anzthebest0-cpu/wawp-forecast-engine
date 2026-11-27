@@ -622,6 +622,10 @@ function switchTab(tabId) {
     if(window.location.hash !== '#'+tabId) window.history.replaceState(null,'','#'+tabId);
     setTimeout(()=>window.dispatchEvent(new Event('resize')),0);
 
+    if (tabId === 'tab-spatial') {
+        const frame = document.getElementById('spatial-viewer');
+        if (frame && !frame.hasAttribute('src')) frame.src = frame.dataset.src;
+    }
     if (tabId === 'tab-meteogram') renderPreviewChartsIfVisible();
     if (tabId === 'tab-spread' && pendingSpreadModelsData && !spreadChartsRendered) {
         try { setupSpreadCharts(pendingSpreadModelsData, pendingSpreadTimeLabels); } catch (err) { console.error('Spread render failed',err); renderRainHeatmap(pendingSpreadModelsData,pendingSpreadTimeLabels); }
