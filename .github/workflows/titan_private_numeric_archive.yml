@@ -2,7 +2,9 @@ name: TITAN private numerical archive
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/titan_private_numeric_archive.yml']
+    paths: ['.github/workflows/titan_private_numeric_archive.yml', 'scripts/titan_private_numeric_archive.py', 'scripts/titan_numeric_drive.py']
+  schedule:
+    - cron: '17 2,8,14,20 * * *' # independent archive recovery checks
   workflow_run:
     workflows: ['TITAN rolling spatial research refresh']
     types: [completed]
@@ -10,9 +12,9 @@ on:
   workflow_dispatch:
     inputs:
       source_run:
-        description: Successful main rolling run (or verified transition seed)
+        description: Successful advancing run ID, or auto (recover newest pending generation)
         required: true
-        default: '45902498571'
+        default: 'auto'
 permissions:
   contents: read
   actions: read
@@ -23,7 +25,7 @@ jobs:
   archive:
     if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,7 +42,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           WAWP_RCLONE_CONFIG: ${{ secrets.WAWP_ARCHIVE_RCLONE_CONFIG }}
           WAWP_ARCHIVE_FOLDER_ID: ${{ vars.WAWP_ARCHIVE_FOLDER_ID }}
-          SOURCE_RUN: ${{ github.event.workflow_run.id || inputs.source_run || '45902498571' }}
+          SOURCE_RUN: ${{ inputs.source_run || 'auto' }}
         run: |
           set -euo pipefail
           test -n "$WAWP_RCLONE_CONFIG" && test -n "$WAWP_ARCHIVE_FOLDER_ID"

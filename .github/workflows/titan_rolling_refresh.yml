@@ -6,6 +6,7 @@ on:
   schedule:
     - cron: '45 0,6,12,18 * * *' # 08:45, 14:45, 20:45, 02:45 WITA
   workflow_dispatch:
+  # Push also validates the next production cycle when this workflow changes.
 permissions:
   contents: read
   actions: read
