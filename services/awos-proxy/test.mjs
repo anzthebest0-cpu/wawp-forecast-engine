@@ -31,3 +31,21 @@ test('METAR independent of AWOS flags, no upstream without authorization',async(
  assert.equal((await (await none(request,metarEnv)).json()).status,'no_recent_report');
  assert.equal((await h(new Request('https://proxy.example/metar',{headers:{Origin:'https://elsewhere.example'}}),metarEnv)).status,403);
 });
+
+test('AWOS failure reasons are bounded and do not expose payloads',async()=>{
+ const req=new Request('https://proxy.example/awos',{headers:{Origin:origin}});
+ const cases=[
+  [async()=>{throw Error('private transport details');},'upstream_transport'],
+  [async()=>new Response('private upstream message',{status:503}),'upstream_http'],
+  [async()=>new Response('x'.repeat(131073)),'upstream_body'],
+  [async()=>new Response(xml.replace('03:59:00','03:00:00')),'validation_stale_clock'],
+  [async()=>new Response(xml.replace('03:59:00','04:01:00')),'validation_future_clock'],
+  [async()=>new Response(xml.replaceAll('knots','m/s')),'validation_units']
+ ];
+ for(const [upstream,reason] of cases){
+  const res=await makeHandler(upstream,()=>now)(req,env);
+  assert.equal(res.status,502);
+  const body=await res.json();assert.equal(body.reason,reason);assert.equal(body.status,'unavailable');
+  assert.deepEqual(Object.keys(body).sort(),(reason==='upstream_http'?['status','reason','upstream_status']:['status','reason']).sort());
+ }
+});
