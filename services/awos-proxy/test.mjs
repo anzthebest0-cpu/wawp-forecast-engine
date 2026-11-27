@@ -49,3 +49,39 @@ test('AWOS failure reasons are bounded and do not expose payloads',async()=>{
   assert.deepEqual(Object.keys(body).sort(),(reason==='upstream_http'?['status','reason','upstream_status']:['status','reason']).sort());
  }
 });
+
+import {collectScheduled} from './worker.mjs';
+import {historyEnabled,readHistory,recordHistory,latestHistory,pruneHistory} from './history.mjs';
+// D1 API contract test with a deterministic in-memory statement adapter.
+// Real schema/binding deployment is checked separately against the user's database.
+function fakeHistory(){
+ const samples=new Map(),reports=new Map();
+ function prepare(sql){return {bind(...args){return {async run(){
+  if(sql.startsWith('DELETE FROM awos_samples')){for(const [t] of samples)if(t<args[0]||t>args[1])samples.delete(t);}
+  else if(sql.startsWith('DELETE FROM awos_reports')){for(const [k,r] of reports)if(r.observed_ms<args[0]||r.observed_ms>args[1])reports.delete(k);}
+  else if(sql.startsWith('INSERT INTO awos_samples')){const [observed_ms,retrieved_ms,payload]=args;if(!samples.has(observed_ms)||samples.get(observed_ms).retrieved_ms<=retrieved_ms)samples.set(observed_ms,{observed_ms,retrieved_ms,payload});}
+  else if(sql.startsWith('INSERT OR IGNORE INTO awos_reports')){const [observed_ms,report_text,report_date_utc]=args;reports.set(observed_ms+':'+report_text,{observed_ms,report_text,report_date_utc});}
+  else throw Error('unexpected write '+sql);
+ },async all(){const m=sql.includes('FROM awos_samples')?samples:reports;const results=[...m.values()].filter(r=>r.observed_ms>=args[0]&&r.observed_ms<=args[1]).sort((a,b)=>b.observed_ms-a.observed_ms);return {results:results.slice(0,sql.endsWith('LIMIT 2')?2:1500)};},async first(){return (await this.all()).results[0]||null;}};}};}
+ return {samples,reports,prepare,async batch(stmts){for(const s of stmts)await s.run();}};
+}
+test('scheduled collection retains unique source timestamps, reports, raw bearing and expires rows',async()=>{
+ const db=fakeHistory(),e={...env,AWOS_HISTORY:db,AWOS_HISTORY_ENABLED:'true'};
+ let calls=0;const source=async()=>{calls++;return new Response(xml);};
+ assert.equal(historyEnabled({...e,AWOS_HISTORY_ENABLED:'false'}),false);
+ await collectScheduled({...e,AWOS_HISTORY_ENABLED:'false'},source,()=>now);assert.equal(calls,0);
+ await collectScheduled(e,source,()=>now);await collectScheduled(e,source,()=>now+60000);
+ assert.equal(calls,2);assert.equal(db.samples.size,1);assert.equal(db.reports.size,1);
+ const sample=await latestHistory(e,now+60000);assert.equal(sample.retrieved_at_utc,'2026-01-02T04:01:00Z');assert.equal(sample.metar_date_utc,'2026-01-02');
+ const history=await readHistory(e,6,now+60000);assert.equal(history.rows.length,1);assert.equal(history.reports.length,1);assert.equal(history.wind_reference,'unverified_source_bearing');
+ assert.equal('metar_text' in history.rows[0],false);
+ const h=makeHandler(async()=>{throw Error('must not poll upstream');},()=>now+60000);
+ const req=p=>new Request('https://relay.example'+p,{headers:{Origin:origin}});
+ assert.equal((await h(req('/awos'),e)).status,200);
+ assert.equal((await h(req('/awos-history?hours=6'),e)).status,200);
+ assert.equal((await h(req('/awos-history?hours=48'),e)).status,400);
+ assert.equal((await h(req('/awos-history?hours=6'),{...e,AWOS_HISTORY_ENABLED:'false'})).status,503);
+ assert.equal((await h(new Request('https://relay.example/awos-history?hours=6'),e)).status,403);
+ assert.equal(await latestHistory(e,now+600000),null);
+ await pruneHistory(e,now+86400000+60000);assert.equal(db.samples.size,0);assert.equal(db.reports.size,0);
+});
