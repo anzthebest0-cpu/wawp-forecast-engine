@@ -61,7 +61,7 @@ function plot(rows,start,end,track,models=[],options={}){
  if(!nums.length){const p=document.createElement('p');p.className='section-note';p.textContent='No valid measurements in this window.';card.append(p);if(!unified)return card;}
  let lo=bearing?0:nums.length?Math.floor(Math.min(...nums)):0,hi=bearing?360:nums.length?Math.ceil(Math.max(...nums)):1;
  if(['wind_speed_kt','rain_current_hour_mm','model_rain','spread'].includes(series[0][0]))lo=Math.min(0,lo);
- if(series[0][0]==='relative_humidity_pct'){lo=0;hi=100;}
+ if(series[0][0]==='relative_humidity_pct'||series[0][0]==='cloud_low'){lo=0;hi=100;}
  if(hi<=lo)hi=lo+1;
  const small=window.innerWidth<=660,W=unified?(small?420:960):640,L=small?43:52,R=W-15,top=13,bottom=99,H=unified?130:152;
  const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.setAttribute('role','img');svg.setAttribute('aria-label',title+' over the selected time window, with missing observations left as gaps');
@@ -90,7 +90,7 @@ function plot(rows,start,end,track,models=[],options={}){
    md+='M'+(x-2).toFixed(2)+' '+y.toFixed(2)+'h4 ';last=s.at;
   }
   if(fd)add('path',{d:fd,class:'awos-history-line '+cls+' model'});
-  if(md)add('path',{d:md,class:'awos-history-line '+cls+' model-points'});
+  if(md)add('path',{d:md,class:'awos-history-line '+cls+' model-points'+(bearing?' model-bearing':'')});
  }
  if(unified){
   add('line',{x1:X(options.now),x2:X(options.now),y1:top,y2:bottom,class:'unified-now'});
@@ -171,13 +171,14 @@ function renderMeteogram(force=false){
  [['Model pressure (hPa)',[['model_pressure','Model pressure','pressure']]],[],models,'Definition not reconciled with AWOS; separate scales'],
  [['Model cloud cover (%) · not ceiling',[['cloud_low','Low','rain'],['cloud_mid','Mid','pressure'],['cloud_high','High','wind']]],[],models,'Model only']
  ];
- for(const [track,o,m,note] of core)mount.append(plot(o,start,end,track,m,{now:clock,note}));
+ for(const [track,o,m,note] of core)mount.append(plot(o,start,end,track,m,{now,note}));
  selectUnifiedTime(selectedTime!==null&&selectedTime>=start&&selectedTime<=end?selectedTime:rows.length?rows[rows.length-1].at:models.length?models[0].at:now);
 }
 root.refreshUnifiedMeteogram=()=>renderMeteogram(true);
 function paint(){
- const mount=el('awos-history-tracks');mount.replaceChildren();
  if(!data)return;
+ if(!el('tab-observations')?.classList.contains('active')){renderMeteogram();return;}
+ const mount=el('awos-history-tracks');mount.replaceChildren();
  const now=Date.now(),start=now-data.hours*HOUR,rows=data.rows.filter(s=>s.at>=start&&s.at<=now),reports=data.reports.filter(r=>r.at>=start&&r.at<=now);
  const latest=rows[rows.length-1];
  el('awos-history-status').textContent=rows.length?rows.length+' unique samples · last '+stamp(latest.at)+' · '+(now-latest.at>300000?'latest sample stale':'recent sample')+' · '+data.hours+' h window':'No samples collected yet in this window.';
