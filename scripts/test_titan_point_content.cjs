@@ -17,6 +17,7 @@ const base='http://127.0.0.1:8765';
   await page.waitForFunction(()=>document.querySelector('#terminal-timeline .terminal-table tbody tr td'));
   const cells=await page.locator('#terminal-timeline .terminal-table tbody tr').first().locator('td').allTextContents();assert.equal(cells.length,rows.length);
   for(let i=0;i<rows.length;i++){const v=numeric(rows[i].Wind);assert(cells[i].startsWith(v===null?'—':v.toFixed(1)),'Wind value differs from gated payload');}
+  await page.waitForFunction(()=>document.querySelectorAll('#awos-history-meteogram .unified-track').length===10);assert(await page.locator('#awos-history-meteogram .unified-track').first().isVisible());assert(!(await page.locator('#forecast-only-detail').getAttribute('open')));await page.locator('#forecast-only-detail > summary').click();
   if(rows.some(r=>numeric(r.Wind)!==null)){await page.waitForSelector('#chart-wind .apexcharts-canvas',{state:'visible',timeout:25000});assert(await page.locator('#chart-wind .apexcharts-series path').count()>0,'Wind chart missing actual series');}
   if(rows.some(r=>numeric(r.Rain)!==null)){await page.waitForSelector('#chart-rain .apexcharts-canvas',{state:'visible',timeout:25000});assert(await page.locator('#chart-rain .apexcharts-series').count()>0);}
   if(rows.length>1){await page.locator('#terminal-next').click();assert.equal(await page.locator('#terminal-time').inputValue(),'1');await page.waitForFunction(t=>[...document.querySelectorAll('#chart-wind .terminal-crosshair,#chart-rain .terminal-crosshair,#chart-temp .terminal-crosshair')].filter(x=>!x.hidden&&x.dataset.epoch===String(t)).length>=2,epoch(rows[1].Datetime));assert((await page.locator('#terminal-readout').textContent()).includes('Wind'));}
@@ -37,7 +38,7 @@ const base='http://127.0.0.1:8765';
    await page.locator('[data-workspace-view="'+id+'"]').click();
    assert.equal(await page.locator('#'+id).getAttribute('data-point-state'),'unavailable');
    assert(await page.locator('#'+id+' .point-empty').isVisible());
-   assert.equal(await page.locator('#'+id+' .chart-panel:visible').count(),0);
+   assert.equal(await page.locator('#'+id+' .chart-panel:visible').count(),0);if(id==='tab-meteogram')assert(await page.locator('.unified-meteogram-panel').isVisible());
   }
   console.log('TITAN_POINT_CONTENT_UNAVAILABLE_PASS (not a populated forecast test)');
  }
