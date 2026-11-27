@@ -25,7 +25,7 @@ async function fixture(browser,mode,viewport){
     if(u.hostname==='cdn.jsdelivr.net'&&u.pathname.includes('apexcharts'))return route.fulfill({path:require.resolve('apexcharts/dist/apexcharts.min.js'),contentType:'application/javascript'});
     if(u.href===proxy){awosRequests++;return route.fulfill({json:{schema:'titan-local-awos-v1',station:'WAWP',source:'AWOSnet',observed_at_utc:iso(Date.now()-2000).slice(0,19)+'Z',retrieved_at_utc:iso(Date.now()-1000).slice(0,19)+'Z',wind_average_minutes:2,wind_reference:'true',units_confirmed:true,wind_speed_kt:7},headers:{'Access-Control-Allow-Origin':root}});}
     if(u.origin!==root)return route.abort();
-    if(u.pathname==='/'&&mode==='mismatch'){const body=fs.readFileSync(path.join('docs','index.html'),'utf8').replace('name="titan-awos-proxy" content=""','name="titan-awos-proxy" content="'+proxy+'"');return route.fulfill({body,contentType:'text/html'});}
+    if(u.pathname==='/'){const body=fs.readFileSync(path.join('docs','index.html'),'utf8').replace(/name="titan-awos-proxy" content="[^"]*"/,'name="titan-awos-proxy" content="'+(mode==='mismatch'?proxy:'')+'"');return route.fulfill({body,contentType:'text/html'});}
     if(!u.pathname.startsWith('/data/'))return route.continue();
     const name=u.pathname.split('/').pop();
     let data={};
