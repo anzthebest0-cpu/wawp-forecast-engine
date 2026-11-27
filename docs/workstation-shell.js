@@ -48,3 +48,18 @@ function setupWorkstationShell(){
  sync();clock();setInterval(clock,30000);
  updateWorkspaceNavigation(document.querySelector('.tab-pane.active')?.id||'tab-intel');
 }
+
+function renderTerminalTimeline(rows,models,manifest){
+ const root=document.getElementById('terminal-timeline');if(!root)return;root.replaceChildren();
+ if(!manifest||!previewIsCurrent(manifest)||!rows.length){root.textContent='Current point guidance unavailable.';return;}
+ const specs=[['Wind','Wind','Wind Speed','kt'],['Gust','Gust','Wind Gust','kt'],['Rain','Rain','Rainfall','mm/output h'],['Temperature','Temperature','Temperature','°C'],['Dewpoint','Dewpoint','Dewpoint','°C'],['Pressure','Pressure','Pressure','hPa']];
+ const wrap=document.createElement('div');wrap.className='preview-scroll terminal-scroll';wrap.tabIndex=0;wrap.setAttribute('aria-label','Time-aligned raw model rows; scroll horizontally');
+ const table=document.createElement('table');table.className='terminal-table';const head=table.createTHead().insertRow();previewCell(head,'th','Valid UTC / WITA');
+ const body=table.createTBody(),readout=document.createElement('div');readout.className='terminal-readout';const details=document.createElement('p');details.className='section-note';const jump=document.createElement('button');jump.type='button';jump.textContent='Open spatial rain at selected valid time';let chosen=null;
+ const num=v=>v===null?'—':v.toFixed(1);
+ function extent(row,key){const vals=Object.values(models?.[key]||{}).map(m=>TitanPreview.numeric(m?.[row.Datetime])).filter(v=>v!==null);return vals.length?{min:Math.min(...vals),max:Math.max(...vals),n:vals.length}:null;}
+ function select(i){chosen=rows[i];table.querySelectorAll('[data-hour]').forEach(e=>e.classList.toggle('chosen',Number(e.dataset.hour)===i));details.textContent=TitanPreview.label(previewValidEpoch(chosen.Datetime),'UTC')+' / '+TitanPreview.label(previewValidEpoch(chosen.Datetime),'WITA')+' · '+specs.map(([label,key,modelKey,unit])=>{const v=TitanPreview.numeric(chosen[key]),r=extent(chosen,modelKey);return label+': '+num(v)+' '+unit+(r?' (range '+num(r.min)+'–'+num(r.max)+', n='+r.n+')':' (individual range unavailable)');}).join(' | ');}
+ rows.forEach((row,i)=>{const t=previewValidEpoch(row.Datetime),th=previewCell(head,'th','');th.dataset.hour=i;const b=document.createElement('button');b.type='button';b.textContent=TitanPreview.label(t,'UTC',true)+'Z';b.onclick=()=>select(i);const local=document.createElement('small');local.textContent=TitanPreview.label(t,'WITA',true)+' WITA';b.append(local);th.append(b);});
+ for(const [label,key,modelKey,unit] of specs){const tr=body.insertRow();previewCell(tr,'th',label+' ('+unit+')');rows.forEach((row,i)=>{const cell=previewCell(tr,'td',num(TitanPreview.numeric(row[key])));cell.dataset.hour=i;const r=extent(row,modelKey),range=document.createElement('small');range.textContent=r?num(r.min)+'–'+num(r.max)+' · n='+r.n:'range —';cell.append(range);});}
+ jump.onclick=()=>{if(chosen&&previewIsCurrent(manifest))openSpatialDiagnostic('rain','kolaka',new Date(previewValidEpoch(chosen.Datetime)).toISOString());};readout.append(details,jump);wrap.append(table);root.append(wrap,readout);select(0);
+}

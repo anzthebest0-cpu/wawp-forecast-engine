@@ -337,12 +337,14 @@ async function loadDashboard() {
             }
             pendingPreviewChartData=null;pendingSpreadModelsData=null;pendingSpreadTimeLabels=[];
             renderBriefHourly([],null);
+            renderTerminalTimeline([],null,null);
             window.location.reload();
         }, Math.max(0, Date.parse(previewManifest.expires_at_utc) - Date.now()));
 
         const clim_data = results[4].status === 'fulfilled' ? results[4].value : null;
         const modelsData = currentPreview && results[5].status === 'fulfilled' &&
             JSON.stringify(results[5].value?.Preview_Manifest) === JSON.stringify(previewManifest) ? results[5].value : null;
+        renderTerminalTimeline(renderData,modelsData,currentPreview?previewManifest:null);
         const diurnalData = results[8].status === 'fulfilled' ? results[8].value : null;
         const workflowData = results[9].status === 'fulfilled' ? results[9].value : null;
         const residualData = results[10].status === 'fulfilled' ? results[10].value : null;

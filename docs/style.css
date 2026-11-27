@@ -1265,3 +1265,12 @@ body:not(.point-active) .preview-controls{display:none;}
 .spatial-active #spatial-analysis-link{font-size:.75rem;min-height:28px;}
 @media(max-width:900px){.brief-grid{grid-template-columns:minmax(0,1fr);}.aero-clock{font-size:.7rem;}.aerodrome-strip{gap:4px 8px;}.aero-report{flex-basis:100%;}.spatial-active .aero-report{flex-basis:auto;flex:1 1 160px;}.spatial-active .aero-awos{display:none;}.spatial-active .aerodrome-strip{max-height:62px;overflow:auto;}.workspace-subnav button{min-height:40px;}.spatial-active #spatial-analysis-link{font-size:.68rem;}}
 @media(max-height:480px) and (max-width:900px){.spatial-active .aerodrome-strip{display:none;}}
+
+.terminal-timeline-panel{padding:10px;}
+.terminal-table{border-collapse:collapse;width:max-content;min-width:100%;font-size:.76rem;font-variant-numeric:tabular-nums;}
+.terminal-table th,.terminal-table td{padding:6px;border:1px solid var(--border-glass);text-align:center;white-space:nowrap;}
+.terminal-table th:first-child{position:sticky;left:0;z-index:1;background:var(--bg-secondary);text-align:left;}
+.terminal-table small{display:block;font-size:.66rem;color:var(--text-secondary);}
+.terminal-table .chosen{background:var(--cyan-glow);}
+.terminal-table button,.terminal-readout button{font:inherit;min-height:36px;color:var(--text-primary);border:1px solid var(--border-glass);background:var(--bg-tertiary);border-radius:4px;padding:4px 6px;cursor:pointer;}
+.terminal-readout{padding-top:8px;}

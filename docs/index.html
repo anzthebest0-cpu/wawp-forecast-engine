@@ -20,7 +20,7 @@
     <script src="remote-observations.js?v=1"></script>
     <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=3.4-labels"></script>
-    <link rel="stylesheet" href="style.css?v=production-workstation1">
+    <link rel="stylesheet" href="style.css?v=production-workstation2">
 </head>
 <body>
 
@@ -126,7 +126,7 @@
 
         <!-- Tab 3: Meteogram -->
         <section id="tab-meteogram" class="tab-pane">
-            <h2>Airport Forecast Guidance · Meteogram</h2><p class="section-note">Unverified equal-model preview. Valid times: <span data-preview-zone>WITA (UTC+8)</span>. Not an operational forecast.</p>
+            <h2>Airport Forecast Guidance · Meteogram</h2><div class="panel terminal-timeline-panel"><h3>Aligned terminal timeline</h3><p class="section-note">Raw equal-model hourly preview and available individual-model ranges. Counts vary by parameter and hour. No calibrated probability or skill ranking. Click a valid hour for its numerical detail.</p><div id="terminal-timeline" role="status">Checking matching data…</div></div><p class="section-note">Unverified equal-model preview. Valid times: <span data-preview-zone>WITA (UTC+8)</span>. Not an operational forecast.</p>
             <div class="panel chart-panel">
                 <div id="chart-temp"></div>
             </div>
@@ -813,6 +813,6 @@
         
     </main>
 
-    <dialog id="handover-dialog"><div class="handover-header"><h3>Manual shift notes</h3><button id="handover-close" type="button">Close</button></div><div id="handover-mount"></div></dialog><script src="workstation-shell.js?v=1"></script><script src="dashboard.js?v=10-workstation"></script>
+    <dialog id="handover-dialog"><div class="handover-header"><h3>Manual shift notes</h3><button id="handover-close" type="button">Close</button></div><div id="handover-mount"></div></dialog><script src="workstation-shell.js?v=2-timeline"></script><script src="dashboard.js?v=11-timeline"></script>
 </body>
 </html>
