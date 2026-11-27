@@ -37,12 +37,12 @@ def cli(*args):
 def valid_id(s):return isinstance(s,str) and ID.fullmatch(s) is not None
 
 class DriveArchive:
-    def __init__(self):
+    def __init__(self,create_folder=True):
         root=os.environ["WAWP_ARCHIVE_FOLDER_ID"];need(valid_id(root),"Invalid configured archive root")
         self.root=root;self.parent=None;self.last=0.;self.calls=0;self.inventory_calls=0;self.reserved=[]
         # rclone refreshes its OAuth token when necessary. Only resolve the
         # configured root's direct child, never another Drive folder.
-        cli("mkdir",PREFIX)
+        if create_folder:cli("mkdir",PREFIX)
         rows=json.loads(cli("lsjson","wawp:","--dirs-only","--no-modtime","--no-mimetype"))
         ids=[x.get("ID") for x in rows if x.get("Name")==FOLDER and x.get("IsDir") is True]
         need(len(ids)==1 and valid_id(ids[0]),"Archive folder is not unique")
