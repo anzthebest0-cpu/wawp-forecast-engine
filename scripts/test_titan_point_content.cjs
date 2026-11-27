@@ -28,7 +28,8 @@ const base='http://127.0.0.1:8765';
    await page.locator('[data-workspace-view="tab-spread"]').click();await page.waitForFunction(()=>document.querySelector('#spread-wind .apexcharts-canvas')||document.getElementById('spread-wind')?.textContent.includes('No matched model values'));
    if(Object.keys(models.Rainfall||{}).length)assert(await page.locator('#spread-rain .rain-model-table tbody tr').count()>0);
    await page.waitForSelector('#trace-chart .apexcharts-canvas',{state:'visible'});assert(await page.locator('#trace-models input').count()>0);await page.locator('#trace-param').selectOption('Rainfall');await page.waitForSelector('#trace-chart .apexcharts-canvas',{state:'visible'});
-   await page.screenshot({path:'titan-review-screenshots/model-disagreement-1366.png',animations:'disabled',fullPage:true});
+   await page.waitForFunction(()=>{const p=document.querySelector('.model-trace-panel');return p&&Number(getComputedStyle(p).opacity)===1&&p.querySelector('.apexcharts-series path')&&p.getBoundingClientRect().height>0;});
+   await page.locator('.model-trace-panel').screenshot({path:'titan-review-screenshots/model-disagreement-1366.png',animations:'disabled'});
   }
   console.log('TITAN_POINT_CONTENT_POPULATED_PASS',JSON.stringify({models:Object.keys(m.models).length,displayed_rows:rows.length,source_rows:m.row_count,expiry:m.expires_at_utc}));
  }else{
