@@ -9,7 +9,16 @@ async function checkImage(frame){
   // Poll the browser's actual decoded dimensions with a bounded deadline.
   const end=Date.now()+20000;
   while(Date.now()<end){
-    if(await img.evaluate(x=>x.complete&&x.naturalWidth>0))return;
+    if(await img.evaluate(x=>x.complete&&x.naturalWidth>0)){
+      // Complete does not guarantee decoded pixels are painted.
+      const painted=await img.evaluate(async x=>{
+        const ready=await Promise.race([x.decode().then(()=>true,()=>false),new Promise(r=>setTimeout(()=>r(false),2000))]);
+        if(!ready)return false;
+        await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+        return x.isConnected&&x.naturalWidth>0&&x.getBoundingClientRect().width>0;
+      });
+      if(painted)return;
+    }
     await new Promise(r=>setTimeout(r,200));
   }
   throw Error("Spatial panel failed to load within 20 seconds");
@@ -70,7 +79,8 @@ async function checkImage(frame){
    assert.equal(await frame.locator("#zoom-level").textContent(),"150%");
    await frame.locator("#close").click();
    await frame.locator("#compare").click();
-   await p.screenshot({path:"titan-review-screenshots/spatial-layout-"+width+"x"+height+".png"});
+   await checkImage(frame);
+   await p.screenshot({animations:"disabled",path:"titan-review-screenshots/spatial-layout-"+width+"x"+height+".png"});
    await p.locator('.nav-links li[data-tab="tab-intel"]').click();
    assert(!(await p.locator("#tab-spatial").isVisible()));
    assert(!(await p.locator(".preview-controls").isVisible()),"Point controls hidden outside airport guidance");
@@ -81,7 +91,7 @@ async function checkImage(frame){
    await p.waitForSelector("#tab-spatial.active");
    await checkImage(p.frameLocator("#spatial-viewer"));
    assert(await p.locator("#preview-safety-banner").isVisible());
-   await p.screenshot({path:"titan-review-screenshots/dashboard-spatial-"+width+".png"});
+   await p.screenshot({animations:"disabled",path:"titan-review-screenshots/dashboard-spatial-"+width+".png"});
    console.log("EMBEDDED_NAVIGATION_PASS",width);
    await p.close();
   }
