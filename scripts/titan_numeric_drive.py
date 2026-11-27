@@ -42,9 +42,13 @@ class DriveArchive:
         self.root=root;self.parent=None;self.last=0.;self.calls=0;self.inventory_calls=0;self.reserved=[]
         # rclone refreshes its OAuth token when necessary. Only resolve the
         # configured root's direct child, never another Drive folder.
-        if create_folder:cli("mkdir",PREFIX)
-        rows=json.loads(cli("lsjson","wawp:","--dirs-only","--no-modtime","--no-mimetype"))
-        ids=[x.get("ID") for x in rows if x.get("Name")==FOLDER and x.get("IsDir") is True]
+        def folder_ids():
+            rows=json.loads(cli("lsjson","wawp:","--dirs-only","--no-modtime","--no-mimetype"))
+            return [x.get("ID") for x in rows if x.get("Name")==FOLDER and x.get("IsDir") is True]
+        ids=folder_ids()
+        if not ids and create_folder:
+            cli("mkdir",PREFIX)
+            ids=folder_ids()
         need(len(ids)==1 and valid_id(ids[0]),"Archive folder is not unique")
         self.parent=ids[0]
         x=self.get(API+"/files/"+self.parent,{"fields":"id,name,mimeType,parents,trashed","supportsAllDrives":"true"})
