@@ -1353,3 +1353,37 @@ body:not(.point-active) .preview-controls{display:none;}
 .obs-support .observation-links{flex-wrap:wrap;}
 @media(max-width:1180px){.obs-live-layout{grid-template-columns:minmax(200px,1fr) minmax(0,1.2fr);}.obs-report-card{grid-column:1/-1;}.obs-report-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:660px){.station-detail{padding:8px;}.station-detail>.observation-overview{padding:4px;}.obs-live-layout{grid-template-columns:minmax(0,1fr);}.obs-visual-card{padding:10px;}.obs-report-card{grid-column:auto;}.obs-dial{width:min(100%,220px);}.obs-metric strong{font-size:1.18rem;}.obs-station-head{gap:6px;}.obs-station-head #obs-live-controls button{min-height:40px;}}
+
+/* Compact operational observation summary and descriptive model context. */
+.obs-station-head{margin-bottom:8px;gap:6px 12px;}
+.obs-visual-card{padding:10px;}
+.obs-live-layout{gap:8px;}
+.obs-dial{width:min(100%,230px);}
+.obs-dial-main{font-size:33px;}
+.obs-dial-bearing{font-size:19px;}
+.obs-metric-grid{height:auto;grid-auto-rows:minmax(66px,1fr);align-content:start;}
+.obs-metric strong{font-size:clamp(1.25rem,2vw,1.8rem);}
+.obs-report-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}
+.obs-report-metrics .obs-metric strong{font-size:clamp(1rem,1.5vw,1.35rem);}
+.obs-report-metrics .obs-metric:first-child{grid-column:1/-1;}
+.obs-report-metrics .obs-metric:nth-child(4) strong{font-size:clamp(1.2rem,1.8vw,1.65rem);}
+.obs-metar-strip{margin:0 0 8px;padding:9px 12px;}
+.obs-metar-strip pre{padding-top:4px;}
+.obs-context-panel{margin-top:8px;padding:10px;min-width:0;}
+.obs-context-panel h4,.obs-context-panel h3{font-family:var(--font-display);font-size:var(--ts-md);margin:0 0 6px;}
+.obs-context-table{width:100%;border-collapse:collapse;font-size:.8rem;table-layout:fixed;}
+.obs-context-table th,.obs-context-table td{padding:6px 4px;border-bottom:1px solid var(--col-border);overflow-wrap:anywhere;text-align:right;font-variant-numeric:tabular-nums;}
+.obs-context-table th:first-child,.obs-context-table td:first-child{text-align:left;width:29%;}
+.obs-context-table th{font-weight:500;color:var(--text-secondary);}
+.obs-context-table td:not(:first-child){font-family:var(--font-data);}
+.obs-context-plot{display:block;width:100%;max-height:220px;margin-top:8px;overflow:visible;}
+.obs-context-grid{stroke:var(--col-border-2);}
+.obs-context-label{fill:var(--text-secondary);font-size:11px;font-family:var(--font-data);}
+.obs-context-model{stroke-width:2;stroke-dasharray:5 3;}
+.obs-context-model.temp{stroke:#d55e00;}
+.obs-context-model.dew{stroke:var(--cyan);}
+.obs-context-dot.temp,.obs-context-observed.temp{fill:#d55e00;}
+.obs-context-dot.dew,.obs-context-observed.dew{fill:var(--cyan);}
+.obs-context-observed{stroke:var(--text-primary);stroke-width:2;}
+.obs-context-time{stroke:var(--text-muted);stroke-dasharray:2 4;stroke-width:1;}
+@media(max-width:660px){.obs-dial{width:min(100%,210px);}.obs-metric strong{font-size:1.35rem;}.obs-context-table{font-size:.69rem;}.obs-context-table th,.obs-context-table td{padding:5px 2px;}.obs-context-plot{min-height:100px;}.obs-station-head .section-note{font-size:.75rem;}}
