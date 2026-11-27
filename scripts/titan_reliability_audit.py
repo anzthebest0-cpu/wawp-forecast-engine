@@ -16,6 +16,12 @@ def utc(s):
         return d.astimezone(timezone.utc) if d.tzinfo else None
     except (ValueError,TypeError,AttributeError): return None
 def age(d): return round((NOW-d).total_seconds()/60,1) if d else None
+# scraped_at_utc is a legacy SQLite UTC timestamp without an explicit offset.
+def collection_utc(s):
+    d=utc(s)
+    if d: return d
+    try: return datetime.strptime(s,"%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    except (TypeError,ValueError): return None
 def api(path):
     return json.loads(subprocess.check_output(["gh","api","repos/"+os.environ["GITHUB_REPOSITORY"]+"/"+path],timeout=45,stderr=subprocess.DEVNULL))
 def get(url):
@@ -28,12 +34,18 @@ def check(label,fn):
     except Exception as e: return {"status":"unavailable","error_type":type(e).__name__}
 def workflow_audit():
     since=(NOW-timedelta(hours=48)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    runs=api("actions/runs?branch=main&per_page=100&created=%3E%3D"+since)["workflow_runs"]
+    available=api("actions/workflows?per_page=100")["workflows"]
     result={}
     for name in sorted(NAMES):
-        rr=[r for r in runs if r.get("name")==name]
-        item={"counts":dict(Counter(r.get("conclusion") or r["status"] for r in rr)),"recent":[]}
-        for r in rr[:5]:
+        workflow=next((w for w in available if w.get("name")==name),None)
+        if workflow is None:
+            result[name]={"status":"workflow_not_found"}
+            continue
+        base="actions/workflows/"+str(workflow["id"])+"/runs?branch=main&per_page=100&created=%3E%3D"+since
+        payload=api(base)
+        rr=payload["workflow_runs"]
+        item={"workflow_state":workflow.get("state"),"counts":dict(Counter(r.get("conclusion") or r["status"] for r in rr)),"possibly_truncated":payload["total_count"]>len(rr),"recent":[]}
+        def compact(r):
             rec={k:r.get(k) for k in ("id","event","status","conclusion","created_at","run_started_at","updated_at")}
             a,b=utc(r.get("created_at")),utc(r.get("run_started_at"))
             rec["queue_minutes"]=round((b-a).total_seconds()/60,1) if a and b else None
@@ -42,14 +54,19 @@ def workflow_audit():
                     jobs=api("actions/runs/"+str(r["id"])+"/jobs?per_page=100")["jobs"]
                     rec["failed_steps"]=[{"job":j["name"],"step":s["name"]} for j in jobs for s in j.get("steps",[]) if s.get("conclusion")=="failure"]
                 except Exception: rec["failed_steps"]=None
-            item["recent"].append(rec)
+            return rec
+        item["recent"]=[compact(r) for r in rr[:5]]
+        if name=="WAWP Model-Only Refresh":
+            scheduled=api(base+"&event=schedule")
+            item["scheduled_total_48h"]=scheduled["total_count"]
+            item["scheduled_recent"]=[compact(r) for r in scheduled["workflow_runs"][:8]]
         result[name]=item
-    return {"window_hours":48,"returned_runs":len(runs),"possibly_truncated":len(runs)==100,"workflows":result}
+    return {"window_hours":48,"query":"per-workflow","workflows":result}
 def model_audit():
     m=get(SITE+"model_preview_manifest.json")
     expiry=utc(m.get("expires_at_utc"))
     models=m.get("models",{})
-    return {"contract":m.get("contract"),"status":m.get("status"),"source_rows":m.get("row_count"),"published_as_of":m.get("as_of_utc"),"expiry":m.get("expires_at_utc"),"currently_eligible":m.get("status")=="model_only" and expiry is not None and expiry>NOW and (utc(m.get("as_of_utc")) or NOW)<=NOW,"models":{k:{"collection_age_minutes":age(utc(v.get("scraped_at_utc"))),"expiry":v.get("expires_at_utc"),"rows":v.get("row_count")} for k,v in models.items()},"excluded_models":m.get("excluded_models",{}),"taf_status":m.get("taf_status")}
+    return {"contract":m.get("contract"),"status":m.get("status"),"source_rows":m.get("row_count"),"published_as_of":m.get("as_of_utc"),"expiry":m.get("expires_at_utc"),"currently_eligible":m.get("status")=="model_only" and expiry is not None and expiry>NOW and (utc(m.get("as_of_utc")) or NOW)<=NOW,"models":{k:{"collection_age_minutes":age(collection_utc(v.get("scraped_at_utc"))),"expiry":v.get("expires_at_utc"),"rows":v.get("row_count")} for k,v in models.items()},"excluded_models":m.get("excluded_models",{}),"taf_status":m.get("taf_status")}
 def awos_audit():
     h=get(AWOS+"/awos-history?hours=24")
     if h.get("schema")!="titan-awos-history-v1" or h.get("station")!="WAWP" or h.get("window_hours")!=24 or h.get("retention_hours")!=24: raise ValueError("schema")
