@@ -24,3 +24,9 @@ assert.throws(()=>p.report('METAR WAWP 250430Z 00000KT','2026-11-25',t));
 assert.throws(()=>p.report('SPECI WAWP 240330Z 00000KT','2026-11-25',t));
 assert.equal(p.report('SPECI COR WAWP 250330Z 00000KT','2026-11-25',t).at,m.at);
 console.log('TITAN local observation checks passed');
+
+const live={schema:'titan-live-metar-v1',station:'WAWP',source:'NOAA AWC',report_text:'METAR WAWP 250330Z 00000KT CAVOK 30/24 Q1012',observed_at_utc:'2026-11-25T03:30:00Z',retrieved_at_utc:'2026-11-25T04:00:00Z'};
+assert.equal(p.liveReport(live,t).at,m.at);
+assert.equal(p.liveReport({schema:live.schema,station:live.station,source:live.source,status:'no_recent_report'},t),null);
+for(const patch of [{station:'WAAA'},{source:'unknown'},{retrieved_at_utc:'2026-11-25T03:50:00Z'},{observed_at_utc:'2026-11-25T03:31:00Z'}])assert.throws(()=>p.liveReport({...live,...patch},t));
+assert.throws(()=>p.liveReport({...live,retrieved_at_utc:'2026-11-25T05:00:01Z'},t+3601000));
