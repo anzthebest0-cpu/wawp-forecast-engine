@@ -105,7 +105,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.Tita
 // Memory only. Neither live observations nor comparisons enter the forecast database.
 let obsContext={sample:null,rows:[],manifest:null};
 function setObservationModelContext(rows,manifest){
-    obsContext.rows=Array.isArray(rows)?rows:[];obsContext.manifest=manifest||null;renderObservationModelContext();
+    obsContext.rows=Array.isArray(rows)?rows:[];obsContext.manifest=manifest||null;renderObservationModelContext();window.refreshUnifiedMeteogram?.();
 }
 function setLiveObservationContext(sample){
     obsContext.sample=sample||null;renderObservationModelContext();
