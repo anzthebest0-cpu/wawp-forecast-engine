@@ -51,9 +51,12 @@ def read_public(rel):
 
 def local_html(body):
     html = body.decode("utf-8")
-    if html.count(META) != 1:
-        raise ValueError("Expected disabled AWOS meta tag in published dashboard")
-    return html.replace(META, '<meta name="titan-awos-proxy" content="/awos">', 1).encode("utf-8")
+    candidates = (META, '<meta name="titan-awos-proxy" content="https://wawp-forecast-engine.anzthebest0.workers.dev/awos">')
+    if sum(html.count(tag) for tag in candidates) != 1:
+        raise ValueError("Expected exactly one recognized AWOS meta tag")
+    for tag in candidates:
+        if tag in html:
+            return html.replace(tag, '<meta name="titan-awos-proxy" content="/awos">', 1).encode("utf-8")
 
 def live_snapshot():
     body = fetch_once()
