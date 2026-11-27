@@ -16,7 +16,7 @@
     <script src="analysis-workspace.js?v=6-canonical-obs"></script>
     <script src="forecast-workflow.js?v=restore-readiness"></script>
     <meta name="titan-awos-proxy" content="https://wawp-forecast-engine.anzthebest0.workers.dev/awos">
-    <script src="observation-ui.js?v=6-station-overview"></script>
+    <script src="observation-ui.js?v=7-station-overview-validated-layout"></script>
     <script src="remote-observations.js?v=1"></script>
     <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=4-aligned"></script>
@@ -277,7 +277,7 @@
  <p class="section-note">Station and report times are checked, not full code validity or authenticity. Supplemental guidance; reports withheld after 60 minutes. A new AWOS snapshot can replace manual input.</p>
                 <div class="observation-links"><a href="http://wawp.awosnet.com/" target="_blank" rel="noopener noreferrer">Open AWOSnet</a><a href="https://web-aviation.bmkg.go.id/web/observation.php" target="_blank" rel="noopener noreferrer">BMKG Aviation observations</a><a href="https://www.bmkg.go.id/cuaca/bandara/WAWP" target="_blank" rel="noopener noreferrer">BMKG WAWP weather</a><a href="https://stamet-tolitoli.bmkg.go.id/cuaca/penerbangan?icao=WAWP" target="_blank" rel="noopener noreferrer">BMKG METAR mirror</a><button type="button" data-open-tab="tab-persistency">Observation archive</button></div>
 </details>
-                <p class="observation-note">AWOSnet is retrieved through the configured HTTPS relay. The upstream source uses unauthenticated HTTP. Automatic retrieval runs every 60 seconds while the browser tab is visible; values older than 5 minutes or failed retrievals are withheld. Source clock, true wind reference and redistribution are gated by the relay operator. No observation archive is created.</p>
+                <p class="observation-note">AWOSnet is retrieved through the configured HTTPS relay. The upstream source uses unauthenticated HTTP. Automatic retrieval runs every 60 seconds while the browser tab is visible; values older than 5 minutes or failed retrievals are withheld. Source clock and redistribution are gated by the relay operator. The legacy AWOS screen labels wind magnetic; the XML bearing reference has not been independently reconciled. No observation archive is created.</p>
             </div>
 </details><div class="remote-layout">
   <aside class="panel remote-rail" aria-label="Observation products"><h3>Source products</h3><div id="remote-products"></div></aside>
