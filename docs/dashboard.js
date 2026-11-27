@@ -327,6 +327,7 @@ async function loadDashboard() {
         const currentPreview = previewIsCurrent(previewManifest) && candidateRows.length > 0;
         const renderData = currentPreview ? candidateRows : [];
         renderBriefHourly(renderData, currentPreview ? previewManifest : null);
+        setObservationModelContext(currentPreview?futureData:[],currentPreview?previewManifest:null);
         setPointAvailability(currentPreview,previewManifest);
         const safetyBanner = document.getElementById('preview-safety-banner');
         if (safetyBanner) safetyBanner.textContent = currentPreview
@@ -338,6 +339,7 @@ async function loadDashboard() {
                 const el = document.getElementById(id); if (el) el.replaceChildren();
             }
             pendingPreviewChartData=null;pendingSpreadModelsData=null;pendingSpreadTimeLabels=[];
+            setObservationModelContext([],null);
             renderBriefHourly([],null);
             renderTerminalTimeline([],null,null);
             setupTerminalCursor([],null);
@@ -619,6 +621,7 @@ async function loadDashboard() {
         const tafDisplay = document.getElementById('taf-text-display');
         if (tafDisplay) tafDisplay.textContent = 'Automated TAF withheld. Dashboard data load failed.';
         pendingPreviewChartData=null;pendingSpreadModelsData=null;pendingSpreadTimeLabels=[];
+        setObservationModelContext([],null);
         renderBriefHourly([],null);renderTerminalTimeline([],null,null);setupTerminalCursor([],null);setPointAvailability(false,null);
         const banner=document.getElementById('preview-safety-banner');if(banner)banner.textContent='UNAVAILABLE — dashboard data load failed. Automated TAF withheld.';
         for(const id of ['tab-meteogram','tab-spread','tab-matrix','tab-models']){const panel=document.getElementById(id);if(panel){panel.replaceChildren();const note=document.createElement('p');note.textContent='Current model guidance unavailable.';panel.append(note);}}
