@@ -87,6 +87,7 @@ async function fixture(browser,mode,viewport){
     await loc('#obs-refresh').click();await page.waitForFunction(()=>document.getElementById('obs-status').textContent.includes('proxy'));
     await loc('#obs-auto').uncheck();assert.match(await loc('#obs-poll-status').textContent(),/paused/);
   }else {assert.match(await loc('#obs-status').textContent(),/not configured/);assert.equal(await loc('#obs-live-controls').isVisible(),false);}
+  await page.locator('.obs-support').last().evaluate(e=>e.open=true);
   await loc('#obs-file').setInputFiles({name:'test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({schema:'titan-local-awos-v1',station:'WAWP',source:'AWOSnet',observed_at_utc:iso(now-1000).slice(0,19)+'Z',wind_average_minutes:2,wind_reference:'true',units_confirmed:true,wind_speed_kt:0,altimeter_setting_hpa:1012.5,rain_current_hour_mm:0,source_epoch_offset_seconds:28900}))});
   await page.waitForFunction(()=>document.getElementById('obs-wind_speed_kt').textContent==='0 kt');
   assert.equal(await loc('#obs-altimeter_setting_hpa').textContent(),'1012.5 hPa');
