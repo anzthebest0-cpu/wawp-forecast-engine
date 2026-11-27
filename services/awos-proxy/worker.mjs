@@ -1,3 +1,4 @@
+import {METAR_URL,normalizeMetar} from './metar.mjs';
 import {SaxesParser} from 'saxes';
 const SOURCE='http://wawp.awosnet.com/awiAwosNet.php';
 const MAX=131072;
@@ -79,7 +80,21 @@ export function makeHandler(upstream=fetch,now=Date.now){
    const headers={'Content-Type':'application/json','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin'};
    if(origin&&origin===allowed)headers['Access-Control-Allow-Origin']=origin;
    const send=(status,body)=>new Response(JSON.stringify(body),{status,headers});
-   if(new URL(request.url).pathname!=='/awos'||request.method!=='GET')return send(404,{status:'unavailable'});
+   const path=new URL(request.url).pathname;
+   if(!['/awos','/metar'].includes(path)||request.method!=='GET'||new URL(request.url).search)return send(404,{status:'unavailable'});
+   if(path==='/metar'){
+     // Independent authorization. No AWOS request, no credentials in browser.
+     if(env.PUBLIC_METAR_AUTHORIZED!=='true')return send(503,{status:'disabled'});
+     if(!origin||origin!==allowed||!allowed.startsWith('https://'))return send(403,{status:'forbidden'});
+     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),6000);
+     try{
+       const res=await upstream(METAR_URL,{method:'GET',redirect:'error',headers:{Accept:'application/json','User-Agent':'TITAN-WAWP-observation-research/1.0'},signal:controller.signal});
+       if(res.status===204)return send(200,{schema:'titan-live-metar-v1',station:'WAWP',source:'NOAA AWC',status:'no_recent_report'});
+       if(!res.ok)throw Error('upstream');
+       const report=normalizeMetar(JSON.parse(await bounded(res)),now());
+       return send(200,report||{schema:'titan-live-metar-v1',station:'WAWP',source:'NOAA AWC',status:'no_recent_report'});
+     }catch(_){return send(502,{status:'unavailable'});}finally{clearTimeout(timer);}
+   }
    // CORS is not authentication. Only enable if public redistribution is permitted.
    if(env.PUBLIC_FEED_AUTHORIZED!=='true'||env.DISPLAY_CLOCK_UTC_CONFIRMED!=='true'||env.WIND_TRUE_CONFIRMED!=='true')return send(503,{status:'disabled'});
    if(!origin||origin!==allowed||!allowed.startsWith('https://'))return send(403,{status:'forbidden'});
