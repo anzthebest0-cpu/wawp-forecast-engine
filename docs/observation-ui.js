@@ -126,26 +126,7 @@ function renderObservationModelContext(){
         const body=table.createTBody();
         for(const pair of match.pairs){const tr=body.insertRow();for(const v of [pair.label,fmt(pair.observed),fmt(pair.forecast),fmt(pair.difference,true)])tr.insertCell().textContent=v;}
         root.append(note,table);
-        if(id!=='meteogram-obs-context')continue;
-        // Short companion plot. A single observed marker at its actual time,
-        // no artificial observational line, no interpolation or extrapolation.
-        const series=rows.map(row=>({t:previewValidEpoch(row.Datetime),temp:row.Temperature,dew:row.Dewpoint})).filter(x=>Number.isFinite(x.t)&&x.t>=match.valid-3600000&&x.t<=match.valid+6*3600000).sort((a,b)=>a.t-b.t);
-        const finite=v=>typeof v==='number'&&Number.isFinite(v);
-        const nums=series.flatMap(x=>[x.temp,x.dew]).concat(match.pairs.map(p=>p.observed)).filter(finite);
-        if(!series.length||!nums.length)continue;
-        const x0=Math.min(match.at,series[0].t),x1=Math.max(x0+3600000,match.at,series[series.length-1].t),y0=Math.floor(Math.min(...nums))-1,y1=Math.ceil(Math.max(...nums))+1;
-        const X=t=>48+(t-x0)/(x1-x0)*570,Y=v=>126-(v-y0)/(y1-y0)*100;
-        const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 640 162');svg.setAttribute('role','img');svg.setAttribute('aria-label','Temperature and dewpoint model lines with current AWOS observation points at actual sensor time');svg.classList.add('obs-context-plot');
-        const add=(tag,attrs,txt)=>{const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));if(txt!==undefined)e.textContent=txt;svg.append(e);return e;};
-        for(let j=0;j<4;j++){const v=y0+(y1-y0)*j/3,y=Y(v);add('line',{x1:48,x2:618,y1:y,y2:y,class:'obs-context-grid'});add('text',{x:42,y:y+4,'text-anchor':'end',class:'obs-context-label'},v.toFixed(1));}
-        for(const [key,idx,cls] of [['temp',0,'temp'],['dew',1,'dew']]){
-            for(let i=1;i<series.length;i++){const a=series[i-1],b=series[i];if(b.t-a.t===3600000&&finite(a[key])&&finite(b[key]))add('line',{x1:X(a.t),x2:X(b.t),y1:Y(a[key]),y2:Y(b[key]),class:'obs-context-model '+cls});}
-            for(const p of series)if(finite(p[key]))add('circle',{cx:X(p.t),cy:Y(p[key]),r:2,class:'obs-context-dot '+cls});
-            const v=match.pairs[idx].observed;if(finite(v))add('circle',{cx:X(match.at),cy:Y(v),r:5,class:'obs-context-observed '+cls});
-        }
-        add('line',{x1:X(match.at),x2:X(match.at),y1:20,y2:130,class:'obs-context-time'});
-        for(let j=0;j<4;j++){const t=x0+(x1-x0)*j/3;add('text',{x:X(t),y:148,'text-anchor':j===0?'start':j===3?'end':'middle',class:'obs-context-label'},new Date(t).toISOString().slice(11,16)+'Z');}
-        root.append(svg);const legend=document.createElement('p');legend.className='section-note';legend.textContent='Orange: temperature · cyan: dewpoint · lines and small dots: model · large outlined circles: latest AWOS. No observation history retained.';root.append(legend);
+
     }
 }
 function setupObservationPanel(){
