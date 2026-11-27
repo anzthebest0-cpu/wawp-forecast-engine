@@ -50,3 +50,16 @@ assert.equal(p.matchSurface(obs,[model[1]],x=>x,t),null);
 assert.equal(p.matchSurface(obs,[model[0],model[0]],x=>x,t),null);
 assert.equal(p.matchSurface(obs,[{Datetime:t,Temperature:null,Dewpoint:null}],x=>x,t),null);
 assert.equal(p.matchSurface(obs,[{Datetime:t,Temperature:"28",Dewpoint:25}],x=>x,t).pairs[0].difference,null);
+
+const h=require('../docs/awos-history-ui.js');
+assert.equal(h.circularChange(350,10),20);assert.equal(h.circularChange(10,350),-20);
+assert.equal(h.direction({values:{wind_speed_kt:0,wind_direction_deg:90}}),null);
+assert.equal(h.direction({values:{wind_speed_kt:3,wind_direction_deg:360}}),0);
+const stamp=x=>new Date(x).toISOString().slice(0,19)+'Z';
+const histSample=(at,dir,speed=3)=>({...valid,observed_at_utc:stamp(at),retrieved_at_utc:stamp(at+1000),wind_direction_deg:dir,wind_speed_kt:speed});
+const hist={schema:'titan-awos-history-v1',station:'WAWP',source:'AWOSnet',retention_hours:24,window_hours:6,generated_at_utc:stamp(t),wind_reference:'unverified_source_bearing',rows:[histSample(t-16*60000,350),histSample(t-60000,10)],reports:[]};
+const parsed=h.parseHistory(hist,6,t,p);
+assert.equal(parsed.rows.length,2);assert.equal(h.tendency(parsed.rows,15,'direction',t).difference,20);
+assert.equal(h.tendency(parsed.rows,15,'direction',t+360000),null);
+assert.throws(()=>h.parseHistory({...hist,rows:[hist.rows[0],hist.rows[0]]},6,t,p));
+assert.throws(()=>h.parseHistory({...hist,rows:[histSample(t-7*3600000,90)]},6,t,p));
