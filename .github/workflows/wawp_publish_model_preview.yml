@@ -3,7 +3,11 @@ name: WAWP Publish Verified Model Preview
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/wawp_publish_model_preview.yml']
+    # index.html is the explicit UI release boundary (bump asset versions last).
+    # Do not trigger publication on each generated data or partial JS change.
+    paths:
+      - '.github/workflows/wawp_publish_model_preview.yml'
+      - 'docs/index.html'
   workflow_run:
     workflows: ['TITAN rolling spatial research refresh']
     types: [completed]
