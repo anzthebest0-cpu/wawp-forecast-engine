@@ -425,12 +425,16 @@ async function loadDashboard() {
                 const secs = Math.floor((diff % 60000) / 1000);
                 
                 labelEl.innerText = `${String(next).padStart(2, '0')}00Z`;
-                cdEl.innerText = `-${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+                cdEl.innerText = `in ${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
                 
                 if(diff < 3600000) { // < 1 hour
                     document.getElementById('shift-status-banner').style.background = 'rgba(245, 158, 11, 0.1)';
                     document.getElementById('shift-status-banner').style.borderLeft = '4px solid var(--amber)';
                     cdEl.style.color = 'var(--amber)';
+                } else {
+                    document.getElementById('shift-status-banner').style.background = 'rgba(14, 165, 233, 0.1)';
+                    document.getElementById('shift-status-banner').style.borderLeft = '4px solid var(--cyan)';
+                    cdEl.style.color = 'var(--text-primary)';
                 }
             }
             update();
