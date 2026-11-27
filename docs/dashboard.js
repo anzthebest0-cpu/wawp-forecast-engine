@@ -620,6 +620,7 @@ function syncSpatialTheme() {
 }
 function switchTab(tabId) {
     document.body.classList.toggle('spatial-active', tabId === 'tab-spatial');
+    document.body.classList.toggle('observations-active',tabId==='tab-observations');
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-links li').forEach(el => el.classList.remove('active'));
     
@@ -629,6 +630,7 @@ function switchTab(tabId) {
     if(window.location.hash !== '#'+tabId) window.history.replaceState(null,'','#'+tabId);
     setTimeout(()=>window.dispatchEvent(new Event('resize')),0);
 
+    if(tabId==='tab-observations') {document.querySelector('.content').scrollTop=0;}
     if (tabId === 'tab-spatial') {
         const frame = document.getElementById('spatial-viewer');
         if (frame && !frame.hasAttribute('src')) {
@@ -690,6 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPreviewControls();
     setupAnalysisWorkspace();
     setupObservationPanel();
+    setupRemoteObservations();
     loadDashboard();
 });
 

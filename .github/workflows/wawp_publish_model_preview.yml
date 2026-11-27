@@ -118,6 +118,7 @@ jobs:
           sleep 2
           node scripts/test_titan_public_preview.cjs
           timeout 300s node scripts/test_titan_main_dashboard.cjs
+          timeout 180s node scripts/test_titan_remote_observations.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
