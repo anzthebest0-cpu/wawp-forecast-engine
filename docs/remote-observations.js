@@ -21,7 +21,7 @@ function age(value,now,limit){
  const ms=Date.parse(value+":00Z");
  if(!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,16)!==value||ms>now)return {state:"invalid"};
  const minutes=Math.floor((now-ms)/60000);
- return {state:minutes<=limit?"recent":"stale",minutes};
+ return {state:now-ms<=limit*60000?"recent":"stale",minutes};
 }
 const api={products,age};if(typeof module!=="undefined"&&module.exports)module.exports=api;else root.TitanRemoteObs=api;
 })(typeof globalThis!=="undefined"?globalThis:this);
@@ -29,7 +29,7 @@ function setupRemoteObservations(){
  const el=id=>document.getElementById(id);if(!el("remote-products"))return;
  let current=null,token=0,timeout=null,confirmed=null;
  const status=el("remote-status"),media=el("remote-media"),review=el("remote-time-review");
- function renderAge(){if(!confirmed||!current?.age)return;const a=TitanRemoteObs.age(confirmed,Date.now(),current.age);el("remote-age").textContent=a.state==="invalid"?"Invalid or future UTC observation time; do not use as current.":a.state==="stale"?"Stale under TITAN review policy ("+a.minutes+" min old). Not current evidence.":"Manually entered time: "+a.minutes+" min old. Timestamp not independently verified.";}
+ function renderAge(){if(confirmed===null||!current?.age)return;const a=TitanRemoteObs.age(confirmed,Date.now(),current.age);el("remote-age").textContent=a.state==="invalid"?"Invalid or future UTC observation time; do not use as current.":a.state==="stale"?"Stale under TITAN review policy ("+a.minutes+" min old). Not current evidence.":"Manually entered time: "+a.minutes+" min old. Timestamp not independently verified.";}
  function select(item){
   current=item;const request=++token;clearTimeout(timeout);confirmed=null;media.replaceChildren();review.hidden=true;el("remote-timestamp").value="";el("remote-age").textContent="Unverified — image retrieval time is not observation time.";
   el("remote-products").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.product===item.id)));
@@ -39,7 +39,7 @@ function setupRemoteObservations(){
   if(item.kind==="frame"){status.textContent="External interactive viewer requested. Check the provider timestamp; embedding and content availability depend on provider and browser.";const f=document.createElement("iframe");f.title=item.title;f.src=item.media;f.referrerPolicy="strict-origin-when-cross-origin";media.append(f);return;}
   el("remote-original").href=item.media;status.textContent="Requesting original provider image. Timestamp unverified.";
   const img=new Image();img.alt=item.title+" — original provider image";img.hidden=true;media.append(img);
-  function fail(){if(request!==token)return;clearTimeout(timeout);img.hidden=true;img.removeAttribute("src");status.textContent="Provider image unavailable. Open original source directly; no cached image is shown as current.";review.hidden=true;}
+  function fail(){if(request!==token)return;clearTimeout(timeout);img.onload=null;img.onerror=null;img.hidden=true;img.removeAttribute("src");status.textContent="Provider image unavailable. Open original source directly; no cached image is shown as current.";review.hidden=true;}
   img.onload=()=>{if(request!==token)return;clearTimeout(timeout);if(!img.naturalWidth){fail();return;}img.hidden=false;status.textContent="Image received "+new Date().toISOString().slice(0,19)+" UTC — printed time UNVERIFIED. "+(item.age?"Read the observation timestamp before use.":"Read forecast initialization and valid date before use.");review.hidden=!item.age;};
   img.onerror=fail;timeout=setTimeout(fail,15000);
   const u=new URL(item.media);u.searchParams.set("_t",Date.now());img.src=u.href;

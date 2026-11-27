@@ -74,7 +74,7 @@ async function checkImage(frame){
    await p.locator('.nav-links li[data-tab="tab-intel"]').click();
    assert(!(await p.locator("#tab-spatial").isVisible()));
    assert(await p.locator(".preview-controls").isVisible(),"Other tabs retain point controls");
-   await p.locator('[data-open-tab="tab-spatial"]').click();
+   await p.locator('#tab-intel [data-open-tab="tab-spatial"]').click();
    assert.equal(await frame.locator("#product").inputValue(),"wind850");
    assert.equal(new URL(p.url()).hash,"#tab-spatial");
    await p.reload({waitUntil:"domcontentloaded",timeout:30000});
