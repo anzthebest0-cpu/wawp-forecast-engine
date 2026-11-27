@@ -1387,3 +1387,25 @@ body:not(.point-active) .preview-controls{display:none;}
 .obs-context-observed{stroke:var(--text-primary);stroke-width:2;}
 .obs-context-time{stroke:var(--text-muted);stroke-dasharray:2 4;stroke-width:1;}
 @media(max-width:660px){.obs-dial{width:min(100%,210px);}.obs-metric strong{font-size:1.35rem;}.obs-context-table{font-size:.69rem;}.obs-context-table th,.obs-context-table td{padding:5px 2px;}.obs-context-plot{min-height:100px;}.obs-station-head .section-note{font-size:.75rem;}}
+
+/* Rolling station history; observation data are never persisted in the browser. */
+.awos-history-panel{margin-top:10px;min-width:0;}
+.awos-history-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.awos-history-toolbar label{display:flex;align-items:center;gap:6px;}
+.awos-history-toolbar select,.awos-history-toolbar button{min-height:38px;font:inherit;color:var(--text-primary);background:var(--col-surface-2);border:1px solid var(--col-border-2);border-radius:var(--r-sm);padding:5px 9px;}
+.awos-history-tracks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px;}
+.awos-history-track{min-width:0;border:1px solid var(--col-border);border-radius:var(--r-sm);padding:8px;background:var(--col-surface-1);}
+.awos-history-track h4{font-size:var(--ts-sm);margin:0 0 4px;}
+.awos-history-track svg{display:block;width:100%;height:auto;max-height:220px;overflow:visible;}
+.awos-history-line{fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.awos-history-line.points{stroke-width:2.1;}
+.awos-history-line.model{stroke-dasharray:5 3;}
+.awos-history-line.temp{stroke:#d55e00;}.awos-history-line.dew{stroke:var(--cyan);}.awos-history-line.wind{stroke:#009e73;}.awos-history-line.gust{stroke:#e69f00;}.awos-history-line.pressure{stroke:#8c6bb1;}.awos-history-line.rain{stroke:#0072b2;}
+.awos-history-legend{display:flex;flex-wrap:wrap;gap:5px 12px;color:var(--text-secondary);font-size:.7rem;}
+.awos-history-legend span{display:inline-flex;align-items:center;gap:4px;}
+.awos-history-legend i{width:10px;height:3px;background:var(--text-muted);display:inline-block;}
+.awos-history-legend .temp{background:#d55e00;}.awos-history-legend .dew{background:var(--cyan);}.awos-history-legend .wind{background:#009e73;}.awos-history-legend .gust{background:#e69f00;}.awos-history-legend .pressure{background:#8c6bb1;}.awos-history-legend .rain{background:#0072b2;}
+#awos-history-tendency{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0;}
+#awos-history-reports{max-height:220px;overflow:auto;}
+#awos-history-reports pre{font:var(--ts-xs) var(--font-data);white-space:pre-wrap;overflow-wrap:anywhere;margin:5px 0;}
+@media(max-width:660px){.awos-history-tracks{grid-template-columns:minmax(0,1fr);}#awos-history-tendency{grid-template-columns:repeat(2,minmax(0,1fr));}.awos-history-track svg{min-height:100px;}.awos-history-track .obs-context-label{font-size:15px;}}
