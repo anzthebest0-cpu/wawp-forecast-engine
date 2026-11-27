@@ -92,12 +92,12 @@ function clear(message){
 function renderMeteogram(){
  const mount=el('awos-history-meteogram');if(!mount)return;mount.replaceChildren();
  if(!data||Date.now()-data.generated>600000){mount.textContent='Recent history unavailable.';return;}
- const now=Date.now(),start=now-6*HOUR,end=now+6*HOUR,rows=data.rows.filter(s=>s.at>=start&&s.at<=now);
+ const now=Date.now(),past=Math.min(data.hours,6),start=now-past*HOUR,end=now+6*HOUR,rows=data.rows.filter(s=>s.at>=start&&s.at<=now);
  let models=[];
  if(typeof obsContext!=='undefined'&&typeof previewIsCurrent==='function'&&previewIsCurrent(obsContext.manifest,now)){
   models=obsContext.rows.map(r=>({at:previewValidEpoch(r.Datetime),values:{temperature_c:r.Temperature,dewpoint_c:r.Dewpoint}})).filter(s=>s.at>=now&&s.at<=end).sort((a,b)=>a.at-b.at);
  }
- const p=document.createElement('p');p.className='section-note';p.textContent='Past six hours of available observations and next six hours of eligible temperature/dewpoint guidance. Separate series, no interpolation across the observation–forecast boundary. UTC.';mount.append(p,plot(rows,start,end,tracks[0],models));
+ const p=document.createElement('p');p.className='section-note';p.textContent='Past '+past+' hours of available observations and next six hours of eligible temperature/dewpoint guidance. Separate series, no interpolation across the observation–forecast boundary. UTC.';mount.append(p,plot(rows,start,end,tracks[0],models));
 }
 function paint(){
  const mount=el('awos-history-tracks');mount.replaceChildren();
@@ -143,7 +143,7 @@ function setup(){
  el('awos-history-refresh').addEventListener('click',()=>{stop();refresh();});
  document.addEventListener('visibilitychange',schedule);
  const watch=new MutationObserver(schedule);for(const id of ['tab-observations','tab-meteogram']){const p=el(id);if(p)watch.observe(p,{attributes:true,attributeFilter:['class']});}
- timer=setInterval(()=>{if(visible()){if(data&&Date.now()-data.generated>600000)clear('History retrieval expired — trends withheld.');schedule();}},30000);
+ timer=setInterval(()=>{if(visible()){if(data&&Date.now()-data.generated>600000)clear('History retrieval expired — trends withheld.');else if(data)paint();schedule();}},30000);
  window.addEventListener('pagehide',stop);window.addEventListener('pageshow',schedule);
  schedule();
 }
