@@ -15,7 +15,7 @@ export async function recordHistory(env,sample,now){
  if(!Number.isFinite(t)||!Number.isFinite(r)||t>r||r>now||now-t>300000)throw Error('history_clock');
  const {metar_text,metar_date_utc,...payload}=sample;
  // Preserve the original raw bearing; do not infer true/magnetic conversion.
- const statements=[db(env).prepare('INSERT OR IGNORE INTO awos_samples (observed_ms,retrieved_ms,payload) VALUES (?,?,?)').bind(t,r,JSON.stringify(payload))];
+ const statements=[db(env).prepare('INSERT INTO awos_samples (observed_ms,retrieved_ms,payload) VALUES (?,?,?) ON CONFLICT(observed_ms) DO UPDATE SET retrieved_ms=excluded.retrieved_ms,payload=excluded.payload WHERE excluded.retrieved_ms >= awos_samples.retrieved_ms').bind(t,r,JSON.stringify(payload))];
  if(typeof metar_text==='string'&&metar_text.length<=400&&typeof metar_date_utc==='string'){
   const m=/^(?:METAR|SPECI)(?: COR)? WAWP (\d{2})(\d{2})(\d{2})Z(?: |$)/.exec(metar_text);
   if(m&&metar_date_utc.slice(8)===m[1]){
@@ -29,10 +29,10 @@ export async function latestHistory(env,now){
  const row=await db(env).prepare('SELECT observed_ms,retrieved_ms,payload FROM awos_samples WHERE observed_ms BETWEEN ? AND ? ORDER BY observed_ms DESC LIMIT 1').bind(now-300000,now).first();
  if(!row||row.retrieved_ms>now||now-row.retrieved_ms>120000)return null;
  const payload=JSON.parse(row.payload);
- const reports=await db(env).prepare('SELECT report_text,report_date_utc FROM awos_reports WHERE observed_ms BETWEEN ? AND ? ORDER BY observed_ms DESC,report_text LIMIT 2').bind(now-3600000,row.observed_ms).all();
+ const reports=await db(env).prepare('SELECT observed_ms,report_text,report_date_utc FROM awos_reports WHERE observed_ms BETWEEN ? AND ? ORDER BY observed_ms DESC,report_text LIMIT 2').bind(now-3600000,row.observed_ms).all();
  // Avoid guessing which same-time correction is authoritative.
  const r=reports.results||[];
- if(r.length===1||r.length===2&&r[0].report_text.match(/ WAWP \d{6}Z/)?.[0]!==r[1].report_text.match(/ WAWP \d{6}Z/)?.[0]){payload.metar_text=r[0].report_text;payload.metar_date_utc=r[0].report_date_utc;}
+ if(r.length===1||r.length===2&&r[0].observed_ms!==r[1].observed_ms){payload.metar_text=r[0].report_text;payload.metar_date_utc=r[0].report_date_utc;}
  return payload;
 }
 export async function readHistory(env,hours,now){
