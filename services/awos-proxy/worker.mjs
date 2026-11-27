@@ -1,3 +1,4 @@
+import {historyEnabled,pruneHistory,recordHistory,latestHistory,readHistory} from './history.mjs';
 import {METAR_URL,normalizeMetar} from './metar.mjs';
 import {SaxesParser} from 'saxes';
 const SOURCE='http://wawp.awosnet.com/awiAwosNet.php';
@@ -74,6 +75,33 @@ async function bounded(response){
  try{while(true){const {done,value}=await reader.read();if(done)break;bytes+=value.byteLength;if(bytes>MAX)throw Error('size');text+=decoder.decode(value,{stream:true});}return text+decoder.decode();}
  finally{await reader.cancel().catch(()=>{});}
 }
+async function fetchAwos(upstream,now){
+ const result=(status,body)=>({status,body});
+   const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),6000);
+   let stage='upstream_transport';
+   try{
+     const res=await upstream(SOURCE+'?t='+now(),{method:'GET',redirect:'manual',cache:'no-store',headers:{'Accept':'application/xml,text/xml','Cache-Control':'no-cache','User-Agent':'TITAN-AWOSnet-relay/1.0'},signal:controller.signal});
+     if(!res.ok)return result(502,{status:'unavailable',reason:'upstream_http',upstream_status:res.status});
+     stage='upstream_body';
+     const xml=await bounded(res);
+     stage='validation';
+     return result(200,normalize(xml,now()));
+   }catch(e){
+     // Return only allowlisted reason codes. Never expose raw XML, sensor
+     // measurements, timestamps, upstream error messages or redirect locations.
+     const codes=new Set(['XML','root','repeat','alias','station','date','time','clock','clock metadata','future_clock','stale_clock','epoch','units','number','range','empty','dewpoint','doctype']);
+     const reason=controller.signal.aborted?'upstream_timeout':stage==='validation'?(codes.has(e?.message)?'validation_'+e.message.toLowerCase().replaceAll(' ','_'):'validation_xml_parse'):stage;
+     return result(502,{status:'unavailable',reason});
+   }finally{clearTimeout(timer);}
+}
+export async function collectScheduled(env,upstream=fetch,now=Date.now){
+ if(!env.AWOS_HISTORY)return;
+ await pruneHistory(env,now());
+ if(!historyEnabled(env))return;
+ const fetched=await fetchAwos(upstream,now);
+ if(fetched.status!==200)throw Error('AWOS scheduled collection unavailable: '+fetched.body.reason);
+ await recordHistory(env,fetched.body,now());
+}
 export function makeHandler(upstream=fetch,now=Date.now){
  return async(request,env)=>{
    const origin=request.headers.get('Origin'), allowed=env.ALLOWED_ORIGIN||'';
@@ -81,6 +109,14 @@ export function makeHandler(upstream=fetch,now=Date.now){
    if(origin&&origin===allowed)headers['Access-Control-Allow-Origin']=origin;
    const send=(status,body)=>new Response(JSON.stringify(body),{status,headers});
    const path=new URL(request.url).pathname;
+   if(path==='/awos-history'){
+     if(request.method!=='GET')return send(404,{status:'unavailable'});
+     if(!historyEnabled(env))return send(503,{status:'disabled'});
+     if(!origin||origin!==allowed||!allowed.startsWith('https://'))return send(403,{status:'forbidden'});
+     const search=new URL(request.url).search;
+     if(!/^\?hours=(3|6|12|24)$/.test(search))return send(400,{status:'invalid_window'});
+     try{return send(200,await readHistory(env,Number(search.slice(7)),now()));}catch(_){return send(502,{status:'unavailable',reason:'history_read'});}
+   }
    if(!['/awos','/metar'].includes(path)||request.method!=='GET'||new URL(request.url).search)return send(404,{status:'unavailable'});
    if(path==='/metar'){
      // Independent authorization. No AWOS request, no credentials in browser.
@@ -98,22 +134,11 @@ export function makeHandler(upstream=fetch,now=Date.now){
    // CORS is not authentication. Only enable if public redistribution is permitted.
    if(env.PUBLIC_FEED_AUTHORIZED!=='true'||env.DISPLAY_CLOCK_UTC_CONFIRMED!=='true'||env.WIND_TRUE_CONFIRMED!=='true')return send(503,{status:'disabled'});
    if(!origin||origin!==allowed||!allowed.startsWith('https://'))return send(403,{status:'forbidden'});
-   const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),6000);
-   let stage='upstream_transport';
-   try{
-     const res=await upstream(SOURCE+'?t='+now(),{method:'GET',redirect:'manual',cache:'no-store',headers:{'Accept':'application/xml,text/xml','Cache-Control':'no-cache','User-Agent':'TITAN-AWOSnet-relay/1.0'},signal:controller.signal});
-     if(!res.ok)return send(502,{status:'unavailable',reason:'upstream_http',upstream_status:res.status});
-     stage='upstream_body';
-     const xml=await bounded(res);
-     stage='validation';
-     return send(200,normalize(xml,now()));
-   }catch(e){
-     // Return only allowlisted reason codes. Never expose raw XML, sensor
-     // measurements, timestamps, upstream error messages or redirect locations.
-     const codes=new Set(['XML','root','repeat','alias','station','date','time','clock','clock metadata','future_clock','stale_clock','epoch','units','number','range','empty','dewpoint','doctype']);
-     const reason=controller.signal.aborted?'upstream_timeout':stage==='validation'?(codes.has(e?.message)?'validation_'+e.message.toLowerCase().replaceAll(' ','_'):'validation_xml_parse'):stage;
-     return send(502,{status:'unavailable',reason});
-   }finally{clearTimeout(timer);}
+   if(historyEnabled(env)){
+     try{const sample=await latestHistory(env,now());return sample?send(200,sample):send(502,{status:'unavailable',reason:'history_latest_stale'});}
+     catch(_){return send(502,{status:'unavailable',reason:'history_read'});}
+   }
+   const fetched=await fetchAwos(upstream,now);return send(fetched.status,fetched.body);
  };
 }
-export default {fetch:makeHandler()};
+export default {fetch:makeHandler(),scheduled:async(_event,env)=>{await collectScheduled(env);}};
