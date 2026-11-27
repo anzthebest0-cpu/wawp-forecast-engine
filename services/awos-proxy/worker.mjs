@@ -46,7 +46,7 @@ export function normalize(xml,now){
  const group=k=>{const a=aliases[k].filter(x=>found.has(x)).map(x=>found.get(x));if(a.some(x=>JSON.stringify(x)!==JSON.stringify(a[0])))throw Error('alias');return a[0]||['','',''];};
  if(group('station')[0].toUpperCase()!=='WAWP')throw Error('station');
  const [date,,de]=group('date'),[time,,te]=group('time');if(de&&te&&de!==te)throw Error('clock metadata');
- const t=clock(date,time);if(t>now||now-t>300000)throw Error('freshness');
+ const t=clock(date,time);if(t>now)throw Error('future_clock');if(now-t>300000)throw Error('stale_clock');
  const epoch=te||de;let offset=null;if(epoch){if(!/^\d+$/.test(epoch)||!Number.isSafeInteger(Number(epoch)))throw Error('epoch');offset=Number(epoch)-t/1000;}
  const out={schema:'titan-local-awos-v1',station:'WAWP',source:'AWOSnet',observed_at_utc:stamp(t),retrieved_at_utc:stamp(now),wind_average_minutes:2,wind_reference:'true',units_confirmed:true,timestamp_basis:'confirmed_display_clock_utc',source_epoch_offset_seconds:offset,qnh_hpa:null};
  for(const [k,[units,lo,hi]] of Object.entries(specs)){
@@ -99,11 +99,21 @@ export function makeHandler(upstream=fetch,now=Date.now){
    if(env.PUBLIC_FEED_AUTHORIZED!=='true'||env.DISPLAY_CLOCK_UTC_CONFIRMED!=='true'||env.WIND_TRUE_CONFIRMED!=='true')return send(503,{status:'disabled'});
    if(!origin||origin!==allowed||!allowed.startsWith('https://'))return send(403,{status:'forbidden'});
    const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),6000);
+   let stage='upstream_transport';
    try{
-     const res=await upstream(SOURCE+'?t='+now(),{method:'GET',redirect:'error',cache:'no-store',headers:{'Accept':'application/xml,text/xml','Cache-Control':'no-cache'},signal:controller.signal});
-     if(!res.ok)throw Error('upstream');
-     const xml=await bounded(res);return send(200,normalize(xml,now()));
-   }catch(_){return send(502,{status:'unavailable'});}finally{clearTimeout(timer);}
+     const res=await upstream(SOURCE+'?t='+now(),{method:'GET',redirect:'manual',cache:'no-store',headers:{'Accept':'application/xml,text/xml','Cache-Control':'no-cache','User-Agent':'TITAN-AWOSnet-relay/1.0'},signal:controller.signal});
+     if(!res.ok)return send(502,{status:'unavailable',reason:'upstream_http',upstream_status:res.status});
+     stage='upstream_body';
+     const xml=await bounded(res);
+     stage='validation';
+     return send(200,normalize(xml,now()));
+   }catch(e){
+     // Return only allowlisted reason codes. Never expose raw XML, sensor
+     // measurements, timestamps, upstream error messages or redirect locations.
+     const codes=new Set(['XML','root','repeat','alias','station','date','time','clock','clock metadata','future_clock','stale_clock','epoch','units','number','range','empty','dewpoint','doctype']);
+     const reason=controller.signal.aborted?'upstream_timeout':stage==='validation'?(codes.has(e?.message)?'validation_'+e.message.toLowerCase().replaceAll(' ','_'):'validation_xml_parse'):stage;
+     return send(502,{status:'unavailable',reason});
+   }finally{clearTimeout(timer);}
  };
 }
 export default {fetch:makeHandler()};
