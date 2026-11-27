@@ -20,4 +20,7 @@ database_name = "titan-awos-history"
 database_id = "e53299fc-d71d-4730-9529-0b469a2f305f"
 migrations_dir = "migrations"
 
-# Cron will be configured after the operator verifies the database schema.
+# Operator confirmed both D1 tables exist. Runs in UTC, every minute.
+# Collection still requires AWOS_HISTORY_ENABLED=true in the runtime dashboard.
+[triggers]
+crons = ["* * * * *"]
