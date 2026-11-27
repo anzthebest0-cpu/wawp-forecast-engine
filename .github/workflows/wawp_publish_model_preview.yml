@@ -111,7 +111,7 @@ jobs:
       - name: Verify TITAN mobile and desktop controls including hash navigation before deployment
         run: |
           set -euo pipefail
-          npm install --no-save playwright
+          npm install --no-save playwright apexcharts@3.54.1
           npx playwright install --with-deps chromium
           python -m http.server 8765 --directory "$RUNNER_TEMP/wawp-publish-only/model-pages" >/tmp/titan-public-server.log 2>&1 &
           trap 'kill $!' EXIT

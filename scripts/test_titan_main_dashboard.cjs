@@ -21,6 +21,15 @@ async function checkImage(frame){
   for(const [width,height] of [[360,640],[390,844],[768,1024],[1440,900],[844,390]]){
    const p=await b.newPage({viewport:{width,height}});
    p.setDefaultTimeout(25000);
+   // Exercise actual local dashboard JS, real pinned ApexCharts, and all map
+   // assets without depending on third-party CDN/font/observation availability.
+   await p.route("**/*",async route=>{
+     const url=new URL(route.request().url());
+     if(url.origin==="http://127.0.0.1:8765")return route.continue();
+     if(url.href==="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js")
+       return route.fulfill({path:require.resolve("apexcharts/dist/apexcharts.min.js"),contentType:"application/javascript"});
+     return route.abort("blockedbyclient");
+   });
    p.on("pageerror",e=>console.log("DASHBOARD_PAGE_ERROR",e.message));
    p.on("requestfailed",r=>{if(r.url().startsWith("http://127.0.0.1:8765"))console.log("LOCAL_REQUEST_FAILED",r.url(),r.failure()?.errorText)});
    await p.goto("http://127.0.0.1:8765/",{waitUntil:"domcontentloaded",timeout:30000});
