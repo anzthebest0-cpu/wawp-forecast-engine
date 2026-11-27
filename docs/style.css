@@ -1200,3 +1200,29 @@ body.spatial-active{height:100dvh;min-height:0;overflow:hidden;}
 #remote-time-review input,#remote-time-review button{font:inherit;color:var(--text-primary);background:var(--bg-tertiary);border:1px solid var(--border-glass);border-radius:5px;padding:7px;max-width:100%;margin-right:5px;}
 #tab-observations [hidden]{display:none!important;}
 @media(max-width:900px){.remote-layout{grid-template-columns:minmax(0,1fr);}.remote-rail #remote-products{display:flex;flex-wrap:wrap;gap:5px;}.remote-group{width:100%;margin:8px 0 0;}.remote-product{width:auto;flex:1 1 140px;margin:0;}.remote-layout>.panel{padding:9px;}.remote-media iframe{height:55vh;}}
+
+/* Unified shift workflow and evidence status */
+.regional-active .preview-controls{display:none;}
+.workflow-heading{display:flex;align-items:start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+#workflow-count{font-size:.82rem;color:var(--text-secondary);font-variant-numeric:tabular-nums;}
+.workflow-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,155px),1fr));gap:8px;margin:8px 0 12px;}
+.workflow-step{border:1px solid var(--border-glass);border-radius:8px;background:var(--bg-secondary);padding:10px;display:flex;flex-direction:column;gap:7px;}
+.workflow-step h4{font-size:.85rem;line-height:1.35;margin:0;}
+.workflow-step p{font-size:.75rem;color:var(--text-secondary);line-height:1.4;flex:1;}
+.workflow-step button{font:inherit;font-size:.8rem;min-height:36px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border-glass);border-radius:5px;cursor:pointer;}
+.workflow-step label{font-size:.76rem;color:var(--text-secondary);display:flex;align-items:center;gap:6px;}
+.workflow-step input{accent-color:var(--cyan);}
+.shift-notes summary{cursor:pointer;color:var(--cyan);font-size:.85rem;}
+.shift-note-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.shift-note-grid label{display:flex;flex-direction:column;gap:5px;color:var(--text-secondary);font-size:.8rem;}
+.shift-note-grid label:first-child{grid-column:1/-1;}
+.shift-note-grid input,.shift-note-grid textarea{font:inherit;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border-glass);border-radius:6px;padding:8px;width:100%;resize:vertical;}
+.diagnostic-card{border-left:3px solid var(--cyan);}
+.diagnostic-card .analysis-actions button{min-height:36px;}
+.evidence-status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,155px),1fr));gap:8px;margin:8px 0;}
+.evidence-stat{padding:9px;border:1px solid var(--border-glass);border-radius:6px;min-width:0;}
+.evidence-stat span{display:block;font-size:.72rem;color:var(--text-secondary);}
+.evidence-stat strong{display:block;font-size:1rem;overflow-wrap:anywhere;}
+.evidence-run{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-glass);font-size:.8rem;}
+.evidence-run a{color:var(--cyan);}
+@media(max-width:600px){.shift-note-grid{grid-template-columns:minmax(0,1fr);}.workflow-steps{grid-template-columns:repeat(2,minmax(0,1fr));}.workflow-step{padding:8px;}}

@@ -568,7 +568,7 @@ async function loadDashboard() {
         else if (currentPreview) { for(const id of ['tab-spread','tab-models']) {const p=document.getElementById(id);if(p){const n=document.createElement('p');n.className='section-note';n.textContent='Matching individual model payload unavailable.';p.prepend(n);}} }
         // 6. Regional & Climatology
         try {
-            setupRegionalCharts();
+            if(document.getElementById('tab-regional')?.classList.contains('active'))setupRegionalCharts();
         } catch (sectionError) {
             console.error("Regional charts failed", sectionError);
         }
@@ -618,9 +618,21 @@ function syncSpatialTheme() {
         frame.contentWindow.postMessage({type:'titan-spatial-theme',theme:document.documentElement.classList.contains('light-mode')?'light':'dark'},location.origin);
     }
 }
+let spatialSelectionHash='';
+function openSpatialDiagnostic(product,domain){
+    const allowed=TitanWorkflow.diagnostics.flatMap(x=>x.products.map(p=>p.id));
+    if(!allowed.includes(product)||!['kolaka','sulawesi','regional'].includes(domain))return;
+    const frame=document.getElementById('spatial-viewer');
+    const q=new URLSearchParams(spatialSelectionHash.slice(1));q.set('product',product);q.set('domain',domain);
+    const src=new URL(frame.dataset.src,location.href);
+    src.searchParams.set('theme',document.documentElement.classList.contains('light-mode')?'light':'dark');
+    src.hash=q.toString();spatialSelectionHash=src.hash;
+    frame.src=src.href;switchTab('tab-spatial');
+}
 function switchTab(tabId) {
     document.body.classList.toggle('spatial-active', tabId === 'tab-spatial');
     document.body.classList.toggle('observations-active',tabId==='tab-observations');
+    document.body.classList.toggle('regional-active',tabId==='tab-regional');
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-links li').forEach(el => el.classList.remove('active'));
     
@@ -630,7 +642,8 @@ function switchTab(tabId) {
     if(window.location.hash !== '#'+tabId) window.history.replaceState(null,'','#'+tabId);
     setTimeout(()=>window.dispatchEvent(new Event('resize')),0);
 
-    if(tabId==='tab-observations') {document.querySelector('.content').scrollTop=0;}
+    if(tabId==='tab-observations'||tabId==='tab-regional') {document.querySelector('.content').scrollTop=0;}
+    if(tabId==='tab-regional') setupRegionalCharts();
     if (tabId === 'tab-spatial') {
         const frame = document.getElementById('spatial-viewer');
         if (frame && !frame.hasAttribute('src')) {
@@ -676,6 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(e.origin!==location.origin || e.source!==spatialFrame?.contentWindow || e.data?.type!=='titan-spatial-state')return;
         const hash=e.data.hash;
         if(typeof hash!=='string'||hash.length>2048||!hash.startsWith('#'))return;
+        spatialSelectionHash=hash;
         const link=document.getElementById('spatial-fullscreen');
         if(link){const url=new URL('./titan/',location.href);url.hash=hash;link.href=url.href;}
     });
@@ -693,6 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupAnalysisWorkspace();
     setupObservationPanel();
     setupRemoteObservations();
+    setupForecastWorkflow();
     loadDashboard();
 });
 
@@ -749,7 +764,7 @@ function setupRegionalCharts() {
         ['sat-img','regional-sat-status','https://inderaja.bmkg.go.id/IMAGE/HIMA/H08_EH_Indonesia.png']
     ];
     for(const [id,statusId,url] of entries){
-        const img=document.getElementById(id),status=document.getElementById(statusId);if(!img||!status)continue;
+        const img=document.getElementById(id),status=document.getElementById(statusId);if(!img||!status||img.hasAttribute('src'))continue;
         img.hidden=true;status.textContent='Requesting source image…';
         img.addEventListener('load',()=>{img.hidden=false;status.textContent='Image received. Check printed issue/valid time; receipt is not product time.';});
         img.addEventListener('error',()=>{img.hidden=true;status.textContent='Image unavailable now. Use the official source link; no stale image displayed.';});

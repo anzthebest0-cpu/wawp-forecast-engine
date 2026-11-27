@@ -120,7 +120,7 @@ const sources=[
     "type": "Diagnostic checklist",
     "url": "https://www.windy.com/menu",
     "image": null,
-    "prompt": "Compare low-level flow with humidity and moisture fields where available. Wind convergence is not automatically moisture-flux convergence; dedicated computed fields are not integrated."
+    "prompt": "Compare low-level flow with humidity and moisture fields where available. Wind convergence is not automatically moisture-flux convergence; Use the TITAN moisture-flux convergence and transport diagnostics below; convergence alone is not equivalent to moisture-flux convergence."
   },
   {
     "scale": "meso",
@@ -130,7 +130,7 @@ const sources=[
     "type": "Sounding map / diagnostic checklist",
     "url": "https://web-aviation.bmkg.go.id/maps",
     "image": null,
-    "prompt": "Review available sounding data, stability and inhibition. Legacy CAPE+, LI, KI, TT and SWEAT gridded charts are no longer embedded."
+    "prompt": "Review available sounding data, stability and inhibition. Use the TITAN model-specific CAPE, CIN, and stability products below; definitions differ between models."
   },
   {
     "scale": "meso",
@@ -140,7 +140,7 @@ const sources=[
     "type": "Diagnostic checklist",
     "url": "https://www.windy.com/menu",
     "image": null,
-    "prompt": "Compare winds and RH at relevant levels using provider model guidance and sounding observations; dedicated gridded shear/RH charts are no longer embedded."
+    "prompt": "Compare winds and RH at relevant levels using provider model guidance and sounding observations; Use TITAN model shear and RH products below; model diagnostics are not observations."
   },
   {
     "scale": "meso",
@@ -227,11 +227,19 @@ function setupAnalysisWorkspace(){
         const s=TitanAnalysis.scales.find(x=>x.id===scale);if(!s)return;
         question.textContent=s.question;cards.replaceChildren();viewer.hidden=true;++request;image.removeAttribute('src');selected=null;
         filters.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.scale===scale?'true':'false'));
+        for(const item of TitanWorkflow.diagnostics.filter(x=>x.scale===scale)){
+            const card=create('article',null,'analysis-card diagnostic-card');
+            card.append(create('h4',item.title),create('div','TITAN · model forecast diagnostic','analysis-meta'),create('p',item.prompt));
+            const actions=create('div',null,'analysis-actions');
+            for(const product of item.products){const b=create('button',product.label);b.type='button';b.dataset.diagnostic=product.id;b.addEventListener('click',()=>openSpatialDiagnostic(product.id,item.domain));actions.append(b);}
+            card.append(actions);cards.append(card);
+        }
         TitanAnalysis.forScale(scale).forEach(item=>{
             const card=create('article',null,'analysis-card');card.append(create('h4',item.title),create('div',item.source+' · '+item.type,'analysis-meta'),create('p',item.prompt));
             const actions=create('div',null,'analysis-actions');
             if(item.image){const b=create('button','View source chart');b.type='button';b.addEventListener('click',()=>showImage(item));actions.append(b);}
             if(item.url){const a=create('a','Open source');a.href=item.url;a.target='_blank';a.rel='noopener noreferrer';actions.append(a);}
+            if(['radar','ir','satellite','obs'].includes(item.id)){const b=create('button','Observation monitor');b.type='button';b.addEventListener('click',()=>switchTab('tab-observations'));actions.append(b);}
             if(item.id==='clim'){const b=create('button','Open climatology');b.type='button';b.addEventListener('click',()=>switchTab('tab-climatology'));actions.append(b);}
             if(['lowlevel','instability','shear'].includes(item.id)){const b=create('button','Official aviation products');b.type='button';b.addEventListener('click',()=>document.getElementById('aviation-product-sources').scrollIntoView({block:'center'}));actions.append(b);}
             card.append(actions);cards.append(card);

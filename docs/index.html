@@ -13,13 +13,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
     <script src="preview-ui.js?v=2-scroll"></script>
-    <script src="analysis-workspace.js?v=4-links"></script>
+    <script src="analysis-workspace.js?v=5-titan-diagnostics"></script>
+    <script src="forecast-workflow.js?v=1"></script>
     <meta name="titan-awos-proxy" content="">
     <script src="observation-ui.js?v=4-status"></script>
     <script src="remote-observations.js?v=1"></script>
     <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=3.4-labels"></script>
-    <link rel="stylesheet" href="style.css?v=production-observations1">
+    <link rel="stylesheet" href="style.css?v=production-workflow1">
 </head>
 <body>
 
@@ -121,7 +122,13 @@
                 <div class="observation-links"><a href="http://wawp.awosnet.com/" target="_blank" rel="noopener noreferrer">Open AWOSnet</a><a href="https://web-aviation.bmkg.go.id/web/observation.php" target="_blank" rel="noopener noreferrer">BMKG Aviation observations</a><a href="https://www.bmkg.go.id/cuaca/bandara/WAWP" target="_blank" rel="noopener noreferrer">BMKG WAWP weather</a><a href="https://stamet-tolitoli.bmkg.go.id/cuaca/penerbangan?icao=WAWP" target="_blank" rel="noopener noreferrer">BMKG METAR mirror</a><button type="button" data-open-tab="tab-persistency">Observation archive</button></div>
                 <p class="observation-note">HTTP XML connectivity confirmed by a GitHub runner. Source clock, wind reference, measurement semantics and publication authorization still require confirmation. Automatic on-demand polling is enabled only after an authorized HTTPS proxy is configured. No observation archive is created.</p>
             </div>
-            <div class="panel overview-links"><h3>Analysis shortcuts</h3><div class="observation-links"><button type="button" data-open-tab="tab-observations">Observation monitor</button><button type="button" data-open-tab="tab-spatial">Spatial forecast</button><button type="button" data-open-tab="tab-regional">Regional analysis</button><button type="button" data-open-tab="tab-meteogram">Raw model meteogram</button><button type="button" data-open-tab="tab-spread">Model disagreement</button><button type="button" data-open-tab="tab-matrix">Hourly matrix</button></div></div>
+            <div class="panel shift-workflow" id="shift-workflow">
+ <div class="workflow-heading"><div><h3>Forecasting workflow</h3><p class="section-note">Review evidence in sequence. Completion is a manual checklist, not certification.</p></div><span id="workflow-count" role="status">0 / 5 reviewed</span></div>
+ <div id="workflow-steps" class="workflow-steps"></div>
+ <details class="shift-notes"><summary>Shift analysis notes &amp; handover</summary><p class="section-note">Manual working notes only. No forecast generation, transmission, archive or upload. Export before refreshing; page reload clears notes.</p>
+ <div class="shift-note-grid"><label>Forecast period (WITA)<input id="shift-period" maxlength="100" placeholder="e.g. 14–20 WITA"></label><label>Current observations / source times<textarea id="shift-evidence" rows="3" maxlength="3000"></textarea></label><label>Atmospheric drivers / mechanisms<textarea id="shift-drivers" rows="3" maxlength="3000"></textarea></label><label>Model agreement / disagreement<textarea id="shift-models" rows="3" maxlength="3000"></textarea></label><label>Uncertainty / operational implications<textarea id="shift-uncertainty" rows="3" maxlength="3000"></textarea></label></div>
+ <div class="observation-links"><button id="shift-export" type="button">Export notes (.txt)</button><button id="shift-reset" type="button">Clear review and notes</button></div><p id="shift-note-status" role="status" class="section-note"></p></details>
+ </div><div class="panel overview-links"><h3>Analysis shortcuts</h3><div class="observation-links"><button type="button" data-open-tab="tab-observations">Observation monitor</button><button type="button" data-open-tab="tab-spatial">Spatial forecast</button><button type="button" data-open-tab="tab-regional">Regional analysis</button><button type="button" data-open-tab="tab-meteogram">Raw model meteogram</button><button type="button" data-open-tab="tab-spread">Model disagreement</button><button type="button" data-open-tab="tab-matrix">Hourly matrix</button></div></div>
             <div class="intel-grid">
                 <!-- TAF Editor Panel -->
                 <div class="panel taf-panel">
@@ -345,7 +352,7 @@
             </div>
             
             <div id="analysis-workspace" class="panel">
-                <p class="section-note">Work from large-scale background to local evidence. These are external source products and diagnostic prompts, not a TITAN-generated forecast or warning. Always inspect source timestamps and validity.</p>
+                <p class="section-note">Work from large-scale background to local evidence. External monitoring products and TITAN model diagnostics are clearly separated. Compare the same valid time where available; check initialization, product definition and observation times. Research guidance only.</p>
                 <div id="analysis-scales" class="analysis-actions" role="group" aria-label="Atmospheric scale"></div>
                 <h3 id="analysis-question"></h3>
                 <div id="analysis-cards" class="analysis-grid"></div>
@@ -517,7 +524,7 @@
         </section>
 
         <!-- Tab 7: System Health (Added) -->
-        <section id="tab-health" class="tab-pane">
+        <section id="tab-health" class="tab-pane"><div class="panel"><h3>Spatial engine &amp; archive status</h3><p class="section-note">Build-time workflow evidence, not a live guarantee. Images and private numerical data have independent durability checks.</p><div id="workflow-health" role="status">Status not yet loaded.</div></div>
             <h2>System Health & Verification Data</h2>
             <div class="intel-grid">
                 
@@ -702,7 +709,7 @@
 
         <!-- Tab 9: Live Verification -->
         <section id="tab-verify" class="tab-pane">
-            <h2>Historical verification — frozen research</h2><p class="section-note">Archived scores are not current operational skill. The legacy export omits paired sample counts, confidence intervals and exact per-model coverage; comparisons may use different samples. No model promotion or ranking is inferred.</p>
+            <div class="panel"><h3>Prospective verification readiness</h3><p class="section-note">Counts-only evidence from the latest captured shadow research run. No model is promoted and automated TAF remains withheld.</p><div id="prospective-readiness" role="status">Status not yet loaded.</div><div class="observation-links"><a href="https://github.com/anzthebest0-cpu/wawp-forecast-engine/actions/workflows/wawp_shadow_research.yml" target="_blank" rel="noopener noreferrer">Research runs</a></div></div><h2>Historical verification — frozen research</h2><p class="section-note">Archived scores are not current operational skill. The legacy export omits paired sample counts, confidence intervals and exact per-model coverage; comparisons may use different samples. No model promotion or ranking is inferred.</p>
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 10px; margin-bottom: 20px;">
                 <div style="display: flex; gap: 15px;">
                     <button class="verify-subtab active" data-sub="verify-skill">Skill Analysis</button>
@@ -811,6 +818,6 @@
         
     </main>
 
-    <script src="dashboard.js?v=8-observations"></script>
+    <script src="dashboard.js?v=9-unified"></script>
 </body>
 </html>

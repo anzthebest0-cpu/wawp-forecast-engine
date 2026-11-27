@@ -108,6 +108,10 @@ jobs:
           elif [ "$status" -ne 0 ]; then
             exit "$status"
           fi
+      - name: Capture public workflow and counts-only verification readiness
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/titan_workflow_readiness.py "$RUNNER_TEMP/wawp-publish-only/model-pages/data/workflow-readiness.json"
       - name: Verify TITAN mobile and desktop controls including hash navigation before deployment
         run: |
           set -euo pipefail
@@ -119,7 +123,7 @@ jobs:
           node scripts/test_titan_public_preview.cjs
           timeout 300s node scripts/test_titan_main_dashboard.cjs
           timeout 180s node scripts/test_titan_remote_observations.cjs
-          # Observation monitor and existing spatial shortcuts are independently tested.
+          timeout 180s node scripts/test_titan_unified_workflow.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
