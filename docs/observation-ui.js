@@ -38,7 +38,16 @@ function age(at,now,maxMinutes){
     if(!Number.isFinite(minutes)||minutes<0)return {state:'invalid',minutes:null};
     return {state:minutes<=maxMinutes?'recent':'stale',minutes:Math.floor(minutes)};
 }
-const api={utc,snapshot,report,age};
+function liveReport(data,now){
+    if(!data||data.schema!=='titan-live-metar-v1'||data.station!=='WAWP'||data.source!=='NOAA AWC')throw Error('Invalid report source');
+    if(data.status==='no_recent_report')return null;
+    const observed=utc(data.observed_at_utc),received=utc(data.retrieved_at_utc);
+    if(!Number.isFinite(observed)||!Number.isFinite(received)||received>now||received<observed||now-received>120000)throw Error('Invalid retrieval clock');
+    const r=report(data.report_text,data.observed_at_utc.slice(0,10),now);
+    if(r.at!==observed||age(r.at,now,60).state!=='recent')throw Error('Invalid or stale live report');
+    return r;
+}
+const api={utc,snapshot,report,age,liveReport};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.TitanObservation=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
 function setupObservationPanel(){
@@ -46,13 +55,21 @@ function setupObservationPanel(){
     if(!el('obs-file'))return;
     let sample=null,metar=null,importVersion=0,sourceError='',metarError='',reportSource='manually entered',sampleSource='manually imported',retrievedAt=null;
     let endpoint=null;try{const raw=document.querySelector('meta[name="titan-awos-proxy"]')?.content;if(raw){const url=new URL(raw);if(url.protocol==='https:'&&!url.username&&!url.password&&!url.search&&!url.hash&&url.pathname==='/awos')endpoint=url.href;}}catch(_){}
+    let metarEndpoint=null;
+    try{const raw=document.querySelector('meta[name="titan-metar-proxy"]')?.content;if(raw){const u=new URL(raw);if(u.protocol==='https:'&&!u.username&&!u.password&&!u.search&&!u.hash&&u.pathname==='/metar')metarEndpoint=u.href;}}catch(_){}
+    let liveMetar=null,liveError='',metarEnabled=!!metarEndpoint,metarTimer=null,metarController=null,metarGeneration=0;
+    const metarVisible=()=>metarEnabled&&document.visibilityState==='visible';
+    const stopMetar=()=>{metarGeneration++;clearTimeout(metarTimer);metarTimer=null;metarController?.abort();metarController=null;};
     let enabled=!!endpoint, timer=null,controller=null, generation=0;
     const visible=()=>document.visibilityState==='visible'&&enabled;
     const stop=()=>{generation++;clearTimeout(timer);timer=null;controller?.abort();controller=null;};
     const fields=[['wind_speed_kt',' kt'],['wind_direction_deg','°'],['gust_kt',' kt'],['temperature_c',' °C'],['dewpoint_c',' °C'],['qnh_hpa',' hPa'],['altimeter_setting_hpa',' hPa'],['temperature_10min_c',' °C'],['dewpoint_10min_c',' °C'],['relative_humidity_pct','%'],['rain_current_hour_mm',' mm'],['solar_wm2',' W/m²'],['density_altitude_ft',' ft']];
     const stamp=t=>new Date(t).toISOString().slice(0,19)+'Z';
     const render=()=>{
-        const now=Date.now(),a=sample?TitanObservation.age(sample.at,now,5):null,r=metar?TitanObservation.age(metar.at,now,60):null;
+        const now=Date.now(),a=sample?TitanObservation.age(sample.at,now,5):null;
+        const autoRecent=liveMetar&&TitanObservation.age(liveMetar.at,now,60).state==='recent';
+        const useAuto=autoRecent&&(!metar||liveMetar.at>metar.at);
+        const current=useAuto?liveMetar:metar,currentSource=useAuto?'NOAA AWC relay':reportSource,r=current?TitanObservation.age(current.at,now,60):null;
         el('obs-status').textContent=sourceError||(!sample?(endpoint?'Not connected — awaiting verified snapshot':'Not connected — live AWOSnet is not configured'):a.state==='recent'?'Recent '+sampleSource+' snapshot · '+a.minutes+' min old':'Stale or invalid snapshot — values withheld');
         el('obs-time').textContent=sample?'Confirmed source display clock: '+stamp(sample.at):'Sensor observation time: —';
         el('obs-retrieved').textContent=retrievedAt!==null?'Retrieved at: '+stamp(retrievedAt):'';
@@ -62,9 +79,12 @@ function setupObservationPanel(){
             const v=sample&&a.state==='recent'?sample.values[key]:null;
             el('obs-'+key).textContent=v===null?'—':String(v)+unit;
         }
-        el('obs-metar-status').textContent=metarError||(!metar?'No manually entered report':r.state==='recent'?'Recent '+reportSource+' report · '+r.minutes+' min old':'Historical/stale report — not current');
-        el('obs-metar-time').textContent=metar?'Report observation time: '+stamp(metar.at):'Report observation time: —';
-        el('obs-metar-text').textContent=metar&&r.state==='recent'?metar.text:'—';
+        const conflict=autoRecent&&metar&&liveMetar.at===metar.at&&liveMetar.text!==metar.text;
+        el('obs-metar-status').textContent=conflict?'Same-time report conflict — check original providers':(!current?(metarError||'No manually entered report'):r.state==='recent'?'Recent '+currentSource+' report · '+r.minutes+' min old':'Historical/stale report — not current');
+        el('obs-metar-time').textContent=current?'Report observation time: '+stamp(current.at):'Report observation time: —';
+        el('obs-metar-text').textContent=current&&r.state==='recent'&&!conflict?current.text:'—';
+        const state=el('obs-metar-live-status');
+        if(state)state.textContent=!metarEndpoint?'Independent METAR relay not configured.':!metarEnabled?'Independent METAR retrieval paused.':document.visibilityState!=='visible'?'Independent METAR retrieval paused while hidden.':liveError|| (autoRecent?'Independent NOAA AWC report received · '+stamp(liveMetar.at):'Awaiting a recent WAWP report.');
     };
     const ingest=(data,source)=>{sample=TitanObservation.snapshot(data,Date.now());sampleSource=source;retrievedAt=null;metar=null;metarError='';if(source==='proxy'){const t=TitanObservation.utc(data.retrieved_at_utc);if(!Number.isFinite(t)||t>Date.now()||Date.now()-t>120000||t<sample.at)throw Error('Invalid retrieval timestamp');retrievedAt=t;}if(data.metar_text&&data.metar_date_utc){try{metar=TitanObservation.report(data.metar_text,data.metar_date_utc,Math.min(Date.now(),sample.at));reportSource='AWOSnet snapshot';}catch(err){metarError='Embedded report rejected: '+err.message;}}};
     const poll=async()=>{
@@ -75,12 +95,28 @@ function setupObservationPanel(){
         catch(_){if(token===generation){sample=null;metar=null;retrievedAt=null;sourceError='AWOSnet proxy unavailable — values withheld';}}
         finally{clearTimeout(deadline);if(token===generation){controller=null;render();if(visible())timer=setTimeout(poll,60000);}}
     };
+    const pollMetar=async()=>{
+        if(!metarVisible()||metarController)return;
+        clearTimeout(metarTimer);const token=++metarGeneration,abort=new AbortController();metarController=abort;
+        const deadline=setTimeout(()=>abort.abort(),9000);
+        try{
+            const response=await fetch(metarEndpoint,{cache:'no-store',credentials:'omit',redirect:'error',signal:abort.signal});
+            if(!response.ok)throw Error('relay unavailable');
+            const data=await response.json();if(token!==metarGeneration||!metarVisible())return;
+            liveMetar=TitanObservation.liveReport(data,Date.now());liveError=liveMetar?'':'No recent WAWP report from NOAA AWC.';
+        }catch(_){if(token===metarGeneration){liveMetar=null;liveError='Independent METAR relay unavailable or invalid — live report withheld.';}}
+        finally{clearTimeout(deadline);if(token===metarGeneration){metarController=null;render();if(metarVisible())metarTimer=setTimeout(pollMetar,300000);}}
+    };
     const pause=()=>{enabled=false;stop();render();};
+    const auto=el('obs-metar-auto');
+    if(auto){auto.checked=metarEnabled;auto.disabled=!metarEndpoint;el('obs-metar-live-controls').hidden=!metarEndpoint;
+        auto.addEventListener('change',()=>{metarEnabled=auto.checked;stopMetar();if(!metarEnabled)liveMetar=null;render();if(metarVisible())pollMetar();});
+    }
     el('obs-live-controls').hidden=!endpoint;el('obs-refresh').disabled=!endpoint;el('obs-auto').disabled=!endpoint;
     el('obs-refresh').addEventListener('click',()=>{if(!endpoint)return;++importVersion;enabled=true;el('obs-auto').checked=true;stop();poll();});
     el('obs-auto').checked=enabled;el('obs-auto').addEventListener('change',()=>{enabled=el('obs-auto').checked;if(enabled)++importVersion;stop();render();if(visible())poll();});
-    document.addEventListener('visibilitychange',()=>{stop();render();if(visible())poll();});
-    window.addEventListener('pagehide',stop);window.addEventListener('pageshow',e=>{if(e.persisted&&visible())poll();});
+    document.addEventListener('visibilitychange',()=>{stop();stopMetar();render();if(visible())poll();if(metarVisible())pollMetar();});
+    window.addEventListener('pagehide',()=>{stop();stopMetar();});window.addEventListener('pageshow',e=>{if(e.persisted){if(visible())poll();if(metarVisible())pollMetar();}});
     el('obs-file').addEventListener('change',async e=>{
         pause();el('obs-auto').checked=false;const version=++importVersion,f=e.target.files[0];sample=null;retrievedAt=null;sourceError='';metar=null;metarError='';reportSource='manually entered';render();
         if(!f)return;
@@ -99,6 +135,6 @@ function setupObservationPanel(){
         catch(err){metarError='Report rejected: '+err.message;}
         render();
     });
-    el('obs-clear').addEventListener('click',()=>{pause();el('obs-auto').checked=false;++importVersion;sample=null;metar=null;retrievedAt=null;sourceError='';metarError='';el('obs-file').value='';el('obs-metar-input').value='';render();});
-    render();setInterval(render,10000);if(visible())poll();
+    el('obs-clear').addEventListener('click',()=>{metarEnabled=false;stopMetar();liveMetar=null;liveError='';if(auto)auto.checked=false;pause();el('obs-auto').checked=false;++importVersion;sample=null;metar=null;retrievedAt=null;sourceError='';metarError='';el('obs-file').value='';el('obs-metar-input').value='';render();});
+    render();setInterval(render,10000);if(visible())poll();if(metarVisible())pollMetar();
 }
