@@ -40,3 +40,13 @@ const rain=p.reportGroups('METAR WAWP 271030Z 08003KT 050V120 3000 TSRA FEW015CB
 assert.equal(rain.visibility,'3000 m');assert.equal(rain.weather,'TSRA');assert.equal(rain.sky,'FEW015CB BKN021');assert.equal(rain.variable,'050V120');assert.equal(rain.qnh,'1011 hPa');
 assert.equal(p.reportGroups('METAR WAWP 271030Z 08003KT 9999 NSC 26/25 Q1011 TEMPO 3000 TSRA').weather,'—');
 assert.equal(p.reportGroups(null).qnh,'—');
+
+const obs={at:t-60000,values:{temperature_c:30,dewpoint_c:24}};
+const model=[{Datetime:t,Temperature:28,Dewpoint:25},{Datetime:t-3600000,Temperature:29,Dewpoint:26}];
+const match=p.matchSurface(obs,model,x=>x,t);
+assert.equal(match.valid,t);assert.equal(match.offsetMinutes,-1);assert.equal(match.pairs[0].difference,2);assert.equal(match.pairs[1].difference,-1);
+assert.equal(p.matchSurface(obs,model,x=>x,t+360000),null);
+assert.equal(p.matchSurface(obs,[model[1]],x=>x,t),null);
+assert.equal(p.matchSurface(obs,[model[0],model[0]],x=>x,t),null);
+assert.equal(p.matchSurface(obs,[{Datetime:t,Temperature:null,Dewpoint:null}],x=>x,t),null);
+assert.equal(p.matchSurface(obs,[{Datetime:t,Temperature:"28",Dewpoint:25}],x=>x,t).pairs[0].difference,null);
