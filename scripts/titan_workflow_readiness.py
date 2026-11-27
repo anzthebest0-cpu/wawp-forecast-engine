@@ -9,12 +9,12 @@ def api(path):
 def compact(r):
     return {k:r.get(k) for k in ("id","status","conclusion","event","updated_at")} if r else None
 def main(out):
-    d={"schema":1,"as_of_utc":datetime.now(timezone.utc).isoformat(),"runs":dict.fromkeys(("rolling","scheduled","archive","publication","shadow","point_refresh")),"shadow":None}
+    d={"schema":1,"as_of_utc":datetime.now(timezone.utc).isoformat(),"runs":dict.fromkeys(("rolling","scheduled","archive","restore","publication","shadow","point_refresh")),"shadow":None}
     try:
         rows=api("actions/runs?branch=main&per_page=100")["workflow_runs"]
         def select(name,event=None,success=False):
             return next((r for r in rows if r["name"]==name and r["head_branch"]=="main" and (event is None or r["event"]==event) and (not success or r["conclusion"]=="success")),None)
-        for k,name in [("rolling","TITAN rolling spatial research refresh"),("archive","TITAN private numerical archive"),("publication","WAWP Publish Verified Model Preview"),("shadow","WAWP Prospective Shadow Research"),("point_refresh","WAWP Model-Only Refresh")]:
+        for k,name in [("rolling","TITAN rolling spatial research refresh"),("archive","TITAN private numerical archive"),("restore","TITAN numerical restore proof"),("publication","WAWP Publish Verified Model Preview"),("shadow","WAWP Prospective Shadow Research"),("point_refresh","WAWP Model-Only Refresh")]:
             row=select(name)
             if k=="publication" and row and row["id"]==int(os.environ["GITHUB_RUN_ID"]):row=next((r for r in rows if r["name"]==name and r["id"]!=int(os.environ["GITHUB_RUN_ID"])),None)
             d["runs"][k]=compact(row)
@@ -31,8 +31,15 @@ def main(out):
             def count(o,k):
                 v=o.get(k);return v if type(v) is int and v>=0 else None
             init=datetime.fromisoformat(x["initialization_utc"]);assert init.utcoffset() is not None
+            last_obs=None
+            raw_obs=x.get("latest_training_observation_utc")
+            if isinstance(raw_obs,str):
+                try:
+                    t=datetime.fromisoformat(raw_obs)
+                    if t.utcoffset() is not None:last_obs=t.astimezone(timezone.utc).isoformat()
+                except ValueError:pass
             i=x.get("integrated",{})
-            d["shadow"]={"run":s["id"],"initialization_utc":init.astimezone(timezone.utc).isoformat(),"awos_freshness_gate_passed":x.get("awos_freshness_gate_passed") is True,**{k:count(x,k) for k in counts},"integrated":{**{k:count(i,k) for k in ic},"review_minimum_sample_met":i.get("review_minimum_sample_met") is True}}
+            d["shadow"]={"run":s["id"],"initialization_utc":init.astimezone(timezone.utc).isoformat(),"awos_freshness_gate_passed":x.get("awos_freshness_gate_passed") is True,"latest_training_observation_utc":last_obs,**{k:count(x,k) for k in counts},"integrated":{**{k:count(i,k) for k in ic},"review_minimum_sample_met":i.get("review_minimum_sample_met") is True}}
     except Exception:
         print("TITAN_READINESS_PARTIAL: workflow metadata or counts-only artifact unavailable; no skill inferred",flush=True)
     out=Path(out);out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(d,sort_keys=True,allow_nan=False))
