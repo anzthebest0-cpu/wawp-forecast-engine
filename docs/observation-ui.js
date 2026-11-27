@@ -47,7 +47,44 @@ function liveReport(data,now){
     if(r.at!==observed||age(r.at,now,60).state!=='recent')throw Error('Invalid or stale live report');
     return r;
 }
-const api={utc,snapshot,report,age,liveReport};
+
+// Conservative extraction of explicitly coded groups, not a full METAR decoder.
+function reportGroups(raw){
+    const empty={visibility:'—',weather:'—',sky:'—',qnh:'—',wind:'—',variable:'—'};
+    if(typeof raw!=='string')return empty;
+    const tokens=raw.trim().replace(/=$/,'').split(/\s+/);
+    const wi=tokens.findIndex(t=>/^(?:\d{3}|VRB)\d{2,3}(?:G\d{2,3})?(?:KT|MPS|KMH)$/.test(t));
+    if(wi<0)return empty;
+    const out={...empty,wind:tokens[wi]};
+    let i=wi+1;
+    if(/^\d{3}V\d{3}$/.test(tokens[i]||''))out.variable=tokens[i++];
+    else if(out.wind.startsWith('VRB'))out.variable='VRB';
+    if(tokens[i]==='CAVOK'){out.visibility='≥ 10 km';out.weather='CAVOK';out.sky='CAVOK';i++;}
+    else {
+        if(/^\d{4}$/.test(tokens[i]||'')){out.visibility=tokens[i]==='9999'?'≥ 10 km':tokens[i]==='0000'?'< 50 m':Number(tokens[i])+' m';i++;}
+        else if(/^\/{3,4}$/.test(tokens[i]||''))i++;
+        const weather=[],sky=[];
+        for(;i<tokens.length;i++){
+            const t=tokens[i];
+            if(/^(?:M?\d{2}|\/\/)\/(?:M?\d{2}|\/\/)$/.test(t)||/^(?:Q\d{4}|A\d{4}|NOSIG|TEMPO|BECMG|RMK|RE|WS)$/.test(t))break;
+            if(/^(?:(?:FEW|SCT|BKN|OVC)(?:\d{3}|\/{3})(?:CB|TCU|\/{3})?|VV(?:\d{3}|\/{3})|NSC|NCD|SKC|CLR|\/{6})$/.test(t)){if(!/^\/+$/.test(t))sky.push(t);continue;}
+            if(/^(?:[+-]|VC)?(?:MI|PR|BC|DR|BL|SH|TS|FZ)?(?:DZ|RA|SN|SG|IC|PL|GR|GS|UP|BR|FG|FU|VA|DU|SA|HZ|PY|PO|SQ|FC|SS|DS)+$/.test(t)||/^(?:VCTS|TS|VCSH|NSW)$/.test(t))weather.push(t);
+        }
+        out.weather=weather.join(' ')||'—';out.sky=sky.join(' ')||'—';
+    }
+    // Only the main report, never a TREND or remarks pressure.
+    const main=tokens.slice(0,tokens.findIndex(t=>/^(?:NOSIG|TEMPO|BECMG|RMK)$/.test(t))<0?tokens.length:tokens.findIndex(t=>/^(?:NOSIG|TEMPO|BECMG|RMK)$/.test(t)));
+    const q=main.filter(t=>/^Q\d{4}$/.test(t));
+    if(q.length===1&&Number(q[0].slice(1))>=850&&Number(q[0].slice(1))<=1100)out.qnh=Number(q[0].slice(1))+' hPa';
+    return out;
+}
+function windDisplay(values){
+    const speed=values?.wind_speed_kt??null,dir=values?.wind_direction_deg??null;
+    if(speed===null)return {speed:'—',bearing:'—',angle:null};
+    if(speed===0)return {speed:'Calm',bearing:'—',angle:null};
+    return {speed:String(speed)+' kt',bearing:dir===null?'—':String(Math.round(dir)).padStart(3,'0')+'°',angle:dir};
+}
+const api={utc,snapshot,report,age,liveReport,reportGroups,windDisplay};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.TitanObservation=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
 function setupObservationPanel(){
@@ -83,6 +120,18 @@ function setupObservationPanel(){
         el('obs-metar-status').textContent=conflict?'Same-time report conflict — check original providers':(!current?(metarError||'No manually entered report'):r.state==='recent'?'Recent '+currentSource+' report · '+r.minutes+' min old':'Historical/stale report — not current');
         el('obs-metar-time').textContent=current?'Report observation time: '+stamp(current.at):'Report observation time: —';
         el('obs-metar-text').textContent=current&&r.state==='recent'&&!conflict?current.text:'—';
+        // All visual fields share the existing freshness gate; report groups
+        // retain their own timestamp and are never promoted to sensor values.
+        const recent=sample&&a.state==='recent', validReport=current&&r.state==='recent'&&!conflict;
+        const display=TitanObservation.windDisplay(recent?sample.values:null);
+        const groups=TitanObservation.reportGroups(validReport?current.text:null);
+        const put=(id,value)=>{const e=el(id);if(e)e.textContent=value;};
+        put('obs-dial-speed',display.speed);put('obs-dial-bearing',display.bearing);
+        const needle=el('obs-dial-needle');if(needle){needle.style.display=display.angle===null?'none':'';needle.setAttribute('transform','rotate('+(display.angle??0)+' 120 120)');}
+        put('obs-report-visibility',groups.visibility);put('obs-report-weather',groups.weather);put('obs-report-sky',groups.sky);
+        put('obs-report-qnh',groups.qnh);put('obs-report-variable',groups.variable);put('obs-report-wind',groups.wind);
+        put('obs-report-group-time',validReport?'Report groups · '+stamp(current.at):'Report groups · unavailable');
+        const fresh=el('obs-live-indicator');if(fresh){fresh.dataset.state=recent?'recent':'unavailable';fresh.textContent=recent?'Recent snapshot':'No current snapshot';}
         const state=el('obs-metar-live-status');
         if(state)state.textContent=!metarEndpoint?'Independent METAR relay not configured.':!metarEnabled?'Independent METAR retrieval paused.':document.visibilityState!=='visible'?'Independent METAR retrieval paused while hidden.':liveError|| (autoRecent?'Independent NOAA AWC report received · '+stamp(liveMetar.at):'Awaiting a recent WAWP report.');
     };
