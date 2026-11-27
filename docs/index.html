@@ -16,13 +16,13 @@
     <script src="analysis-workspace.js?v=6-canonical-obs"></script>
     <script src="forecast-workflow.js?v=restore-readiness"></script>
     <meta name="titan-awos-proxy" content="https://wawp-forecast-engine.anzthebest0.workers.dev/awos">
-    <script src="observation-ui.js?v=8-model-context"></script>
-    <script src="awos-history-ui.js?v=1-rolling"></script>
+    <script src="observation-ui.js?v=9-unified"></script>
+    <script src="awos-history-ui.js?v=2-unified"></script>
     <script src="remote-observations.js?v=1"></script>
     <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=4-aligned"></script>
     <script src="terminal-charts.js?v=2-cursor-repair"></script>
-    <link rel="stylesheet" href="style.css?v=awos-history9">
+    <link rel="stylesheet" href="style.css?v=unified-meteogram10">
 </head>
 <body>
 
@@ -130,9 +130,19 @@
         <section id="tab-meteogram" class="tab-pane" data-point-state="pending"><div class="point-empty" role="status">Checking current point forecast data…</div>
             <h2>Airport Forecast Guidance · Meteogram</h2>
  <p class="section-note">Unverified equal-model preview · <span data-preview-zone>WITA (UTC+8)</span> · not an operational forecast. Individual model traces are available in Model disagreement.</p>
+ <div class="panel unified-meteogram-panel" aria-label="Unified AWOS and model meteogram">
+ <h3>Observed conditions &amp; upcoming model guidance</h3>
+ <div class="unified-toolbar"><label>Observed history <select id="unified-history-hours"><option value="3">3 h</option><option value="6" selected>6 h</option><option value="12">12 h</option><option value="24">24 h</option></select></label><button id="unified-history-refresh" type="button">Refresh history</button><button id="unified-now" type="button">Latest observation</button></div>
+ <p id="unified-status" class="section-note" role="status">Checking observations and eligible model guidance…</p>
+ <div class="unified-key"><span><i></i>Observed</span><span><i class="forecast"></i>Model mean</span><span><i class="past"></i>Past</span><span><i class="future"></i>Future</span></div>
+ <div id="unified-readout" aria-live="off">Select a time.</div>
+ <label class="section-note" for="unified-time-slider">Inspect time · shared across all tracks</label><input id="unified-time-slider" type="range" min="0" max="0" value="0" aria-label="Inspect observation or forecast time" style="width:100%;accent-color:var(--cyan)">
+ <div id="awos-history-meteogram">Awaiting history service.</div>
+ <p class="section-note">No interpolation across missing observations or the observation–forecast boundary. Forecast horizon and time zone follow the existing controls. Wind references and rain/pressure measurement definitions are not assumed equivalent.</p>
+ </div>
+ <details class="panel obs-context-panel"><summary>Near-hour temperature / dewpoint comparison</summary><div id="meteogram-obs-context" role="status">Awaiting eligible data.</div></details>
+ <details class="panel" id="forecast-only-detail"><summary>Detailed model-only forecast · hourly inspection, barbs and additional diagnostics</summary>
  <div class="panel terminal-cursor" id="terminal-cursor"><div class="cursor-toolbar"><label for="terminal-time">Selected valid time</label><button id="terminal-prev" type="button" aria-label="Previous forecast hour">‹</button><select id="terminal-time"></select><button id="terminal-next" type="button" aria-label="Next forecast hour">›</button><button id="terminal-map" type="button">Spatial rain map</button></div><input id="terminal-slider" type="range" aria-label="Forecast valid hour" min="0" max="0" value="0"><div id="terminal-readout" class="cursor-values" role="status"></div><p class="section-note">Select an hour, or move the pointer over a plot to inspect the same hour across tracks. Rain is per output hour; spatial accumulation windows may differ.</p></div>
- <div class="panel obs-context-panel"><h3>Live AWOS · temperature and dewpoint context</h3><div id="meteogram-obs-context" role="status">Awaiting eligible data.</div></div>
- <div class="panel obs-context-panel"><h3>Recent observed evolution and upcoming guidance</h3><div id="awos-history-meteogram" role="status">Awaiting history service.</div></div>
  <div class="panel meteogram-stack" aria-label="Aligned core forecast plots">
   <div class="chart-track" id="chart-wind"></div>
   <div class="wind-barb-track" id="chart-wind-dir"></div>
@@ -143,6 +153,7 @@
  <details class="panel terminal-timeline-panel"><summary>Detailed hourly values and individual-model ranges</summary><p class="section-note">Raw values and descriptive model ranges; counts vary by parameter and hour. No calibrated probability or skill ranking.</p><div id="terminal-timeline" role="status">Checking matching data…</div></details>
  <details class="panel" id="advanced-meteogram"><summary>Additional diagnostics · pressure, temperature–dewpoint spread, accumulated rain</summary>
  <div class="chart-track" id="chart-pressure"></div><div class="chart-track" id="chart-ttd"></div><div class="chart-track" id="chart-rain-cumulative"></div><p class="section-note">Sum of displayed hourly equal-model precipitation amounts. Stops at the first missing or non-consecutive hour; changing contributing models can affect the result. Not a validated accumulation forecast.</p></details>
+ </details>
  </section>
 
         <!-- Tab 4: Consensus Spread -->
@@ -830,6 +841,6 @@
         
     </main>
 
-    <dialog id="handover-dialog"><div class="handover-header"><h3>Manual shift notes</h3><button id="handover-close" type="button">Close</button></div><div id="handover-mount"></div></dialog><script src="workstation-shell.js?v=4-cursor"></script><script src="dashboard.js?v=15-observation-context"></script>
+    <dialog id="handover-dialog"><div class="handover-header"><h3>Manual shift notes</h3><button id="handover-close" type="button">Close</button></div><div id="handover-mount"></div></dialog><script src="workstation-shell.js?v=4-cursor"></script><script src="dashboard.js?v=unified10"></script>
 </body>
 </html>
