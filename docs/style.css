@@ -357,7 +357,7 @@ body {
 }
 
 /* ── TAB PANES ────────────────────────────────────────────── */
-.tab-pane { display: none; animation: pane-in var(--t-slow) both; }
+.tab-pane { display: none; }
 .tab-pane.active { display: block; }
 
 @keyframes pane-in {
@@ -1303,3 +1303,6 @@ body:not(.point-active) .preview-controls{display:none;}
 #tab-meteogram .apexcharts-gridline,#tab-spread .apexcharts-gridline{stroke:var(--border-glass);}
 #tab-meteogram details>summary{cursor:pointer;font-weight:600;font-size:.85rem;}
 @media(max-width:600px){.terminal-cursor{position:static;}.cursor-toolbar label{width:100%;}.cursor-toolbar select{flex:1;min-width:0;}.cursor-toolbar button{min-height:40px;}.terminal-cursor,.meteogram-stack{padding:7px;}.cursor-values{font-size:.72rem;}}
+
+/* Operational workspace switches must paint immediately. Keep mobile labels readable. */
+@media(max-width:900px){.nav-links li[data-tab]:not(.legacy-route){flex:0 0 auto;overflow:visible;white-space:nowrap;}}
