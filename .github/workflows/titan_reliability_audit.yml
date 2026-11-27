@@ -2,7 +2,7 @@ name: TITAN reliability audit
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/titan_reliability_audit.yml']
+    paths: ['.github/workflows/titan_reliability_audit.yml', 'scripts/titan_reliability_audit.py']
   workflow_dispatch:
 permissions:
   contents: read
