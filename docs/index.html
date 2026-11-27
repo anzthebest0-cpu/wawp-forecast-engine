@@ -15,8 +15,8 @@
     <script src="preview-ui.js?v=3-cursor"></script>
     <script src="analysis-workspace.js?v=6-canonical-obs"></script>
     <script src="forecast-workflow.js?v=restore-readiness"></script>
-    <meta name="titan-awos-proxy" content="">
-    <script src="observation-ui.js?v=4-status"></script>
+    <meta name="titan-awos-proxy" content="https://wawp-forecast-engine.anzthebest0.workers.dev/awos">
+    <script src="observation-ui.js?v=5-hosted-awos"></script>
     <script src="remote-observations.js?v=1"></script>
     <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=4-aligned"></script>
@@ -227,12 +227,12 @@
         <!-- Tab 5: Regional Charts -->
         <section id="tab-observations" class="tab-pane" aria-labelledby="remote-heading">
  <div class="header-bar"><div><h2 id="remote-heading">Observation Monitor</h2><p class="section-note">Kolaka / WAWP · published remote-sensing and aviation sources</p></div><div class="observation-links"><button type="button" data-open-tab="tab-regional">Atmospheric analysis</button><button type="button" data-open-tab="tab-spatial">Spatial forecast</button></div></div>
- <p class="remote-notice" role="note"><strong>External source review only.</strong> A loaded image is not proof of freshness. Read the original printed timestamp, coverage and legend. No raw radar, live AWOS relay, or official warning issuance is implied.</p>
- <details class="panel station-detail" open><summary>Station observations · local input and source status</summary>            <div class="panel observation-overview" aria-labelledby="observation-title">
+ <p class="remote-notice" role="note"><strong>External source review only.</strong> A loaded image is not proof of freshness. Read the original printed timestamp, coverage and legend. Remote products are separate from the station AWOSnet relay below. No raw radar access or official warning issuance is implied.</p>
+ <details class="panel station-detail" open><summary>Station observations · live AWOSnet and manual inputs</summary>            <div class="panel observation-overview" aria-labelledby="observation-title">
                 <h3 id="observation-title">Station observations · WAWP</h3>
-                <p id="obs-status" role="status" class="section-note">Not connected — live AWOSnet is not configured</p>
+                <p id="obs-status" role="status" class="section-note">AWOSnet — awaiting validated snapshot</p>
                 <p id="obs-time" class="section-note">Sensor observation time: —</p><p id="obs-epoch-note" class="section-note"></p>
-                <p id="obs-retrieved" class="section-note"></p><p id="obs-poll-status" class="section-note" role="status">Live AWOS connection not configured.</p>
+                <p id="obs-retrieved" class="section-note"></p><p id="obs-poll-status" class="section-note" role="status">AWOSnet connection initializing.</p>
                 <div id="obs-live-controls" class="observation-links" hidden><label><input id="obs-auto" type="checkbox" disabled> Auto-refresh while browser tab is visible</label><button id="obs-refresh" type="button" disabled>Refresh AWOS now</button></div>
                 <div class="obs-grid">
                   <div><span>2-min wind</span><strong id="obs-wind_speed_kt">—</strong></div>
@@ -253,7 +253,7 @@
                   <p class="section-note">Authorized, manually normalized snapshot only. Confirm UTC timestamp, units and wind reference. File stays in browser memory; not uploaded or archived. Values withheld after 5 minutes (internal display policy).</p>
                   <label for="obs-file">Local snapshot file</label> <input id="obs-file" type="file" accept=".json,application/json">
                 </details>
-                <div class="obs-report"><h4>METAR / SPECI · local snapshot or manual entry</h4>
+                <div class="obs-report"><h4>METAR / SPECI · AWOSnet snapshot or manual entry</h4>
                   <p id="obs-metar-status" role="status" class="section-note">No manually entered report</p>
                   <p id="obs-metar-time" class="section-note">Report observation time: —</p>
                   <pre id="obs-metar-text">—</pre>
@@ -264,9 +264,9 @@
                   </details>
                 </div>
                 <div class="observation-links"><button id="obs-clear" type="button">Clear local observations</button></div>
-                <p class="section-note">Manual report display checks station and time, not full code validity or authenticity. Values are supplemental only; not official live ingestion. Report display withheld after 60 minutes (internal display policy). Refresh clears local inputs.</p>
+                <p class="section-note">AWOSnet and manual reports are checked for station and observation time, not full code validity or authenticity. Supplemental guidance only; report display withheld after 60 minutes. A new AWOS snapshot can replace manual input.</p>
                 <div class="observation-links"><a href="http://wawp.awosnet.com/" target="_blank" rel="noopener noreferrer">Open AWOSnet</a><a href="https://web-aviation.bmkg.go.id/web/observation.php" target="_blank" rel="noopener noreferrer">BMKG Aviation observations</a><a href="https://www.bmkg.go.id/cuaca/bandara/WAWP" target="_blank" rel="noopener noreferrer">BMKG WAWP weather</a><a href="https://stamet-tolitoli.bmkg.go.id/cuaca/penerbangan?icao=WAWP" target="_blank" rel="noopener noreferrer">BMKG METAR mirror</a><button type="button" data-open-tab="tab-persistency">Observation archive</button></div>
-                <p class="observation-note">HTTP XML connectivity confirmed by a GitHub runner. Source clock, wind reference, measurement semantics and publication authorization still require confirmation. Automatic on-demand polling is enabled only after an authorized HTTPS proxy is configured. No observation archive is created.</p>
+                <p class="observation-note">AWOSnet is retrieved through the configured HTTPS relay. The upstream source uses unauthenticated HTTP. Automatic retrieval runs every 60 seconds while the browser tab is visible; values older than 5 minutes or failed retrievals are withheld. Source clock, true wind reference and redistribution are gated by the relay operator. No observation archive is created.</p>
             </div>
 </details><div class="remote-layout">
   <aside class="panel remote-rail" aria-label="Observation products"><h3>Source products</h3><div id="remote-products"></div></aside>
