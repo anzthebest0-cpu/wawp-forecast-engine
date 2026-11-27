@@ -54,7 +54,7 @@ function setupObservationPanel(){
     const el=id=>document.getElementById(id);
     if(!el('obs-file'))return;
     let sample=null,metar=null,importVersion=0,sourceError='',metarError='',reportSource='manually entered',sampleSource='manually imported',retrievedAt=null;
-    let endpoint=null;try{const raw=document.querySelector('meta[name="titan-awos-proxy"]')?.content;if(raw){const url=new URL(raw);if(url.protocol==='https:'&&!url.username&&!url.password&&!url.search&&!url.hash&&url.pathname==='/awos')endpoint=url.href;}}catch(_){}
+    let endpoint=null;try{const raw=document.querySelector('meta[name="titan-awos-proxy"]')?.content;if(raw){const url=new URL(raw,location.origin);const local=url.protocol==='http:'&&url.hostname==='127.0.0.1'&&url.origin===location.origin&&location.hostname==='127.0.0.1';if((url.protocol==='https:'||local)&&!url.username&&!url.password&&!url.search&&!url.hash&&url.pathname==='/awos')endpoint=url.href;}}catch(_){}
     let metarEndpoint=null;
     try{const raw=document.querySelector('meta[name="titan-metar-proxy"]')?.content;if(raw){const u=new URL(raw);if(u.protocol==='https:'&&!u.username&&!u.password&&!u.search&&!u.hash&&u.pathname==='/metar')metarEndpoint=u.href;}}catch(_){}
     let liveMetar=null,liveError='',metarEnabled=!!metarEndpoint,metarTimer=null,metarController=null,metarGeneration=0;
