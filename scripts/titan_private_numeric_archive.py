@@ -57,7 +57,13 @@ def archive(run,drive,a):
         missing=sum(n not in a for n in expected.values())+1
         drive.reserve(missing)
         print("TITAN_PRIVATE_RECOVERY_PLAN",json.dumps({"run":run,"reuse":sum(n in a for n in expected.values()),"missing_models":sum(n not in a for n in expected.values())}),flush=True)
-        for model in MODELS:
+        # Prioritize actual missing payloads: a provider rate limit late in
+        # the run should not repeatedly starve the last missing model.
+        # Existing packs still require independent full byte hash verification
+        # before the generation marker is written.
+        order=sorted(MODELS,key=lambda model:expected[model] in a)
+        print("TITAN_PRIVATE_RECOVERY_ORDER",json.dumps(order),flush=True)
+        for model in order:
             f=w/model;download("titan-full-cache-"+model,f);s=receipt["sources"][model]
             m,rows=read_model(f,model,allowed={s["acquisition_sha"]})
             need(m["cycle"]==s["cycle"] and len(rows)==s["entries"] and sha(f/"manifest.json")==s["manifest_sha256"],"Numerical source identity differs")
