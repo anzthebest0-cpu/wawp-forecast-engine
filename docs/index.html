@@ -17,11 +17,12 @@
     <script src="forecast-workflow.js?v=restore-readiness"></script>
     <meta name="titan-awos-proxy" content="https://wawp-forecast-engine.anzthebest0.workers.dev/awos">
     <script src="observation-ui.js?v=8-model-context"></script>
+    <script src="awos-history-ui.js?v=1-rolling"></script>
     <script src="remote-observations.js?v=1"></script>
     <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=4-aligned"></script>
     <script src="terminal-charts.js?v=2-cursor-repair"></script>
-    <link rel="stylesheet" href="style.css?v=station-context8">
+    <link rel="stylesheet" href="style.css?v=awos-history9">
 </head>
 <body>
 
@@ -131,6 +132,7 @@
  <p class="section-note">Unverified equal-model preview · <span data-preview-zone>WITA (UTC+8)</span> · not an operational forecast. Individual model traces are available in Model disagreement.</p>
  <div class="panel terminal-cursor" id="terminal-cursor"><div class="cursor-toolbar"><label for="terminal-time">Selected valid time</label><button id="terminal-prev" type="button" aria-label="Previous forecast hour">‹</button><select id="terminal-time"></select><button id="terminal-next" type="button" aria-label="Next forecast hour">›</button><button id="terminal-map" type="button">Spatial rain map</button></div><input id="terminal-slider" type="range" aria-label="Forecast valid hour" min="0" max="0" value="0"><div id="terminal-readout" class="cursor-values" role="status"></div><p class="section-note">Select an hour, or move the pointer over a plot to inspect the same hour across tracks. Rain is per output hour; spatial accumulation windows may differ.</p></div>
  <div class="panel obs-context-panel"><h3>Live AWOS · temperature and dewpoint context</h3><div id="meteogram-obs-context" role="status">Awaiting eligible data.</div></div>
+ <div class="panel obs-context-panel"><h3>Recent observed evolution and upcoming guidance</h3><div id="awos-history-meteogram" role="status">Awaiting history service.</div></div>
  <div class="panel meteogram-stack" aria-label="Aligned core forecast plots">
   <div class="chart-track" id="chart-wind"></div>
   <div class="wind-barb-track" id="chart-wind-dir"></div>
@@ -260,6 +262,14 @@
 </div>
 
 <section class="obs-visual-card obs-context-panel" aria-label="Near-hour model context"><h4>Observed vs model · near-hour context</h4><div id="obs-model-context" role="status">Awaiting eligible data.</div><div class="observation-links"><button type="button" data-open-tab="tab-meteogram">Open forecast meteogram</button></div></section>
+<section class="obs-visual-card awos-history-panel" aria-label="Rolling station history">
+<h4>Recent AWOS observations · rolling 24 hours</h4>
+<div class="awos-history-toolbar"><label>History window <select id="awos-history-hours"><option value="3">3 hours</option><option value="6" selected>6 hours</option><option value="12">12 hours</option><option value="24">24 hours</option></select></label><button id="awos-history-refresh" type="button">Refresh history</button></div>
+<p id="awos-history-status" class="section-note" role="status">Awaiting history service.</p><div id="awos-history-tendency"></div>
+<div id="awos-history-tracks" class="awos-history-tracks"></div>
+<p class="section-note">UTC · missing periods are gaps. Direction is the raw source bearing (reference unverified); calm has no bearing. Rainfall is the current-hour source accumulation, not a rolling sum.</p>
+<details class="obs-support"><summary>Recent METAR / SPECI log</summary><div id="awos-history-reports"></div></details>
+</section>
 <details class="obs-support"><summary>Additional measurements and source details</summary>
  <div class="obs-grid"><div><span>QNH · independent sensor field</span><strong id="obs-qnh_hpa">—</strong></div><div><span>10-min temperature</span><strong id="obs-temperature_10min_c">—</strong></div><div><span>10-min dewpoint</span><strong id="obs-dewpoint_10min_c">—</strong></div><div><span>Solar radiation</span><strong id="obs-solar_wm2">—</strong></div></div>
  <p id="obs-epoch-note" class="section-note"></p>
