@@ -14,13 +14,13 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
     <script src="preview-ui.js?v=2-scroll"></script>
     <script src="analysis-workspace.js?v=6-canonical-obs"></script>
-    <script src="forecast-workflow.js?v=2-triage"></script>
+    <script src="forecast-workflow.js?v=3-point-refresh"></script>
     <meta name="titan-awos-proxy" content="">
     <script src="observation-ui.js?v=4-status"></script>
     <script src="remote-observations.js?v=1"></script>
     <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=3.4-labels"></script>
-    <link rel="stylesheet" href="style.css?v=production-workstation2">
+    <link rel="stylesheet" href="style.css?v=production-workstation3">
 </head>
 <body>
 
@@ -89,7 +89,7 @@
             </div>
             
 <div class="brief-grid">
- <div class="panel brief-panel"><h3>Upcoming airport guidance</h3><p class="section-note">First available hourly raw-model values within the selected horizon. Not TAF or hazard probabilities.</p><div id="brief-hourly" role="status">Checking point forecast availability…</div><div class="observation-links"><button type="button" data-open-tab="tab-meteogram">Open airport guidance</button></div></div>
+ <div class="panel brief-panel"><h3>Upcoming airport guidance</h3><p class="section-note">First available hourly raw-model values within the selected horizon. Not TAF or hazard probabilities.</p><p id="point-source-summary" class="section-note" role="status">Point collection status pending.</p><div id="brief-hourly" role="status">Checking point forecast availability…</div><div class="observation-links"><button type="button" data-open-tab="tab-meteogram">Open airport guidance</button></div></div>
  <div class="panel brief-panel"><h3>Current evidence</h3><p id="brief-source-status" class="section-note">AWOS not connected · no local METAR report</p><p class="section-note">Satellite, radar and lightning coverage must be checked at the original provider.</p><div class="observation-links"><button type="button" data-open-tab="tab-observations">Station &amp; remote observations</button><button type="button" data-open-tab="tab-spatial">Spatial forecast</button></div></div>
  </div>
             <div class="panel shift-workflow" id="shift-workflow">
@@ -125,7 +125,7 @@
         </section>
 
         <!-- Tab 3: Meteogram -->
-        <section id="tab-meteogram" class="tab-pane">
+        <section id="tab-meteogram" class="tab-pane" data-point-state="pending"><div class="point-empty" role="status">Checking current point forecast data…</div>
             <h2>Airport Forecast Guidance · Meteogram</h2><div class="panel terminal-timeline-panel"><h3>Aligned terminal timeline</h3><p class="section-note">Raw equal-model hourly preview and available individual-model ranges. Counts vary by parameter and hour. No calibrated probability or skill ranking. Click a valid hour for its numerical detail.</p><div id="terminal-timeline" role="status">Checking matching data…</div></div><p class="section-note">Unverified equal-model preview. Valid times: <span data-preview-zone>WITA (UTC+8)</span>. Not an operational forecast.</p>
             <div class="panel chart-panel">
                 <div id="chart-temp"></div>
@@ -151,7 +151,7 @@
         </section>
 
         <!-- Tab 4: Consensus Spread -->
-        <section id="tab-spread" class="tab-pane">
+        <section id="tab-spread" class="tab-pane" data-point-state="pending"><div class="point-empty" role="status">Checking current point forecast data…</div>
             <h2>Model Disagreement</h2><p class="section-note">Descriptive model ranges, not calibrated probability intervals. Rainfall models are alternative forecasts; never sum them. Valid times: <span data-preview-zone>WITA (UTC+8)</span>.</p>
             <div class="panel chart-panel">
                 <div id="spread-temp"></div>
@@ -168,7 +168,7 @@
         </section>
 
         <!-- Tab 5: Matrix -->
-        <section id="tab-matrix" class="tab-pane">
+        <section id="tab-matrix" class="tab-pane" data-point-state="pending"><div class="point-empty" role="status">Checking current point forecast data…</div>
             <h2>Hourly Matrix</h2><p class="section-note">Raw-model preview. Valid times: <span data-preview-zone>WITA (UTC+8)</span>. A dash denotes unavailable data.</p>
             <div class="panel">
                 <div class="table-container">
@@ -196,7 +196,7 @@
         </section>
 
         <!-- Tab 4.5: Individual Models -->
-        <section id="tab-models" class="tab-pane">
+        <section id="tab-models" class="tab-pane" data-point-state="pending"><div class="point-empty" role="status">Checking current point forecast data…</div>
             <h2>Individual Models</h2><p class="section-note">Raw individual forecasts. Valid times: <span data-preview-zone>WITA (UTC+8)</span>; model collection timestamps are UTC.</p>
             <div style="margin-bottom: 15px;">
                 <label for="model-select" style="color:var(--text-secondary); margin-right:10px;">Select Model:</label>
@@ -813,6 +813,6 @@
         
     </main>
 
-    <dialog id="handover-dialog"><div class="handover-header"><h3>Manual shift notes</h3><button id="handover-close" type="button">Close</button></div><div id="handover-mount"></div></dialog><script src="workstation-shell.js?v=2-timeline"></script><script src="dashboard.js?v=11-timeline"></script>
+    <dialog id="handover-dialog"><div class="handover-header"><h3>Manual shift notes</h3><button id="handover-close" type="button">Close</button></div><div id="handover-mount"></div></dialog><script src="workstation-shell.js?v=3-point-availability"></script><script src="dashboard.js?v=12-point-availability"></script>
 </body>
 </html>

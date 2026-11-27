@@ -9,12 +9,12 @@ def api(path):
 def compact(r):
     return {k:r.get(k) for k in ("id","status","conclusion","event","updated_at")} if r else None
 def main(out):
-    d={"schema":1,"as_of_utc":datetime.now(timezone.utc).isoformat(),"runs":dict.fromkeys(("rolling","scheduled","archive","publication","shadow")),"shadow":None}
+    d={"schema":1,"as_of_utc":datetime.now(timezone.utc).isoformat(),"runs":dict.fromkeys(("rolling","scheduled","archive","publication","shadow","point_refresh")),"shadow":None}
     try:
         rows=api("actions/runs?branch=main&per_page=100")["workflow_runs"]
         def select(name,event=None,success=False):
             return next((r for r in rows if r["name"]==name and r["head_branch"]=="main" and (event is None or r["event"]==event) and (not success or r["conclusion"]=="success")),None)
-        for k,name in [("rolling","TITAN rolling spatial research refresh"),("archive","TITAN private numerical archive"),("publication","WAWP Publish Verified Model Preview"),("shadow","WAWP Prospective Shadow Research")]:
+        for k,name in [("rolling","TITAN rolling spatial research refresh"),("archive","TITAN private numerical archive"),("publication","WAWP Publish Verified Model Preview"),("shadow","WAWP Prospective Shadow Research"),("point_refresh","WAWP Model-Only Refresh")]:
             row=select(name)
             if k=="publication" and row and row["id"]==int(os.environ["GITHUB_RUN_ID"]):row=next((r for r in rows if r["name"]==name and r["id"]!=int(os.environ["GITHUB_RUN_ID"])),None)
             d["runs"][k]=compact(row)

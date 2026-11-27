@@ -33,7 +33,7 @@ function setupForecastWorkflow(){
   try{const response=await fetch('data/workflow-readiness.json',{cache:'no-store'});if(!response.ok)throw Error('unavailable');const data=await response.json();if(data.schema!==1)throw Error('schema');
    health.replaceChildren();research.replaceChildren();
    health.append(text('p','Evidence captured: '+data.as_of_utc+' · publication-time snapshot','section-note'));
-   run(health,'Latest spatial refresh',data.runs.rolling);run(health,'Scheduled spatial refresh',data.runs.scheduled);run(health,'Numerical archive',data.runs.archive);run(health,'Previous public deployment',data.runs.publication);run(health,'Prospective shadow research',data.runs.shadow);
+   run(health,'Point-model refresh',data.runs.point_refresh);run(health,'Latest spatial refresh',data.runs.rolling);run(health,'Scheduled spatial refresh',data.runs.scheduled);run(health,'Numerical archive',data.runs.archive);run(health,'Previous public deployment',data.runs.publication);run(health,'Prospective shadow research',data.runs.shadow);
    health.append(text('p','A successful workflow is not necessarily an advancing forecast or complete numerical archive. Inspect linked reports. Permanent Drive recovery and restore require separate proof.','section-note'));
    const s=data.shadow;if(!s){research.append(text('p','Counts-only artifact unavailable. Current skill cannot be established.','section-note'));return;}
    research.append(text('p','Research initialization: '+s.initialization_utc+' · source run '+s.run,'section-note'));

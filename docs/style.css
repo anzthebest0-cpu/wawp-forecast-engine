@@ -1274,3 +1274,8 @@ body:not(.point-active) .preview-controls{display:none;}
 .terminal-table .chosen{background:var(--cyan-glow);}
 .terminal-table button,.terminal-readout button{font:inherit;min-height:36px;color:var(--text-primary);border:1px solid var(--border-glass);background:var(--bg-tertiary);border-radius:4px;padding:4px 6px;cursor:pointer;}
 .terminal-readout{padding-top:8px;}
+
+/* Explicit point payload state; never show blank charts as valid guidance. */
+.point-empty{padding:12px;border:1px solid var(--border-glass);border-radius:6px;color:var(--text-secondary);font-size:.85rem;margin:10px 0;}
+.point-empty[hidden],.chart-panel[hidden]{display:none!important;}
+.tab-pane[data-point-state="unavailable"]> :not(h2):not(.section-note):not(.point-empty),.tab-pane[data-point-state="pending"]> :not(h2):not(.section-note):not(.point-empty){display:none!important;}

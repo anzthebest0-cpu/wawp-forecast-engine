@@ -16,7 +16,8 @@ function renderPreviewChartsIfVisible() {
         renderWindBarbs(pendingPreviewChartData.rows);
     } catch (err) {
         const panel=document.getElementById('tab-meteogram');
-        panel.replaceChildren();const note=document.createElement('p');note.textContent='Meteogram unavailable. Use the hourly matrix and individual model tab if available.';panel.append(note);
+        const note=document.createElement('p');note.className='point-empty';note.textContent='Graphical meteogram could not render. Use the aligned numerical timeline, hourly matrix or individual model view.';panel.prepend(note);
+        panel.querySelectorAll('.chart-panel').forEach(el=>el.hidden=true);
         console.error('Meteogram render failed',err);
     }
 }
@@ -326,6 +327,7 @@ async function loadDashboard() {
         const currentPreview = previewIsCurrent(previewManifest) && candidateRows.length > 0;
         const renderData = currentPreview ? candidateRows : [];
         renderBriefHourly(renderData, currentPreview ? previewManifest : null);
+        setPointAvailability(currentPreview,previewManifest);
         const safetyBanner = document.getElementById('preview-safety-banner');
         if (safetyBanner) safetyBanner.textContent = currentPreview
             ? `RAW MODEL PREVIEW — ${Object.keys(previewManifest.models || {}).length} fresh model collections; unverified equal-model mean of original models (IFS 9 km independent), not an operational forecast. TAF withheld. Expires ${previewManifest.expires_at_utc}. Historical verification remains research-only.`
@@ -338,6 +340,7 @@ async function loadDashboard() {
             pendingPreviewChartData=null;pendingSpreadModelsData=null;pendingSpreadTimeLabels=[];
             renderBriefHourly([],null);
             renderTerminalTimeline([],null,null);
+            setPointAvailability(false,null);
             window.location.reload();
         }, Math.max(0, Date.parse(previewManifest.expires_at_utc) - Date.now()));
 
@@ -531,10 +534,7 @@ async function loadDashboard() {
         
         // Initialize charts using the new TITAN_BASE design system
         if (currentPreview && renderData.length) { pendingPreviewChartData={chartData,rows:renderData,manifest:previewManifest}; renderPreviewChartsIfVisible(); }
-        else for (const id of ['tab-meteogram', 'tab-spread', 'tab-matrix', 'tab-models']) {
-            const panel = document.getElementById(id);
-            if (panel) { const notice = document.createElement('p'); notice.textContent = 'Current model guidance unavailable.'; panel.prepend(notice); }
-        }
+        // Explicit unavailable state is rendered by setPointAvailability; preserve original mount points.
         
         // 5. Matrix Tab
         const tbody = document.querySelector("#data-table tbody");
@@ -571,7 +571,7 @@ async function loadDashboard() {
             }
         }
         
-        else if (currentPreview) { for(const id of ['tab-spread','tab-models']) {const p=document.getElementById(id);if(p){const n=document.createElement('p');n.className='section-note';n.textContent='Matching individual model payload unavailable.';p.prepend(n);}} }
+        else if (currentPreview) setIndividualAvailability(false);
         // 6. Regional & Climatology
         try {
             if(document.getElementById('tab-regional')?.classList.contains('active'))setupRegionalCharts();
@@ -613,6 +613,7 @@ async function loadDashboard() {
         const tafDisplay = document.getElementById('taf-text-display');
         if (tafDisplay) tafDisplay.textContent = 'Automated TAF withheld. Dashboard data load failed.';
         pendingPreviewChartData=null;pendingSpreadModelsData=null;pendingSpreadTimeLabels=[];
+        renderBriefHourly([],null);renderTerminalTimeline([],null,null);setPointAvailability(false,null);
         const banner=document.getElementById('preview-safety-banner');if(banner)banner.textContent='UNAVAILABLE — dashboard data load failed. Automated TAF withheld.';
         for(const id of ['tab-meteogram','tab-spread','tab-matrix','tab-models']){const panel=document.getElementById(id);if(panel){panel.replaceChildren();const note=document.createElement('p');note.textContent='Current model guidance unavailable.';panel.append(note);}}
     }

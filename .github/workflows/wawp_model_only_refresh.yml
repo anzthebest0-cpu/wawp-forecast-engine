@@ -5,7 +5,9 @@ on:
     branches: [main]
     paths: ['.github/workflows/wawp_model_only_refresh.yml']
   schedule:
-    - cron: '30 0,6,12,18 * * *' # 08:30, 14:30, 20:30, 02:30 WITA
+    # Three-hour collection cadence leaves headroom under the unchanged 6 h maximum age.
+    # Off-hour minute to reduce top-of-hour Actions scheduler congestion.
+    - cron: '17 0,3,6,9,12,15,18,21 * * *'
   pull_request:
     types: [labeled]
     branches: [main]
@@ -240,7 +242,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          bash scripts/attach_titan_public_preview.sh "$RUNNER_TEMP/wawp-model-refresh/model-pages" read-only || echo '::warning::Frozen TITAN preview unavailable; preserving operational root deployment'
+          bash scripts/attach_titan_public_preview.sh "$RUNNER_TEMP/wawp-model-refresh/model-pages" read-only
+      - name: Capture public workflow and counts-only verification readiness
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/titan_workflow_readiness.py "$RUNNER_TEMP/wawp-model-refresh/model-pages/data/workflow-readiness.json"
+      - name: Verify populated or explicitly unavailable point guidance before deployment
+        run: |
+          set -euo pipefail
+          npm install --no-save playwright apexcharts@3.54.1
+          npx playwright install --with-deps chromium
+          python -m http.server 8765 --directory "$RUNNER_TEMP/wawp-model-refresh/model-pages" >/tmp/titan-public-server.log 2>&1 &
+          trap 'kill $!' EXIT
+          sleep 2
+          timeout 180s node scripts/test_titan_point_content.cjs
+          timeout 240s node scripts/test_titan_task_shell.cjs
       - name: Upload exact gated Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

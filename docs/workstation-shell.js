@@ -63,3 +63,21 @@ function renderTerminalTimeline(rows,models,manifest){
  for(const [label,key,modelKey,unit] of specs){const tr=body.insertRow();previewCell(tr,'th',label+' ('+unit+')');rows.forEach((row,i)=>{const cell=previewCell(tr,'td',num(TitanPreview.numeric(row[key])));cell.dataset.hour=i;const r=extent(row,modelKey),range=document.createElement('small');range.textContent=r?num(r.min)+'–'+num(r.max)+' · n='+r.n:'range —';cell.append(range);});}
  jump.onclick=()=>{if(chosen&&previewIsCurrent(manifest))openSpatialDiagnostic('rain','kolaka',new Date(previewValidEpoch(chosen.Datetime)).toISOString());};readout.append(details,jump);wrap.append(table);root.append(wrap,readout);select(0);
 }
+
+function setPointAvailability(available,manifest){
+ const summary=document.getElementById('point-source-summary');
+ if(summary)summary.textContent=available?'Point preview: '+Object.keys(manifest.models||{}).length+' eligible model collections · expires '+manifest.expires_at_utc+' · collection times are not provider initialization times.':'No eligible current point collection. Spatial guidance has a separate freshness policy. Check the point-refresh workflow.';
+ for(const id of ['tab-meteogram','tab-spread','tab-matrix','tab-models']){
+  const pane=document.getElementById(id);if(!pane)continue;
+  pane.dataset.pointState=available?'available':'unavailable';
+  const note=pane.querySelector('.point-empty');
+  if(note){note.hidden=available;note.textContent=available?'':'Current point forecast unavailable — no eligible unexpired model data. No stale values are displayed. Check source collection status or use the separately labeled spatial research preview.';}
+ }
+}
+function setIndividualAvailability(available){
+ for(const id of ['tab-spread','tab-models']){
+  const pane=document.getElementById(id);if(!pane)continue;
+  pane.dataset.pointState=available?'available':'unavailable';
+  const note=pane.querySelector('.point-empty');if(note){note.hidden=available;note.textContent=available?'':'Matching individual-model payload unavailable. No model ranges or individual values are displayed.';}
+ }
+}
