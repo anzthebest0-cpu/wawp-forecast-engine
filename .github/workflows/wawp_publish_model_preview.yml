@@ -117,7 +117,7 @@ jobs:
           trap 'kill $!' EXIT
           sleep 2
           node scripts/test_titan_public_preview.cjs
-          timeout 180s node scripts/test_titan_main_dashboard.cjs
+          timeout 300s node scripts/test_titan_main_dashboard.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -18,7 +18,7 @@
     <script src="observation-ui.js?v=4-status"></script>
     <script src="research-ui.js?v=1"></script>
     <script src="apexcharts-theme.js?v=3.4-labels"></script>
-    <link rel="stylesheet" href="style.css?v=production-spatial1">
+    <link rel="stylesheet" href="style.css?v=production-spatial2">
 </head>
 <body>
 
@@ -324,10 +324,11 @@
 
 
         <!-- Tab 5: Regional Charts -->
-        <section id="tab-spatial" class="tab-pane">
-            <div class="header-bar"><h2>Spatial Forecast</h2></div>
-            <p class="section-note">Independent model-cycle maps for Kolaka, Sulawesi and the region. Research guidance only; check initialization ages and exact accumulation windows. Map time controls are independent of point-forecast controls.</p>
-            <div class="observation-links"><a href="./titan/" target="_blank" rel="noopener">Open full-screen spatial viewer</a></div>
+        <section id="tab-spatial" class="tab-pane" aria-labelledby="spatial-heading">
+            <div class="spatial-toolbar">
+                <div class="spatial-title"><h2 id="spatial-heading">Spatial Forecast</h2><span>Kolaka · Sulawesi · Regional</span></div>
+                <a id="spatial-fullscreen" href="./titan/" target="_blank" rel="noopener">Full-screen viewer <span aria-hidden="true">↗</span></a>
+            </div>
             <iframe id="spatial-viewer" data-src="./titan/?embedded=1" title="TITAN spatial forecast maps" class="spatial-viewer"></iframe>
         </section>
         <section id="tab-regional" class="tab-pane">
@@ -802,6 +803,6 @@
         
     </main>
 
-    <script src="dashboard.js?v=6-spatial"></script>
+    <script src="dashboard.js?v=7-spatial-workspace"></script>
 </body>
 </html>

@@ -612,7 +612,14 @@ async function loadDashboard() {
     }
 }
 
+function syncSpatialTheme() {
+    const frame = document.getElementById('spatial-viewer');
+    if (frame?.contentWindow && frame.hasAttribute('src')) {
+        frame.contentWindow.postMessage({type:'titan-spatial-theme',theme:document.documentElement.classList.contains('light-mode')?'light':'dark'},location.origin);
+    }
+}
 function switchTab(tabId) {
+    document.body.classList.toggle('spatial-active', tabId === 'tab-spatial');
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-links li').forEach(el => el.classList.remove('active'));
     
@@ -624,7 +631,13 @@ function switchTab(tabId) {
 
     if (tabId === 'tab-spatial') {
         const frame = document.getElementById('spatial-viewer');
-        if (frame && !frame.hasAttribute('src')) frame.src = frame.dataset.src;
+        if (frame && !frame.hasAttribute('src')) {
+            const src = new URL(frame.dataset.src,location.href);
+            src.searchParams.set('theme',document.documentElement.classList.contains('light-mode')?'light':'dark');
+            frame.src = src.href;
+        }
+        document.querySelector('.content').scrollTop=0;
+        syncSpatialTheme();
     }
     if (tabId === 'tab-meteogram') renderPreviewChartsIfVisible();
     if (tabId === 'tab-spread' && pendingSpreadModelsData && !spreadChartsRendered) {
@@ -651,9 +664,19 @@ document.addEventListener('DOMContentLoaded', () => {
             document.documentElement.classList.toggle('light-mode');
             const isLight = document.documentElement.classList.contains('light-mode');
             localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            syncSpatialTheme();
         });
     }
 
+    const spatialFrame = document.getElementById('spatial-viewer');
+    spatialFrame?.addEventListener('load',syncSpatialTheme);
+    window.addEventListener('message',e=>{
+        if(e.origin!==location.origin || e.source!==spatialFrame?.contentWindow || e.data?.type!=='titan-spatial-state')return;
+        const hash=e.data.hash;
+        if(typeof hash!=='string'||hash.length>2048||!hash.startsWith('#'))return;
+        const link=document.getElementById('spatial-fullscreen');
+        if(link){const url=new URL('./titan/',location.href);url.hash=hash;link.href=url.href;}
+    });
     document.querySelectorAll('.nav-links li[data-tab]').forEach(li => {
         li.setAttribute('role','button'); li.tabIndex = 0;
         const activate = () => switchTab(li.getAttribute('data-tab'));

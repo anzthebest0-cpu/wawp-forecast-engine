@@ -18,8 +18,8 @@ async function checkImage(frame){
  const b=await chromium.launch({headless:true});
  try{
   fs.mkdirSync("titan-review-screenshots",{recursive:true});
-  for(const width of [390,1440]){
-   const p=await b.newPage({viewport:{width,height:900}});
+  for(const [width,height] of [[360,640],[390,844],[768,1024],[1440,900],[844,390]]){
+   const p=await b.newPage({viewport:{width,height}});
    p.setDefaultTimeout(25000);
    p.on("pageerror",e=>console.log("DASHBOARD_PAGE_ERROR",e.message));
    p.on("requestfailed",r=>{if(r.url().startsWith("http://127.0.0.1:8765"))console.log("LOCAL_REQUEST_FAILED",r.url(),r.failure()?.errorText)});
@@ -31,14 +31,40 @@ async function checkImage(frame){
    await nav.click();
    assert(await p.locator("#tab-spatial").isVisible());
    assert.equal(await nav.getAttribute("aria-current"),"page");
+   assert(!(await p.locator(".preview-controls").isVisible()),"Point controls must not appear in spatial workspace");
+   assert(await p.locator("#preview-safety-banner").isVisible());
+   const layout=await p.evaluate(()=>{const f=document.getElementById("spatial-viewer").getBoundingClientRect(),c=document.querySelector(".content");return {frameHeight:f.height,frameBottom:f.bottom,viewport:innerHeight,overflow:document.documentElement.scrollWidth-innerWidth,outerScroll:c.scrollHeight-c.clientHeight}});
+   assert(layout.frameHeight>=height*.30 && layout.frameBottom<=height+3 && layout.overflow<=1 && layout.outerScroll<=3,JSON.stringify(layout));
+   console.log("SPATIAL_LAYOUT",width,height,JSON.stringify(layout));
    const frame=p.frameLocator("#spatial-viewer");
    await frame.locator("#product option").first().waitFor({state:"attached"});
    assert.equal(await frame.locator("#product option").count(),25);
    await frame.locator("#product").selectOption("wind850");
+   await frame.locator("#map-heading").waitFor();
+   assert(await frame.locator("html").evaluate(x=>x.scrollWidth<=x.clientWidth+1),"Embedded horizontal overflow");
+   await p.waitForFunction(()=>document.getElementById("spatial-fullscreen").href.includes("product=wind850"));
+   if(height>480){
+     await p.locator("#theme-toggle").click();
+     const theme=await p.evaluate(()=>document.documentElement.classList.contains("light-mode")?"light":"dark");
+     await frame.locator("html[data-theme='"+theme+"']").waitFor({state:"attached"});
+     await p.locator("#theme-toggle").click();
+     await frame.locator("html[data-theme='"+(theme==="light"?"dark":"light")+"']").waitFor({state:"attached"});
+   }
    await checkImage(frame);
    console.log("EMBEDDED_IMAGE_PASS",width);
+   await frame.locator("#focus").click();
+   assert.equal(await frame.locator("#panels article").count(),1);
+   await checkImage(frame);
+   await frame.locator("#panels .map").click();
+   assert(await frame.locator("#zoom").evaluate(x=>x.open));
+   await frame.locator("#plus").click();
+   assert.equal(await frame.locator("#zoom-level").textContent(),"150%");
+   await frame.locator("#close").click();
+   await frame.locator("#compare").click();
+   await p.screenshot({path:"titan-review-screenshots/spatial-layout-"+width+"x"+height+".png"});
    await p.locator('.nav-links li[data-tab="tab-intel"]').click();
    assert(!(await p.locator("#tab-spatial").isVisible()));
+   assert(await p.locator(".preview-controls").isVisible(),"Other tabs retain point controls");
    await p.locator('[data-open-tab="tab-spatial"]').click();
    assert.equal(await frame.locator("#product").inputValue(),"wind850");
    assert.equal(new URL(p.url()).hash,"#tab-spatial");
@@ -51,5 +77,5 @@ async function checkImage(frame){
    await p.close();
   }
  }finally{await b.close()}
- console.log("TITAN_MAIN_DASHBOARD_SPATIAL_PASS 390 1440")
+ console.log("TITAN_MAIN_DASHBOARD_SPATIAL_PASS 360 390 768 1440 844-landscape")
 })().catch(e=>{console.error(e);process.exit(1)});
