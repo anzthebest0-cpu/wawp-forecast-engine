@@ -12,3 +12,12 @@ ALLOWED_ORIGIN = "https://anzthebest0-cpu.github.io"
 
 [observability]
 enabled = false
+
+# Rolling history database. Collection remains gated by AWOS_HISTORY_ENABLED.
+[[d1_databases]]
+binding = "AWOS_HISTORY"
+database_name = "titan-awos-history"
+database_id = "e53299fc-d71d-4730-9529-0b469a2f305f"
+migrations_dir = "migrations"
+
+# Cron will be configured after the operator verifies the database schema.
