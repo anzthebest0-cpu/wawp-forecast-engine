@@ -1308,3 +1308,48 @@ body:not(.point-active) .preview-controls{display:none;}
 
 /* Scientific panels remain fully painted when switching workspaces. */
 .panel{animation:none;}
+
+/* Station overview — familiar AWOS grouping using TITAN tokens, not a new theme. */
+.station-detail{padding:12px;}
+.station-detail>.observation-overview{padding:12px;border:0;background:transparent;margin:0;}
+.obs-station-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:4px 0 12px;}
+.obs-station-head h3{font-size:var(--ts-lg);color:var(--text-primary);letter-spacing:0;text-transform:none;margin:0 0 4px;}
+.obs-station-head p{margin:3px 0;line-height:1.4;}
+.obs-station-clock{font-family:var(--font-data);font-size:var(--ts-xs);color:var(--text-secondary);font-variant-numeric:tabular-nums;}
+.obs-live-indicator{display:inline-flex;gap:6px;align-items:center;padding:5px 8px;border:1px solid var(--col-border-2);border-radius:var(--r-sm);font-size:var(--ts-xs);color:var(--text-secondary);}
+.obs-live-indicator::before{content:'';width:7px;height:7px;background:var(--text-muted);border-radius:50%;}
+.obs-live-indicator[data-state=recent]::before{background:var(--green);}
+.obs-station-head #obs-live-controls{margin:8px 0 0;}
+.obs-live-layout{display:grid;grid-template-columns:minmax(220px,1fr) minmax(0,1.25fr) minmax(0,1fr);gap:10px;align-items:stretch;}
+.obs-visual-card{border:1px solid var(--col-border);border-radius:var(--r-md);background:var(--col-surface-2);padding:12px;min-width:0;}
+.obs-visual-card h4{font-family:var(--font-display);font-size:var(--ts-sm);font-weight:600;color:var(--text-primary);margin:0 0 8px;}
+.obs-wind-card{display:flex;flex-direction:column;align-items:center;text-align:center;}
+.obs-wind-card h4{align-self:flex-start;}
+.obs-dial{display:block;width:min(100%,260px);height:auto;margin:0 auto;overflow:visible;}
+.obs-dial-ring{fill:var(--col-surface-1);stroke:var(--col-border-2);stroke-width:1.5;}
+.obs-dial-tick{stroke:var(--text-muted);stroke-width:1.4;}
+.obs-dial-tick.major{stroke:var(--cyan);stroke-width:2.6;}
+.obs-dial-label{fill:var(--text-secondary);font-family:var(--font-data);font-size:10px;}
+.obs-dial-main{fill:var(--text-primary);font-family:var(--font-data);font-weight:700;font-size:24px;}
+.obs-dial-bearing{fill:var(--text-secondary);font-family:var(--font-data);font-size:15px;}
+#obs-dial-needle{fill:var(--cyan);}
+.obs-wind-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%;margin-top:auto;}
+.obs-metric-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.obs-metric{min-width:0;border:1px solid var(--col-border);border-radius:var(--r-sm);padding:9px;display:flex;flex-direction:column;gap:4px;justify-content:center;background:var(--col-surface-1);}
+.obs-metric span{color:var(--text-secondary);font-size:var(--ts-xs);line-height:1.35;}
+.obs-metric strong{color:var(--text-primary);font-family:var(--font-data);font-size:clamp(1rem,1.65vw,1.55rem);font-weight:600;line-height:1.25;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;}
+.obs-wind-details .obs-metric strong{font-size:1rem;}
+.obs-report-metrics{display:grid;gap:7px;}
+.obs-report-metrics .obs-metric strong{font-size:clamp(.9rem,1.4vw,1.25rem);}
+.obs-live-layout .section-note{font-size:.73rem;margin:8px 0 0;}
+.obs-metar-strip{margin:10px 0 0;border:1px solid var(--col-border-2);border-radius:var(--r-md);background:var(--col-surface-2);padding:12px;}
+.obs-metar-strip h4{font-family:var(--font-display);font-size:var(--ts-sm);margin:0 0 4px;color:var(--text-primary);}
+.obs-metar-strip .section-note{margin:3px 0;}
+.obs-metar-strip pre{font-size:clamp(.9rem,1.5vw,1.25rem);font-family:var(--font-data);font-weight:600;white-space:pre-wrap;overflow-wrap:anywhere;padding:10px 0 0;color:var(--text-primary);background:transparent;margin:0;}
+.obs-support{margin-top:10px;padding:10px;border:1px solid var(--col-border);border-radius:var(--r-sm);}
+.obs-support summary{font-size:var(--ts-sm);font-weight:600;cursor:pointer;}
+.obs-support .obs-grid{margin-bottom:0;}
+.obs-support .obs-manual{margin:10px 0;}
+.obs-support .observation-links{flex-wrap:wrap;}
+@media(max-width:1180px){.obs-live-layout{grid-template-columns:minmax(200px,1fr) minmax(0,1.2fr);}.obs-report-card{grid-column:1/-1;}.obs-report-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:660px){.station-detail{padding:8px;}.station-detail>.observation-overview{padding:4px;}.obs-live-layout{grid-template-columns:minmax(0,1fr);}.obs-visual-card{padding:10px;}.obs-report-card{grid-column:auto;}.obs-dial{width:min(100%,220px);}.obs-metric strong{font-size:1.18rem;}.obs-station-head{gap:6px;}.obs-station-head #obs-live-controls button{min-height:40px;}}
