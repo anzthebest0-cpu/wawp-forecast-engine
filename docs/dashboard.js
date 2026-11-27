@@ -9,6 +9,7 @@ let previewChartsRendered = false;
 function renderPreviewChartsIfVisible() {
     if (!pendingPreviewChartData || previewChartsRendered || !document.getElementById('tab-meteogram')?.classList.contains('active')) return;
     if (!previewIsCurrent(pendingPreviewChartData.manifest)) return;
+    const details=document.getElementById('forecast-only-detail');if(details&&!details.open)return;
     previewChartsRendered = true;
     try {
         if (typeof ApexCharts !== 'function') throw Error('Chart library unavailable');
@@ -624,7 +625,7 @@ async function loadDashboard() {
         setObservationModelContext([],null);
         renderBriefHourly([],null);renderTerminalTimeline([],null,null);setupTerminalCursor([],null);setPointAvailability(false,null);
         const banner=document.getElementById('preview-safety-banner');if(banner)banner.textContent='UNAVAILABLE — dashboard data load failed. Automated TAF withheld.';
-        for(const id of ['tab-meteogram','tab-spread','tab-matrix','tab-models']){const panel=document.getElementById(id);if(panel){panel.replaceChildren();const note=document.createElement('p');note.textContent='Current model guidance unavailable.';panel.append(note);}}
+        for(const id of ['tab-meteogram','tab-spread','tab-matrix','tab-models']){const panel=document.getElementById(id);if(panel&&id!=='tab-meteogram'){panel.replaceChildren();const note=document.createElement('p');note.textContent='Current model guidance unavailable.';panel.append(note);}}
     }
 }
 
@@ -724,6 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPreviewControls();
     setupAnalysisWorkspace();
     setupObservationPanel();
+    document.getElementById('forecast-only-detail')?.addEventListener('toggle',()=>{renderPreviewChartsIfVisible();requestAnimationFrame(updateTerminalCrosshairs);});
     setupRemoteObservations();
     setupForecastWorkflow();
     setupWorkstationShell();
