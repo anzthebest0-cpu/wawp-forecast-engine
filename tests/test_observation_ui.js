@@ -30,3 +30,13 @@ assert.equal(p.liveReport(live,t).at,m.at);
 assert.equal(p.liveReport({schema:live.schema,station:live.station,source:live.source,status:'no_recent_report'},t),null);
 for(const patch of [{station:'WAAA'},{source:'unknown'},{retrieved_at_utc:'2026-11-25T03:50:00Z'},{observed_at_utc:'2026-11-25T03:31:00Z'}])assert.throws(()=>p.liveReport({...live,...patch},t));
 assert.throws(()=>p.liveReport({...live,retrieved_at_utc:'2026-11-25T05:00:01Z'},t+3601000));
+
+assert.deepEqual(p.windDisplay({wind_speed_kt:0,wind_direction_deg:80}),{speed:'Calm',bearing:'—',angle:null});
+assert.deepEqual(p.windDisplay(null),{speed:'—',bearing:'—',angle:null});
+assert.deepEqual(p.windDisplay({wind_speed_kt:3,wind_direction_deg:80}),{speed:'3 kt',bearing:'080°',angle:80});
+assert.deepEqual(p.reportGroups('METAR WAWP 271030Z AUTO VRB02KT //// ////// 26/26 Q1011='),{visibility:'—',weather:'—',sky:'—',qnh:'1011 hPa',wind:'VRB02KT',variable:'VRB'});
+assert.equal(p.reportGroups('METAR WAWP 271030Z 08003KT CAVOK 26/25 Q1011 NOSIG').visibility,'≥ 10 km');
+const rain=p.reportGroups('METAR WAWP 271030Z 08003KT 050V120 3000 TSRA FEW015CB BKN021 26/25 Q1011 TEMPO 9999 NSW');
+assert.equal(rain.visibility,'3000 m');assert.equal(rain.weather,'TSRA');assert.equal(rain.sky,'FEW015CB BKN021');assert.equal(rain.variable,'050V120');assert.equal(rain.qnh,'1011 hPa');
+assert.equal(p.reportGroups('METAR WAWP 271030Z 08003KT 9999 NSC 26/25 Q1011 TEMPO 3000 TSRA').weather,'—');
+assert.equal(p.reportGroups(null).qnh,'—');
